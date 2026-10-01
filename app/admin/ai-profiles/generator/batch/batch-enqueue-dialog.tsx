@@ -1,8 +1,11 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { Button } from "@heroui/react";
+
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   CONTENT_TIERS,
   CONTENT_TIER_LABEL,
@@ -13,9 +16,9 @@ import {
   type AiProfileContentTier,
   type AiProfileDomain,
   type PhotoSlot,
-} from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -23,19 +26,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { Switch } from '@/shared/ui/switch';
-import { Textarea } from '@/shared/ui/textarea';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/select";
+import { Switch } from "@/shared/ui/switch";
+import { Textarea } from "@/shared/ui/textarea";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   open: boolean;
@@ -51,32 +54,38 @@ export function BatchEnqueueDialog({ open, onOpenChange, onEnqueued }: Props) {
   const toast = useToast();
   const handleError = useAiProfileErrorHandler();
 
-  const [templateId, setTemplateId] = useState<string>('');
-  const [promptVersionId, setPromptVersionId] = useState<string>('');
+  const [templateId, setTemplateId] = useState<string>("");
+  const [promptVersionId, setPromptVersionId] = useState<string>("");
   const [count, setCount] = useState<number>(DEFAULT_COUNT);
-  const [initialInstruction, setInitialInstruction] = useState<string>('');
-  const [contentTier, setContentTier] = useState<AiProfileContentTier>('family');
+  const [initialInstruction, setInitialInstruction] = useState<string>("");
+  const [contentTier, setContentTier] =
+    useState<AiProfileContentTier>("family");
   const [selectedDomains, setSelectedDomains] = useState<AiProfileDomain[]>(
     () => [...GENERATABLE_DOMAINS],
   );
   const [includePhotos, setIncludePhotos] = useState<boolean>(false);
-  const [photoSlots, setPhotoSlots] = useState<PhotoSlot[]>(['representative']);
+  const [photoSlots, setPhotoSlots] = useState<PhotoSlot[]>(["representative"]);
 
   useEffect(() => {
     if (open) {
-      setTemplateId('');
-      setPromptVersionId('');
+      setTemplateId("");
+      setPromptVersionId("");
       setCount(DEFAULT_COUNT);
-      setInitialInstruction('');
-      setContentTier('family');
+      setInitialInstruction("");
+      setContentTier("family");
       setSelectedDomains([...GENERATABLE_DOMAINS]);
       setIncludePhotos(false);
-      setPhotoSlots(['representative']);
+      setPhotoSlots(["representative"]);
     }
   }, [open]);
 
   const templatesQuery = useQuery({
-    queryKey: ['admin', 'ai-profile-generator', 'generation-templates', 'active'],
+    queryKey: [
+      "admin",
+      "ai-profile-generator",
+      "generation-templates",
+      "active",
+    ],
     queryFn: () =>
       aiProfileGenerator.listGenerationTemplates({
         isActive: true,
@@ -103,7 +112,7 @@ export function BatchEnqueueDialog({ open, onOpenChange, onEnqueued }: Props) {
         photoSlots: includePhotos ? photoSlots : undefined,
       }),
     onSuccess: (result) => {
-      toast.success('배치 생성 job을 등록했습니다.');
+      toast.success("배치 생성 job을 등록했습니다.");
       onEnqueued?.(result.jobId);
       onOpenChange(false);
     },
@@ -172,13 +181,13 @@ export function BatchEnqueueDialog({ open, onOpenChange, onEnqueued }: Props) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="batch-content-tier">콘텐츠 등급</Label>
               <Select
                 value={contentTier}
                 onValueChange={(value) =>
                   setContentTier(value as AiProfileContentTier)
                 }
               >
+                <HeroSelectLabel>콘텐츠 등급</HeroSelectLabel>
                 <SelectTrigger id="batch-content-tier">
                   <SelectValue />
                 </SelectTrigger>
@@ -194,8 +203,8 @@ export function BatchEnqueueDialog({ open, onOpenChange, onEnqueued }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="batch-template">템플릿 (선택)</Label>
             <Select value={templateId} onValueChange={setTemplateId}>
+              <HeroSelectLabel>템플릿 (선택)</HeroSelectLabel>
               <SelectTrigger id="batch-template">
                 <SelectValue placeholder="템플릿 없이 생성" />
               </SelectTrigger>
@@ -211,7 +220,9 @@ export function BatchEnqueueDialog({ open, onOpenChange, onEnqueued }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="batch-prompt-version">프롬프트 버전 ID (선택)</Label>
+            <Label htmlFor="batch-prompt-version">
+              프롬프트 버전 ID (선택)
+            </Label>
             <Input
               id="batch-prompt-version"
               value={promptVersionId}
@@ -286,17 +297,20 @@ export function BatchEnqueueDialog({ open, onOpenChange, onEnqueued }: Props) {
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={createMutation.isPending}
+            isDisabled={createMutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
           <Button
             onClick={() => createMutation.mutate()}
-            disabled={!canSubmit}
+            isDisabled={!canSubmit}
+            variant={"primary"}
+            size={"md"}
           >
-            {createMutation.isPending ? '등록 중…' : '배치 등록'}
+            {createMutation.isPending ? "등록 중…" : "배치 등록"}
           </Button>
         </DialogFooter>
       </DialogContent>

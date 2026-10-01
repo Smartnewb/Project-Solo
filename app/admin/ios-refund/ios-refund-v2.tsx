@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Button, Chip, Input, Label, ListBox, Pagination, Select, Spinner, TextField } from '@heroui/react';
+import { Controller } from 'react-hook-form';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import AdminService from '@/app/services/admin';
 import { AppleRefundItem, AppleRefundStatus, AppleRefundListParams } from '@/types/admin';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { iosRefundFilterSchema, IosRefundFilterFormValues } from '@/app/admin/hooks/forms/schemas/ios-refund.schema';
 
-type FilterStatus = 'ALL' | AppleRefundStatus;
+const DEFAULT_FILTERS:IosRefundFilterFormValues={filterStatus:'ALL',searchTerm:'',startDate:'',endDate:''};
 
 function IOSRefundPageContent() {
   const [items, setItems] = useState<AppleRefundItem[]>([]);
@@ -16,91 +19,63 @@ function IOSRefundPageContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [error,setError]=useState('');
+  const [appliedFilters,setAppliedFilters]=useState(DEFAULT_FILTERS);
+  const toast=useToast();
 
   const filterForm = useAdminForm<IosRefundFilterFormValues>({
     schema: iosRefundFilterSchema,
-    defaultValues: {
-      filterStatus: 'ALL',
-      searchTerm: '',
-      startDate: '',
-      endDate: '',
-    },
+    defaultValues: DEFAULT_FILTERS,
   });
-
-  const filterStatus = filterForm.watch('filterStatus') as FilterStatus;
-  const searchTerm = filterForm.watch('searchTerm');
-  const startDate = filterForm.watch('startDate');
-  const endDate = filterForm.watch('endDate');
+  const startDate=filterForm.watch('startDate'),endDate=filterForm.watch('endDate');
+  const reversedRange=!!startDate && !!endDate && startDate>endDate;
+  const {filterStatus,searchTerm,startDate:appliedStart,endDate:appliedEnd}=appliedFilters;
 
   const fetchData = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoading(true);setError('');
       const params: AppleRefundListParams = {
         page,
         limit: 20,
-        ...(filterStatus !== 'ALL' && { status: filterStatus }),
+        ...(filterStatus !== 'ALL' && { status: filterStatus as AppleRefundStatus }),
         ...(searchTerm && { searchTerm }),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
+        ...(appliedStart && { startDate:appliedStart }),
+        ...(appliedEnd && { endDate:appliedEnd }),
       };
       const response = await AdminService.appleRefund.getList(params);
       setItems(response.items);
       setTotalPages(response.meta.totalPages);
       setTotalCount(response.meta.totalCount);
-    } catch { } finally {
+      return true;
+    } catch { setError('환불 내역을 불러오지 못했습니다. 다시 시도해주세요.'); return false; } finally {
       setLoading(false);
     }
-  }, [page, filterStatus, searchTerm, startDate, endDate]);
+  }, [page, appliedFilters]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const handleSync = async () => {
+    if(syncing) return;
     try {
       setSyncing(true);
       await AdminService.appleRefund.syncRefundStatus();
-      await fetchData();
-      alert('환불 상태 동기화가 완료되었습니다.');
+      const refreshed=await fetchData();
+      if(refreshed) toast.success('환불 상태 동기화가 완료되었습니다.');
+      else toast.warning('동기화는 완료되었지만 내역 조회에 실패했습니다. 다시 조회해주세요.');
     } catch (error) {
-      alert('동기화에 실패했습니다.');
+      toast.error('동기화에 실패했습니다.');
     } finally {
       setSyncing(false);
     }
   };
 
-  const handleSearch = () => {
-    setPage(1);
-    fetchData();
-  };
-
-  const handleReset = () => {
-    filterForm.reset({
-      filterStatus: 'ALL',
-      searchTerm: '',
-      startDate: '',
-      endDate: '',
-    });
-    setPage(1);
-  };
-
-  const getStatusBadge = (status: AppleRefundStatus) => {
-    switch (status) {
-      case AppleRefundStatus.REFUNDED:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            환불 완료
-          </span>
-        );
-      case AppleRefundStatus.NONE:
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            정상
-          </span>
-        );
-    }
-  };
+  const handleSearch=filterForm.handleFormSubmit(async data=>{
+    if(data.startDate && data.endDate && data.startDate>data.endDate) return;
+    setPage(1);setAppliedFilters({...data,searchTerm:data.searchTerm.trim()});
+  });
+  const handleReset=()=>{filterForm.reset(DEFAULT_FILTERS);setPage(1);setAppliedFilters({...DEFAULT_FILTERS});};
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
@@ -120,231 +95,18 @@ function IOSRefundPageContent() {
     }).format(amount);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">iOS 환불 관리</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Apple App Store 인앱 결제 환불 내역을 관리합니다
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={handleSync}
-                disabled={syncing}
-                className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${
-                  syncing
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-[#ff385c] hover:bg-[#e00b41]'
-                }`}
-              >
-                {syncing ? '동기화 중...' : '환불 상태 동기화'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">필터</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  환불 상태
-                </label>
-                <select
-                  {...filterForm.register('filterStatus')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
-                >
-                  <option value="ALL">전체</option>
-                  <option value={AppleRefundStatus.NONE}>정상</option>
-                  <option value={AppleRefundStatus.REFUNDED}>환불 완료</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  사용자 검색
-                </label>
-                <input
-                  type="text"
-                  {...filterForm.register('searchTerm')}
-                  placeholder="사용자 이름 또는 ID"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  시작일
-                </label>
-                <input
-                  type="date"
-                  {...filterForm.register('startDate')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  종료일
-                </label>
-                <input
-                  type="date"
-                  {...filterForm.register('endDate')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                초기화
-              </button>
-              <button
-                onClick={handleSearch}
-                className="px-4 py-2 text-white bg-[#ff385c] rounded-lg hover:bg-[#e00b41] transition-colors"
-              >
-                검색
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">
-                환불 내역 <span className="text-gray-500 font-normal">({totalCount}건)</span>
-              </h2>
-            </div>
-
-            {loading ? (
-              <div className="flex justify-center items-center py-20">
-                <div className="w-8 h-8 border-4 border-[#ff385c] border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                <svg
-                  className="w-16 h-16 mb-4 text-gray-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                <p>환불 내역이 없습니다</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        사용자
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        상품 ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        거래 ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        금액
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        결제일
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        환불일
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        상태
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {items.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {item.userName}
-                          </div>
-                          <div className="text-sm text-gray-500">{item.userId}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.productId}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{item.transactionId}</div>
-                          <div className="text-xs text-gray-500">
-                            원본: {item.originalTransactionId}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(item.amount, item.currency)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(item.purchaseDate)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(item.refundDate)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(item.refundStatus)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {totalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                <div className="text-sm text-gray-500">
-                  {page} / {totalPages} 페이지
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      page === 1
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    이전
-                  </button>
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      page === totalPages
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    다음
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <main className="mx-auto max-w-7xl space-y-5 p-6">
+    <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">iOS 환불 관리</h1><p className="mt-1 text-sm text-gray-600">Apple App Store 인앱 결제 환불 내역을 관리합니다.</p></div><Button onPress={()=>void handleSync()} isDisabled={syncing || loading}>{syncing && <Spinner size="sm" aria-hidden="true"/>}{syncing?'동기화 중...':'환불 상태 동기화'}</Button></header>
+    {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 p-3"><p>{error}</p><Button variant="secondary" isDisabled={loading || syncing} onPress={()=>void fetchData()}>재시도</Button></div>}
+    <form className="space-y-4 rounded-xl border bg-white p-4" onSubmit={handleSearch}><h2 className="text-lg font-semibold">필터</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <Controller name="filterStatus" control={filterForm.control} render={({field})=><Select selectedKey={field.value} onSelectionChange={key=>key!=null && field.onChange(String(key))} isDisabled={loading || syncing}><Label>환불 상태</Label><Select.Trigger><Select.Value/><Select.Indicator/></Select.Trigger><Select.Popover><ListBox>{[{id:'ALL',label:'전체'},{id:AppleRefundStatus.NONE,label:'정상'},{id:AppleRefundStatus.REFUNDED,label:'환불 완료'}].map(option=><ListBox.Item key={option.id} id={option.id} textValue={option.label}>{option.label}<ListBox.ItemIndicator/></ListBox.Item>)}</ListBox></Select.Popover></Select>}/>
+      {(['searchTerm','startDate','endDate'] as const).map(name=><Controller key={name} name={name} control={filterForm.control} render={({field})=><TextField isDisabled={loading || syncing} isInvalid={name==='endDate' && reversedRange}><Label>{name==='searchTerm'?'사용자 검색':name==='startDate'?'시작일':'종료일'}</Label><Input {...field} type={name==='searchTerm'?'text':'date'} placeholder={name==='searchTerm'?'사용자 이름 또는 ID':undefined} min={name==='endDate' && startDate ? startDate:undefined}/></TextField>}/>)}
+    </div>{reversedRange && <p role="alert" className="text-sm text-danger">종료일은 시작일 이후여야 합니다.</p>}<div className="flex justify-end gap-2"><Button variant="secondary" onPress={handleReset} isDisabled={loading || syncing}>초기화</Button><Button type="submit" isDisabled={loading || syncing || reversedRange}>검색</Button></div></form>
+    <section className="overflow-hidden rounded-xl border bg-white"><h2 className="border-b p-4 text-lg font-semibold">환불 내역 <span className="font-normal text-gray-600">({totalCount}건)</span></h2>
+      {loading?<div role="status" aria-label="환불 내역 조회 중" className="flex justify-center p-10"><Spinner/></div>:!items.length?<p className="p-10 text-center text-gray-600">환불 내역이 없습니다</p>:<div className="overflow-x-auto"><table className="w-full text-sm"><caption className="sr-only">Apple 환불 거래 내역</caption><thead className="bg-gray-50"><tr>{['사용자','상품 ID','거래 ID','금액','결제일','환불일','상태'].map(title=><th key={title} scope="col" className="whitespace-nowrap border-b p-3 text-left">{title}</th>)}</tr></thead><tbody className="divide-y">{items.map(item=><tr key={item.id}><th scope="row" className="p-3 text-left font-normal"><p className="font-semibold">{item.userName}</p><p className="text-xs text-gray-600">{item.userId}</p></th><td className="p-3">{item.productId}</td><td className="p-3"><p>{item.transactionId}</p><p className="text-xs text-gray-600">원본: {item.originalTransactionId}</p></td><td className="whitespace-nowrap p-3">{formatCurrency(item.amount,item.currency)}</td><td className="whitespace-nowrap p-3 text-xs">{formatDate(item.purchaseDate)}</td><td className="whitespace-nowrap p-3 text-xs">{formatDate(item.refundDate)}</td><td className="p-3"><Chip size="sm" variant="soft" color={item.refundStatus===AppleRefundStatus.REFUNDED?'danger':'success'}>{item.refundStatus===AppleRefundStatus.REFUNDED?'환불 완료':'정상'}</Chip></td></tr>)}</tbody></table></div>}
+      {totalPages>1 && <footer className="flex flex-wrap items-center justify-between gap-3 border-t p-4"><p className="text-sm text-gray-600">{page} / {totalPages} 페이지</p><Pagination><Pagination.Content><Pagination.Item><Pagination.Previous isDisabled={loading || syncing || page===1} onPress={()=>setPage(p=>Math.max(1,p-1))}>이전</Pagination.Previous></Pagination.Item><Pagination.Item><Pagination.Next isDisabled={loading || syncing || page===totalPages} onPress={()=>setPage(p=>Math.min(totalPages,p+1))}>다음</Pagination.Next></Pagination.Item></Pagination.Content></Pagination></footer>}
+    </section>
+  </main>;
 }
 
-export default function IOSRefundPageV2() {
-  return <IOSRefundPageContent />;
-}
+export default function IOSRefundPageV2() {return <IOSRefundPageContent/>;}

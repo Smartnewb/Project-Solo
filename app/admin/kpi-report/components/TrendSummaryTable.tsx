@@ -1,109 +1,120 @@
-'use client';
-
-import {
-	Card,
-	CardContent,
-	Typography,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Skeleton,
-	Box,
-} from '@mui/material';
-import { KpiTrend, TREND_CONFIG } from '../types';
-
+"use client";
+import { Card, Skeleton } from "@heroui/react";
+import { KpiTrend, TREND_CONFIG } from "../types";
 interface TrendSummaryTableProps {
 	trends: KpiTrend[];
 	loading: boolean;
 }
-
-export default function TrendSummaryTable({ trends, loading }: TrendSummaryTableProps) {
+export default function TrendSummaryTable({
+	trends,
+	loading,
+}: TrendSummaryTableProps) {
 	if (loading) {
 		return (
 			<Card>
-				<CardContent>
-					<Skeleton variant="text" width={160} height={28} sx={{ mb: 2 }} />
+				<Card.Content>
+					<Skeleton
+						style={{ ...{ marginBottom: 16 }, ...{ width: 160, height: 28 } }}
+						className="rounded-xl"
+					/>
 					{[1, 2, 3, 4].map((i) => (
-						<Skeleton key={i} variant="rectangular" height={36} sx={{ mb: 1, borderRadius: 1 }} />
+						<Skeleton
+							key={i}
+							style={{
+								...{ marginBottom: 8, borderRadius: 8 },
+								...{ width: "100%", height: 36 },
+							}}
+							className="rounded-xl"
+						/>
 					))}
-				</CardContent>
+				</Card.Content>
 			</Card>
 		);
 	}
-
 	if (trends.length === 0) return null;
-
 	return (
 		<Card>
-			<CardContent>
-				<Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+			<Card.Content>
+				<h2
+					style={{ marginBottom: 16 }}
+					className={"text-lg font-semibold text-neutral-900"}
+				>
 					4주 트렌드 요약
-				</Typography>
-				<TableContainer>
-					<Table size="small">
-						<TableHead>
-							<TableRow>
-								<TableCell sx={{ fontWeight: 600 }}>KPI</TableCell>
+				</h2>
+				<div className={"overflow-x-auto"}>
+					<table
+						className={
+							"min-w-[520px] w-full text-sm text-left [&_td]:p-3 [&_th]:p-3 [&_td:nth-child(n+2)]:text-right [&_th:nth-child(n+2)]:text-right [&_thead]:bg-neutral-50 [&_tr]:border-b"
+						}
+					>
+						<thead>
+							<tr>
+								<th style={{ fontWeight: 600 }} scope="col">
+									KPI
+								</th>
 								{trends[0]?.points?.map((point, idx) => (
-									<TableCell key={idx} align="right" sx={{ fontWeight: 600 }}>
+									<th key={idx} style={{ fontWeight: 600 }} scope="col">
 										{point.weekLabel || `W${point.week}`}
-									</TableCell>
+									</th>
 								))}
-								<TableCell align="center" sx={{ fontWeight: 600 }}>방향</TableCell>
-								<TableCell align="right" sx={{ fontWeight: 600 }}>기울기</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
+								<th style={{ fontWeight: 600 }} scope="col">
+									방향
+								</th>
+								<th style={{ fontWeight: 600 }} scope="col">
+									기울기
+								</th>
+							</tr>
+						</thead>
+						<tbody>
 							{trends.map((trend) => {
 								const trendConfig = TREND_CONFIG[trend.direction];
 								return (
-									<TableRow key={trend.name} hover>
-										<TableCell>
-											<Typography variant="body2" fontWeight={500}>
+									<tr key={trend.name}>
+										<td>
+											<p className={"text-sm text-neutral-700"}>
 												{trend.label}
-											</Typography>
-										</TableCell>
+											</p>
+										</td>
 										{trend.points.map((point, idx) => (
-											<TableCell key={idx} align="right">
-												<Typography variant="body2">
+											<td key={idx}>
+												<p className={"text-sm text-neutral-700"}>
 													{point.value.toLocaleString()}
-												</Typography>
-											</TableCell>
+												</p>
+											</td>
 										))}
-										<TableCell align="center">
-											<Box
-												component="span"
-												sx={{
+										<td>
+											<span
+												style={{
 													color: trendConfig.color,
-													fontWeight: 'bold',
-													fontSize: '1.2rem',
+													fontWeight: "bold",
+													fontSize: "1.2rem",
 												}}
 											>
 												{trendConfig.arrow}
-											</Box>
-											<Typography variant="caption" sx={{ color: trendConfig.color, ml: 0.5 }}>
-												{trendConfig.label}
-											</Typography>
-										</TableCell>
-										<TableCell align="right">
-											<Typography
-												variant="body2"
-												fontWeight="bold"
-												sx={{ color: trendConfig.color }}
+											</span>
+											<span
+												style={{ color: trendConfig.color, marginLeft: 4 }}
+												className={"text-sm text-neutral-700"}
 											>
-												{trend.slope > 0 ? '+' : ''}{trend.slope.toFixed(2)}
-											</Typography>
-										</TableCell>
-									</TableRow>
+												{trendConfig.label}
+											</span>
+										</td>
+										<td>
+											<p
+												style={{ color: trendConfig.color }}
+												className={"text-sm text-neutral-700"}
+											>
+												{trend.slope > 0 ? "+" : ""}
+												{trend.slope.toFixed(2)}
+											</p>
+										</td>
+									</tr>
 								);
 							})}
-						</TableBody>
-					</Table>
-				</TableContainer>
-			</CardContent>
+						</tbody>
+					</table>
+				</div>
+			</Card.Content>
 		</Card>
 	);
 }

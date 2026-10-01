@@ -1,14 +1,15 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   DOMAIN_LABEL,
   type AiProfileDomain,
-} from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -16,12 +17,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   open: boolean;
@@ -46,14 +47,14 @@ export function FieldRegenerateDialog({
     aiProfileGeneratorKeys.draftDetail(draftId),
   );
   const [path, setPath] = useState(initialPath);
-  const [instruction, setInstruction] = useState('');
-  const [promptVersionId, setPromptVersionId] = useState('');
+  const [instruction, setInstruction] = useState("");
+  const [promptVersionId, setPromptVersionId] = useState("");
 
   useEffect(() => {
     if (open) {
       setPath(initialPath);
-      setInstruction('');
-      setPromptVersionId('');
+      setInstruction("");
+      setPromptVersionId("");
     }
   }, [open, initialPath]);
 
@@ -66,7 +67,7 @@ export function FieldRegenerateDialog({
         promptVersionId: promptVersionId.trim() || undefined,
       }),
     onSuccess: () => {
-      toast.success('필드를 재생성했습니다.');
+      toast.success("필드를 재생성했습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -123,14 +124,20 @@ export function FieldRegenerateDialog({
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={mutation.isPending}
+            isDisabled={mutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
-          <Button onClick={() => mutation.mutate()} disabled={!canSubmit}>
-            {mutation.isPending ? '재생성 중…' : '재생성'}
+          <Button
+            onClick={() => mutation.mutate()}
+            isDisabled={!canSubmit}
+            variant={"primary"}
+            size={"md"}
+          >
+            {mutation.isPending ? "재생성 중…" : "재생성"}
           </Button>
         </DialogFooter>
       </DialogContent>

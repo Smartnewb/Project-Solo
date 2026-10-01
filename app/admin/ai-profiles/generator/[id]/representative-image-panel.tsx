@@ -1,12 +1,13 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import type { AiProfileGalleryItem } from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
+import type { AiProfileGalleryItem } from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   draftId: string;
@@ -36,7 +37,7 @@ export function RepresentativeImagePanel({
         representativeImageUrl: url,
       }),
     onSuccess: () => {
-      toast.success('대표 이미지가 설정되었습니다.');
+      toast.success("대표 이미지가 설정되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -51,7 +52,7 @@ export function RepresentativeImagePanel({
         representativeImageUrl: null,
       }),
     onSuccess: () => {
-      toast.success('대표 이미지가 해제되었습니다.');
+      toast.success("대표 이미지가 해제되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -59,8 +60,7 @@ export function RepresentativeImagePanel({
     onError: handleError,
   });
 
-  const disabled =
-    readOnly || setMutation.isPending || clearMutation.isPending;
+  const disabled = readOnly || setMutation.isPending || clearMutation.isPending;
 
   return (
     <Card className="flex flex-col">
@@ -81,14 +81,16 @@ export function RepresentativeImagePanel({
           )}
         </div>
         {!readOnly && representativeImageUrl ? (
-          <button
+          <Button
             type="button"
             onClick={() => clearMutation.mutate()}
-            disabled={disabled}
             className="text-xs text-rose-600 hover:underline disabled:opacity-60"
+            isDisabled={disabled}
+            variant={"secondary"}
+            size={"md"}
           >
             대표 이미지 해제
-          </button>
+          </Button>
         ) : null}
         {gallery.length > 0 ? (
           <div className="space-y-1">
@@ -101,16 +103,18 @@ export function RepresentativeImagePanel({
                   representativeImageUrl !== null &&
                   representativeImageUrl === item.url;
                 return (
-                  <button
+                  <Button
                     key={`${item.url}-${idx}`}
                     type="button"
                     onClick={() => setMutation.mutate(item.url)}
-                    disabled={disabled || isCurrent}
                     className={`relative aspect-square overflow-hidden rounded-md border ${
                       isCurrent
-                        ? 'border-emerald-500 ring-2 ring-emerald-300'
-                        : 'border-slate-200 hover:border-slate-400'
-                    } ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                        ? "border-emerald-500 ring-2 ring-emerald-300"
+                        : "border-slate-200 hover:border-slate-400"
+                    } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                    isDisabled={disabled || isCurrent}
+                    variant={"secondary"}
+                    size={"md"}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -118,7 +122,7 @@ export function RepresentativeImagePanel({
                       alt=""
                       className="h-full w-full object-cover"
                     />
-                  </button>
+                  </Button>
                 );
               })}
             </div>

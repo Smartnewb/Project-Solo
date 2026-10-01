@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { AgeAnalysis, paymentType } from "../types";
 import { formateDateToString } from "../utils";

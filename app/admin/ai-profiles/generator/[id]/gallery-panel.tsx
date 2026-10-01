@@ -1,13 +1,14 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import type { AiProfileGalleryItem } from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
+import type { AiProfileGalleryItem } from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -15,9 +16,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/dialog";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   draftId: string;
@@ -48,7 +49,7 @@ export function GalleryPanel({
       });
     },
     onSuccess: () => {
-      toast.success('갤러리 항목이 제거되었습니다.');
+      toast.success("갤러리 항목이 제거되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -76,14 +77,16 @@ export function GalleryPanel({
                 className="relative flex flex-col gap-1 rounded-md border border-slate-200 p-1"
               >
                 {!readOnly ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setPendingIndex(idx)}
                     className="absolute right-1 top-1 z-10 rounded-full bg-white/90 p-0.5 text-slate-600 shadow hover:bg-red-100 hover:text-red-600"
                     aria-label="갤러리에서 제거"
+                    variant={"secondary"}
+                    size={"md"}
                   >
                     <X className="h-3.5 w-3.5" />
-                  </button>
+                  </Button>
                 ) : null}
                 <div className="aspect-square overflow-hidden rounded-md bg-slate-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -116,26 +119,28 @@ export function GalleryPanel({
           <DialogHeader>
             <DialogTitle>갤러리 항목 제거</DialogTitle>
             <DialogDescription>
-              이 항목을 갤러리에서 제거하시겠습니까? 원본 미디어는 유지되며, 필요
-              시 다시 추가할 수 있습니다.
+              이 항목을 갤러리에서 제거하시겠습니까? 원본 미디어는 유지되며,
+              필요 시 다시 추가할 수 있습니다.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
-              variant="outline"
               onClick={() => setPendingIndex(null)}
-              disabled={removeMutation.isPending}
+              isDisabled={removeMutation.isPending}
+              variant={"outline"}
+              size={"md"}
             >
               취소
             </Button>
             <Button
-              variant="destructive"
               onClick={() => {
                 if (pendingIndex !== null) removeMutation.mutate(pendingIndex);
               }}
-              disabled={removeMutation.isPending}
+              isDisabled={removeMutation.isPending}
+              variant={"danger"}
+              size={"md"}
             >
-              {removeMutation.isPending ? '제거 중…' : '제거'}
+              {removeMutation.isPending ? "제거 중…" : "제거"}
             </Button>
           </DialogFooter>
         </DialogContent>

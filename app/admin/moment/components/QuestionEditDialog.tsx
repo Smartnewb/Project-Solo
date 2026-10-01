@@ -1,25 +1,27 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+"use client";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  Spinner,
+  TextArea,
   TextField,
-  Box,
-  Typography,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
-import type { QuestionDetail } from '@/types/moment';
+} from "@heroui/react";
+
+import { useState, useEffect } from "react";
+
+import type { QuestionDetail } from "@/types/moment";
 
 interface QuestionEditDialogProps {
   open: boolean;
   onClose: () => void;
   question: QuestionDetail | null;
-  onSave: (id: string, data: { text?: string; options?: { text: string; order: number }[] }) => Promise<void>;
+  onSave: (
+    id: string,
+    data: { text?: string; options?: { text: string; order: number }[] },
+  ) => Promise<void>;
   processing: boolean;
 }
 
@@ -30,7 +32,7 @@ export default function QuestionEditDialog({
   onSave,
   processing,
 }: QuestionEditDialogProps) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [options, setOptions] = useState<{ text: string; order: number }[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,14 +42,14 @@ export default function QuestionEditDialog({
       setOptions(
         (Array.isArray(question.options) ? question.options : [])
           .sort((a, b) => a.order - b.order)
-          .map((o) => ({ text: o.text, order: o.order }))
+          .map((o) => ({ text: o.text, order: o.order })),
       );
     }
   }, [question]);
 
   const handleOptionChange = (index: number, value: string) => {
     setOptions((prev) =>
-      prev.map((opt, i) => (i === index ? { ...opt, text: value } : opt))
+      prev.map((opt, i) => (i === index ? { ...opt, text: value } : opt)),
     );
   };
 
@@ -55,12 +57,12 @@ export default function QuestionEditDialog({
     if (!question) return;
 
     if (!text.trim()) {
-      setError('질문 텍스트를 입력해주세요.');
+      setError("질문 텍스트를 입력해주세요.");
       return;
     }
 
     if (options.some((o) => !o.text.trim())) {
-      setError('모든 선택지를 입력해주세요.');
+      setError("모든 선택지를 입력해주세요.");
       return;
     }
 
@@ -72,7 +74,7 @@ export default function QuestionEditDialog({
         options: options.map((o) => ({ text: o.text.trim(), order: o.order })),
       });
     } catch (err) {
-      setError('저장에 실패했습니다.');
+      setError("저장에 실패했습니다.");
     }
   };
 
@@ -84,57 +86,78 @@ export default function QuestionEditDialog({
   if (!question) return null;
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>질문 수정</DialogTitle>
-      <DialogContent dividers>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        <TextField
-          label="질문 텍스트"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          fullWidth
-          multiline
-          rows={3}
-          sx={{ mb: 3 }}
-        />
-
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          선택지 (5개 필수)
-        </Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {options.map((option, index) => (
-            <TextField
-              key={index}
-              label={`선택지 ${option.order}`}
-              value={option.text}
-              onChange={(e) => handleOptionChange(index, e.target.value)}
-              size="small"
-              fullWidth
-            />
-          ))}
-        </Box>
-
-        <Alert severity="info" sx={{ mt: 2 }}>
-          번역된 질문(JP 스키마)은 자동으로 업데이트되지 않습니다. 수정 후 다시 번역해주세요.
-        </Alert>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={processing}>
-          취소
-        </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          disabled={processing}
-        >
-          {processing ? <CircularProgress size={24} /> : '저장'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <Modal.Backdrop
+      isOpen={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleClose();
+      }}
+    >
+      <Modal.Container>
+        <Modal.Dialog className="max-w-3xl">
+          <Modal.Heading>질문 수정</Modal.Heading>
+          <Modal.Body>
+            {error && (
+              <div
+                role="alert"
+                className="rounded-lg border border-default p-3 text-sm"
+                style={{ marginBottom: 16 }}
+              >
+                {error}
+                <Button
+                  variant="secondary"
+                  aria-label="알림 닫기"
+                  onClick={() => setError(null)}
+                >
+                  닫기
+                </Button>
+              </div>
+            )}
+            <TextField style={{ marginBottom: 24 }}>
+              <Label>{"질문 텍스트"}</Label>
+              <TextArea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+            </TextField>
+            <p>선택지 (5개 필수)</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {options.map((option, index) => (
+                <TextField key={index}>
+                  <Label>{`선택지 ${option.order}`}</Label>
+                  <Input
+                    value={option.text}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                  />
+                </TextField>
+              ))}
+            </div>
+            <div
+              role="alert"
+              className="rounded-lg border border-default p-3 text-sm"
+              style={{ marginTop: 16 }}
+            >
+              번역된 질문(JP 스키마)은 자동으로 업데이트되지 않습니다. 수정 후
+              다시 번역해주세요.
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              onClick={handleClose}
+              variant={"secondary"}
+              isDisabled={processing}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSave}
+              variant={"primary"}
+              isDisabled={processing}
+            >
+              {processing ? <Spinner aria-label="로딩 중" /> : "저장"}
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }

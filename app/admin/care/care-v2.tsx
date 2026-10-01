@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Box, Typography } from '@mui/material';
 import AdminService from '@/app/services/admin';
 import type { CareTarget, CarePartner } from '@/app/services/admin/care';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
@@ -72,18 +71,20 @@ function CareV2Content() {
 			setPartners([]);
 			return;
 		}
+		let cancelled = false;
 		const fetchPartners = async () => {
 			try {
 				setPartnersLoading(true);
 				const data = await AdminService.care.getPartners(selectedTarget.user_id);
-				setPartners(data);
+				if (!cancelled) setPartners(data);
 			} catch {
-				setPartners([]);
+				if (!cancelled) setPartners([]);
 			} finally {
-				setPartnersLoading(false);
+				if (!cancelled) setPartnersLoading(false);
 			}
 		};
 		fetchPartners();
+		return () => { cancelled = true; };
 	}, [selectedTarget]);
 
 	// 무시 핸들러
@@ -140,6 +141,7 @@ function CareV2Content() {
 	};
 
 	const handleModalClose = () => {
+        if (executing) return;
 		setModalOpen(false);
 		setSelectedPartner(null);
 		setExecuteError(null);
@@ -154,10 +156,10 @@ function CareV2Content() {
 	}, [targets]);
 
 	return (
-		<Box sx={{ p: 3 }}>
-			<Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
+		<section className="space-y-4">
+			<h1 className="text-2xl font-bold">
 				유저 집중 케어
-			</Typography>
+			</h1>
 			<CareStats
 				pending={stats.pending}
 				cared={stats.cared}
@@ -165,12 +167,12 @@ function CareV2Content() {
 				loading={loading}
 			/>
 			{error && (
-				<Typography color="error" sx={{ mb: 2 }}>
+				<p role="alert" className="text-danger">
 					{error}
-				</Typography>
+				</p>
 			)}
-			<Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-				<Box sx={{ width: 320, flexShrink: 0 }}>
+			<div className="grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+				<div>
 					<CareTargetList
 						targets={targets}
 						selectedTarget={selectedTarget}
@@ -183,7 +185,7 @@ function CareV2Content() {
 							fetchTargets(page, searchTerm || undefined)
 						}
 					/>
-				</Box>
+				</div>
 				<CareDetailPanel
 					target={selectedTarget}
 					partners={partners}
@@ -192,8 +194,9 @@ function CareV2Content() {
 					onSelectPartner={handleSelectPartner}
 					dismissLoading={dismissLoading}
 				/>
-			</Box>
+			</div>
 			<CareExecuteModal
+                key={`${selectedTarget?.id ?? ""}:${selectedPartner?.userId ?? ""}`}
 				open={modalOpen}
 				onClose={handleModalClose}
 				target={selectedTarget}
@@ -202,7 +205,7 @@ function CareV2Content() {
 				executing={executing}
 				executeError={executeError}
 			/>
-		</Box>
+		</section>
 	);
 }
 

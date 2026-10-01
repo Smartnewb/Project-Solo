@@ -1,80 +1,97 @@
-'use client';
-
-import { Box, Card, CardContent, Typography } from '@mui/material';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
-import type { PeriodComparison as PeriodComparisonType, PeriodComparisonMetric } from '../types';
-
+"use client";
+import { Card } from "@heroui/react";
+import { TrendingDown, Minus, TrendingUp } from "lucide-react";
+import type {
+	PeriodComparison as PeriodComparisonType,
+	PeriodComparisonMetric,
+} from "../types";
 const METRIC_LABELS: Record<string, string> = {
-	matchesCreated: '매칭 생성',
-	likesSent: '좋아요 발송',
-	mutualAccepted: '상호 수락',
-	chatRoomsOpened: '채팅 개설',
+	matchesCreated: "매칭 생성",
+	likesSent: "좋아요 발송",
+	mutualAccepted: "상호 수락",
+	chatRoomsOpened: "채팅 개설",
 };
-
-export default function PeriodComparisonSection({ data }: { data: PeriodComparisonType }) {
-	const metrics: { key: string; metric: PeriodComparisonMetric }[] = [
-		{ key: 'matchesCreated', metric: data.matchesCreated },
-		{ key: 'likesSent', metric: data.likesSent },
-		{ key: 'mutualAccepted', metric: data.mutualAccepted },
-		{ key: 'chatRoomsOpened', metric: data.chatRoomsOpened },
+export default function PeriodComparisonSection({
+	data,
+}: {
+	data: PeriodComparisonType;
+}) {
+	const metrics: {
+		key: string;
+		metric: PeriodComparisonMetric;
+	}[] = [
+		{ key: "matchesCreated", metric: data.matchesCreated },
+		{ key: "likesSent", metric: data.likesSent },
+		{ key: "mutualAccepted", metric: data.mutualAccepted },
+		{ key: "chatRoomsOpened", metric: data.chatRoomsOpened },
 	];
-
 	return (
 		<Card>
-			<CardContent>
-				<Typography variant="subtitle1" fontWeight={700} gutterBottom>
-					전기 대비 변화
-				</Typography>
-				<Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+			<Card.Content>
+				<p className={"text-sm text-neutral-700"}>전기 대비 변화</p>
+				<div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
 					{metrics.map(({ key, metric }) => (
-						<ComparisonCard key={key} label={METRIC_LABELS[key]} metric={metric} />
+						<ComparisonCard
+							key={key}
+							label={METRIC_LABELS[key]}
+							metric={metric}
+						/>
 					))}
-				</Box>
-			</CardContent>
+				</div>
+			</Card.Content>
 		</Card>
 	);
 }
-
-function ComparisonCard({ label, metric }: { label: string; metric: PeriodComparisonMetric }) {
+function ComparisonCard({
+	label,
+	metric,
+}: {
+	label: string;
+	metric: PeriodComparisonMetric;
+}) {
 	const delta = metric.deltaPercent;
 	const isUp = delta != null && delta > 0;
 	const isDown = delta != null && delta < 0;
-
 	return (
-		<Box
-			sx={{
+		<div
+			style={{
 				flex: 1,
 				minWidth: 160,
-				p: 2,
-				borderRadius: 2,
-				border: '1px solid',
-				borderColor: 'divider',
-				textAlign: 'center',
+				padding: 16,
+				borderRadius: 16,
+				border: "1px solid",
+				textAlign: "center",
 			}}
 		>
-			<Typography variant="caption" color="text.secondary">
-				{label}
-			</Typography>
-			<Typography variant="h5" fontWeight={700}>
+			<span className={"text-sm text-neutral-700"}>{label}</span>
+			<h2 className={"text-lg font-semibold text-neutral-900"}>
 				{metric.current.toLocaleString()}
-			</Typography>
-			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mt: 0.5 }}>
-				{isUp && <TrendingUpIcon sx={{ fontSize: 16, color: '#16a34a' }} />}
-				{isDown && <TrendingDownIcon sx={{ fontSize: 16, color: '#dc2626' }} />}
-				{!isUp && !isDown && <TrendingFlatIcon sx={{ fontSize: 16, color: '#9ca3af' }} />}
-				<Typography
-					variant="body2"
-					fontWeight={600}
-					color={isUp ? '#16a34a' : isDown ? '#dc2626' : 'text.secondary'}
-				>
-					{delta != null ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}%` : '-'}
-				</Typography>
-				<Typography variant="caption" color="text.secondary">
+			</h2>
+			<div
+				style={{
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					gap: 4,
+					marginTop: 4,
+				}}
+			>
+				{isUp && (
+					<TrendingUp style={{ fontSize: 16, color: "#16a34a" }} size={18} />
+				)}
+				{isDown && (
+					<TrendingDown style={{ fontSize: 16, color: "#dc2626" }} size={18} />
+				)}
+				{!isUp && !isDown && (
+					<Minus style={{ fontSize: 16, color: "#9ca3af" }} size={18} />
+				)}
+				<p className={"text-sm text-neutral-700"}>
+					{delta != null ? `${delta > 0 ? "+" : ""}${delta.toFixed(1)}%` : "-"}
+				</p>
+				<span className={"text-sm text-neutral-700"}>
 					(전기 {metric.previous.toLocaleString()})
-				</Typography>
-			</Box>
-		</Box>
+				</span>
+			</div>
+		</div>
 	);
 }

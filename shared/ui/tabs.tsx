@@ -1,55 +1,41 @@
-"use client"
-
-import * as React from "react"
-import * as TabsPrimitive from "@radix-ui/react-tabs"
-
-import { cn } from "@/shared/utils/index"
-
-const Tabs = TabsPrimitive.Root
-
-const TabsList = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      "inline-flex min-h-10 items-center justify-center rounded-full bg-[#f7f7f7] p-1 text-[#6a6a6a]",
-      className
-    )}
-    {...props}
-  />
-))
-TabsList.displayName = TabsPrimitive.List.displayName
-
-const TabsTrigger = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#222222] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-[#222222] data-[state=active]:shadow-card",
-      className
-    )}
-    {...props}
-  />
-))
-TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
-
-const TabsContent = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      "mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#222222] focus-visible:ring-offset-2",
-      className
-    )}
-    {...props}
-  />
-))
-TabsContent.displayName = TabsPrimitive.Content.displayName
-
-export { Tabs, TabsList, TabsTrigger, TabsContent }
+"use client";
+import * as React from "react";
+import { Tabs as HeroTabs } from "@heroui/react";
+type Props = Omit<
+	React.ComponentProps<typeof HeroTabs>,
+	"selectedKey" | "onSelectionChange"
+> & {
+	value?: string;
+	defaultValue?: string;
+	onValueChange?: (value: string) => void;
+};
+function Tabs({ value, defaultValue, onValueChange, ...props }: Props) {
+	return (
+		<HeroTabs
+			{...props}
+			selectedKey={value}
+			defaultSelectedKey={defaultValue}
+			onSelectionChange={(key) => onValueChange?.(String(key))}
+		/>
+	);
+}
+const TabsList = HeroTabs.List;
+function TabsTrigger({
+	value,
+	disabled,
+	...props
+}: Omit<React.ComponentProps<typeof HeroTabs.Tab>, "id"> & {
+	value: string;
+	disabled?: boolean;
+}) {
+	return <HeroTabs.Tab {...props} id={value} isDisabled={disabled} />;
+}
+function TabsContent({
+	value,
+	...props
+}: Omit<React.ComponentProps<typeof HeroTabs.Panel>, "id"> & {
+	value: string;
+}) {
+	return <HeroTabs.Panel {...props} id={value} />;
+}
+export { Tabs, TabsList, TabsTrigger, TabsContent };

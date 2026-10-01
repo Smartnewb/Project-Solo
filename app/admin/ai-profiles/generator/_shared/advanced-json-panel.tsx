@@ -1,15 +1,16 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { Alert, AlertDescription } from '@/shared/ui/alert';
-import { Button } from '@/shared/ui/button';
+import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
+
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/shared/ui/collapsible';
-import { Textarea } from '@/shared/ui/textarea';
+} from "@/shared/ui/collapsible";
+import { Textarea } from "@/shared/ui/textarea";
 
 interface Props {
   label?: string;
@@ -19,12 +20,12 @@ interface Props {
 }
 
 function toText(value: Record<string, unknown>): string {
-  if (!value || Object.keys(value).length === 0) return '';
+  if (!value || Object.keys(value).length === 0) return "";
   return JSON.stringify(value, null, 2);
 }
 
 export function AdvancedJsonPanel({
-  label = '추가 키 (고급)',
+  label = "추가 키 (고급)",
   value,
   onChange,
   disabled,
@@ -48,11 +49,11 @@ export function AdvancedJsonPanel({
     try {
       const parsed = JSON.parse(trimmed);
       if (
-        typeof parsed !== 'object' ||
+        typeof parsed !== "object" ||
         parsed === null ||
         Array.isArray(parsed)
       ) {
-        setError('객체(JSON) 형식이 필요합니다.');
+        setError("객체(JSON) 형식이 필요합니다.");
         return;
       }
       setError(null);
@@ -75,10 +76,10 @@ export function AdvancedJsonPanel({
           </p>
           <Button
             type="button"
-            size="sm"
-            variant="outline"
             onClick={applyDraft}
-            disabled={disabled}
+            isDisabled={disabled}
+            variant={"outline"}
+            size={"sm"}
           >
             적용
           </Button>

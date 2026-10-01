@@ -2,22 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-	Alert,
-	Box,
-	Button,
-	CircularProgress,
-	Dialog,
-	IconButton,
-	Snackbar,
-	Typography,
-	useMediaQuery,
-	useTheme,
-} from '@mui/material';
-import {
-	Close as CloseIcon,
-	OpenInFull as OpenInFullIcon,
-} from '@mui/icons-material';
+import { Button, Modal, Spinner } from '@heroui/react';
+import { X, Maximize } from 'lucide-react';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import GhostChatPanel from './components/GhostChatPanel';
 import GhostChatStatusBar from './components/GhostChatStatusBar';
 import GhostContextPanel from './components/GhostContextPanel';
@@ -52,8 +39,14 @@ function compactTargetProfile(context: GhostChatSessionContext | null | undefine
 }
 
 function GhostChatV2Content() {
-	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 899px)');
+    const update = () => setIsMobile(query.matches);
+    update(); query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  const toast = useToast();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const sessionFromUrl = searchParams?.get('session') ?? null;
@@ -61,9 +54,8 @@ function GhostChatV2Content() {
 
 	const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
 	const [mobileView, setMobileView] = useState<GhostMobileView>(() =>
-		isMobile && sessionFromUrl ? 'chat' : 'list',
+		sessionFromUrl ? 'chat' : 'list',
 	);
-	const [snackbarOpen, setSnackbarOpen] = useState(false);
 	const [fullScreenOpen, setFullScreenOpen] = useState(false);
 	const [detailPanelOpen, setDetailPanelOpen] = useState(true);
 	const initializedSessionFromUrlRef = useRef<string | null>(null);
@@ -117,9 +109,9 @@ function GhostChatV2Content() {
 
 	useEffect(() => {
 		if (newSessionIds.size > 0) {
-			setSnackbarOpen(true);
+			toast.info(`새 Ghost Chat 세션 ${newSessionIds.size}건 도착`);
 		}
-	}, [newSessionIds.size]);
+	}, [newSessionIds.size, toast]);
 
 	const handleSelectSession = useCallback(
 		(id: string) => {
@@ -177,11 +169,7 @@ function GhostChatV2Content() {
 		/>
 	);
 
-	const filterNotice = ghostAccountIdFromUrl ? (
-		<Alert severity="info">
-			프로필 {ghostAccountIdFromUrl} 기준으로 생성된 Ghost Chat 세션만 표시 중입니다.
-		</Alert>
-	) : null;
+  const filterNotice = ghostAccountIdFromUrl ? <p className="rounded-lg border p-3 text-sm">프로필 {ghostAccountIdFromUrl} 기준으로 생성된 Ghost Chat 세션만 표시 중입니다.</p> : null;
 
 	const queue = (
 		<GhostSessionQueue
@@ -217,187 +205,35 @@ function GhostChatV2Content() {
 	);
 
 	const context = <GhostContextPanel session={selectedSession} context={selectedContext} />;
-	const fullScreenDialog = (
-		<Dialog fullScreen open={fullScreenOpen} onClose={() => setFullScreenOpen(false)}>
-			<Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-				<Box
-					sx={{
-						px: 2,
-						py: 1.25,
-						borderBottom: 1,
-						borderColor: 'divider',
-						display: 'flex',
-						alignItems: 'center',
-						gap: 1,
-					}}
-				>
-					<Typography variant="subtitle1" sx={{ flex: 1, fontWeight: 900 }}>
-						Ghost Chat 전체 대응
-					</Typography>
-					<IconButton onClick={() => setFullScreenOpen(false)} aria-label="전체 화면 닫기">
-						<CloseIcon />
-					</IconButton>
-				</Box>
-				<Box
-					sx={{
-						flex: 1,
-						minHeight: 0,
-						display: 'grid',
-						gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 380px' },
-					}}
-				>
-					<GhostChatPanel
-						session={selectedSession}
-						context={selectedContext}
-						messages={selectedMessages}
-						loading={loading}
-						messagesLoading={messagesLoading}
-						actionLoading={actionLoading}
-						onSendMessage={sendMessage}
-						onClose={closeSession}
-						fullScreenMode
-					/>
-					<Box sx={{ display: { xs: 'none', lg: 'block' }, minHeight: 0 }}>
-						{context}
-					</Box>
-				</Box>
-			</Box>
-		</Dialog>
-	);
+  const fullScreenDialog = <Modal.Backdrop isOpen={fullScreenOpen} onOpenChange={setFullScreenOpen}>
+    <Modal.Container size="full"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>Ghost Chat 전체 대응</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="전체 화면 닫기" onPress={()=>setFullScreenOpen(false)}><X size={18}/></Button></Modal.Header>
+      <Modal.Body className="grid min-h-0 flex-1 overflow-hidden p-0 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <GhostChatPanel session={selectedSession} context={selectedContext} messages={selectedMessages} loading={loading} messagesLoading={messagesLoading} actionLoading={actionLoading} onSendMessage={sendMessage} onClose={closeSession} fullScreenMode/>
+        <div className="hidden min-h-0 border-l lg:block">{context}</div>
+      </Modal.Body>
+    </Modal.Dialog></Modal.Container>
+  </Modal.Backdrop>;
+  const notices = <>{filterNotice}{usingDevMocks && <p className="rounded-lg border p-3 text-sm">개발 환경 목업 데이터로 Ghost Chat UI를 표시 중입니다.</p>}{error && <p role="alert" className="rounded-lg border border-red-200 p-3">{error}</p>}</>;
+  const loadingState = <div role="status" className="flex flex-1 items-center justify-center gap-3"><Spinner/><p className="text-sm text-gray-600">Ghost Chat 세션을 불러오는 중입니다.</p></div>;
 
-	if (isMobile) {
-		return (
-			<Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-				{mobileView === 'list' && statusBar}
-				{mobileView === 'list' && filterNotice}
-				{usingDevMocks && (
-					<Alert severity="info">개발 환경 목업 데이터로 Ghost Chat UI를 표시 중입니다.</Alert>
-				)}
-				{error && <Alert severity="error">{error}</Alert>}
-				{loading && sessions.length === 0 ? (
-					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-						<CircularProgress size={28} />
-					</Box>
-				) : (
-					<Box sx={{ flex: 1, overflow: 'hidden' }}>
-						{mobileView === 'list' && queue}
-						{mobileView === 'chat' && (
-							<Box sx={{ height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-								<Box sx={{ minHeight: 520 }}>{chat}</Box>
-								<Box sx={{ minHeight: 360 }}>{context}</Box>
-							</Box>
-						)}
-						{mobileView === 'context' && context}
-					</Box>
-				)}
-				<Snackbar
-					open={snackbarOpen}
-					autoHideDuration={4000}
-					onClose={() => setSnackbarOpen(false)}
-					message={`새 Ghost Chat 세션 ${newSessionIds.size}건 도착`}
-				/>
-				{fullScreenDialog}
-			</Box>
-		);
-	}
+  if (isMobile) return <main className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 p-3">
+    {mobileView==='list' && statusBar}{notices}
+    {loading && !sessions.length ? loadingState : <div className="min-h-0 flex-1 overflow-hidden">
+      {mobileView==='list' && queue}{mobileView==='chat' && <div className="flex h-full flex-col gap-3 overflow-y-auto"><div className="min-h-[520px]">{chat}</div><div className="min-h-[360px]">{context}</div></div>}{mobileView==='context' && context}
+    </div>}{fullScreenDialog}
+  </main>;
 
-	return (
-		<Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-			{statusBar}
-			{filterNotice}
-			{usingDevMocks && (
-				<Alert severity="info">개발 환경 목업 데이터로 Ghost Chat UI를 표시 중입니다.</Alert>
-			)}
-			{error && <Alert severity="error">{error}</Alert>}
-			{selectedSession && !detailPanelOpen && (
-				<Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-					<Button
-						size="small"
-						variant="outlined"
-						startIcon={<OpenInFullIcon fontSize="small" />}
-						onClick={() => setDetailPanelOpen(true)}
-					>
-						우측 패널 열기
-					</Button>
-				</Box>
-			)}
-			{loading && sessions.length === 0 ? (
-				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-					<CircularProgress size={32} />
-					<Typography variant="body2" color="text.secondary" sx={{ ml: 1.5 }}>
-						Ghost Chat 세션을 불러오는 중입니다.
-					</Typography>
-				</Box>
-			) : (
-				<Box
-					sx={{
-						flex: 1,
-						minHeight: 0,
-						display: 'grid',
-						gridTemplateColumns: detailPanelOpen
-							? {
-								md: 'minmax(0, 1fr) minmax(560px, 42vw)',
-								xl: 'minmax(0, 1fr) minmax(640px, 44vw)',
-							}
-							: '1fr',
-						border: 1,
-						borderColor: 'divider',
-						borderRadius: 2,
-						overflow: 'hidden',
-						bgcolor: 'background.paper',
-					}}
-				>
-					<Box sx={{ minHeight: 0 }}>{queue}</Box>
-					{detailPanelOpen && (
-						<Box
-							sx={{
-								minWidth: 0,
-								minHeight: 0,
-								borderLeft: 1,
-								borderColor: 'divider',
-								display: 'grid',
-								gridTemplateRows: '44px minmax(260px, 34%) minmax(0, 1fr)',
-							}}
-						>
-							<Box
-								sx={{
-									px: 1.5,
-									borderBottom: 1,
-									borderColor: 'divider',
-									display: 'flex',
-									alignItems: 'center',
-									gap: 1,
-									bgcolor: 'background.paper',
-								}}
-							>
-								<Typography variant="subtitle2" sx={{ flex: 1, fontWeight: 900 }} noWrap>
-									상세 패널
-								</Typography>
-								<IconButton
-									size="small"
-									onClick={() => setDetailPanelOpen(false)}
-									aria-label="우측 상세 패널 닫기"
-								>
-									<CloseIcon fontSize="small" />
-								</IconButton>
-							</Box>
-							<Box sx={{ minHeight: 0 }}>{context}</Box>
-							<Box sx={{ minHeight: 0, borderTop: 1, borderColor: 'divider' }}>{chat}</Box>
-						</Box>
-					)}
-				</Box>
-			)}
-			<Snackbar
-				open={snackbarOpen}
-				autoHideDuration={4000}
-				onClose={() => setSnackbarOpen(false)}
-				message={`새 Ghost Chat 세션 ${newSessionIds.size}건 도착`}
-			/>
-			{fullScreenDialog}
-		</Box>
-	);
+  return <main className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col gap-3 p-4">
+    {statusBar}{notices}
+    {selectedSession && !detailPanelOpen && <div className="flex justify-end"><Button size="sm" variant="secondary" onPress={()=>setDetailPanelOpen(true)}><Maximize size={16}/>우측 패널 열기</Button></div>}
+    {loading && !sessions.length ? loadingState : <div className={`grid min-h-0 flex-1 overflow-hidden rounded-xl border bg-white ${detailPanelOpen?'grid-cols-[minmax(0,1fr)_minmax(0,42%)]':''}`}>
+      <div className="min-h-0 min-w-0">{queue}</div>
+      {detailPanelOpen && <section className="grid min-h-0 min-w-0 grid-rows-[44px_minmax(200px,34%)_minmax(0,1fr)] border-l">
+        <header className="flex items-center gap-2 border-b px-3"><h2 className="flex-1 text-sm font-semibold">상세 패널</h2><Button size="sm" isIconOnly variant="tertiary" aria-label="우측 상세 패널 닫기" onPress={()=>setDetailPanelOpen(false)}><X size={16}/></Button></header>
+        <div className="min-h-0">{context}</div><div className="min-h-0 border-t">{chat}</div>
+      </section>}
+    </div>}{fullScreenDialog}
+  </main>;
 }
 
-export default function GhostChatV2() {
-	return <GhostChatV2Content />;
-}
+export default function GhostChatV2() { return <GhostChatV2Content/>; }

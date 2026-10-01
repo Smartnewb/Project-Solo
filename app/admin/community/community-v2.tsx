@@ -1,51 +1,6 @@
 'use client';
-
-import {
-	Article as ArticleIcon,
-	Comment as CommentIcon,
-	Delete as DeleteIcon,
-	Favorite as FavoriteIcon,
-	Forum as ForumIcon,
-	MoveToInbox as MoveToInboxIcon,
-	Person as PersonIcon,
-	Refresh as RefreshIcon,
-	Report as ReportIcon,
-	Visibility as VisibilityIcon,
-	VisibilityOff as VisibilityOffIcon,
-} from '@mui/icons-material';
-import {
-	Alert,
-	Avatar,
-	Box,
-	Button,
-	Checkbox,
-	Chip,
-	CircularProgress,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
-	FormControl,
-	IconButton,
-	InputLabel,
-	MenuItem,
-	Paper,
-	Select,
-	Tab,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TablePagination,
-	TableRow,
-	Tabs,
-	TextField,
-	Tooltip,
-	Typography,
-} from '@mui/material';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, TextArea, Select, ListBox, Checkbox } from '@heroui/react';
+import { FileText as ArticleIcon, MessageSquare as CommentIcon, Trash2 as DeleteIcon, Heart as FavoriteIcon, MessagesSquare as ForumIcon, Inbox as MoveToInboxIcon, User as PersonIcon, RefreshCw as RefreshIcon, Flag as ReportIcon, Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller } from 'react-hook-form';
@@ -59,1581 +14,1131 @@ import { useAdminForm } from '@/app/admin/hooks/forms';
 import { articleBlindSchema, ArticleBlindFormValues } from '@/app/admin/hooks/forms/schemas/community.schema';
 import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 import { CommunityPostAppDetailPanel } from './components/CommunityPostAppDetailPanel';
-
 // 게시글 목록 컴포넌트
 function ArticleList() {
-	const toast = useToast();
-
-	const [articles, setArticles] = useState<any[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [page, setPage] = useState(0);
-	const [rowsPerPage, setRowsPerPage] = useState(10);
-	const [totalCount, setTotalCount] = useState(0);
-	const [filter, setFilter] = useState<'all' | 'reported' | 'blinded'>('all');
-	const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
-	const [openBlindDialog, setOpenBlindDialog] = useState(false);
-	const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
-	const [actionLoading, setActionLoading] = useState(false);
-
-	const blindForm = useAdminForm<ArticleBlindFormValues>({
-		schema: articleBlindSchema,
-		defaultValues: { blindReason: '' },
-	});
-	const blindReason = blindForm.watch('blindReason');
-
-	// 게시글 삭제 관련 상태
-	const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-	const [deleteTargetId, setDeleteTargetId] = useState<string>('');
-
-	// 카테고리 이전 관련 상태
-	const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
-	const [categoryTargetId, setCategoryTargetId] = useState<string>('');
-	const [categories, setCategories] = useState<Category[]>([]);
-	const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
-	const [successMessage, setSuccessMessage] = useState<string | null>(null);
-	const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-	const [selectedArticleDetail, setSelectedArticleDetail] = useState<any>(null);
-	const [startDate, setStartDate] = useState<Date | null>(new Date());
-	const [endDate, setEndDate] = useState<Date | null>(new Date());
-	// 카테고리 필터 상태
-	const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState<string>('');
-	// 사용자 프로필 상세 모달 상태
-	const [userModalOpen, setUserModalOpen] = useState(false);
-	const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
-	// 게시글 목록 조회
-	const fetchArticles = async () => {
-		try {
-			setLoading(true);
-			setError(null);
-			const categoryId = selectedFilterCategoryId || null;
-			const response = await communityService.getArticles(
-				filter,
-				page + 1,
-				rowsPerPage,
-				startDate,
-				endDate,
-				categoryId,
-			);
-			setArticles(response.items ?? []);
-			setTotalCount(response.meta?.totalItems ?? 0);
-			;
-			;
-		} catch (error) {
-			setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	// 시작 날짜 변경 시
-	const handleStartDateChange = (date: Date | null) => {
-		setStartDate(date);
-		setPage(0); // 날짜가 변경되면 첫 페이지로 이동
-	};
-
-	// 종료 날짜 변경 시
-	const handleEndDateChange = (date: Date | null) => {
-		setEndDate(date);
-		setPage(0); // 날짜가 변경되면 첫 페이지로 이동
-	};
-
-	// 페이지 변경 시
-	const handleChangePage = (_: unknown, newPage: number) => {
-		setPage(newPage);
-	};
-
-	// 페이지당 행 수 변경 시
-	const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setRowsPerPage(parseInt(event.target.value, 10));
-		setPage(0);
-	};
-
-	// 필터 변경 시
-	const handleFilterChange = (event: any) => {
-		setFilter(event.target.value as 'all' | 'reported' | 'blinded');
-		setPage(0);
-	};
-
-	// 필터 초기화
-	const handleResetFilters = () => {
-		setFilter('all');
-		setSelectedFilterCategoryId('');
-		setStartDate(new Date());
-		setEndDate(new Date());
-		setPage(0);
-	};
-
-	// 게시글 선택 시
-	const handleSelectArticle = (id: string) => {
-		setSelectedArticles((prev) => {
-			if (prev.includes(id)) {
-				return prev.filter((articleId) => articleId !== id);
-			} else {
-				return [...prev, id];
-			}
-		});
-	};
-
-	// 전체 선택/해제
-	const handleSelectAll = () => {
-		if (selectedArticles.length === articles.length) {
-			setSelectedArticles([]);
-		} else {
-			setSelectedArticles(articles.map((article) => article.id));
-		}
-	};
-
-	// 블라인드 다이얼로그 열기
-	const handleOpenBlindDialog = (action: 'blind' | 'unblind') => {
-		setBlindAction(action);
-		blindForm.reset({ blindReason: '' });
-		setOpenBlindDialog(true);
-	};
-
-	// 블라인드 다이얼로그 닫기
-	const handleCloseBlindDialog = () => {
-		setOpenBlindDialog(false);
-	};
-
-	// 게시글 블라인드 처리/해제
-	const handleBlindArticles = async () => {
-		try {
-			setActionLoading(true);
-			await communityService.bulkBlindArticles(selectedArticles, blindAction === 'blind');
-			setSuccessMessage(
-				`선택한 게시글을 ${blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리했습니다.`,
-			);
-			setSelectedArticles([]);
-			fetchArticles();
-			handleCloseBlindDialog();
-		} catch (error) {
-			setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
-		} finally {
-			setActionLoading(false);
-		}
-	};
-
-	// 게시글 삭제
-	const handleDeleteArticle = async () => {
-		try {
-			setActionLoading(true);
-			await communityService.deleteArticle(deleteTargetId);
-			setSuccessMessage('게시글을 삭제했습니다.');
-			fetchArticles();
-			setOpenDeleteDialog(false);
-			setDeleteTargetId('');
-		} catch (error) {
-			setError('게시글 삭제 중 오류가 발생했습니다.');
-		} finally {
-			setActionLoading(false);
-		}
-	};
-
-	// 게시글 카테고리 이전
-	const handleMoveCategory = async () => {
-		try {
-			setActionLoading(true);
-			await communityService.moveArticleCategory(categoryTargetId, selectedCategoryId);
-			setSuccessMessage('게시글 카테고리를 이전했습니다.');
-			fetchArticles();
-			setOpenCategoryDialog(false);
-			setCategoryTargetId('');
-			setSelectedCategoryId('');
-		} catch (error) {
-			setError('게시글 카테고리 이전 중 오류가 발생했습니다.');
-		} finally {
-			setActionLoading(false);
-		}
-	};
-
-	// 게시글 상세 정보 조회
-	const handleViewDetail = async (id: string) => {
-		try {
-			setActionLoading(true);
-			const detail = await communityService.getArticleDetail(id);
-			let articleReports: any[] = [];
-
-			try {
-				const reportsResponse = await communityService.getReports('article', 'all', 1, 100);
-				articleReports =
-					reportsResponse?.items?.filter((report: any) => report.targetId === id || report.target_id === id) ?? [];
-			} catch { }
-
-			;
-
-			setSelectedArticleDetail({ ...detail, reports: articleReports });
-			setDetailDialogOpen(true);
-		} catch (error) {
-			setError('게시글 상세 정보를 불러오는 중 오류가 발생했습니다.');
-		} finally {
-			setActionLoading(false);
-		}
-	};
-
-	// 상세 다이얼로그 닫기
-	const handleCloseDetailDialog = () => {
-		setDetailDialogOpen(false);
-		setSelectedArticleDetail(null);
-	};
-
-	const refreshSelectedArticleDetail = async () => {
-		if (!selectedArticleDetail?.id) return;
-		const detail = await communityService.getArticleDetail(selectedArticleDetail.id);
-		setSelectedArticleDetail((prev: any) => ({
-			...detail,
-			reports: prev?.reports ?? [],
-		}));
-	};
-
-	const handleCreateGhostComment = async (articleId: string, body: GhostCommentBody) => {
-		const result = await communityService.createGhostComment(articleId, body);
-		if (!result.comment) {
-			await fetchArticles();
-			return result;
-		}
-		setSelectedArticleDetail((prev: any) => {
-			if (!prev || prev.id !== articleId) return prev;
-			return {
-				...prev,
-				comments: [...(prev.comments ?? []), result.comment],
-				commentCount: (prev.commentCount ?? prev.comments?.length ?? 0) + 1,
-			};
-		});
-		await fetchArticles();
-		return result;
-	};
-
-	// 성공 메시지 초기화
-	useEffect(() => {
-		if (successMessage) {
-			const timer = setTimeout(() => {
-				setSuccessMessage(null);
-			}, 3000);
-			return () => clearTimeout(timer);
-		}
-	}, [successMessage]);
-
-	// 게시글 목록 조회
-	useEffect(() => {
-		fetchArticles();
-	}, [filter, page, rowsPerPage, startDate, endDate, selectedFilterCategoryId]);
-
-	// 카테고리 목록 조회
-	const fetchCategories = async () => {
-		try {
-			const response = await communityService.getCategories();
-			setCategories(response.categories ?? []);
-		} catch { }
-	};
-
-	useEffect(() => {
-		fetchCategories();
-	}, []);
-
-	return (
-		<Box>
+    const toast = useToast();
+    const [articles, setArticles] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
+    const [filter, setFilter] = useState<'all' | 'reported' | 'blinded'>('all');
+    const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
+    const [openBlindDialog, setOpenBlindDialog] = useState(false);
+    const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
+    const [actionLoading, setActionLoading] = useState(false);
+    const blindForm = useAdminForm<ArticleBlindFormValues>({
+        schema: articleBlindSchema,
+        defaultValues: { blindReason: '' },
+    });
+    const blindReason = blindForm.watch('blindReason');
+    // 게시글 삭제 관련 상태
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState<string>('');
+    // 카테고리 이전 관련 상태
+    const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
+    const [categoryTargetId, setCategoryTargetId] = useState<string>('');
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+    const [selectedArticleDetail, setSelectedArticleDetail] = useState<any>(null);
+    const [startDate, setStartDate] = useState<Date | null>(new Date());
+    const [endDate, setEndDate] = useState<Date | null>(new Date());
+    // 카테고리 필터 상태
+    const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState<string>('');
+    // 사용자 프로필 상세 모달 상태
+    const [userModalOpen, setUserModalOpen] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    // 게시글 목록 조회
+    const fetchArticles = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const categoryId = selectedFilterCategoryId || null;
+            const response = await communityService.getArticles(filter, page + 1, rowsPerPage, startDate, endDate, categoryId);
+            setArticles(response.items ?? []);
+            setTotalCount(response.meta?.totalItems ?? 0);
+            ;
+            ;
+        }
+        catch (error) {
+            setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+    // 시작 날짜 변경 시
+    const handleStartDateChange = (date: Date | null) => {
+        setStartDate(date);
+        setPage(0); // 날짜가 변경되면 첫 페이지로 이동
+    };
+    // 종료 날짜 변경 시
+    const handleEndDateChange = (date: Date | null) => {
+        setEndDate(date);
+        setPage(0); // 날짜가 변경되면 첫 페이지로 이동
+    };
+    // 페이지 변경 시
+    const handleChangePage = (_: unknown, newPage: number) => {
+        setPage(newPage);
+    };
+    // 페이지당 행 수 변경 시
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+    // 필터 변경 시
+    const handleFilterChange = (event: any) => {
+        setFilter(event.target.value as 'all' | 'reported' | 'blinded');
+        setPage(0);
+    };
+    // 필터 초기화
+    const handleResetFilters = () => {
+        setFilter('all');
+        setSelectedFilterCategoryId('');
+        setStartDate(new Date());
+        setEndDate(new Date());
+        setPage(0);
+    };
+    // 게시글 선택 시
+    const handleSelectArticle = (id: string) => {
+        setSelectedArticles((prev) => {
+            if (prev.includes(id)) {
+                return prev.filter((articleId) => articleId !== id);
+            }
+            else {
+                return [...prev, id];
+            }
+        });
+    };
+    // 전체 선택/해제
+    const handleSelectAll = () => {
+        if (selectedArticles.length === articles.length) {
+            setSelectedArticles([]);
+        }
+        else {
+            setSelectedArticles(articles.map((article) => article.id));
+        }
+    };
+    // 블라인드 다이얼로그 열기
+    const handleOpenBlindDialog = (action: 'blind' | 'unblind') => {
+        setBlindAction(action);
+        blindForm.reset({ blindReason: '' });
+        setOpenBlindDialog(true);
+    };
+    // 블라인드 다이얼로그 닫기
+    const handleCloseBlindDialog = () => {
+        setOpenBlindDialog(false);
+    };
+    // 게시글 블라인드 처리/해제
+    const handleBlindArticles = async () => {
+        try {
+            setActionLoading(true);
+            await communityService.bulkBlindArticles(selectedArticles, blindAction === 'blind');
+            setSuccessMessage(`선택한 게시글을 ${blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리했습니다.`);
+            setSelectedArticles([]);
+            fetchArticles();
+            handleCloseBlindDialog();
+        }
+        catch (error) {
+            setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    // 게시글 삭제
+    const handleDeleteArticle = async () => {
+        try {
+            setActionLoading(true);
+            await communityService.deleteArticle(deleteTargetId);
+            setSuccessMessage('게시글을 삭제했습니다.');
+            fetchArticles();
+            setOpenDeleteDialog(false);
+            setDeleteTargetId('');
+        }
+        catch (error) {
+            setError('게시글 삭제 중 오류가 발생했습니다.');
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    // 게시글 카테고리 이전
+    const handleMoveCategory = async () => {
+        try {
+            setActionLoading(true);
+            await communityService.moveArticleCategory(categoryTargetId, selectedCategoryId);
+            setSuccessMessage('게시글 카테고리를 이전했습니다.');
+            fetchArticles();
+            setOpenCategoryDialog(false);
+            setCategoryTargetId('');
+            setSelectedCategoryId('');
+        }
+        catch (error) {
+            setError('게시글 카테고리 이전 중 오류가 발생했습니다.');
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    // 게시글 상세 정보 조회
+    const handleViewDetail = async (id: string) => {
+        try {
+            setActionLoading(true);
+            const detail = await communityService.getArticleDetail(id);
+            let articleReports: any[] = [];
+            try {
+                const reportsResponse = await communityService.getReports('article', 'all', 1, 100);
+                articleReports =
+                    reportsResponse?.items?.filter((report: any) => report.targetId === id || report.target_id === id) ?? [];
+            }
+            catch { }
+            ;
+            setSelectedArticleDetail({ ...detail, reports: articleReports });
+            setDetailDialogOpen(true);
+        }
+        catch (error) {
+            setError('게시글 상세 정보를 불러오는 중 오류가 발생했습니다.');
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    // 상세 다이얼로그 닫기
+    const handleCloseDetailDialog = () => {
+        setDetailDialogOpen(false);
+        setSelectedArticleDetail(null);
+    };
+    const refreshSelectedArticleDetail = async () => {
+        if (!selectedArticleDetail?.id)
+            return;
+        const detail = await communityService.getArticleDetail(selectedArticleDetail.id);
+        setSelectedArticleDetail((prev: any) => ({
+            ...detail,
+            reports: prev?.reports ?? [],
+        }));
+    };
+    const handleCreateGhostComment = async (articleId: string, body: GhostCommentBody) => {
+        const result = await communityService.createGhostComment(articleId, body);
+        if (!result.comment) {
+            await fetchArticles();
+            return result;
+        }
+        setSelectedArticleDetail((prev: any) => {
+            if (!prev || prev.id !== articleId)
+                return prev;
+            return {
+                ...prev,
+                comments: [...(prev.comments ?? []), result.comment],
+                commentCount: (prev.commentCount ?? prev.comments?.length ?? 0) + 1,
+            };
+        });
+        await fetchArticles();
+        return result;
+    };
+    // 성공 메시지 초기화
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => {
+                setSuccessMessage(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
+    // 게시글 목록 조회
+    useEffect(() => {
+        fetchArticles();
+    }, [filter, page, rowsPerPage, startDate, endDate, selectedFilterCategoryId]);
+    // 카테고리 목록 조회
+    const fetchCategories = async () => {
+        try {
+            const response = await communityService.getCategories();
+            setCategories(response.categories ?? []);
+        }
+        catch { }
+    };
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+    return (<div>
 			{/* 필터 및 액션 버튼 */}
-			<Box
-				sx={{
-					mb: 2,
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'center',
-				}}
-			>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-					<Typography variant="h6">게시글 관리 ({totalCount})</Typography>
+			<div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+				<div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+					<h2 className="text-lg font-semibold">게시글 관리 ({totalCount})</h2>
 
-					<FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
-						<InputLabel id="filter-label">필터</InputLabel>
-						<Select
-							labelId="filter-label"
-							value={filter}
-							onChange={handleFilterChange}
-							label="필터"
-						>
-							<MenuItem value="all">전체 게시글</MenuItem>
-							<MenuItem value="reported">신고된 게시글</MenuItem>
-							<MenuItem value="blinded">블라인드 게시글</MenuItem>
-						</Select>
-					</FormControl>
+					<div style={{ minWidth: 150 }}>
+						<label id="filter-label">필터</label>
+						<Select value={filter} aria-label={"필터"} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleFilterChange)({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+							<ListBox.Item id={"all"} textValue={"\uC804\uCCB4 \uAC8C\uC2DC\uAE00"}>전체 게시글</ListBox.Item>
+							<ListBox.Item id={"reported"} textValue={"\uC2E0\uACE0\uB41C \uAC8C\uC2DC\uAE00"}>신고된 게시글</ListBox.Item>
+							<ListBox.Item id={"blinded"} textValue={"\uBE14\uB77C\uC778\uB4DC \uAC8C\uC2DC\uAE00"}>블라인드 게시글</ListBox.Item>
+						</ListBox></Select.Popover></Select>
+					</div>
 
-					<FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
-						<Select
-							value={selectedFilterCategoryId}
-							onChange={(e) => {
-								setSelectedFilterCategoryId(e.target.value);
-								setPage(0); // 페이지를 첫 번째로 리셋
-							}}
-							displayEmpty
-							size="small"
-						>
-							<MenuItem value="">전체 카테고리</MenuItem>
-							{categories.map((category) => (
-								<MenuItem key={category.id} value={category.id}>
+					<div style={{ minWidth: 150 }}>
+						<Select value={selectedFilterCategoryId} aria-label="카테고리" onChange={(key) => {
+            const value = String(key ?? "");
+            setSelectedFilterCategoryId(value);
+            setPage(0); // 페이지를 첫 번째로 리셋
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+							<ListBox.Item id={""} textValue={"\uC804\uCCB4 \uCE74\uD14C\uACE0\uB9AC"}>전체 카테고리</ListBox.Item>
+							{categories.map((category) => (<ListBox.Item key={category.id} id={category.id} textValue={String(category.displayName)}>
 									{category.displayName}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
+								</ListBox.Item>))}
+						</ListBox></Select.Popover></Select>
+					</div>
 
-					<LocalizationProvider dateAdapter={AdapterDateFns}>
-						<DatePicker
-							label="시작 날짜"
-							value={startDate}
-							onChange={handleStartDateChange}
-							slotProps={{
-								textField: {
-									size: 'small',
-									sx: { width: 180 },
-								},
-							}}
-						/>
-					</LocalizationProvider>
+					<div>
+						<TextField className="min-w-[150px]"><Label>{"시작 날짜"}</Label><Input type="date" value={startDate ? new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000).toISOString().slice(0, 10) : ""} onChange={event => (handleStartDateChange)(event.target.value ? new Date(event.target.value + "T00:00:00") : null)}></Input></TextField>
+					</div>
 
-					<LocalizationProvider dateAdapter={AdapterDateFns}>
-						<DatePicker
-							label="종료 날짜"
-							value={endDate}
-							onChange={handleEndDateChange}
-							slotProps={{
-								textField: {
-									size: 'small',
-									sx: { width: 180 },
-								},
-							}}
-						/>
-					</LocalizationProvider>
+					<div>
+						<TextField className="min-w-[150px]"><Label>{"종료 날짜"}</Label><Input type="date" value={endDate ? new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000).toISOString().slice(0, 10) : ""} onChange={event => (handleEndDateChange)(event.target.value ? new Date(event.target.value + "T00:00:00") : null)}></Input></TextField>
+					</div>
 
-					<Button
-						variant="outlined"
-						size="small"
-						startIcon={<RefreshIcon />}
-						onClick={fetchArticles}
-					>
+					<Button onPress={fetchArticles} variant="secondary">{<RefreshIcon></RefreshIcon>}
 						새로고침
 					</Button>
 
-					<Button variant="outlined" size="small" color="secondary" onClick={handleResetFilters}>
+					<Button onPress={handleResetFilters} variant="secondary">
 						필터 초기화
 					</Button>
-				</Box>
+				</div>
 
-				{selectedArticles.length > 0 && (
-					<Box sx={{ display: 'flex', gap: 1 }}>
-						<Button
-							variant="outlined"
-							color="primary"
-							onClick={() => handleOpenBlindDialog('blind')}
-							startIcon={<VisibilityOffIcon />}
-							disabled={actionLoading}
-						>
+				{selectedArticles.length > 0 && (<div style={{ display: 'flex', gap: 8 }}>
+						<Button onPress={() => handleOpenBlindDialog('blind')} isDisabled={actionLoading} variant="secondary">{<VisibilityOffIcon></VisibilityOffIcon>}
 							블라인드
 						</Button>
-						<Button
-							variant="outlined"
-							color="secondary"
-							onClick={() => handleOpenBlindDialog('unblind')}
-							startIcon={<VisibilityIcon />}
-							disabled={actionLoading}
-						>
+						<Button onPress={() => handleOpenBlindDialog('unblind')} isDisabled={actionLoading} variant="secondary">{<VisibilityIcon></VisibilityIcon>}
 							블라인드 해제
 						</Button>
-					</Box>
-				)}
-			</Box>
+					</div>)}
+			</div>
 
 			{/* 성공/오류 메시지 */}
-			{successMessage && (
-				<Alert severity="success" sx={{ mb: 2 }}>
+			{successMessage && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
 					{successMessage}
-				</Alert>
-			)}
-			{error && (
-				<Alert severity="error" sx={{ mb: 2 }}>
+				</aside>)}
+			{error && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
 					{error}
-				</Alert>
-			)}
+				</aside>)}
 
 			{/* 게시글 목록 테이블 */}
-			<TableContainer component={Paper}>
-				<Table>
-					<TableHead>
-						<TableRow>
-							<TableCell padding="checkbox">
-								<Checkbox
-									checked={articles.length > 0 && selectedArticles.length === articles.length}
-									indeterminate={
-										selectedArticles.length > 0 && selectedArticles.length < articles.length
-									}
-									onChange={handleSelectAll}
-								/>
-							</TableCell>
-							<TableCell>작성자</TableCell>
-							<TableCell>제목</TableCell>
-							<TableCell>내용</TableCell>
-							<TableCell>댓글</TableCell>
-							<TableCell>좋아요</TableCell>
-							<TableCell>신고</TableCell>
-							<TableCell>상태</TableCell>
-							<TableCell>작성일</TableCell>
-							<TableCell>액션</TableCell>
-						</TableRow>
-					</TableHead>
-					<TableBody>
-						{loading ? (
-							<TableRow>
-								<TableCell colSpan={9} align="center">
-									<CircularProgress size={24} sx={{ my: 2 }} />
-								</TableCell>
-							</TableRow>
-						) : articles.length === 0 ? (
-							<TableRow>
-								<TableCell colSpan={9} align="center">
+			<div>
+				<table className="w-full text-sm">
+					<thead className="bg-gray-50 text-left">
+						<tr className="border-b">
+							<th scope="col" className="border-b px-4 py-3">
+								<Checkbox isSelected={articles.length > 0 && selectedArticles.length === articles.length} isIndeterminate={selectedArticles.length > 0 && selectedArticles.length < articles.length} onChange={checked => handleSelectAll()}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>
+							</th>
+							<th scope="col" className="border-b px-4 py-3">작성자</th>
+							<th scope="col" className="border-b px-4 py-3">제목</th>
+							<th scope="col" className="border-b px-4 py-3">내용</th>
+							<th scope="col" className="border-b px-4 py-3">댓글</th>
+							<th scope="col" className="border-b px-4 py-3">좋아요</th>
+							<th scope="col" className="border-b px-4 py-3">신고</th>
+							<th scope="col" className="border-b px-4 py-3">상태</th>
+							<th scope="col" className="border-b px-4 py-3">작성일</th>
+							<th scope="col" className="border-b px-4 py-3">액션</th>
+						</tr>
+					</thead>
+					<tbody>
+						{loading ? (<tr className="border-b">
+								<td colSpan={9} className="border-b px-4 py-3">
+									<Spinner size="sm" style={{ marginBlock: 16 }}></Spinner>
+								</td>
+							</tr>) : articles.length === 0 ? (<tr className="border-b">
+								<td colSpan={9} className="border-b px-4 py-3">
 									게시글이 없습니다.
-								</TableCell>
-							</TableRow>
-						) : (
-							articles.map((article) => (
-								<TableRow key={article.id}>
-									<TableCell padding="checkbox">
-										<Checkbox
-											checked={selectedArticles.includes(article.id)}
-											onChange={() => handleSelectArticle(article.id)}
-										/>
-									</TableCell>
-									<TableCell>
-										<Typography
-											variant="body2"
-											sx={{
-												color: 'primary.main',
-												textDecoration: 'underline',
-												cursor: 'pointer',
-												display: 'inline',
-											}}
-											onClick={() => {
-												const uid = article.author?.id ?? article.userId;
-												if (uid) {
-													setSelectedUserId(uid);
-													setUserModalOpen(true);
-												}
-											}}
-										>
+								</td>
+							</tr>) : (articles.map((article) => (<tr key={article.id} className="border-b">
+									<td className="border-b px-4 py-3">
+										<Checkbox isSelected={selectedArticles.includes(article.id)} onChange={checked => handleSelectArticle(article.id)}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>
+									</td>
+									<td className="border-b px-4 py-3">
+										<Button variant="tertiary" onPress={() => {
+                const uid = article.author?.id ?? article.userId;
+                if (uid) {
+                    setSelectedUserId(uid);
+                    setUserModalOpen(true);
+                }
+            }} style={{ color: "var(--accent)", cursor: 'pointer', display: 'inline' }}>
 											{article.anonymous ?? '익명'}
 											{article.author?.name ? ` [${article.author.name}]` : ''}
-										</Typography>
-										<Typography variant="caption" color="textSecondary" display="block">
+										</Button>
+										<p>
 											ID: {article.author?.id ?? article.userId}
-										</Typography>
-									</TableCell>
-									<TableCell>
-										<Typography
-											variant="body2"
-											sx={{
-												maxWidth: 200,
-												overflow: 'hidden',
-												textOverflow: 'ellipsis',
-												whiteSpace: 'nowrap',
-												textDecoration:
-													article.isBlinded || (article as any).blindedAt ? 'line-through' : 'none',
-												color:
-													article.isBlinded || (article as any).blindedAt
-														? 'text.disabled'
-														: 'text.primary',
-											}}
-										>
+										</p>
+									</td>
+									<td className="border-b px-4 py-3">
+										<p style={{ maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', color: article.isBlinded || (article as any).blindedAt
+                    ? 'text.disabled'
+                    : 'text.primary' }}>
 											{article.title ?? '제목 없음'}
-										</Typography>
-									</TableCell>
-									<TableCell>
-										<Typography
-											variant="body2"
-											sx={{
-												maxWidth: 200,
-												overflow: 'hidden',
-												textOverflow: 'ellipsis',
-												whiteSpace: 'nowrap',
-												textDecoration:
-													article.isBlinded || (article as any).blindedAt ? 'line-through' : 'none',
-												color:
-													article.isBlinded || (article as any).blindedAt
-														? 'text.disabled'
-														: 'text.primary',
-											}}
-										>
+										</p>
+									</td>
+									<td className="border-b px-4 py-3">
+										<p style={{ maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', color: article.isBlinded || (article as any).blindedAt
+                    ? 'text.disabled'
+                    : 'text.primary' }}>
 											{article.emoji} {article.content}
-										</Typography>
-									</TableCell>
-									<TableCell>{article.commentCount}</TableCell>
-									<TableCell>{article.likeCount ?? 0}</TableCell>
-									<TableCell>
-										{article.reportCount > 0 ? (
-											<Chip
-												label={article.reportCount}
-												color="error"
-												size="small"
-												icon={<ReportIcon />}
-											/>
-										) : (
-											'0'
-										)}
-									</TableCell>
-									<TableCell>
-										{article.isBlinded || (article as any).blindedAt ? (
-											<Chip label="블라인드" color="error" size="small" />
-										) : (
-											<Chip label="정상" color="success" size="small" />
-										)}
-									</TableCell>
-									<TableCell>{safeToLocaleDateString(article.createdAt)}</TableCell>
-									<TableCell>
-										<Tooltip title="상세 보기">
-											<IconButton
-												size="small"
-												color="primary"
-												onClick={() => handleViewDetail(article.id)}
-											>
-												<ArticleIcon fontSize="small" />
-											</IconButton>
-										</Tooltip>
-										{article.isBlinded || (article as any).blindedAt ? (
-											<Tooltip title="블라인드 해제">
-												<IconButton
-													size="small"
-													color="secondary"
-													onClick={() => {
-														setSelectedArticles([article.id]);
-														handleOpenBlindDialog('unblind');
-													}}
-												>
-													<VisibilityIcon fontSize="small" />
-												</IconButton>
-											</Tooltip>
-										) : (
-											<Tooltip title="블라인드">
-												<IconButton
-													size="small"
-													color="warning"
-													onClick={() => {
-														setSelectedArticles([article.id]);
-														handleOpenBlindDialog('blind');
-													}}
-												>
-													<VisibilityOffIcon fontSize="small" />
-												</IconButton>
-											</Tooltip>
-										)}
-										<Tooltip title="카테고리 이전">
-											<IconButton
-												size="small"
-												color="info"
-												onClick={() => {
-													setCategoryTargetId(article.id);
-													setOpenCategoryDialog(true);
-												}}
-											>
-												<MoveToInboxIcon fontSize="small" />
-											</IconButton>
-										</Tooltip>
-										<Tooltip title="게시글 삭제">
-											<IconButton
-												size="small"
-												color="error"
-												onClick={() => {
-													setDeleteTargetId(article.id);
-													setOpenDeleteDialog(true);
-												}}
-											>
-												<DeleteIcon fontSize="small" />
-											</IconButton>
-										</Tooltip>
-									</TableCell>
-								</TableRow>
-							))
-						)}
-					</TableBody>
-				</Table>
-			</TableContainer>
+										</p>
+									</td>
+									<td className="border-b px-4 py-3">{article.commentCount}</td>
+									<td className="border-b px-4 py-3">{article.likeCount ?? 0}</td>
+									<td className="border-b px-4 py-3">
+										{article.reportCount > 0 ? (<Chip size="sm">{article.reportCount}</Chip>) : ('0')}
+									</td>
+									<td className="border-b px-4 py-3">
+										{article.isBlinded || (article as any).blindedAt ? (<Chip size="sm">{"블라인드"}</Chip>) : (<Chip size="sm">{"정상"}</Chip>)}
+									</td>
+									<td className="border-b px-4 py-3">{safeToLocaleDateString(article.createdAt)}</td>
+									<td className="border-b px-4 py-3">
+										<span title={"상세 보기"}>
+											<Button onPress={() => handleViewDetail(article.id)} variant="tertiary" isIconOnly={true} aria-label={"상세 보기"}>
+												<ArticleIcon></ArticleIcon>
+											</Button>
+										</span>
+										{article.isBlinded || (article as any).blindedAt ? (<span title={"블라인드 해제"}>
+												<Button onPress={() => {
+                    setSelectedArticles([article.id]);
+                    handleOpenBlindDialog('unblind');
+                }} variant="tertiary" isIconOnly={true} aria-label={"블라인드 해제"}>
+													<VisibilityIcon></VisibilityIcon>
+												</Button>
+											</span>) : (<span title={"블라인드"}>
+												<Button onPress={() => {
+                    setSelectedArticles([article.id]);
+                    handleOpenBlindDialog('blind');
+                }} variant="tertiary" isIconOnly={true} aria-label={"블라인드"}>
+													<VisibilityOffIcon></VisibilityOffIcon>
+												</Button>
+											</span>)}
+										<span title={"카테고리 이전"}>
+											<Button onPress={() => {
+                setCategoryTargetId(article.id);
+                setOpenCategoryDialog(true);
+            }} variant="tertiary" isIconOnly={true} aria-label={"카테고리 이전"}>
+												<MoveToInboxIcon></MoveToInboxIcon>
+											</Button>
+										</span>
+										<span title={"게시글 삭제"}>
+											<Button onPress={() => {
+                setDeleteTargetId(article.id);
+                setOpenDeleteDialog(true);
+            }} variant="tertiary" isIconOnly={true} aria-label={"게시글 삭제"}>
+												<DeleteIcon></DeleteIcon>
+											</Button>
+										</span>
+									</td>
+								</tr>)))}
+					</tbody>
+				</table>
+			</div>
 
 			{/* 페이지네이션 */}
-			<TablePagination
-				component="div"
-				count={totalCount}
-				page={page}
-				onPageChange={handleChangePage}
-				rowsPerPage={rowsPerPage}
-				onRowsPerPageChange={handleChangeRowsPerPage}
-				rowsPerPageOptions={[5, 10, 25, 50]}
-				labelRowsPerPage="페이지당 행 수:"
-			/>
+			<div className="flex items-center justify-end gap-3 border-t p-4"><div><Select aria-label="페이지당 행 수" value={rowsPerPage} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleChangeRowsPerPage)({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Label>페이지당 행 수</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox><ListBox.Item id={5} textValue={"5"}>5</ListBox.Item><ListBox.Item id={10} textValue={"10"}>10</ListBox.Item><ListBox.Item id={25} textValue={"25"}>25</ListBox.Item><ListBox.Item id={50} textValue={"50"}>50</ListBox.Item></ListBox></Select.Popover></Select></div><Button variant="secondary" isDisabled={page <= 0} onPress={() => (handleChangePage)(null, page - 1)}>이전</Button><span>{page + 1} 페이지 / {totalCount}개</span><Button variant="secondary" isDisabled={(page + 1) * rowsPerPage >= totalCount} onPress={() => (handleChangePage)(null, page + 1)}>다음</Button></div>
 
 			{/* 블라인드 다이얼로그 */}
-			<Dialog open={openBlindDialog} onClose={handleCloseBlindDialog}>
-				<DialogTitle>게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'}</DialogTitle>
-				<DialogContent>
-					<Typography variant="body1" sx={{ mb: 2 }}>
+			<Modal.Backdrop isOpen={openBlindDialog} onOpenChange={next => {
+            if (!next)
+                handleCloseBlindDialog();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+				<Modal.Heading>게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'}</Modal.Heading>
+				<Modal.Body>
+					<p style={{ marginBottom: 16 }}>
 						선택한 {selectedArticles.length}개의 게시글을{' '}
 						{blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리하시겠습니까?
-					</Typography>
-					{blindAction === 'blind' && (
-						<TextField
-							label="블라인드 사유"
-							fullWidth
-							multiline
-							rows={3}
-							value={blindReason}
-							onChange={(e) => blindForm.setValue('blindReason', e.target.value)}
-							placeholder="블라인드 사유를 입력하세요 (선택사항)"
-						/>
-					)}
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleCloseBlindDialog} disabled={actionLoading}>
+					</p>
+					{blindAction === 'blind' && (<TextField className="mb-4"><Label>{"블라인드 사유"}</Label><TextArea rows={3} value={blindReason} onChange={(e) => blindForm.setValue('blindReason', e.target.value)} placeholder="블라인드 사유를 입력하세요 (선택사항)"></TextArea></TextField>)}
+				</Modal.Body>
+				<Modal.Footer>
+					<Button onPress={handleCloseBlindDialog} isDisabled={actionLoading} variant="tertiary">
 						취소
 					</Button>
-					<Button
-						onClick={handleBlindArticles}
-						color={blindAction === 'blind' ? 'warning' : 'primary'}
-						disabled={actionLoading}
-					>
-						{actionLoading ? (
-							<CircularProgress size={24} />
-						) : blindAction === 'blind' ? (
-							'블라인드'
-						) : (
-							'블라인드 해제'
-						)}
+					<Button onPress={handleBlindArticles} isDisabled={actionLoading} variant="tertiary">
+						{actionLoading ? (<Spinner size="sm"></Spinner>) : blindAction === 'blind' ? ('블라인드') : ('블라인드 해제')}
 					</Button>
-				</DialogActions>
-			</Dialog>
+				</Modal.Footer>
+			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 게시글 상세 다이얼로그 */}
-			<Dialog open={detailDialogOpen} onClose={handleCloseDetailDialog} maxWidth="lg" fullWidth>
-				<DialogTitle>게시글 상세 정보</DialogTitle>
-				<DialogContent>
-					{selectedArticleDetail && (
-						<CommunityPostAppDetailPanel
-							post={{
-								...selectedArticleDetail,
-								authorId: selectedArticleDetail.author?.id ?? selectedArticleDetail.userId,
-								authorName: selectedArticleDetail.author?.name,
-								nickname: selectedArticleDetail.anonymous ?? selectedArticleDetail.nickname,
-							}}
-							comments={selectedArticleDetail.comments ?? []}
-							ghostCandidates={selectedArticleDetail.ghostCandidates ?? []}
-							ghostCandidateCount={selectedArticleDetail.ghostCandidateCount}
-							onSubmitGhostComment={handleCreateGhostComment}
-							onReload={refreshSelectedArticleDetail}
-						/>
-					)}
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleCloseDetailDialog}>닫기</Button>
-					{selectedArticleDetail && (
-						<>
-							{selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt ? (
-								<Button
-									color="primary"
-									onClick={() => {
-										setSelectedArticles([selectedArticleDetail.id]);
-										handleCloseDetailDialog();
-										handleOpenBlindDialog('unblind');
-									}}
-									startIcon={<VisibilityIcon />}
-								>
+			<Modal.Backdrop isOpen={detailDialogOpen} onOpenChange={next => {
+            if (!next)
+                handleCloseDetailDialog();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+				<Modal.Heading>게시글 상세 정보</Modal.Heading>
+				<Modal.Body>
+					{selectedArticleDetail && (<CommunityPostAppDetailPanel post={{
+                ...selectedArticleDetail,
+                authorId: selectedArticleDetail.author?.id ?? selectedArticleDetail.userId,
+                authorName: selectedArticleDetail.author?.name,
+                nickname: selectedArticleDetail.anonymous ?? selectedArticleDetail.nickname,
+            }} comments={selectedArticleDetail.comments ?? []} ghostCandidates={selectedArticleDetail.ghostCandidates ?? []} ghostCandidateCount={selectedArticleDetail.ghostCandidateCount} onSubmitGhostComment={handleCreateGhostComment} onReload={refreshSelectedArticleDetail}></CommunityPostAppDetailPanel>)}
+				</Modal.Body>
+				<Modal.Footer>
+					<Button onPress={handleCloseDetailDialog} variant="tertiary">닫기</Button>
+					{selectedArticleDetail && (<>
+							{selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt ? (<Button onPress={() => {
+                    setSelectedArticles([selectedArticleDetail.id]);
+                    handleCloseDetailDialog();
+                    handleOpenBlindDialog('unblind');
+                }} variant="tertiary">{<VisibilityIcon></VisibilityIcon>}
 									블라인드 해제
-								</Button>
-							) : (
-								<Button
-									color="warning"
-									onClick={() => {
-										setSelectedArticles([selectedArticleDetail.id]);
-										handleCloseDetailDialog();
-										handleOpenBlindDialog('blind');
-									}}
-									startIcon={<VisibilityOffIcon />}
-								>
+								</Button>) : (<Button onPress={() => {
+                    setSelectedArticles([selectedArticleDetail.id]);
+                    handleCloseDetailDialog();
+                    handleOpenBlindDialog('blind');
+                }} variant="tertiary">{<VisibilityOffIcon></VisibilityOffIcon>}
 									블라인드
-								</Button>
-							)}
-							<Button
-								color="info"
-								onClick={() => {
-									setCategoryTargetId(selectedArticleDetail.id);
-									handleCloseDetailDialog();
-									setOpenCategoryDialog(true);
-								}}
-								startIcon={<MoveToInboxIcon />}
-							>
+								</Button>)}
+							<Button onPress={() => {
+                setCategoryTargetId(selectedArticleDetail.id);
+                handleCloseDetailDialog();
+                setOpenCategoryDialog(true);
+            }} variant="tertiary">{<MoveToInboxIcon></MoveToInboxIcon>}
 								카테고리 이전
 							</Button>
-							<Button
-								color="error"
-								onClick={() => {
-									setDeleteTargetId(selectedArticleDetail.id);
-									handleCloseDetailDialog();
-									setOpenDeleteDialog(true);
-								}}
-								startIcon={<DeleteIcon />}
-							>
+							<Button onPress={() => {
+                setDeleteTargetId(selectedArticleDetail.id);
+                handleCloseDetailDialog();
+                setOpenDeleteDialog(true);
+            }} variant="tertiary">{<DeleteIcon></DeleteIcon>}
 								삭제
 							</Button>
-						</>
-					)}
-				</DialogActions>
-			</Dialog>
+						</>)}
+				</Modal.Footer>
+			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 게시글 삭제 확인 다이얼로그 */}
-			<Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
-				<DialogTitle>게시글 삭제 확인</DialogTitle>
-				<DialogContent>
-					<Typography>
+			<Modal.Backdrop isOpen={openDeleteDialog} onOpenChange={next => {
+            if (!next)
+                (() => setOpenDeleteDialog(false))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+				<Modal.Heading>게시글 삭제 확인</Modal.Heading>
+				<Modal.Body>
+					<p>
 						정말로 이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-					</Typography>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setOpenDeleteDialog(false)} disabled={actionLoading}>
+					</p>
+				</Modal.Body>
+				<Modal.Footer>
+					<Button onPress={() => setOpenDeleteDialog(false)} isDisabled={actionLoading} variant="tertiary">
 						취소
 					</Button>
-					<Button onClick={handleDeleteArticle} color="error" disabled={actionLoading}>
-						{actionLoading ? <CircularProgress size={24} /> : '삭제'}
+					<Button onPress={handleDeleteArticle} isDisabled={actionLoading} variant="tertiary">
+						{actionLoading ? <Spinner size="sm"></Spinner> : '삭제'}
 					</Button>
-				</DialogActions>
-			</Dialog>
+				</Modal.Footer>
+			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 카테고리 이전 다이얼로그 */}
-			<Dialog open={openCategoryDialog} onClose={() => setOpenCategoryDialog(false)}>
-				<DialogTitle>게시글 카테고리 이전</DialogTitle>
-				<DialogContent>
-					<Typography sx={{ mb: 2 }}>이 게시글을 어느 카테고리로 이전하시겠습니까?</Typography>
-					<FormControl fullWidth>
-						<InputLabel>카테고리 선택</InputLabel>
-						<Select
-							value={selectedCategoryId}
-							onChange={(e) => setSelectedCategoryId(e.target.value)}
-							label="카테고리 선택"
-						>
-							{categories.map((category) => (
-								<MenuItem key={category.id} value={category.id}>
+			<Modal.Backdrop isOpen={openCategoryDialog} onOpenChange={next => {
+            if (!next)
+                (() => setOpenCategoryDialog(false))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+				<Modal.Heading>게시글 카테고리 이전</Modal.Heading>
+				<Modal.Body>
+					<p style={{ marginBottom: 16 }}>이 게시글을 어느 카테고리로 이전하시겠습니까?</p>
+					<div>
+						<label>카테고리 선택</label>
+						<Select value={selectedCategoryId} aria-label={"카테고리 선택"} onChange={(key) => {
+            const value = String(key ?? "");
+            setSelectedCategoryId(value);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+							{categories.map((category) => (<ListBox.Item key={category.id} id={category.id} textValue={String(category.displayName)}>
 									{category.displayName}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setOpenCategoryDialog(false)} disabled={actionLoading}>
+								</ListBox.Item>))}
+						</ListBox></Select.Popover></Select>
+					</div>
+				</Modal.Body>
+				<Modal.Footer>
+					<Button onPress={() => setOpenCategoryDialog(false)} isDisabled={actionLoading} variant="tertiary">
 						취소
 					</Button>
-					<Button
-						onClick={handleMoveCategory}
-						color="primary"
-						disabled={actionLoading || !selectedCategoryId}
-					>
-						{actionLoading ? <CircularProgress size={24} /> : '이전'}
+					<Button onPress={handleMoveCategory} isDisabled={actionLoading || !selectedCategoryId} variant="tertiary">
+						{actionLoading ? <Spinner size="sm"></Spinner> : '이전'}
 					</Button>
-				</DialogActions>
-			</Dialog>
+				</Modal.Footer>
+			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 사용자 프로필 상세 모달 */}
-			<UserDetailModal
-				open={userModalOpen}
-				onClose={() => setUserModalOpen(false)}
-				userId={selectedUserId}
-				userDetail={{
-					id: '',
-					name: '',
-					age: 0,
-					gender: 'MALE',
-					profileImages: [],
-				}}
-				loading={false}
-				error={null}
-			/>
-		</Box>
-	);
+			<UserDetailModal open={userModalOpen} onClose={() => setUserModalOpen(false)} userId={selectedUserId} userDetail={{
+            id: '',
+            name: '',
+            age: 0,
+            gender: 'MALE',
+            profileImages: [],
+        }} loading={false} error={null}></UserDetailModal>
+		</div>);
 }
-
 // 신고 관리 컴포넌트
 function ReportList() {
-	const [reports, setReports] = useState<any[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [page, setPage] = useState(0);
-	const [rowsPerPage, setRowsPerPage] = useState(10);
-	const [totalCount, setTotalCount] = useState(0);
-	const [statusFilter, setStatusFilter] = useState<
-		'pending' | 'reviewing' | 'resolved' | 'rejected'
-	>('pending');
-	const [reporterNameFilter, setReporterNameFilter] = useState('');
-	const [reportedNameFilter, setReportedNameFilter] = useState('');
-	const [selectedReport, setSelectedReport] = useState<any>(null);
-	const [openDetailDialog, setOpenDetailDialog] = useState(false);
-
-	// 사용자 상세 정보 모달 관련 상태
-	const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
-	const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-	const [userDetail, setUserDetail] = useState<any>(null);
-	const [loadingUserDetail, setLoadingUserDetail] = useState(false);
-	const [userDetailError, setUserDetailError] = useState<string | null>(null);
-
-	// 게시글 관리 관련 상태
-	const [actionLoading, setActionLoading] = useState(false);
-	const [successMessage, setSuccessMessage] = useState<string | null>(null);
-	const [openBlindDialog, setOpenBlindDialog] = useState(false);
-	const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
-	const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
-
-	// 신고 목록 조회
-	const fetchReports = async () => {
-		try {
-			setLoading(true);
-			setError(null);
-			const response = await communityService.getCommunityReports(
-				page + 1,
-				rowsPerPage,
-				statusFilter,
-				reporterNameFilter || undefined,
-				reportedNameFilter || undefined,
-			);
-			setReports(response.items ?? []);
-			setTotalCount(response.meta?.totalItems ?? 0);
-			;
-		} catch (error) {
-			setError('신고 목록을 불러오는 중 오류가 발생했습니다.');
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	// 페이지 변경
-	const handleChangePage = (_: unknown, newPage: number) => {
-		setPage(newPage);
-	};
-
-	// 페이지당 행 수 변경
-	const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setRowsPerPage(parseInt(event.target.value, 10));
-		setPage(0);
-	};
-
-	// 상태 필터 변경
-	const handleStatusFilterChange = (event: any) => {
-		setStatusFilter(event.target.value);
-		setPage(0);
-	};
-
-	// 신고자 이름 필터 변경
-	const handleReporterNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setReporterNameFilter(event.target.value);
-	};
-
-	// 신고당한 사용자 이름 필터 변경
-	const handleReportedNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setReportedNameFilter(event.target.value);
-	};
-
-	// 필터 적용
-	const handleApplyFilters = () => {
-		setPage(0);
-		fetchReports();
-	};
-
-	// 신고 상세 보기
-	const handleViewDetail = (report: any) => {
-		setSelectedReport(report);
-		setOpenDetailDialog(true);
-	};
-
-	// 사용자 상세 정보 모달 열기
-	const handleOpenUserDetailModal = async (userId: string) => {
-		try {
-			setSelectedUserId(userId);
-			setUserDetailModalOpen(true);
-			setLoadingUserDetail(true);
-			setUserDetailError(null);
-			setUserDetail(null);
-
-			;
-			const data = await AdminService.userAppearance.getUserDetails(userId);
-			;
-
-			setUserDetail(data);
-		} catch (error: any) {
-			setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
-		} finally {
-			setLoadingUserDetail(false);
-		}
-	};
-
-	// 사용자 상세 정보 모달 닫기
-	const handleCloseUserDetailModal = () => {
-		setUserDetailModalOpen(false);
-	};
-
-	// 게시글 블라인드 처리
-	const handleBlindArticle = (articleId: string, isBlinded: boolean) => {
-		setSelectedArticleId(articleId);
-		setBlindAction(isBlinded ? 'unblind' : 'blind');
-		setOpenBlindDialog(true);
-	};
-
-	// 게시글 블라인드 처리 확인
-	const handleConfirmBlind = async () => {
-		if (!selectedArticleId) return;
-
-		try {
-			setActionLoading(true);
-			const isBlinded = blindAction === 'blind';
-
-			await communityService.blindArticle(selectedArticleId, isBlinded);
-
-			setSuccessMessage(`게시글이 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리되었습니다.`);
-			setOpenBlindDialog(false);
-			fetchReports(); // 목록 새로고침
-		} catch (error) {
-			setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
-		} finally {
-			setActionLoading(false);
-		}
-	};
-
-	// 게시글 삭제
-	const handleDeleteArticle = async (articleId: string) => {
-		if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
-
-		try {
-			setActionLoading(true);
-
-			await communityService.deleteArticle(articleId);
-
-			setSuccessMessage('게시글이 삭제되었습니다.');
-			fetchReports(); // 목록 새로고침
-		} catch (error) {
-			setError('게시글 삭제 중 오류가 발생했습니다.');
-		} finally {
-			setActionLoading(false);
-		}
-	};
-
-	// 신고 목록 조회
-	useEffect(() => {
-		fetchReports();
-	}, [page, rowsPerPage, statusFilter]);
-
-	// 성공 메시지 초기화
-	useEffect(() => {
-		if (successMessage) {
-			const timer = setTimeout(() => {
-				setSuccessMessage(null);
-			}, 3000);
-			return () => clearTimeout(timer);
-		}
-	}, [successMessage]);
-
-	// 상태에 따른 칩 색상
-	const getStatusChipColor = (status: string) => {
-		switch (status) {
-			case 'pending':
-				return 'warning';
-			case 'reviewing':
-				return 'info';
-			case 'resolved':
-				return 'success';
-			case 'rejected':
-				return 'error';
-			default:
-				return 'default';
-		}
-	};
-
-	// 상태 한글 변환
-	const getStatusText = (status: string) => {
-		switch (status) {
-			case 'pending':
-				return '대기중';
-			case 'reviewing':
-				return '검토중';
-			case 'resolved':
-				return '처리완료';
-			case 'rejected':
-				return '반려';
-			default:
-				return status;
-		}
-	};
-
-	return (
-		<Box>
+    const [reports, setReports] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
+    const [statusFilter, setStatusFilter] = useState<'pending' | 'reviewing' | 'resolved' | 'rejected'>('pending');
+    const [reporterNameFilter, setReporterNameFilter] = useState('');
+    const [reportedNameFilter, setReportedNameFilter] = useState('');
+    const [selectedReport, setSelectedReport] = useState<any>(null);
+    const [openDetailDialog, setOpenDetailDialog] = useState(false);
+    // 사용자 상세 정보 모달 관련 상태
+    const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [userDetail, setUserDetail] = useState<any>(null);
+    const [loadingUserDetail, setLoadingUserDetail] = useState(false);
+    const [userDetailError, setUserDetailError] = useState<string | null>(null);
+    // 게시글 관리 관련 상태
+    const [actionLoading, setActionLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [openBlindDialog, setOpenBlindDialog] = useState(false);
+    const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+    const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
+    // 신고 목록 조회
+    const fetchReports = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await communityService.getCommunityReports(page + 1, rowsPerPage, statusFilter, reporterNameFilter || undefined, reportedNameFilter || undefined);
+            setReports(response.items ?? []);
+            setTotalCount(response.meta?.totalItems ?? 0);
+            ;
+        }
+        catch (error) {
+            setError('신고 목록을 불러오는 중 오류가 발생했습니다.');
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+    // 페이지 변경
+    const handleChangePage = (_: unknown, newPage: number) => {
+        setPage(newPage);
+    };
+    // 페이지당 행 수 변경
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+    // 상태 필터 변경
+    const handleStatusFilterChange = (event: any) => {
+        setStatusFilter(event.target.value);
+        setPage(0);
+    };
+    // 신고자 이름 필터 변경
+    const handleReporterNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setReporterNameFilter(event.target.value);
+    };
+    // 신고당한 사용자 이름 필터 변경
+    const handleReportedNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setReportedNameFilter(event.target.value);
+    };
+    // 필터 적용
+    const handleApplyFilters = () => {
+        setPage(0);
+        fetchReports();
+    };
+    // 신고 상세 보기
+    const handleViewDetail = (report: any) => {
+        setSelectedReport(report);
+        setOpenDetailDialog(true);
+    };
+    // 사용자 상세 정보 모달 열기
+    const handleOpenUserDetailModal = async (userId: string) => {
+        try {
+            setSelectedUserId(userId);
+            setUserDetailModalOpen(true);
+            setLoadingUserDetail(true);
+            setUserDetailError(null);
+            setUserDetail(null);
+            ;
+            const data = await AdminService.userAppearance.getUserDetails(userId);
+            ;
+            setUserDetail(data);
+        }
+        catch (error: any) {
+            setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+        }
+        finally {
+            setLoadingUserDetail(false);
+        }
+    };
+    // 사용자 상세 정보 모달 닫기
+    const handleCloseUserDetailModal = () => {
+        setUserDetailModalOpen(false);
+    };
+    // 게시글 블라인드 처리
+    const handleBlindArticle = (articleId: string, isBlinded: boolean) => {
+        setSelectedArticleId(articleId);
+        setBlindAction(isBlinded ? 'unblind' : 'blind');
+        setOpenBlindDialog(true);
+    };
+    // 게시글 블라인드 처리 확인
+    const handleConfirmBlind = async () => {
+        if (!selectedArticleId)
+            return;
+        try {
+            setActionLoading(true);
+            const isBlinded = blindAction === 'blind';
+            await communityService.blindArticle(selectedArticleId, isBlinded);
+            setSuccessMessage(`게시글이 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리되었습니다.`);
+            setOpenBlindDialog(false);
+            fetchReports(); // 목록 새로고침
+        }
+        catch (error) {
+            setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    // 게시글 삭제
+    const handleDeleteArticle = async (articleId: string) => {
+        if (!confirm('정말로 이 게시글을 삭제하시겠습니까?'))
+            return;
+        try {
+            setActionLoading(true);
+            await communityService.deleteArticle(articleId);
+            setSuccessMessage('게시글이 삭제되었습니다.');
+            fetchReports(); // 목록 새로고침
+        }
+        catch (error) {
+            setError('게시글 삭제 중 오류가 발생했습니다.');
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    // 신고 목록 조회
+    useEffect(() => {
+        fetchReports();
+    }, [page, rowsPerPage, statusFilter]);
+    // 성공 메시지 초기화
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => {
+                setSuccessMessage(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
+    // 상태에 따른 칩 색상
+    const getStatusChipColor = (status: string) => {
+        switch (status) {
+            case 'pending':
+                return 'warning';
+            case 'reviewing':
+                return 'info';
+            case 'resolved':
+                return 'success';
+            case 'rejected':
+                return 'error';
+            default:
+                return 'default';
+        }
+    };
+    // 상태 한글 변환
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'pending':
+                return '대기중';
+            case 'reviewing':
+                return '검토중';
+            case 'resolved':
+                return '처리완료';
+            case 'rejected':
+                return '반려';
+            default:
+                return status;
+        }
+    };
+    return (<div>
 			{/* 필터 및 검색 */}
-			<Box
-				sx={{
-					mb: 2,
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'center',
-				}}
-			>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-					<Typography variant="h6">신고 관리 ({totalCount})</Typography>
+			<div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+				<div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+					<h2 className="text-lg font-semibold">신고 관리 ({totalCount})</h2>
 
-					<FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
-						<InputLabel id="status-filter-label">상태</InputLabel>
-						<Select
-							labelId="status-filter-label"
-							value={statusFilter}
-							onChange={handleStatusFilterChange}
-							label="상태"
-						>
-							<MenuItem value="pending">대기중</MenuItem>
-							<MenuItem value="reviewing">검토중</MenuItem>
-							<MenuItem value="resolved">처리완료</MenuItem>
-							<MenuItem value="rejected">반려</MenuItem>
-						</Select>
-					</FormControl>
+					<div style={{ minWidth: 120 }}>
+						<label id="status-filter-label">상태</label>
+						<Select value={statusFilter} aria-label={"상태"} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleStatusFilterChange)({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+							<ListBox.Item id={"pending"} textValue={"\uB300\uAE30\uC911"}>대기중</ListBox.Item>
+							<ListBox.Item id={"reviewing"} textValue={"\uAC80\uD1A0\uC911"}>검토중</ListBox.Item>
+							<ListBox.Item id={"resolved"} textValue={"\uCC98\uB9AC\uC644\uB8CC"}>처리완료</ListBox.Item>
+							<ListBox.Item id={"rejected"} textValue={"\uBC18\uB824"}>반려</ListBox.Item>
+						</ListBox></Select.Popover></Select>
+					</div>
 
-					<TextField
-						label="신고자 이름"
-						variant="outlined"
-						size="small"
-						value={reporterNameFilter}
-						onChange={handleReporterNameFilterChange}
-						sx={{ minWidth: 150 }}
-					/>
+					<TextField className="mb-4"><Label>{"신고자 이름"}</Label><Input value={reporterNameFilter} onChange={handleReporterNameFilterChange}></Input></TextField>
 
-					<TextField
-						label="신고당한 사용자 이름"
-						variant="outlined"
-						size="small"
-						value={reportedNameFilter}
-						onChange={handleReportedNameFilterChange}
-						sx={{ minWidth: 150 }}
-					/>
+					<TextField className="mb-4"><Label>{"신고당한 사용자 이름"}</Label><Input value={reportedNameFilter} onChange={handleReportedNameFilterChange}></Input></TextField>
 
-					<Button variant="contained" onClick={handleApplyFilters} sx={{ height: 40 }}>
+					<Button onPress={handleApplyFilters} variant="primary" style={{ height: 40 }}>
 						검색
 					</Button>
-				</Box>
+				</div>
 
-				<Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchReports}>
+				<Button onPress={fetchReports} variant="secondary">{<RefreshIcon></RefreshIcon>}
 					새로고침
 				</Button>
-			</Box>
+			</div>
 
 			{/* 에러 메시지 */}
-			{error && (
-				<Alert severity="error" sx={{ mb: 2 }}>
+			{error && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
 					{error}
-				</Alert>
-			)}
+				</aside>)}
 
 			{/* 성공 메시지 */}
-			{successMessage && (
-				<Alert severity="success" sx={{ mb: 2 }}>
+			{successMessage && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
 					{successMessage}
-				</Alert>
-			)}
+				</aside>)}
 
 			{/* 신고 목록 테이블 */}
-			<TableContainer component={Paper}>
-				<Table>
-					<TableHead>
-						<TableRow>
-							<TableCell>신고자</TableCell>
-							<TableCell>신고당한 사용자</TableCell>
-							<TableCell>게시글 제목</TableCell>
-							<TableCell>신고 사유</TableCell>
-							<TableCell>상태</TableCell>
-							<TableCell>신고일</TableCell>
-							<TableCell>액션</TableCell>
-						</TableRow>
-					</TableHead>
-					<TableBody>
-						{loading ? (
-							<TableRow>
-								<TableCell colSpan={7} align="center">
-									<CircularProgress size={24} sx={{ my: 2 }} />
-								</TableCell>
-							</TableRow>
-						) : reports.length === 0 ? (
-							<TableRow>
-								<TableCell colSpan={7} align="center">
+			<div>
+				<table className="w-full text-sm">
+					<thead className="bg-gray-50 text-left">
+						<tr className="border-b">
+							<th scope="col" className="border-b px-4 py-3">신고자</th>
+							<th scope="col" className="border-b px-4 py-3">신고당한 사용자</th>
+							<th scope="col" className="border-b px-4 py-3">게시글 제목</th>
+							<th scope="col" className="border-b px-4 py-3">신고 사유</th>
+							<th scope="col" className="border-b px-4 py-3">상태</th>
+							<th scope="col" className="border-b px-4 py-3">신고일</th>
+							<th scope="col" className="border-b px-4 py-3">액션</th>
+						</tr>
+					</thead>
+					<tbody>
+						{loading ? (<tr className="border-b">
+								<td colSpan={7} className="border-b px-4 py-3">
+									<Spinner size="sm" style={{ marginBlock: 16 }}></Spinner>
+								</td>
+							</tr>) : reports.length === 0 ? (<tr className="border-b">
+								<td colSpan={7} className="border-b px-4 py-3">
 									신고 내역이 없습니다.
-								</TableCell>
-							</TableRow>
-						) : (
-							reports.map((report) => (
-								<TableRow key={report.id}>
-									<TableCell>
-										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-											<Avatar
-												src={report.reporter?.profileImageUrl}
-												sx={{
-													width: 32,
-													height: 32,
-													cursor: 'pointer',
-													'&:hover': {
-														opacity: 0.8,
-													},
-												}}
-												onClick={() => handleOpenUserDetailModal(report.reporter?.id)}
-											>
-												<PersonIcon />
-											</Avatar>
-											<Box>
-												<Typography variant="body2" fontWeight="medium">
+								</td>
+							</tr>) : (reports.map((report) => (<tr key={report.id} className="border-b">
+									<td className="border-b px-4 py-3">
+										<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+											<img src={report.reporter?.profileImageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+											<div>
+												<p>
 													{report.reporter?.name || '알 수 없음'}
-												</Typography>
-												<Typography variant="caption" color="text.secondary">
+												</p>
+												<p>
 													{report.reporter?.phoneNumber || ''}
-												</Typography>
-											</Box>
-										</Box>
-									</TableCell>
-									<TableCell>
-										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-											<Avatar
-												src={report.reported?.profileImageUrl}
-												sx={{
-													width: 32,
-													height: 32,
-													cursor: 'pointer',
-													'&:hover': {
-														opacity: 0.8,
-													},
-												}}
-												onClick={() => handleOpenUserDetailModal(report.reported?.id)}
-											>
-												<PersonIcon />
-											</Avatar>
-											<Box>
-												<Typography variant="body2" fontWeight="medium">
+												</p>
+											</div>
+										</div>
+									</td>
+									<td className="border-b px-4 py-3">
+										<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+											<img src={report.reported?.profileImageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+											<div>
+												<p>
 													{report.reported?.name || '알 수 없음'}
-												</Typography>
-												<Typography variant="caption" color="text.secondary">
+												</p>
+												<p>
 													{report.reported?.phoneNumber || ''}
-												</Typography>
-											</Box>
-										</Box>
-									</TableCell>
-									<TableCell>
-										<Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+												</p>
+											</div>
+										</div>
+									</td>
+									<td className="border-b px-4 py-3">
+										<p style={{ maxWidth: 200 }}>
 											{report.article?.title || '제목 없음'}
-										</Typography>
-									</TableCell>
-									<TableCell>
-										<Typography variant="body2" noWrap sx={{ maxWidth: 150 }}>
+										</p>
+									</td>
+									<td className="border-b px-4 py-3">
+										<p style={{ maxWidth: 150 }}>
 											{report.reason === '기타' && report.description
-												? `기타(${report.description.length > 15 ? report.description.slice(0, 15) + '...' : report.description})`
-												: report.reason || '사유 없음'}
-										</Typography>
-									</TableCell>
-									<TableCell>
-										<Chip
-											label={getStatusText(report.status)}
-											color={getStatusChipColor(report.status) as any}
-											size="small"
-										/>
-									</TableCell>
-									<TableCell>
-										<Typography variant="body2">
+                ? `기타(${report.description.length > 15 ? report.description.slice(0, 15) + '...' : report.description})`
+                : report.reason || '사유 없음'}
+										</p>
+									</td>
+									<td className="border-b px-4 py-3">
+										<Chip size="sm">{getStatusText(report.status)}</Chip>
+									</td>
+									<td className="border-b px-4 py-3">
+										<p>
 											{safeToLocaleDateString(report.createdAt, 'ko-KR', {
-												year: 'numeric',
-												month: '2-digit',
-												day: '2-digit',
-												hour: '2-digit',
-												minute: '2-digit',
-											})}
-										</Typography>
-									</TableCell>
-									<TableCell>
-										<Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-											<Button
-												size="small"
-												variant="outlined"
-												onClick={() => handleViewDetail(report)}
-											>
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            })}
+										</p>
+									</td>
+									<td className="border-b px-4 py-3">
+										<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+											<Button onPress={() => handleViewDetail(report)} variant="secondary">
 												상세보기
 											</Button>
-											<Button
-												size="small"
-												variant="outlined"
-												color={report.article?.blindedAt ? 'success' : 'warning'}
-												onClick={() =>
-													handleBlindArticle(report.article?.id, !!report.article?.blindedAt)
-												}
-												disabled={actionLoading}
-											>
+											<Button onPress={() => handleBlindArticle(report.article?.id, !!report.article?.blindedAt)} isDisabled={actionLoading} variant="secondary">
 												{report.article?.blindedAt ? '블라인드 해제' : '블라인드'}
 											</Button>
-											<Button
-												size="small"
-												variant="outlined"
-												color="error"
-												onClick={() => handleDeleteArticle(report.article?.id)}
-												disabled={actionLoading}
-											>
+											<Button onPress={() => handleDeleteArticle(report.article?.id)} isDisabled={actionLoading} variant="secondary">
 												삭제
 											</Button>
-										</Box>
-									</TableCell>
-								</TableRow>
-							))
-						)}
-					</TableBody>
-				</Table>
-			</TableContainer>
+										</div>
+									</td>
+								</tr>)))}
+					</tbody>
+				</table>
+			</div>
 
 			{/* 페이지네이션 */}
-			<TablePagination
-				rowsPerPageOptions={[5, 10, 25]}
-				component="div"
-				count={totalCount}
-				rowsPerPage={rowsPerPage}
-				page={page}
-				onPageChange={handleChangePage}
-				onRowsPerPageChange={handleChangeRowsPerPage}
-				labelRowsPerPage="페이지당 행 수:"
-				labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
-			/>
+			<div className="flex items-center justify-end gap-3 border-t p-4"><div><Select aria-label="페이지당 행 수" value={rowsPerPage} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleChangeRowsPerPage)({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Label>페이지당 행 수</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox><ListBox.Item id={5} textValue={"5"}>5</ListBox.Item><ListBox.Item id={10} textValue={"10"}>10</ListBox.Item><ListBox.Item id={25} textValue={"25"}>25</ListBox.Item></ListBox></Select.Popover></Select></div><Button variant="secondary" isDisabled={page <= 0} onPress={() => (handleChangePage)(null, page - 1)}>이전</Button><span>{page + 1} 페이지 / {totalCount}개</span><Button variant="secondary" isDisabled={(page + 1) * rowsPerPage >= totalCount} onPress={() => (handleChangePage)(null, page + 1)}>다음</Button></div>
 
 			{/* 신고 상세 다이얼로그 */}
-			<Dialog
-				open={openDetailDialog}
-				onClose={() => setOpenDetailDialog(false)}
-				maxWidth="md"
-				fullWidth
-			>
-				<DialogTitle>신고 상세 정보</DialogTitle>
-				<DialogContent>
-					{selectedReport && (
-						<Box sx={{ mt: 1 }}>
-							<Typography variant="h6" gutterBottom>
+			<Modal.Backdrop isOpen={openDetailDialog} onOpenChange={next => {
+            if (!next)
+                (() => setOpenDetailDialog(false))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+				<Modal.Heading>신고 상세 정보</Modal.Heading>
+				<Modal.Body>
+					{selectedReport && (<div style={{ marginTop: 8 }}>
+							<h2 className="text-lg font-semibold">
 								신고 정보
-							</Typography>
-							<Box sx={{ mb: 2 }}>
-								<Typography>
-									<Box component="span" fontWeight="bold">
+							</h2>
+							<div style={{ marginBottom: 16 }}>
+								<p>
+									<div>
 										신고 ID:
-									</Box>{' '}
+									</div>{' '}
 									{selectedReport.id}
-								</Typography>
-								<Typography>
-									<Box component="span" fontWeight="bold">
+								</p>
+								<p>
+									<div>
 										신고 사유:
-									</Box>{' '}
+									</div>{' '}
 									{selectedReport.reason}
-								</Typography>
-								{selectedReport.description && (
-									<Box sx={{ mt: 1 }}>
-										<Typography>
-											<Box component="span" fontWeight="bold">
+								</p>
+								{selectedReport.description && (<div style={{ marginTop: 8 }}>
+										<p>
+											<div>
 												상세 설명:
-											</Box>
-										</Typography>
-										<Paper sx={{ p: 1.5, mt: 0.5, backgroundColor: '#fff3e0' }}>
-											<Typography variant="body2" style={{ whiteSpace: 'pre-wrap' }}>
+											</div>
+										</p>
+										<section style={{ padding: 12, marginTop: 4, backgroundColor: '#fff3e0' }} className="rounded-xl border bg-white p-4">
+											<p style={{ whiteSpace: 'pre-wrap' }}>
 												{selectedReport.description}
-											</Typography>
-										</Paper>
-									</Box>
-								)}
-								<Typography sx={{ mt: 1 }}>
-									<Box component="span" fontWeight="bold">
+											</p>
+										</section>
+									</div>)}
+								<p style={{ marginTop: 8 }}>
+									<div>
 										상태:
-									</Box>{' '}
+									</div>{' '}
 									{getStatusText(selectedReport.status)}
-								</Typography>
-								<Typography>
-									<Box component="span" fontWeight="bold">
+								</p>
+								<p>
+									<div>
 										신고일:
-									</Box>{' '}
+									</div>{' '}
 									{safeToLocaleString(selectedReport.createdAt)}
-								</Typography>
-							</Box>
+								</p>
+							</div>
 
-							<Typography variant="h6" gutterBottom>
+							<h2 className="text-lg font-semibold">
 								신고자 정보
-							</Typography>
-							<Box
-								sx={{
-									mb: 2,
-									display: 'flex',
-									gap: 2,
-									alignItems: 'flex-start',
-								}}
-							>
-								<Avatar
-									src={selectedReport.reporter?.profileImageUrl}
-									sx={{ width: 64, height: 64 }}
-								>
-									<PersonIcon />
-								</Avatar>
-								<Box>
-									<Typography>
-										<Box component="span" fontWeight="bold">
+							</h2>
+							<div style={{ marginBottom: 16, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+								<img src={selectedReport.reporter?.profileImageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+								<div>
+									<p>
+										<div>
 											이름:
-										</Box>{' '}
+										</div>{' '}
 										{selectedReport.reporter?.name || '-'}
-									</Typography>
-									<Typography>
-										<Box component="span" fontWeight="bold">
+									</p>
+									<p>
+										<div>
 											이메일:
-										</Box>{' '}
+										</div>{' '}
 										{selectedReport.reporter?.email || '-'}
-									</Typography>
-									<Typography>
-										<Box component="span" fontWeight="bold">
+									</p>
+									<p>
+										<div>
 											전화번호:
-										</Box>{' '}
+										</div>{' '}
 										{selectedReport.reporter?.phoneNumber || '-'}
-									</Typography>
-									<Typography>
-										<Box component="span" fontWeight="bold">
+									</p>
+									<p>
+										<div>
 											나이/성별:
-										</Box>{' '}
+										</div>{' '}
 										{selectedReport.reporter?.age ? `${selectedReport.reporter.age}세` : '-'} /{' '}
 										{selectedReport.reporter?.gender === 'MALE'
-											? '남성'
-											: selectedReport.reporter?.gender === 'FEMALE'
-												? '여성'
-												: '-'}
-									</Typography>
-								</Box>
-							</Box>
+                ? '남성'
+                : selectedReport.reporter?.gender === 'FEMALE'
+                    ? '여성'
+                    : '-'}
+									</p>
+								</div>
+							</div>
 
-							<Typography variant="h6" gutterBottom>
+							<h2 className="text-lg font-semibold">
 								신고당한 사용자 정보
-							</Typography>
-							<Box
-								sx={{
-									mb: 2,
-									display: 'flex',
-									gap: 2,
-									alignItems: 'flex-start',
-								}}
-							>
-								<Avatar
-									src={selectedReport.reported?.profileImageUrl}
-									sx={{ width: 64, height: 64 }}
-								>
-									<PersonIcon />
-								</Avatar>
-								<Box>
-									<Typography>
-										<Box component="span" fontWeight="bold">
+							</h2>
+							<div style={{ marginBottom: 16, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+								<img src={selectedReport.reported?.profileImageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+								<div>
+									<p>
+										<div>
 											이름:
-										</Box>{' '}
+										</div>{' '}
 										{selectedReport.reported?.name || '-'}
-									</Typography>
-									<Typography>
-										<Box component="span" fontWeight="bold">
+									</p>
+									<p>
+										<div>
 											이메일:
-										</Box>{' '}
+										</div>{' '}
 										{selectedReport.reported?.email || '-'}
-									</Typography>
-									<Typography>
-										<Box component="span" fontWeight="bold">
+									</p>
+									<p>
+										<div>
 											전화번호:
-										</Box>{' '}
+										</div>{' '}
 										{selectedReport.reported?.phoneNumber || '-'}
-									</Typography>
-									<Typography>
-										<Box component="span" fontWeight="bold">
+									</p>
+									<p>
+										<div>
 											나이/성별:
-										</Box>{' '}
+										</div>{' '}
 										{selectedReport.reported?.age ? `${selectedReport.reported.age}세` : '-'} /{' '}
 										{selectedReport.reported?.gender === 'MALE'
-											? '남성'
-											: selectedReport.reported?.gender === 'FEMALE'
-												? '여성'
-												: '-'}
-									</Typography>
-								</Box>
-							</Box>
+                ? '남성'
+                : selectedReport.reported?.gender === 'FEMALE'
+                    ? '여성'
+                    : '-'}
+									</p>
+								</div>
+							</div>
 
-							<Typography variant="h6" gutterBottom>
+							<h2 className="text-lg font-semibold">
 								신고된 게시글
-							</Typography>
-							<Box sx={{ mb: 2 }}>
-								<Typography>
-									<Box component="span" fontWeight="bold">
+							</h2>
+							<div style={{ marginBottom: 16 }}>
+								<p>
+									<div>
 										제목:
-									</Box>{' '}
+									</div>{' '}
 									{selectedReport.article?.title || '제목 없음'}
-								</Typography>
-								<Typography sx={{ mt: 1 }}>
-									<Box component="span" fontWeight="bold">
+								</p>
+								<p style={{ marginTop: 8 }}>
+									<div>
 										내용:
-									</Box>
-								</Typography>
-								<Paper sx={{ p: 2, mt: 1, backgroundColor: '#f5f5f5' }}>
-									<Typography variant="body2" style={{ whiteSpace: 'pre-wrap' }}>
+									</div>
+								</p>
+								<section style={{ padding: 16, marginTop: 8, backgroundColor: '#f5f5f5' }} className="rounded-xl border bg-white p-4">
+									<p style={{ whiteSpace: 'pre-wrap' }}>
 										{selectedReport.article?.content || '내용 없음'}
-									</Typography>
-								</Paper>
-								<Typography sx={{ mt: 1 }}>
-									<Box component="span" fontWeight="bold">
+									</p>
+								</section>
+								<p style={{ marginTop: 8 }}>
+									<div>
 										작성일:
-									</Box>{' '}
+									</div>{' '}
 									{safeToLocaleString(selectedReport.article?.createdAt)}
-								</Typography>
-								<Typography>
-									<Box component="span" fontWeight="bold">
+								</p>
+								<p>
+									<div>
 										블라인드 상태:
-									</Box>{' '}
-									<Chip
-										label={selectedReport.article?.blindedAt ? '블라인드 처리됨' : '정상'}
-										color={selectedReport.article?.blindedAt ? 'error' : 'success'}
-										size="small"
-									/>
-								</Typography>
-							</Box>
-						</Box>
-					)}
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setOpenDetailDialog(false)}>닫기</Button>
-				</DialogActions>
-			</Dialog>
+									</div>{' '}
+									<Chip size="sm">{selectedReport.article?.blindedAt ? '블라인드 처리됨' : '정상'}</Chip>
+								</p>
+							</div>
+						</div>)}
+				</Modal.Body>
+				<Modal.Footer>
+					<Button onPress={() => setOpenDetailDialog(false)} variant="tertiary">닫기</Button>
+				</Modal.Footer>
+			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 블라인드 확인 다이얼로그 */}
-			<Dialog
-				open={openBlindDialog}
-				onClose={() => setOpenBlindDialog(false)}
-				maxWidth="sm"
-				fullWidth
-			>
-				<DialogTitle>
+			<Modal.Backdrop isOpen={openBlindDialog} onOpenChange={next => {
+            if (!next)
+                (() => setOpenBlindDialog(false))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+				<Modal.Heading>
 					게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 확인
-				</DialogTitle>
-				<DialogContent>
-					<Typography>
+				</Modal.Heading>
+				<Modal.Body>
+					<p>
 						정말로 이 게시글을 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'}{' '}
 						처리하시겠습니까?
-					</Typography>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setOpenBlindDialog(false)}>취소</Button>
-					<Button
-						onClick={handleConfirmBlind}
-						color={blindAction === 'blind' ? 'warning' : 'success'}
-						variant="contained"
-						disabled={actionLoading}
-					>
+					</p>
+				</Modal.Body>
+				<Modal.Footer>
+					<Button onPress={() => setOpenBlindDialog(false)} variant="tertiary">취소</Button>
+					<Button onPress={handleConfirmBlind} isDisabled={actionLoading} variant="primary">
 						{actionLoading ? '처리중...' : blindAction === 'blind' ? '블라인드' : '블라인드 해제'}
 					</Button>
-				</DialogActions>
-			</Dialog>
+				</Modal.Footer>
+			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 사용자 상세 정보 모달 */}
-			{!!userDetail && (
-				<UserDetailModal
-					open={userDetailModalOpen}
-					onClose={handleCloseUserDetailModal}
-					userId={selectedUserId}
-					userDetail={userDetail}
-					loading={loadingUserDetail}
-					error={userDetailError}
-					onRefresh={() => {
-						fetchReports();
-					}}
-				/>
-			)}
-		</Box>
-	);
+			{!!userDetail && (<UserDetailModal open={userDetailModalOpen} onClose={handleCloseUserDetailModal} userId={selectedUserId} userDetail={userDetail} loading={loadingUserDetail} error={userDetailError} onRefresh={() => {
+                fetchReports();
+            }}></UserDetailModal>)}
+		</div>);
 }
-
 function AdminCommunityContent() {
-	const searchParams = useSearchParams();
-	const resolveTabIndex = (tab: string | null) => {
-		if (tab === 'reports' || tab === '1') {
-			return 1;
-		}
-
-		return 0;
-	};
-	const [currentTab, setCurrentTab] = useState(() => resolveTabIndex(searchParams?.get('tab') ?? null));
-
-	useEffect(() => {
-		setCurrentTab(resolveTabIndex(searchParams?.get('tab') ?? null));
-	}, [searchParams]);
-
-
-	// 탭 변경 핸들러
-	const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-		setCurrentTab(newValue);
-	};
-
-
-	return (
-		<Box
-			sx={{
-				p: 4,
-				maxWidth: '100%',
-				background: 'linear-gradient(to right bottom, #ffffff, #f8f9fa)',
-				borderRadius: 2,
-				boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-				minHeight: 'calc(100vh - 100px)',
-			}}
-		>
-			<Box
-				sx={{
-					display: 'flex',
-					alignItems: 'center',
-					mb: 4,
-					pb: 2,
-					borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
-				}}
-			>
-				<ForumIcon sx={{ fontSize: 36, mr: 2, color: 'primary.main' }} />
-				<Typography
-					variant="h4"
-					sx={{
-						fontWeight: 600,
-						background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-						WebkitBackgroundClip: 'text',
-						WebkitTextFillColor: 'transparent',
-					}}
-				>
+    const searchParams = useSearchParams();
+    const resolveTabIndex = (tab: string | null) => {
+        if (tab === 'reports' || tab === '1') {
+            return 1;
+        }
+        return 0;
+    };
+    const [currentTab, setCurrentTab] = useState(() => resolveTabIndex(searchParams?.get('tab') ?? null));
+    useEffect(() => {
+        setCurrentTab(resolveTabIndex(searchParams?.get('tab') ?? null));
+    }, [searchParams]);
+    // 탭 변경 핸들러
+    const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+        setCurrentTab(newValue);
+    };
+    return (<div style={{ padding: 32, maxWidth: '100%', borderRadius: 2, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)', minHeight: 'calc(100vh - 100px)' }}>
+			<div style={{ display: 'flex', alignItems: 'center', marginBottom: 32, paddingBottom: 16 }}>
+				<ForumIcon style={{ fontSize: 36, marginRight: 16, color: "var(--accent)" }}></ForumIcon>
+				<p style={{ fontWeight: 600 }}>
 					커뮤니티 관리
-				</Typography>
-			</Box>
+				</p>
+			</div>
 
-			<Box
-				sx={{
-					backgroundColor: '#fff',
-					borderRadius: 2,
-					p: 0,
-					boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-				}}
-			>
+			<div style={{ backgroundColor: '#fff', borderRadius: 2, padding: 0, boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)' }}>
 				{/* 탭 네비게이션 */}
-				<Tabs
-					value={currentTab}
-					onChange={handleTabChange}
-					sx={{
-						borderBottom: 1,
-						borderColor: 'divider',
-						px: 2,
-					}}
-				>
-					<Tab label="게시글 관리" icon={<ArticleIcon />} iconPosition="start" />
-					<Tab label="신고 관리" icon={<ReportIcon />} iconPosition="start" />
-				</Tabs>
+				<Tabs style={{ paddingInline: 16 }} selectedKey={currentTab} onSelectionChange={key => handleTabChange({} as never, key as never)}><Tabs.List aria-label="관리 항목">
+					<Tabs.Tab id={0}>{<ArticleIcon></ArticleIcon>}{"게시글 관리"}<Tabs.Indicator></Tabs.Indicator></Tabs.Tab>
+					<Tabs.Tab id={1}>{<ReportIcon></ReportIcon>}{"신고 관리"}<Tabs.Indicator></Tabs.Indicator></Tabs.Tab>
+				</Tabs.List></Tabs>
 
 				{/* 탭 컨텐츠 */}
-				<Box sx={{ p: 2 }}>
-					{currentTab === 0 && <ArticleList />}
-					{currentTab === 1 && <ReportList />}
-				</Box>
-			</Box>
-		</Box>
-	);
+				<div style={{ padding: 16 }}>
+					{currentTab === 0 && <ArticleList></ArticleList>}
+					{currentTab === 1 && <ReportList></ReportList>}
+				</div>
+			</div>
+		</div>);
 }
-
 export default function AdminCommunity() {
-  return <AdminCommunityContent />;
+    return <AdminCommunityContent></AdminCommunityContent>;
 }

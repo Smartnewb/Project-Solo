@@ -128,7 +128,7 @@ describe('PushRegistryTab', () => {
 			expect(screen.getByRole('heading', { name: '알림 구조도' })).toBeInTheDocument();
 		});
 
-		fireEvent.click(screen.getByRole('button', { name: /채팅/ }));
+		fireEvent.click(screen.getByRole('button', { name: /^채팅 \d/ }));
 
 		expect(onViewChange).toHaveBeenCalledWith('table');
 		expect(screen.getByText('구조도에서 선택한 알림만 보고 있습니다.')).toBeInTheDocument();
@@ -167,7 +167,7 @@ describe('PushRegistryTab', () => {
 			expect(screen.getByRole('heading', { name: '알림 구조도' })).toBeInTheDocument();
 		});
 
-		fireEvent.click(screen.getByRole('button', { name: /채팅/ }));
+		fireEvent.click(screen.getByRole('button', { name: /^채팅 \d/ }));
 		fireEvent.click(screen.getByRole('button', { name: '구조도' }));
 		fireEvent.click(screen.getByRole('button', { name: '전체 보기' }));
 

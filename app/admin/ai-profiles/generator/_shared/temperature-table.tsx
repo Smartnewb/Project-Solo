@@ -1,12 +1,12 @@
-'use client';
-
-import { Input } from '@/shared/ui/input';
+"use client";
+import { Input } from "@/shared/ui/input";
 
 interface Props {
   value: Record<string, number>;
   onChange: (next: Record<string, number>) => void;
   domains: string[];
   disabled?: boolean;
+  /** Optional key -> label map (for displaying Korean labels). */
   /** Optional key -> label map (for displaying Korean labels). */
   domainLabels?: Record<string, string>;
 }
@@ -49,9 +49,7 @@ export function TemperatureTable({
           {domains.map((domain) => {
             const current = value[domain];
             const display =
-              current === undefined || current === null
-                ? ''
-                : String(current);
+              current === undefined || current === null ? "" : String(current);
             return (
               <tr key={domain} className="border-t border-slate-200">
                 <td className="px-3 py-1.5 text-slate-700">

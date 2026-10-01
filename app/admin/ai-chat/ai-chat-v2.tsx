@@ -1,47 +1,34 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useState } from 'react';
 import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   Button,
   Chip,
-  IconButton,
-  CircularProgress,
-  Avatar,
-  FormControl,
-  InputLabel,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
   Select,
-  MenuItem,
-  TextField
-} from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+  Spinner,
+  TextField,
+} from "@heroui/react";
 import {
-  Chat as ChatIcon,
-  Person as PersonIcon,
-  Refresh as RefreshIcon,
-  Close as CloseIcon,
-  Message as MessageIcon,
-  CheckCircle as CheckCircleIcon,
-  Psychology as AnalyzeIcon
-} from '@mui/icons-material';
-import {
-  AIChatSession,
-  AIChatCategory,
-  AIChatSessionStatus
-} from './types';
-import AIChatMessageDetail from './components/AIChatMessageDetail';
-import { useAiChatSessions, useAiChatMessages } from '@/app/admin/hooks';
-import { safeToLocaleString } from '@/app/utils/formatters';
+  MessageCircle as ChatIcon,
+  UserRound as PersonIcon,
+  RefreshCw as RefreshIcon,
+  X as CloseIcon,
+  MessageSquare as MessageIcon,
+  CircleCheck as CheckCircleIcon,
+  Brain as AnalyzeIcon,
+} from "lucide-react";
+
+import { format } from "date-fns";
+import { useState } from "react";
+
+import { AIChatSession, AIChatCategory, AIChatSessionStatus } from "./types";
+import AIChatMessageDetail from "./components/AIChatMessageDetail";
+import { useAiChatSessions, useAiChatMessages } from "@/app/admin/hooks";
+import { safeToLocaleString } from "@/app/utils/formatters";
 
 function AIChatManagementPageContent() {
   const [page, setPage] = useState(0);
@@ -49,10 +36,10 @@ function AIChatManagementPageContent() {
 
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [category, setCategory] = useState<AIChatCategory | ''>('');
-  const [status, setStatus] = useState<AIChatSessionStatus | ''>('');
-  const [isActive, setIsActive] = useState<boolean | ''>('');
-  const [userId, setUserId] = useState<string>('');
+  const [category, setCategory] = useState<AIChatCategory | "">("");
+  const [status, setStatus] = useState<AIChatSessionStatus | "">("");
+  const [isActive, setIsActive] = useState<boolean | "">("");
+  const [userId, setUserId] = useState<string>("");
 
   // Applied filter state (only sent on explicit search)
   const [appliedParams, setAppliedParams] = useState<{
@@ -67,24 +54,29 @@ function AIChatManagementPageContent() {
   }>({ page: 1, limit: 20 });
 
   const [messagesDialogOpen, setMessagesDialogOpen] = useState(false);
-  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [selectedSessionId, setSelectedSessionId] = useState<string>("");
 
-  const { data: sessionsData, isLoading, refetch } = useAiChatSessions(appliedParams);
+  const {
+    data: sessionsData,
+    isLoading,
+    refetch,
+  } = useAiChatSessions(appliedParams);
   const sessions = sessionsData?.sessions || [];
   const totalCount = sessionsData?.total || 0;
 
-  const { data: messagesData, isLoading: messagesLoading } = useAiChatMessages(selectedSessionId);
+  const { data: messagesData, isLoading: messagesLoading } =
+    useAiChatMessages(selectedSessionId);
 
   const handleSearch = () => {
     const params: typeof appliedParams = {
       page: page + 1,
       limit: rowsPerPage,
     };
-    if (startDate) params.startDate = startDate.toISOString().split('T')[0];
-    if (endDate) params.endDate = endDate.toISOString().split('T')[0];
+    if (startDate) params.startDate = startDate.toISOString().split("T")[0];
+    if (endDate) params.endDate = endDate.toISOString().split("T")[0];
     if (category) params.category = category;
     if (status) params.status = status;
-    if (isActive !== '') params.isActive = isActive as boolean;
+    if (isActive !== "") params.isActive = isActive as boolean;
     if (userId) params.userId = userId;
     setAppliedParams(params);
   };
@@ -92,10 +84,10 @@ function AIChatManagementPageContent() {
   const resetFilters = () => {
     setStartDate(null);
     setEndDate(null);
-    setCategory('');
-    setStatus('');
-    setIsActive('');
-    setUserId('');
+    setCategory("");
+    setStatus("");
+    setIsActive("");
+    setUserId("");
     setPage(0);
     setAppliedParams({ page: 1, limit: rowsPerPage });
   };
@@ -110,7 +102,9 @@ function AIChatManagementPageContent() {
     setAppliedParams((prev) => ({ ...prev, page: newPage + 1 }));
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const newLimit = parseInt(event.target.value, 10);
     setRowsPerPage(newLimit);
     setPage(0);
@@ -118,267 +112,422 @@ function AIChatManagementPageContent() {
   };
 
   const formatDate = (dateString: string) => {
-    return safeToLocaleString(dateString, 'ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    return safeToLocaleString(dateString, "ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getStatusInfo = (status: AIChatSessionStatus) => {
     switch (status) {
-      case 'active':
-        return { color: 'success' as const, icon: <ChatIcon />, label: '진행 중' };
-      case 'completed':
-        return { color: 'primary' as const, icon: <CheckCircleIcon />, label: '완료' };
-      case 'analyzing':
-        return { color: 'warning' as const, icon: <AnalyzeIcon />, label: '분석 중' };
-      case 'analyzed':
-        return { color: 'info' as const, icon: <CheckCircleIcon />, label: '분석 완료' };
-      case 'closed':
-        return { color: 'default' as const, icon: <CloseIcon />, label: '종료' };
+      case "active":
+        return {
+          color: "success" as const,
+          icon: <ChatIcon size={16} />,
+          label: "진행 중",
+        };
+      case "completed":
+        return {
+          color: "primary" as const,
+          icon: <CheckCircleIcon size={16} />,
+          label: "완료",
+        };
+      case "analyzing":
+        return {
+          color: "warning" as const,
+          icon: <AnalyzeIcon size={16} />,
+          label: "분석 중",
+        };
+      case "analyzed":
+        return {
+          color: "info" as const,
+          icon: <CheckCircleIcon size={16} />,
+          label: "분석 완료",
+        };
+      case "closed":
+        return {
+          color: "default" as const,
+          icon: <CloseIcon size={16} />,
+          label: "종료",
+        };
       default:
-        return { color: 'default' as const, icon: <ChatIcon />, label: status };
+        return {
+          color: "default" as const,
+          icon: <ChatIcon size={16} />,
+          label: status,
+        };
     }
   };
 
   const getCategoryColor = (category: AIChatCategory) => {
     switch (category) {
-      case '일상': return 'primary';
-      case '인간관계': return 'secondary';
-      case '진로/학교': return 'info';
-      case '연애': return 'error';
-      default: return 'default';
+      case "일상":
+        return "primary";
+      case "인간관계":
+        return "secondary";
+      case "진로/학교":
+        return "info";
+      case "연애":
+        return "error";
+      default:
+        return "default";
     }
   };
 
-  const selectedSession = messagesData?.session
-    ?? sessions.find((s: AIChatSession) => s.id === selectedSessionId)
-    ?? null;
+  const selectedSession =
+    messagesData?.session ??
+    sessions.find((s: AIChatSession) => s.id === selectedSessionId) ??
+    null;
   const messages = messagesData?.messages ?? [];
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box p={3}>
-        <Typography variant="h4" gutterBottom>
-          AI 채팅 관리
-        </Typography>
-
+    <>
+      <div style={{ padding: 24 }}>
+        <h4>AI 채팅 관리</h4>
         {/* 필터 영역 */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            필터 옵션
-          </Typography>
-
-          <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
-            <DatePicker
-              label="시작일"
-              value={startDate}
-              onChange={(newValue) => setStartDate(newValue)}
-              slotProps={{ textField: { size: 'small' } }}
-            />
-
-            <DatePicker
-              label="종료일"
-              value={endDate}
-              onChange={(newValue) => setEndDate(newValue)}
-              slotProps={{ textField: { size: 'small' } }}
-            />
-
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>카테고리</InputLabel>
+        <div style={{ padding: 16, marginBottom: 24 }}>
+          <h6>필터 옵션</h6>
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <TextField className="flex-1 min-w-0">
+              <Label>{"시작일"}</Label>
+              <Input
+                type="date"
+                value={startDate ? format(startDate, "yyyy-MM-dd") : ""}
+                onChange={(e) =>
+                  ((newValue) => setStartDate(newValue))(
+                    e.target.value
+                      ? new Date(e.target.value + "T00:00:00")
+                      : null,
+                  )
+                }
+              />
+            </TextField>
+            <TextField className="flex-1 min-w-0">
+              <Label>{"종료일"}</Label>
+              <Input
+                type="date"
+                value={endDate ? format(endDate, "yyyy-MM-dd") : ""}
+                onChange={(e) =>
+                  ((newValue) => setEndDate(newValue))(
+                    e.target.value
+                      ? new Date(e.target.value + "T00:00:00")
+                      : null,
+                  )
+                }
+              />
+            </TextField>
+            <div style={{ minWidth: 120 }}>
               <Select
-                value={category}
-                label="카테고리"
-                onChange={(e) => setCategory(e.target.value as AIChatCategory | '')}
+                selectedKey={category || null}
+                onSelectionChange={(key) =>
+                  ((e) => setCategory(e.target.value as AIChatCategory | ""))({
+                    target: { value: key },
+                  } as any)
+                }
+                aria-label={"카테고리"}
               >
-                <MenuItem value="">전체</MenuItem>
-                <MenuItem value="일상">일상</MenuItem>
-                <MenuItem value="인간관계">인간관계</MenuItem>
-                <MenuItem value="진로/학교">진로/학교</MenuItem>
-                <MenuItem value="연애">연애</MenuItem>
+                <HeroSelectLabel>카테고리</HeroSelectLabel>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id={""} textValue={"전체"}>
+                      전체
+                    </ListBox.Item>
+                    <ListBox.Item id={"일상"} textValue={"일상"}>
+                      일상
+                    </ListBox.Item>
+                    <ListBox.Item id={"인간관계"} textValue={"인간관계"}>
+                      인간관계
+                    </ListBox.Item>
+                    <ListBox.Item id={"진로/학교"} textValue={"진로/학교"}>
+                      진로/학교
+                    </ListBox.Item>
+                    <ListBox.Item id={"연애"} textValue={"연애"}>
+                      연애
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>상태</InputLabel>
+            </div>
+            <div style={{ minWidth: 120 }}>
               <Select
-                value={status}
-                label="상태"
-                onChange={(e) => setStatus(e.target.value as AIChatSessionStatus | '')}
+                selectedKey={status || null}
+                onSelectionChange={(key) =>
+                  ((e) =>
+                    setStatus(e.target.value as AIChatSessionStatus | ""))({
+                    target: { value: key },
+                  } as any)
+                }
+                aria-label={"상태"}
               >
-                <MenuItem value="">전체</MenuItem>
-                <MenuItem value="active">진행 중</MenuItem>
-                <MenuItem value="completed">완료</MenuItem>
-                <MenuItem value="analyzing">분석 중</MenuItem>
-                <MenuItem value="analyzed">분석 완료</MenuItem>
-                <MenuItem value="closed">종료</MenuItem>
+                <HeroSelectLabel>상태</HeroSelectLabel>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id={""} textValue={"전체"}>
+                      전체
+                    </ListBox.Item>
+                    <ListBox.Item id={"active"} textValue={"진행 중"}>
+                      진행 중
+                    </ListBox.Item>
+                    <ListBox.Item id={"completed"} textValue={"완료"}>
+                      완료
+                    </ListBox.Item>
+                    <ListBox.Item id={"analyzing"} textValue={"분석 중"}>
+                      분석 중
+                    </ListBox.Item>
+                    <ListBox.Item id={"analyzed"} textValue={"분석 완료"}>
+                      분석 완료
+                    </ListBox.Item>
+                    <ListBox.Item id={"closed"} textValue={"종료"}>
+                      종료
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>활성화</InputLabel>
+            </div>
+            <div style={{ minWidth: 120 }}>
               <Select
-                value={isActive}
-                label="활성화"
-                onChange={(e) => setIsActive(e.target.value as boolean | '')}
+                selectedKey={isActive === "" ? null : String(isActive)}
+                onSelectionChange={(key) =>
+                  setIsActive(key === "" || key === null ? "" : key === "true")
+                }
+                aria-label={"활성화"}
               >
-                <MenuItem value="">전체</MenuItem>
-                <MenuItem value={String(true)}>활성</MenuItem>
-                <MenuItem value={String(false)}>비활성</MenuItem>
+                <HeroSelectLabel>활성화</HeroSelectLabel>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id={""} textValue={"전체"}>
+                      전체
+                    </ListBox.Item>
+                    <ListBox.Item id={String(true)} textValue={"활성"}>
+                      활성
+                    </ListBox.Item>
+                    <ListBox.Item id={String(false)} textValue={"비활성"}>
+                      비활성
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
-            </FormControl>
-
-            <TextField
-              size="small"
-              label="사용자 ID"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              sx={{ minWidth: 150 }}
-            />
-
+            </div>
+            <TextField style={{ minWidth: 150 }}>
+              <Label>{"사용자 ID"}</Label>
+              <Input
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+              />
+            </TextField>
             <Button
-              variant="contained"
               onClick={handleSearch}
-              disabled={isLoading}
-              startIcon={<RefreshIcon />}
+              variant={"primary"}
+              isDisabled={isLoading}
             >
-              {isLoading ? '조회 중...' : '조회'}
+              {<RefreshIcon size={16} />}
+              {isLoading ? "조회 중..." : "조회"}
             </Button>
-
-            <Button
-              variant="outlined"
-              onClick={resetFilters}
-              startIcon={<RefreshIcon />}
-            >
-              초기화
+            <Button onClick={resetFilters} variant={"secondary"}>
+              {<RefreshIcon size={16} />}초기화
             </Button>
-          </Box>
-        </Paper>
-
+          </div>
+        </div>
         {/* 세션 목록 테이블 */}
-        <Paper>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>사용자</TableCell>
-                  <TableCell>카테고리</TableCell>
-                  <TableCell>대화 턴 수</TableCell>
-                  <TableCell>상태</TableCell>
-                  <TableCell>활성화</TableCell>
-                  <TableCell>생성 시간</TableCell>
-                  <TableCell>수정 시간</TableCell>
-                  <TableCell>작업</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+        <div>
+          <div>
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    사용자
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    카테고리
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    대화 턴 수
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    상태
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    활성화
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    생성 시간
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    수정 시간
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    작업
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center">
-                      <CircularProgress />
-                    </TableCell>
-                  </TableRow>
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-3 py-2 border-b border-default"
+                    >
+                      <Spinner aria-label="로딩 중" />
+                    </td>
+                  </tr>
                 ) : sessions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center">
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-3 py-2 border-b border-default"
+                    >
                       데이터가 없습니다.
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ) : (
                   sessions.map((session: AIChatSession) => {
                     const statusInfo = getStatusInfo(session.status);
                     return (
-                      <TableRow key={session.id}>
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Avatar
-                              src={session.user.profileImage || undefined}
-                              sx={{ width: 32, height: 32 }}
-                            >
-                              <PersonIcon />
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2" fontWeight="bold">
-                                {session.user.name}
-                              </Typography>
-                              <Typography variant="caption" color="textSecondary">
-                                {session.user.id}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={session.category}
-                            color={getCategoryColor(session.category)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>{session.turnCount}</TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={statusInfo.icon}
-                            label={statusInfo.label}
-                            color={statusInfo.color}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={session.isActive ? '활성' : '비활성'}
-                            color={session.isActive ? 'success' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>{formatDate(session.createdAt)}</TableCell>
-                        <TableCell>{formatDate(session.updatedAt)}</TableCell>
-                        <TableCell>
-                          <IconButton
-                            onClick={() => handleViewMessages(session.id)}
-                            size="small"
+                      <tr key={session.id}>
+                        <td className="px-3 py-2 border-b border-default">
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
                           >
-                            <MessageIcon />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
+                            <img
+                              src={session.user.profileImage || undefined}
+                              alt="프로필"
+                              className="h-9 w-9 rounded-full object-cover"
+                            />
+                            <div>
+                              <p>{session.user.name}</p>
+                              <p>{session.user.id}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 border-b border-default">
+                          <Chip size="sm">{session.category}</Chip>
+                        </td>
+                        <td className="px-3 py-2 border-b border-default">
+                          {session.turnCount}
+                        </td>
+                        <td className="px-3 py-2 border-b border-default">
+                          <Chip size="sm">
+                            {statusInfo.icon}
+                            {statusInfo.label}
+                          </Chip>
+                        </td>
+                        <td className="px-3 py-2 border-b border-default">
+                          <Chip size="sm">
+                            {session.isActive ? "활성" : "비활성"}
+                          </Chip>
+                        </td>
+                        <td className="px-3 py-2 border-b border-default">
+                          {formatDate(session.createdAt)}
+                        </td>
+                        <td className="px-3 py-2 border-b border-default">
+                          {formatDate(session.updatedAt)}
+                        </td>
+                        <td className="px-3 py-2 border-b border-default">
+                          <Button
+                            onClick={() => handleViewMessages(session.id)}
+                            variant={"secondary"}
+                            isIconOnly
+                            aria-label="작업"
+                          >
+                            <MessageIcon size={16} />
+                          </Button>
+                        </td>
+                      </tr>
                     );
                   })
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <TablePagination
-            rowsPerPageOptions={[10, 20, 50, 100]}
-            component="div"
-            count={totalCount}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="페이지당 행 수"
-            labelDisplayedRows={({ from, to, count }) =>
-              `${from}-${to} / ${count !== -1 ? count : `0개 이상`}`
-            }
-          />
-        </Paper>
-
+              </tbody>
+            </table>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-3 p-3">
+            <Select
+              aria-label="페이지당 행 수"
+              selectedKey={String(rowsPerPage)}
+              onSelectionChange={(key) =>
+                handleChangeRowsPerPage({
+                  target: { value: String(key) },
+                } as React.ChangeEvent<HTMLInputElement>)
+              }
+            >
+              <HeroSelectLabel className="sr-only">
+                {"페이지당 행 수"}
+              </HeroSelectLabel>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {[10, 20, 50, 100].map((size) => (
+                    <ListBox.Item
+                      key={size}
+                      id={String(size)}
+                      textValue={String(size)}
+                    >
+                      {size}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+            <Button
+              variant="secondary"
+              isDisabled={page <= 0}
+              onPress={() => handleChangePage(null, page - 1)}
+            >
+              이전
+            </Button>
+            <span>
+              {page + 1} / {Math.max(1, Math.ceil(totalCount / rowsPerPage))}
+            </span>
+            <Button
+              variant="secondary"
+              isDisabled={(page + 1) * rowsPerPage >= totalCount}
+              onPress={() => handleChangePage(null, page + 1)}
+            >
+              다음
+            </Button>
+          </div>
+        </div>
         {/* 메시지 상세 조회 다이얼로그 */}
         <AIChatMessageDetail
           open={messagesDialogOpen}
           onClose={() => {
             setMessagesDialogOpen(false);
-            setSelectedSessionId('');
+            setSelectedSessionId("");
           }}
           session={selectedSession}
           messages={messages}
           loading={messagesLoading}
         />
-      </Box>
-    </LocalizationProvider>
+      </div>
+    </>
   );
 }
 

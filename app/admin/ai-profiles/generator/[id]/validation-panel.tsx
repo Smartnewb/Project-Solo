@@ -1,29 +1,28 @@
-'use client';
-
-import { AlertTriangle, ShieldAlert } from 'lucide-react';
-import type { AiProfileDraft } from '@/app/types/ai-profile-generator';
-import { cn } from '@/shared/utils';
+"use client";
+import { AlertTriangle, ShieldAlert } from "lucide-react";
+import type { AiProfileDraft } from "@/app/types/ai-profile-generator";
+import { cn } from "@/shared/utils";
 
 interface Props {
-  validation: AiProfileDraft['validation'];
+  validation: AiProfileDraft["validation"];
 }
 
-const SEVERITY_CLASS: Record<'low' | 'medium' | 'high', string> = {
-  low: 'bg-slate-50 border-slate-200 text-slate-700',
-  medium: 'bg-amber-50 border-amber-200 text-amber-800',
-  high: 'bg-red-50 border-red-200 text-red-800',
+const SEVERITY_CLASS: Record<"low" | "medium" | "high", string> = {
+  low: "bg-slate-50 border-slate-200 text-slate-700",
+  medium: "bg-amber-50 border-amber-200 text-amber-800",
+  high: "bg-red-50 border-red-200 text-red-800",
 };
 
-const SEVERITY_LABEL: Record<'low' | 'medium' | 'high', string> = {
-  low: '낮음',
-  medium: '중간',
-  high: '높음',
+const SEVERITY_LABEL: Record<"low" | "medium" | "high", string> = {
+  low: "낮음",
+  medium: "중간",
+  high: "높음",
 };
 
 function formatDate(value: string | null): string {
-  if (!value) return '검증 기록 없음';
+  if (!value) return "검증 기록 없음";
   try {
-    return new Date(value).toLocaleString('ko-KR');
+    return new Date(value).toLocaleString("ko-KR");
   } catch {
     return value;
   }
@@ -52,15 +51,15 @@ export function ValidationPanel({ validation }: Props) {
         ) : (
           <ul className="space-y-1.5">
             {warnings.map((warning, index) => {
-              const severity = (warning.severity ?? 'low') as
-                | 'low'
-                | 'medium'
-                | 'high';
+              const severity = (warning.severity ?? "low") as
+                | "low"
+                | "medium"
+                | "high";
               return (
                 <li
                   key={`${String(warning.domain)}-${warning.code ?? warning.path ?? index}-${index}`}
                   className={cn(
-                    'rounded-md border px-3 py-2 text-xs',
+                    "rounded-md border px-3 py-2 text-xs",
                     SEVERITY_CLASS[severity],
                   )}
                 >

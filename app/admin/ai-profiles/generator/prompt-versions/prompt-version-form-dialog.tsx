@@ -1,15 +1,16 @@
-'use client';
+"use client";
+import { Button, Checkbox, Label } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import type {
   CreatePromptVersionBody,
   PromptVersion,
   UpdatePromptVersionBody,
-} from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -17,16 +18,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 import {
   PromptVersionConfigFields,
   type PromptVersionConfigFieldsValue,
-} from './prompt-version-config-fields';
+} from "./prompt-version-config-fields";
 
 interface Props {
   open: boolean;
@@ -43,10 +44,10 @@ interface FormState {
 
 function emptyConfig(): PromptVersionConfigFieldsValue {
   return {
-    globalInstruction: '',
+    globalInstruction: "",
     domainInstructions: {},
-    safetyInstruction: '',
-    repairInstruction: '',
+    safetyInstruction: "",
+    repairInstruction: "",
     temperatureByDomain: {},
   };
 }
@@ -54,20 +55,20 @@ function emptyConfig(): PromptVersionConfigFieldsValue {
 function initState(pv: PromptVersion | null): FormState {
   if (!pv) {
     return {
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       config: emptyConfig(),
       isDefault: false,
     };
   }
   return {
     name: pv.name,
-    description: pv.description ?? '',
+    description: pv.description ?? "",
     config: {
-      globalInstruction: pv.globalInstruction ?? '',
+      globalInstruction: pv.globalInstruction ?? "",
       domainInstructions: pv.domainInstructions ?? {},
-      safetyInstruction: pv.safetyInstruction ?? '',
-      repairInstruction: pv.repairInstruction ?? '',
+      safetyInstruction: pv.safetyInstruction ?? "",
+      repairInstruction: pv.repairInstruction ?? "",
       temperatureByDomain: pv.temperatureByDomain ?? {},
     },
     isDefault: pv.isDefault,
@@ -80,7 +81,7 @@ export function PromptVersionFormDialog({
   promptVersion,
 }: Props) {
   const isEdit = promptVersion !== null;
-  const editDisabled = isEdit && promptVersion.status === 'archived';
+  const editDisabled = isEdit && promptVersion.status === "archived";
   const toast = useToast();
   const qc = useQueryClient();
   const handleError = useAiProfileErrorHandler(
@@ -100,7 +101,7 @@ export function PromptVersionFormDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       const name = form.name.trim();
-      if (!name) throw new Error('이름을 입력하세요.');
+      if (!name) throw new Error("이름을 입력하세요.");
 
       const domainInstructions =
         Object.keys(form.config.domainInstructions).length > 0
@@ -142,8 +143,8 @@ export function PromptVersionFormDialog({
     onSuccess: () => {
       toast.success(
         isEdit
-          ? '프롬프트 버전이 수정되었습니다.'
-          : '프롬프트 버전이 생성되었습니다.',
+          ? "프롬프트 버전이 수정되었습니다."
+          : "프롬프트 버전이 생성되었습니다.",
       );
       qc.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.promptVersions(),
@@ -168,12 +169,12 @@ export function PromptVersionFormDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? '프롬프트 버전 편집' : '새 프롬프트 버전 생성'}
+            {isEdit ? "프롬프트 버전 편집" : "새 프롬프트 버전 생성"}
           </DialogTitle>
           <DialogDescription>
             {editDisabled
-              ? '아카이브된 버전은 편집할 수 없습니다. 새 버전을 생성하세요.'
-              : '글로벌/도메인별 지시문과 safety, repair, temperature를 구조화된 폼으로 관리합니다.'}
+              ? "아카이브된 버전은 편집할 수 없습니다. 새 버전을 생성하세요."
+              : "글로벌/도메인별 지시문과 safety, repair, temperature를 구조화된 폼으로 관리합니다."}
           </DialogDescription>
         </DialogHeader>
 
@@ -209,26 +210,28 @@ export function PromptVersionFormDialog({
           </div>
 
           {!isEdit ? (
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={form.isDefault}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    isDefault: event.target.checked,
-                  }))
-                }
-              />
-              생성 즉시 기본 프롬프트 버전으로 설정
-            </label>
+            <Checkbox
+              isSelected={form.isDefault}
+              isIndeterminate={undefined}
+              onChange={(isSelected) =>
+                setForm((prev) => ({
+                  ...prev,
+                  isDefault: isSelected,
+                }))
+              }
+            >
+              <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <Label>생성 즉시 기본 프롬프트 버전으로 설정</Label>
+              </Checkbox.Content>
+            </Checkbox>
           ) : null}
 
           <PromptVersionConfigFields
             value={form.config}
-            onChange={(next) =>
-              setForm((prev) => ({ ...prev, config: next }))
-            }
+            onChange={(next) => setForm((prev) => ({ ...prev, config: next }))}
             disabled={editDisabled}
           />
 
@@ -239,17 +242,20 @@ export function PromptVersionFormDialog({
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={mutation.isPending}
+            isDisabled={mutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={mutation.isPending || editDisabled}
+            isDisabled={mutation.isPending || editDisabled}
+            variant={"primary"}
+            size={"md"}
           >
-            {mutation.isPending ? '저장 중…' : isEdit ? '저장' : '생성'}
+            {mutation.isPending ? "저장 중…" : isEdit ? "저장" : "생성"}
           </Button>
         </DialogFooter>
       </DialogContent>

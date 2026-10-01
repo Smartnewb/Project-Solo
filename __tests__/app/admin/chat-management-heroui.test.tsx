@@ -1,0 +1,60 @@
+import React from 'react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Modal } from '@heroui/react';
+import ChatManagementTab from '@/app/admin/chat/components/ChatManagementTab';
+import chatService from '@/app/services/chat';
+import { ghostChat } from '@/app/services/admin/ghost-chat';
+import AdminService from '@/app/services/admin';
+
+jest.mock('@/app/services/chat',()=>({__esModule:true,default:{getChatRooms:jest.fn(),getChatMessages:jest.fn(),exportChatsToCsv:jest.fn()}}));
+jest.mock('@/app/services/admin/ghost-chat',()=>({ghostChat:{listSessions:jest.fn()}}));
+jest.mock('@/app/services/admin',()=>({__esModule:true,default:{userAppearance:{getUserDetails:jest.fn()}}}));
+jest.mock('@/components/admin/appearance/UserDetailModal',()=>function UserDetail(props:{loading:boolean;error:string|null}) {return <Modal.Backdrop isOpen><Modal.Container><Modal.Dialog><Modal.Header><Modal.Heading>사용자 프로필</Modal.Heading></Modal.Header><Modal.Body>{props.loading?'프로필 조회 중':props.error}</Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>;});
+const room={id:'room-1',male:{id:'male-1',name:'남성 일',profileImage:'',university:'남성 대학'},female:{id:'female-1',name:'여성 일',profileImage:''},isActive:true,lastMessageAt:null,createdAt:'2026-10-01'};
+const ghostRoom={...room,id:'ghost-room',male:{...room.male,id:'ghost-user',name:'고스트 일',isGhost:true}};
+beforeEach(()=>{
+  jest.clearAllMocks();
+  (chatService.getChatRooms as jest.Mock).mockResolvedValue({chatRooms:[room,ghostRoom],total:97,appliedStartDate:'2026-09-25',appliedEndDate:'2026-10-02'});
+  (ghostChat.listSessions as jest.Mock).mockResolvedValue([{id:'session/one',chatRoomId:'ghost-room'}]);
+  (chatService.getChatMessages as jest.Mock).mockImplementation(({limit}:{limit:number})=>Promise.resolve({messages:limit===6?[{id:'preview',senderId:'male-1',senderName:'남성 일',content:'최근 대화',messageType:'text',mediaUrl:null,createdAt:'2026-10-01'}]:[{id:'detail',senderId:'female-1',senderName:'여성 일',content:'상세 대화',messageType:'image',mediaUrl:'https://example.com/photo.jpg',createdAt:'2026-10-01'}]}));
+  (chatService.exportChatsToCsv as jest.Mock).mockResolvedValue(undefined);
+});
+it('keeps user/ghost classification, recent messages, and an encoded ghost-session link',async()=>{
+  const user=userEvent.setup();render(<ChatManagementTab />);
+  await screen.findByText('최근 대화');
+  expect(screen.getByRole('button',{name:'남성 일 · 여성 일 채팅 보기'})).toBeTruthy();
+  expect(screen.queryByRole('link',{name:'고스트 뷰 열기'})).toBeNull();
+  await user.click(screen.getByRole('button',{name:/고스트 채팅 1/}));
+  expect(screen.getByRole('link',{name:'고스트 뷰 열기'}).getAttribute('href')).toBe('/admin/ghost-chat?session=session%2Fone');
+  expect(screen.queryByRole('button',{name:'남성 일 · 여성 일 채팅 보기'})).toBeNull();
+});
+it('queries both page directions and sends date filters unchanged to query and CSV export',async()=>{
+  const user=userEvent.setup();render(<ChatManagementTab />);
+  await screen.findByText('최근 대화');
+  await user.click(screen.getByRole('button',{name:'다음 페이지'}));
+  await waitFor(()=>expect(chatService.getChatRooms).toHaveBeenLastCalledWith({page:2,limit:48,preset:'7days'}));
+  await screen.findByRole('button',{name:'남성 일 · 여성 일 채팅 보기'});
+  await user.click(screen.getByRole('button',{name:'이전 페이지'}));
+  await waitFor(()=>expect(chatService.getChatRooms).toHaveBeenLastCalledWith({page:1,limit:48,preset:'7days'}));
+  fireEvent.change(screen.getByLabelText('시작 날짜'),{target:{value:'2026-10-01'}});
+  fireEvent.change(screen.getByLabelText('종료 날짜'),{target:{value:'2026-10-02'}});
+  await user.click(screen.getByRole('button',{name:'조회'}));
+  await waitFor(()=>expect(chatService.getChatRooms).toHaveBeenLastCalledWith({page:1,limit:48,startDate:'2026-10-01',endDate:'2026-10-02'}));
+  await user.click(screen.getByRole('button',{name:'CSV 다운로드'}));
+  expect(chatService.exportChatsToCsv).toHaveBeenCalledWith({startDate:'2026-10-01',endDate:'2026-10-02'});
+});
+it('opens message detail, keyboard-accessible image preview, and pending profile state',async()=>{
+  (AdminService.userAppearance.getUserDetails as jest.Mock).mockReturnValue(new Promise(()=>{}));
+  const user=userEvent.setup();render(<ChatManagementTab />);
+  await user.click(await screen.findByRole('button',{name:'남성 일 · 여성 일 채팅 보기'}));
+  await screen.findByText('상세 대화');
+  expect(chatService.getChatMessages).toHaveBeenCalledWith({chatRoomId:'room-1',limit:50});
+  await user.click(screen.getByRole('button',{name:'여성 일 채팅 이미지 확대'}));
+  const imageDialog=screen.getByRole('dialog',{name:'이미지 미리보기'});
+  expect(within(imageDialog).getByRole('link',{name:'새 탭에서 열기'}).getAttribute('rel')).toBe('noopener noreferrer');
+  await user.keyboard('{Escape}');
+  await user.click(screen.getByRole('button',{name:'남성 일 프로필',exact:true}));
+  expect(screen.getByRole('dialog',{name:'사용자 프로필'}).textContent).toContain('프로필 조회 중');
+  expect(AdminService.userAppearance.getUserDetails).toHaveBeenCalledWith('male-1');
+});

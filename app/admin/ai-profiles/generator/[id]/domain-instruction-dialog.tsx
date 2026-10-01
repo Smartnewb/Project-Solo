@@ -1,14 +1,15 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   DOMAIN_LABEL,
   type AiProfileDomain,
-} from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -16,12 +17,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   open: boolean;
@@ -43,13 +44,13 @@ export function DomainInstructionDialog({
   const handleError = useAiProfileErrorHandler(
     aiProfileGeneratorKeys.draftDetail(draftId),
   );
-  const [instruction, setInstruction] = useState('');
-  const [promptVersionId, setPromptVersionId] = useState('');
+  const [instruction, setInstruction] = useState("");
+  const [promptVersionId, setPromptVersionId] = useState("");
 
   useEffect(() => {
     if (open) {
-      setInstruction('');
-      setPromptVersionId('');
+      setInstruction("");
+      setPromptVersionId("");
     }
   }, [open]);
 
@@ -61,7 +62,7 @@ export function DomainInstructionDialog({
         promptVersionId: promptVersionId.trim() || undefined,
       }),
     onSuccess: () => {
-      toast.success('지시문을 반영했습니다.');
+      toast.success("지시문을 반영했습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -105,17 +106,20 @@ export function DomainInstructionDialog({
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={mutation.isPending}
+            isDisabled={mutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
           <Button
             onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || instruction.trim().length === 0}
+            isDisabled={mutation.isPending || instruction.trim().length === 0}
+            variant={"primary"}
+            size={"md"}
           >
-            {mutation.isPending ? '반영 중…' : '반영'}
+            {mutation.isPending ? "반영 중…" : "반영"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,146 +1,67 @@
+import { Phone as PhoneIcon } from 'lucide-react';
+import { Button, Spinner, Chip, TextField, Label, Input } from '@heroui/react';
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  CircularProgress,
-  Alert,
-  Paper,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Avatar,
-  Chip
-} from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import PhoneIcon from '@mui/icons-material/Phone';
 import { UserSearchResult } from '../types';
-
 interface UserSearchProps {
-  searchTerm: string;
-  searchLoading: boolean;
-  error: string | null;
-  searchResults: UserSearchResult[];
-  selectedUser: UserSearchResult | null;
-  setSearchTerm: (value: string) => void;
-  searchUsers: () => void;
-  handleUserSelect: (user: UserSearchResult) => void;
+    searchTerm: string;
+    searchLoading: boolean;
+    error: string | null;
+    searchResults: UserSearchResult[];
+    selectedUser: UserSearchResult | null;
+    setSearchTerm: (value: string) => void;
+    searchUsers: () => void;
+    handleUserSelect: (user: UserSearchResult) => void;
 }
-
-const UserSearch: React.FC<UserSearchProps> = ({
-  searchTerm,
-  searchLoading,
-  error,
-  searchResults,
-  selectedUser,
-  setSearchTerm,
-  searchUsers,
-  handleUserSelect
-}) => {
-  return (
-    <Paper sx={{ p: 3, mb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <TextField
-          label="사용자 이름 검색"
-          variant="outlined"
-          size="small"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ mr: 2, flexGrow: 1 }}
-        />
-        <Button
-          variant="contained"
-          onClick={searchUsers}
-          disabled={searchLoading}
-        >
-          {searchLoading ? <CircularProgress size={24} /> : '검색'}
+const UserSearch: React.FC<UserSearchProps> = ({ searchTerm, searchLoading, error, searchResults, selectedUser, setSearchTerm, searchUsers, handleUserSelect }) => {
+    return (<section style={{ padding: 24, marginBottom: 24 }} className="rounded-xl border bg-white p-4">
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+        <TextField className="mb-4"><Label>{"사용자 이름 검색"}</Label><Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}></Input></TextField>
+        <Button onPress={searchUsers} isDisabled={searchLoading} variant="primary">
+          {searchLoading ? <Spinner size="sm"></Spinner> : '검색'}
         </Button>
-      </Box>
+      </div>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+      {error && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
           {error}
-        </Alert>
-      )}
+        </aside>)}
 
       {/* 검색 결과 목록 */}
-      {searchResults.length > 0 ? (
-        <Paper variant="outlined" sx={{ mb: 3, maxHeight: 300, overflow: 'auto' }}>
-          <List>
-            {searchResults.map((user) => (
-              <ListItem
-                key={user.id}
-                sx={{ cursor: 'pointer', bgcolor: selectedUser?.id === user.id ? 'action.selected' : undefined }}
-                onClick={() => handleUserSelect(user)}
-              >
-                <ListItemAvatar>
-                  <Avatar src={user.profileImageUrl}>
-                    <PersonIcon />
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Typography component="span">
+      {searchResults.length > 0 ? (<section style={{ marginBottom: 24, maxHeight: 300, overflow: 'auto' }} className="rounded-xl border bg-white p-4">
+          <ul>
+            {searchResults.map((user) => (<li key={user.id} onClick={() => handleUserSelect(user)} style={{ cursor: 'pointer', backgroundColor: selectedUser?.id === user.id ? 'action.selected' : undefined }}>
+                <span>
+                  <img src={user.profileImageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+                </span>
+                <div><p>{<div>
+                      <p>
                         {user.name} ({user.age}세, {user.gender === 'MALE' ? '남성' : '여성'})
-                      </Typography>
-                      {user.appearanceGrade && (
-                        <Chip
-                          size="small"
-                          label={user.appearanceGrade}
-                          color={
-                            user.appearanceGrade === 'S' ? 'secondary' :
-                            user.appearanceGrade === 'A' ? 'primary' :
-                            user.appearanceGrade === 'B' ? 'success' :
-                            user.appearanceGrade === 'C' ? 'warning' : 'default'
-                          }
-                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                        />
-                      )}
-                    </Box>
-                  }
-                  secondary={
-                    <Box>
+                      </p>
+                      {user.appearanceGrade && (<Chip size="sm">{user.appearanceGrade}</Chip>)}
+                    </div>}</p><small>{<div>
                       {/* 전화번호 */}
-                      {user.phoneNumber && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                          <PhoneIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
-                          <Typography variant="body2" color="text.secondary">
+                      {user.phoneNumber && (<div>
+                          <PhoneIcon></PhoneIcon>
+                          <p>
                             {user.phoneNumber}
-                          </Typography>
-                        </Box>
-                      )}
+                          </p>
+                        </div>)}
                       {/* 대학교 정보 */}
-                      <Typography variant="body2" color="text.secondary">
-                        {user.university ? (
-                          typeof user.university === 'string' ? user.university : user.university.name
-                        ) : user.universityDetails?.name ?
-                          `${user.universityDetails.name} ${user.universityDetails.department || ''}` :
-                          '대학 정보 없음'
-                        }
-                      </Typography>
-                    </Box>
-                  }
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
-      ) : (
-        // 검색 결과가 없을 때 표시할 내용
-        <Box sx={{ py: 3, textAlign: 'center' }}>
-          <Typography color="text.secondary">
+                      <p>
+                        {user.university ? (typeof user.university === 'string' ? user.university : user.university.name) : user.universityDetails?.name ?
+                        `${user.universityDetails.name} ${user.universityDetails.department || ''}` :
+                        '대학 정보 없음'}
+                      </p>
+                    </div>}</small></div>
+              </li>))}
+          </ul>
+        </section>) : (<div style={{ paddingBlock: 24, textAlign: 'center' }}>
+          <p>
             검색 결과가 없습니다.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          </p>
+          <p style={{ marginTop: 8 }}>
             다른 이름으로 검색해보세요.
-          </Typography>
-        </Box>
-      )}
-    </Paper>
-  );
+          </p>
+        </div>)}
+    </section>);
 };
-
 export default UserSearch;

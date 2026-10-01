@@ -1,30 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import {
-	Alert,
-	Avatar,
-	Box,
-	Button,
-	Chip,
-	CircularProgress,
-	Divider,
-	IconButton,
-	List,
-	ListItem,
-	Paper,
-	TextField,
-	Tooltip,
-	Typography,
-} from '@mui/material';
-import {
-	AutoAwesome as AutoAwesomeIcon,
-	ArrowBack as ArrowBackIcon,
-	Close as CloseIcon,
-	OpenInFull as OpenInFullIcon,
-	ScheduleSend as ScheduleSendIcon,
-	Send as SendIcon,
-} from '@mui/icons-material';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { Avatar, Button, Chip, Description, Label, Separator, Spinner, TextArea, TextField } from '@heroui/react';
+import { ArrowLeft, Maximize, Send, X } from 'lucide-react';
 import type { GhostChatSession, GhostChatSessionContext, GhostChatTimelineMessage } from '@/app/types/ghost-chat';
 import { GHOST_CHAT_STATE_LABELS } from '@/app/types/ghost-chat';
 import GhostChatConfirmDialog from './GhostChatConfirmDialog';
@@ -45,10 +23,10 @@ interface GhostChatPanelProps {
 
 type ConfirmMode = 'first-send' | 'close' | null;
 
-const stateColors: Record<GhostChatSession['state'], 'warning' | 'success' | 'info' | 'default'> = {
+const stateColors: Record<GhostChatSession['state'], 'warning' | 'success' | 'accent' | 'default'> = {
 	PENDING: 'warning',
 	ACTIVE: 'success',
-	IDLE: 'info',
+	IDLE: 'accent',
 	CLOSED: 'default',
 };
 
@@ -123,31 +101,33 @@ export default function GhostChatPanel({
 	const [aiDraft, setAiDraft] = useState<string | null>(null);
 	const [localError, setLocalError] = useState<string | null>(null);
 	const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
+  const [sending, setSending] = useState(false);
+  const currentSessionId = useRef(session?.id);
+  currentSessionId.current = session?.id;
+  const busy = actionLoading || sending;
 
 	const timeline = useMemo(() => (session ? buildTimeline(session) : []), [session]);
 	const recentMessages = useMemo(() => messages.slice(-6).reverse(), [messages]);
-	const canSend = Boolean(session && session.state !== 'CLOSED' && draft.trim() && !actionLoading);
-	const canClose = Boolean(session && session.state !== 'CLOSED' && !actionLoading);
-	const canRequestAiDraft = Boolean(session && session.state !== 'CLOSED' && !actionLoading && !messagesLoading);
+	const canSend = Boolean(session && session.state !== 'CLOSED' && draft.trim() && !busy);
+	const canClose = Boolean(session && session.state !== 'CLOSED' && !busy);
+	const canRequestAiDraft = Boolean(session && session.state !== 'CLOSED' && !busy && !messagesLoading);
 	const composerBlockedReason = session ? getComposerBlockedReason(session) : null;
 
 	useEffect(() => {
-		setAiDraft(null);
+		setAiDraft(null); setDraft(''); setLocalError(null); setConfirmMode(null);
 	}, [session?.id]);
 
-	const sendDraft = async () => {
-		if (!session) return;
-		try {
-			setLocalError(null);
-			await onSendMessage(session.id, draft);
-			setDraft('');
-		} catch (err) {
-			setLocalError(err instanceof Error ? err.message : 'Ghost 메시지 전송에 실패했습니다.');
-		}
-	};
+  const sendDraft = async () => {
+    if (!session || busy || session.state === 'CLOSED' || !draft.trim()) return;
+    const id = session.id;
+    setSending(true); setLocalError(null);
+    try { await onSendMessage(id, draft); if (currentSessionId.current === id) setDraft(''); }
+    catch (err) { if (currentSessionId.current === id) setLocalError(err instanceof Error ? err.message : 'Ghost 메시지 전송에 실패했습니다.'); }
+    finally { setSending(false); }
+  };
 
 	const handleSend = () => {
-		if (!session || !draft.trim()) return;
+		if (!session || !canSend) return;
 		if (session.adminMessageCount === 0) {
 			setConfirmMode('first-send');
 			return;
@@ -156,7 +136,7 @@ export default function GhostChatPanel({
 	};
 
 	const handleClose = () => {
-		if (!session) return;
+		if (!canClose) return;
 		setConfirmMode('close');
 	};
 
@@ -172,389 +152,58 @@ export default function GhostChatPanel({
 	};
 
 	const handleConfirm = async () => {
-		if (!session || !confirmMode) return;
+		if (!session || !confirmMode || busy || session.state === 'CLOSED') return;
 		if (confirmMode === 'first-send') {
 			setConfirmMode(null);
 			await sendDraft();
 			return;
 		}
 		try {
+      setSending(true);
 			setLocalError(null);
 			await onClose(session.id);
 			setConfirmMode(null);
 		} catch (err) {
-			setLocalError(err instanceof Error ? err.message : 'Ghost Chat 세션 종료에 실패했습니다.');
-		}
+			setConfirmMode(null);
+      setLocalError(err instanceof Error ? err.message : 'Ghost Chat 세션 종료에 실패했습니다.');
+		} finally { setSending(false); }
 	};
 
-	if (loading && !session) {
-		return (
-			<Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-				<CircularProgress size={28} />
-			</Box>
-		);
-	}
+  if (loading && !session) return <div role="status" aria-label="세션 불러오는 중" className="flex h-full items-center justify-center"><Spinner /></div>;
+  if (!session) return <p className="flex h-full items-center justify-center text-gray-600">세션을 선택하세요</p>;
 
-	if (!session) {
-		return (
-			<Box
-				sx={{
-					height: '100%',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					color: 'text.secondary',
-				}}
-			>
-				<Typography variant="body1">세션을 선택하세요</Typography>
-			</Box>
-		);
-	}
-
-	return (
-		<Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-			<Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-					{onBack && (
-						<IconButton size="small" onClick={onBack} aria-label="목록으로 돌아가기">
-							<ArrowBackIcon fontSize="small" />
-						</IconButton>
-					)}
-					<Typography variant="h6" sx={{ fontWeight: 700, flex: 1 }} noWrap>
-						현재 열린 채팅
-					</Typography>
-					<Chip
-						label={GHOST_CHAT_STATE_LABELS[session.state]}
-						color={stateColors[session.state]}
-						size="small"
-					/>
-					{onOpenFullScreen && (
-						<Tooltip title="전체 화면에서 대응">
-							<IconButton size="small" onClick={onOpenFullScreen} aria-label="전체 화면에서 대응">
-								<OpenInFullIcon fontSize="small" />
-							</IconButton>
-						</Tooltip>
-					)}
-				</Box>
-				<Box
-					sx={{
-						display: 'grid',
-						gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-						gap: 1,
-						mb: 1.5,
-					}}
-				>
-					<Paper elevation={0} sx={{ p: 1.25, border: 1, borderColor: 'divider', borderRadius: 1.5 }}>
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-							<Avatar
-								src={context?.ghost.primaryPhotoUrl ?? undefined}
-								alt={context?.ghost.anonymousName ?? 'Ghost'}
-								sx={{ width: 40, height: 40 }}
-							>
-								{context?.ghost.anonymousName?.charAt(0) ?? 'G'}
-							</Avatar>
-							<Box sx={{ minWidth: 0 }}>
-								<Typography variant="caption" color="text.secondary">
-									Ghost 프로필
-								</Typography>
-								<Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
-									{context?.ghost.anonymousName ?? `Ghost ${shortId(session.ghostAccountId)}`}
-								</Typography>
-								<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-									{compactProfileLabel(context?.ghost)}
-								</Typography>
-							</Box>
-						</Box>
-					</Paper>
-					<Paper elevation={0} sx={{ p: 1.25, border: 1, borderColor: 'divider', borderRadius: 1.5 }}>
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-							<Avatar sx={{ width: 40, height: 40 }}>
-								{context?.target?.gender?.charAt(0) ?? 'U'}
-							</Avatar>
-							<Box sx={{ minWidth: 0 }}>
-								<Typography variant="caption" color="text.secondary">
-									상대 유저
-								</Typography>
-								<Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
-									{shortId(session.targetUserId)}
-								</Typography>
-								<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-									{compactProfileLabel(context?.target)}
-								</Typography>
-							</Box>
-						</Box>
-					</Paper>
-				</Box>
-				<Box sx={{ display: 'flex', gap: 1 }}>
-					<Button
-						size="small"
-						variant="outlined"
-						color="error"
-						startIcon={<CloseIcon />}
-						disabled={!canClose}
-						onClick={handleClose}
-					>
-						종료
-					</Button>
-				</Box>
-			</Box>
-
-			<Box
-				sx={{
-					flex: 1,
-					minHeight: 0,
-					display: 'grid',
-					gridTemplateColumns: fullScreenMode ? { xs: '1fr', lg: '1fr 320px' } : '1fr',
-					overflow: 'hidden',
-					bgcolor: 'grey.50',
-				}}
-			>
-				<Box sx={{ minHeight: 0, overflowY: 'auto', p: 2 }}>
-				{localError && (
-					<Alert severity="error" sx={{ mb: 2 }} onClose={() => setLocalError(null)}>
-						{localError}
-					</Alert>
-				)}
-				{messagesLoading && (
-					<Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-						<CircularProgress size={22} />
-					</Box>
-				)}
-				<List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-					{messages.map((message) => {
-						const isGhost = message.senderType === 'GHOST';
-						const isSystem = message.senderType === 'SYSTEM';
-						const body =
-							message.content?.trim() ||
-							(message.mediaUrl ? `[${message.messageType}] ${message.mediaUrl}` : null) ||
-							`[${message.messageType}]`;
-
-						return (
-							<ListItem
-								key={message.id}
-								disablePadding
-								sx={{
-									justifyContent: isSystem ? 'center' : isGhost ? 'flex-end' : 'flex-start',
-								}}
-							>
-								<Paper
-									elevation={0}
-									sx={{
-										p: 1.25,
-										maxWidth: isSystem ? '92%' : '78%',
-										minWidth: 160,
-										border: 1,
-										borderColor: isGhost ? 'primary.light' : 'divider',
-										borderRadius: 2,
-										bgcolor: isSystem
-											? 'grey.100'
-											: isGhost
-												? 'rgba(25, 118, 210, 0.08)'
-												: 'background.paper',
-									}}
-								>
-									<Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
-										<Typography variant="caption" sx={{ fontWeight: 700 }}>
-											{senderLabels[message.senderType]}
-										</Typography>
-										<Typography variant="caption" color="text.secondary">
-											{formatTime(message.createdAt)}
-										</Typography>
-									</Box>
-									<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-										{body}
-									</Typography>
-								</Paper>
-							</ListItem>
-						);
-					})}
-					{!messagesLoading && messages.length === 0 && (
-						<ListItem disablePadding>
-							<Paper
-								elevation={0}
-								sx={{
-									p: 1.25,
-									width: '100%',
-									border: 1,
-									borderColor: 'divider',
-									borderRadius: 2,
-								}}
-							>
-								<Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-									아직 표시할 메시지가 없습니다.
-								</Typography>
-								<Typography variant="caption" color="text.secondary">
-									세션 이벤트 {timeline.length}건
-								</Typography>
-							</Paper>
-						</ListItem>
-					)}
-				</List>
-				</Box>
-				{fullScreenMode && (
-					<Box
-						sx={{
-							display: { xs: 'none', lg: 'flex' },
-							flexDirection: 'column',
-							gap: 1.25,
-							p: 2,
-							borderLeft: 1,
-							borderColor: 'divider',
-							bgcolor: 'background.paper',
-							overflowY: 'auto',
-						}}
-					>
-						<Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-							최근 채팅 내역
-						</Typography>
-						{recentMessages.length === 0 ? (
-							<Typography variant="body2" color="text.secondary">
-								최근 메시지가 없습니다.
-							</Typography>
-						) : (
-							recentMessages.map((message) => (
-								<Paper
-									key={message.id}
-									elevation={0}
-									sx={{ p: 1, border: 1, borderColor: 'divider', borderRadius: 1.5 }}
-								>
-									<Typography variant="caption" sx={{ fontWeight: 800 }}>
-										{senderLabels[message.senderType]} · {formatTime(message.createdAt)}
-									</Typography>
-									<Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-										{message.content?.trim() || `[${message.messageType}]`}
-									</Typography>
-								</Paper>
-							))
-						)}
-						<Divider />
-						<Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-							AI 응답 지원
-						</Typography>
-						<Typography variant="caption" color="text.secondary">
-							운영자가 필요할 때만 RAG Fusion/Qdrant/Gemini 2.5 Flash 초안을 요청하고, 검수 후 전송합니다.
-						</Typography>
-						<Box sx={{ display: 'flex', gap: 1 }}>
-							<Button
-								size="small"
-								variant="outlined"
-								disabled={!canRequestAiDraft}
-								startIcon={<AutoAwesomeIcon fontSize="small" />}
-								onClick={handleRequestAiDraft}
-							>
-								초안 요청
-							</Button>
-							<Button size="small" variant="outlined" disabled startIcon={<ScheduleSendIcon fontSize="small" />}>
-								예약 전송
-							</Button>
-						</Box>
-					</Box>
-				)}
-			</Box>
-
-			<Divider />
-			<Box sx={{ p: 2 }}>
-				{composerBlockedReason && (
-					<Alert severity="info" sx={{ mb: 1.5 }}>
-						{composerBlockedReason}
-					</Alert>
-				)}
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
-					<Button
-						size="small"
-						variant="outlined"
-						disabled={!canRequestAiDraft}
-						startIcon={<AutoAwesomeIcon fontSize="small" />}
-						onClick={handleRequestAiDraft}
-					>
-						AI 초안 요청
-					</Button>
-					<Chip label="검수 후 직접 전송" size="small" variant="outlined" />
-					<Chip label="예약 발송 준비" size="small" variant="outlined" />
-				</Box>
-				{aiDraft && (
-					<Paper
-						elevation={0}
-						sx={{
-							mb: 1.5,
-							p: 1.25,
-							border: 1,
-							borderColor: 'primary.light',
-							borderRadius: 1.5,
-							bgcolor: 'rgba(25, 118, 210, 0.06)',
-						}}
-					>
-						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
-							<AutoAwesomeIcon fontSize="small" color="primary" />
-							<Typography variant="subtitle2" sx={{ fontWeight: 800, flex: 1 }}>
-								요청된 AI 초안
-							</Typography>
-							<Button size="small" variant="text" onClick={handleRequestAiDraft}>
-								다시 생성
-							</Button>
-							<Button size="small" variant="contained" onClick={handleApplyAiDraft}>
-								입력창에 적용
-							</Button>
-						</Box>
-						<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-							{aiDraft}
-						</Typography>
-						<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
-							자동 발송하지 않습니다. 운영자가 문구를 검수하고 전송 버튼을 눌러야 유저에게 발송됩니다.
-						</Typography>
-					</Paper>
-				)}
-				<TextField
-					label="Ghost persona로 전송"
-					value={draft}
-					onChange={(event) => setDraft(event.target.value)}
-					fullWidth
-					multiline
-					minRows={2}
-					maxRows={5}
-					disabled={!session || session.state === 'CLOSED' || actionLoading}
-					placeholder={session.state !== 'CLOSED' ? 'Ghost 명의로 보낼 메시지 입력' : composerBlockedReason ?? '종료된 세션입니다.'}
-					onKeyDown={(event) => {
-						if (event.key === 'Enter' && !event.shiftKey) {
-							event.preventDefault();
-							handleSend();
-						}
-					}}
-				/>
-				<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-					<Typography variant="caption" color="text.secondary">
-						유저 {session.userMessageCount}건 · Ghost {session.adminMessageCount}건 · 종료 {formatTime(session.closedAt) ?? '아님'}
-					</Typography>
-					<Button
-						variant="contained"
-						endIcon={<SendIcon />}
-						disabled={!canSend}
-						onClick={handleSend}
-					>
-						전송
-					</Button>
-				</Box>
-			</Box>
-
-			<GhostChatConfirmDialog
-				open={confirmMode === 'first-send'}
-				title="Ghost 메시지 전송 확인"
-				description="이 메시지는 Ghost 프로필 명의로 유저에게 전송됩니다. 계속 전송할까요?"
-				confirmLabel="전송"
-				loading={actionLoading}
-				onCancel={() => setConfirmMode(null)}
-				onConfirm={handleConfirm}
-			/>
-			<GhostChatConfirmDialog
-				open={confirmMode === 'close'}
-				title="대화 종료"
-				description="종료 후 이 세션에서는 메시지를 보낼 수 없습니다."
-				confirmLabel="종료"
-				confirmColor="error"
-				loading={actionLoading}
-				onCancel={() => setConfirmMode(null)}
-				onConfirm={handleConfirm}
-			/>
-		</Box>
-	);
+  return <section className="flex h-full min-w-0 flex-col">
+    <header className="space-y-3 border-b p-4"><div className="flex items-center gap-2">
+      {onBack && <Button size="sm" isIconOnly variant="tertiary" aria-label="목록으로 돌아가기" onPress={onBack}><ArrowLeft size={18}/></Button>}
+      <h2 className="flex-1 text-lg font-semibold">현재 열린 채팅</h2><Chip size="sm" variant="soft" color={stateColors[session.state]}>{GHOST_CHAT_STATE_LABELS[session.state]}</Chip>
+      {onOpenFullScreen && <Button size="sm" isIconOnly variant="tertiary" aria-label="전체 화면에서 대응" onPress={onOpenFullScreen}><Maximize size={18}/></Button>}
+    </div>
+    <div className="grid gap-3 sm:grid-cols-2">{[
+      {label:'Ghost 프로필',name:context?.ghost.anonymousName ?? `Ghost ${shortId(session.ghostAccountId)}`,photo:context?.ghost.primaryPhotoUrl,profile:context?.ghost},
+      {label:'상대 유저',name:shortId(session.targetUserId),photo:context?.target?.primaryPhotoUrl,profile:context?.target},
+    ].map(profile=><div key={profile.label} className="flex items-center gap-2 rounded-lg border p-3"><Avatar size="sm"><Avatar.Image src={profile.photo ?? undefined} alt=""/><Avatar.Fallback>{profile.name.charAt(0)}</Avatar.Fallback></Avatar><div className="min-w-0"><p className="text-xs text-gray-600">{profile.label}</p><p className="truncate font-semibold">{profile.name}</p><p className="truncate text-xs text-gray-600">{compactProfileLabel(profile.profile)}</p></div></div>)}</div>
+    <Button variant="danger-soft" size="sm" onPress={handleClose} isDisabled={!canClose}><X size={16}/>종료</Button>
+    </header>
+    <div className={`grid min-h-0 flex-1 overflow-hidden bg-gray-50 ${fullScreenMode ? 'lg:grid-cols-[minmax(0,1fr)_320px]':''}`}>
+      <div className="min-h-0 space-y-3 overflow-y-auto p-4">
+        {localError && <div role="alert" className="flex items-center justify-between rounded-lg border border-red-200 p-3"><p>{localError}</p><Button variant="tertiary" isIconOnly aria-label="전송 오류 닫기" onPress={()=>setLocalError(null)}><X size={16}/></Button></div>}
+        {messagesLoading && <div role="status" aria-label="메시지 조회 중" className="flex justify-center"><Spinner size="sm"/></div>}
+        <ul className="flex flex-col gap-3" aria-label="대화 내역">{messages.map(message=>{
+          const isGhost=message.senderType==='GHOST', isSystem=message.senderType==='SYSTEM';
+          const body=message.content?.trim() || (message.mediaUrl ? `[${message.messageType}] ${message.mediaUrl}`:null) || `[${message.messageType}]`;
+          return <li key={message.id} className={`flex ${isSystem?'justify-center':isGhost?'justify-end':'justify-start'}`}><div className={`space-y-1 rounded-lg border bg-white p-3 ${isSystem?'max-w-[92%]':'max-w-[78%]'}`}><div className="flex justify-between gap-3 text-xs"><span className="font-semibold">{senderLabels[message.senderType]}</span><time className="text-gray-600">{formatTime(message.createdAt)}</time></div><p className="whitespace-pre-wrap break-words text-sm">{body}</p></div></li>;
+        })}{!messagesLoading && !messages.length && <li className="rounded-lg border bg-white p-3"><p className="text-sm font-semibold">아직 표시할 메시지가 없습니다.</p><p className="text-xs text-gray-600">세션 이벤트 {timeline.length}건</p></li>}</ul>
+      </div>
+      {fullScreenMode && <aside className="hidden space-y-3 overflow-y-auto border-l bg-white p-4 lg:block"><h3 className="text-sm font-semibold">최근 채팅 내역</h3>{recentMessages.length ? recentMessages.map(message=><div key={message.id} className="space-y-1 rounded-lg border p-3"><p className="text-xs font-semibold">{senderLabels[message.senderType]} · {formatTime(message.createdAt)}</p><p className="whitespace-pre-wrap break-words text-sm">{message.content?.trim() || `[${message.messageType}]`}</p></div>):<p className="text-sm text-gray-600">최근 메시지가 없습니다.</p>}<Separator/><h3 className="text-sm font-semibold">작성 지원</h3><p className="text-xs text-gray-600">최근 유저 메시지를 참고한 문구 예시입니다. 내용을 검수한 뒤 전송하세요.</p><Button variant="secondary" size="sm" onPress={handleRequestAiDraft} isDisabled={!canRequestAiDraft}>문구 예시 만들기</Button></aside>}
+    </div>
+    <Separator/><div className="space-y-3 p-4">
+      {composerBlockedReason && <p className="text-sm text-gray-600">{composerBlockedReason}</p>}
+      <div className="flex flex-wrap items-center gap-2"><Button variant="secondary" size="sm" onPress={handleRequestAiDraft} isDisabled={!canRequestAiDraft}>문구 예시 만들기</Button><Chip size="sm" variant="soft">검수 후 직접 전송</Chip></div>
+      {aiDraft && <section className="space-y-3 rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><h3 className="flex-1 text-sm font-semibold">작성 문구 예시</h3><Button size="sm" variant="tertiary" isDisabled={busy} onPress={handleRequestAiDraft}>다시 만들기</Button><Button size="sm" isDisabled={busy || session.state==='CLOSED'} onPress={handleApplyAiDraft}>입력창에 적용</Button></div><p className="whitespace-pre-wrap break-words text-sm">{aiDraft}</p><p className="text-xs text-gray-600">운영자가 문구를 검수하고 전송 버튼을 눌러야 발송됩니다.</p></section>}
+      <TextField isDisabled={session.state==='CLOSED' || busy}><Label>Ghost persona로 전송</Label><TextArea rows={2} className="max-h-40" value={draft} onChange={event=>setDraft(event.target.value)} placeholder={session.state!=='CLOSED'?'Ghost 명의로 보낼 메시지 입력':composerBlockedReason ?? '종료된 세션입니다.'} onKeyDown={event=>{if(event.key==='Enter' && !event.shiftKey && !event.nativeEvent.isComposing){event.preventDefault();handleSend();}}}/><Description>Enter 전송 · Shift+Enter 줄바꿈</Description></TextField>
+      <div className="flex items-center justify-between gap-3"><p className="text-xs text-gray-600">유저 {session.userMessageCount}건 · Ghost {session.adminMessageCount}건 · 종료 {formatTime(session.closedAt) ?? '아님'}</p><Button isDisabled={!canSend} onPress={handleSend}>{busy?<Spinner size="sm" aria-hidden="true"/>:<Send size={16}/>}전송</Button></div>
+    </div>
+    <GhostChatConfirmDialog open={confirmMode==='first-send'} title="Ghost 메시지 전송 확인" description="이 메시지는 Ghost 프로필 명의로 유저에게 전송됩니다. 계속 전송할까요?" confirmLabel="전송" loading={busy} onCancel={()=>setConfirmMode(null)} onConfirm={handleConfirm}/>
+    <GhostChatConfirmDialog open={confirmMode==='close'} title="대화 종료" description="종료 후 이 세션에서는 메시지를 보낼 수 없습니다." confirmLabel="종료" confirmColor="error" loading={busy} onCancel={()=>setConfirmMode(null)} onConfirm={handleConfirm}/>
+  </section>;
 }

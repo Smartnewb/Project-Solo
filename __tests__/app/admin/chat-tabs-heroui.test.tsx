@@ -1,0 +1,20 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import ChatPageV2 from '@/app/admin/chat/chat-v2';
+jest.mock('@/app/admin/chat/components/ChatManagementTab', () => function ManagementContent() { return <div>조회 화면 내용</div>; });
+jest.mock('@/app/admin/chat/components/ChatRefundTab', () => function RefundContent() { return <div>환불 화면 내용</div>; });
+jest.mock('@/app/admin/chat/components/ChatStatsTab', () => function StatsContent() { return <div>통계 화면 내용</div>; });
+it('keeps inactive admin tabs unmounted and supports keyboard selection', async () => {
+  const user = userEvent.setup();
+  render(<ChatPageV2 />);
+  expect(screen.getByText('조회 화면 내용')).toBeTruthy();
+  expect(screen.queryByText('환불 화면 내용')).toBeNull();
+  expect(screen.queryByText('통계 화면 내용')).toBeNull();
+  await user.click(screen.getByRole('tab',{name:'채팅 환불'}));
+  expect(screen.getByText('환불 화면 내용')).toBeTruthy();
+  expect(screen.queryByText('조회 화면 내용')).toBeNull();
+  await user.keyboard('{ArrowRight}');
+  expect(screen.getByText('통계 화면 내용')).toBeTruthy();
+  expect(screen.queryByText('환불 화면 내용')).toBeNull();
+});

@@ -1,15 +1,11 @@
-'use client';
-
-import { Box, Typography } from '@mui/material';
-import { EpisodeForm } from '../components/EpisodeForm';
+"use client";
+import { EpisodeForm } from "../components/EpisodeForm";
 
 export default function PixelCampusCreatePage() {
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
-        픽셀 캠퍼스 에피소드 작성
-      </Typography>
+    <div style={{ padding: 24 }}>
+      <h5 style={{ marginBottom: 16 }}>픽셀 캠퍼스 에피소드 작성</h5>
       <EpisodeForm mode="create" />
-    </Box>
+    </div>
   );
 }

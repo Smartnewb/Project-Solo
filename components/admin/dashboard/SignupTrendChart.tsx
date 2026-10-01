@@ -1,18 +1,8 @@
-'use client';
+"use client";
+import { Alert, Card, Spinner, Tabs } from "@heroui/react";
 
-import { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Tabs,
-  Tab,
-  CircularProgress,
-  Alert,
-  FormControlLabel,
-  Switch
-} from '@mui/material';
+import { useState, useEffect } from "react";
+
 import {
   LineChart,
   Line,
@@ -21,9 +11,9 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
-} from 'recharts';
-import AdminService from '@/app/services/admin';
+  ResponsiveContainer,
+} from "recharts";
+import AdminService from "@/app/services/admin";
 
 // 탭 패널 컴포넌트
 interface TabPanelProps {
@@ -43,11 +33,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`trend-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ pt: 2 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <div style={{ paddingTop: 8 }}>{children}</div>}
     </div>
   );
 }
@@ -55,7 +41,7 @@ function TabPanel(props: TabPanelProps) {
 function a11yProps(index: number) {
   return {
     id: `trend-tab-${index}`,
-    'aria-controls': `trend-tabpanel-${index}`,
+    "aria-controls": `trend-tabpanel-${index}`,
   };
 }
 
@@ -94,7 +80,9 @@ interface SignupTrendChartProps {
   includeDeleted?: boolean;
 }
 
-export default function SignupTrendChart({ includeDeleted = false }: SignupTrendChartProps) {
+export default function SignupTrendChart({
+  includeDeleted = false,
+}: SignupTrendChartProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [dailyData, setDailyData] = useState<DailySignupTrendItem[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklySignupTrendItem[]>([]);
@@ -102,7 +90,10 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (
+    event: React.SyntheticEvent | null,
+    newValue: number,
+  ) => {
     setActiveTab(newValue);
   };
 
@@ -117,11 +108,11 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
       date.setDate(today.getDate() - i);
 
       // 날짜 형식을 YYYY-MM-DD로 저장 (포맷팅은 별도로 함)
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = date.toISOString().split("T")[0];
 
       data.push({
         date: dateStr,
-        count: 0
+        count: 0,
       });
     }
 
@@ -136,15 +127,15 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
     // 최근 12주간의 데이터 생성
     for (let i = 11; i >= 0; i--) {
       const endDate = new Date();
-      endDate.setDate(today.getDate() - (i * 7));
+      endDate.setDate(today.getDate() - i * 7);
 
       const startDate = new Date(endDate);
       startDate.setDate(endDate.getDate() - 6);
 
       data.push({
-        weekStart: startDate.toISOString().split('T')[0],
-        weekEnd: endDate.toISOString().split('T')[0],
-        count: 0
+        weekStart: startDate.toISOString().split("T")[0],
+        weekEnd: endDate.toISOString().split("T")[0],
+        count: 0,
       });
     }
 
@@ -159,11 +150,11 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
     // 최근 12개월간의 데이터 생성
     for (let i = 11; i >= 0; i--) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
       data.push({
         month: month,
-        count: 0
+        count: 0,
       });
     }
 
@@ -177,12 +168,12 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
       data = generateEmptyDailyData();
     }
 
-    return data.map(item => {
+    return data.map((item) => {
       // 백엔드에서 label을 제공하는 경우 해당 label 사용
       if ((item as any).label) {
         return {
           date: (item as any).label,
-          가입자수: item.count
+          가입자수: item.count,
         };
       }
 
@@ -197,11 +188,11 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
           formattedDate = `${month}/${day}`;
         }
       } catch (e) {
-        console.error('일별 데이터 날짜 변환 오류:', e);
+        console.error("일별 데이터 날짜 변환 오류:", e);
       }
       return {
         date: formattedDate,
-        가입자수: item.count
+        가입자수: item.count,
       };
     });
   };
@@ -213,12 +204,12 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
       data = generateEmptyWeeklyData();
     }
 
-    return data.map(item => {
+    return data.map((item) => {
       // 백엔드에서 label을 제공하는 경우 해당 label 사용
       if ((item as any).label) {
         return {
           date: (item as any).label,
-          가입자수: item.count
+          가입자수: item.count,
         };
       }
 
@@ -236,11 +227,11 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
           formattedDate = `${startMonth}/${startDay}~${endMonth}/${endDay}`;
         }
       } catch (e) {
-        console.error('주별 데이터 날짜 변환 오류:', e);
+        console.error("주별 데이터 날짜 변환 오류:", e);
       }
       return {
         date: formattedDate,
-        가입자수: item.count
+        가입자수: item.count,
       };
     });
   };
@@ -252,12 +243,12 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
       data = generateEmptyMonthlyData();
     }
 
-    return data.map(item => {
+    return data.map((item) => {
       // 백엔드에서 label을 제공하는 경우 해당 label 사용
       if ((item as any).label) {
         return {
           date: (item as any).label,
-          가입자수: item.count
+          가입자수: item.count,
         };
       }
 
@@ -275,11 +266,11 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
           }
         }
       } catch (e) {
-        console.error('월별 데이터 날짜 변환 오류:', e);
+        console.error("월별 데이터 날짜 변환 오류:", e);
       }
       return {
         date: formattedDate,
-        가입자수: item.count
+        가입자수: item.count,
       };
     });
   };
@@ -292,56 +283,77 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
 
         // 일별 데이터 조회
         try {
-          const dailyResponse = await AdminService.stats.getDailySignupTrend(undefined, includeDeleted);
-          console.log('일별 데이터 응답:', dailyResponse);
-          if (dailyResponse && dailyResponse.data && dailyResponse.data.length > 0) {
+          const dailyResponse = await AdminService.stats.getDailySignupTrend(
+            undefined,
+            includeDeleted,
+          );
+          console.log("일별 데이터 응답:", dailyResponse);
+          if (
+            dailyResponse &&
+            dailyResponse.data &&
+            dailyResponse.data.length > 0
+          ) {
             setDailyData(dailyResponse.data);
           } else {
             // 데이터가 없는 경우 비어있는 데이터 생성
             setDailyData(generateEmptyDailyData());
           }
         } catch (err) {
-          console.error('일별 데이터 조회 오류:', err);
+          console.error("일별 데이터 조회 오류:", err);
           setDailyData(generateEmptyDailyData());
         }
 
         // 주별 데이터 조회
         try {
-          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend(undefined, includeDeleted);
-          console.log('주별 데이터 응답:', weeklyResponse);
-          if (weeklyResponse && weeklyResponse.data && weeklyResponse.data.length > 0) {
+          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend(
+            undefined,
+            includeDeleted,
+          );
+          console.log("주별 데이터 응답:", weeklyResponse);
+          if (
+            weeklyResponse &&
+            weeklyResponse.data &&
+            weeklyResponse.data.length > 0
+          ) {
             setWeeklyData(weeklyResponse.data);
           } else {
             // 데이터가 없는 경우 비어있는 데이터 생성
             setWeeklyData(generateEmptyWeeklyData());
           }
         } catch (err) {
-          console.error('주별 데이터 조회 오류:', err);
+          console.error("주별 데이터 조회 오류:", err);
           setWeeklyData(generateEmptyWeeklyData());
         }
 
         // 월별 데이터 조회
         try {
-          const monthlyResponse = await AdminService.stats.getMonthlySignupTrend(undefined, includeDeleted);
-          console.log('월별 데이터 응답:', monthlyResponse);
-          if (monthlyResponse && monthlyResponse.data && monthlyResponse.data.length > 0) {
+          const monthlyResponse =
+            await AdminService.stats.getMonthlySignupTrend(
+              undefined,
+              includeDeleted,
+            );
+          console.log("월별 데이터 응답:", monthlyResponse);
+          if (
+            monthlyResponse &&
+            monthlyResponse.data &&
+            monthlyResponse.data.length > 0
+          ) {
             setMonthlyData(monthlyResponse.data);
           } else {
             // 데이터가 없는 경우 비어있는 데이터 생성
             setMonthlyData(generateEmptyMonthlyData());
           }
         } catch (err) {
-          console.error('월별 데이터 조회 오류:', err);
+          console.error("월별 데이터 조회 오류:", err);
           setMonthlyData(generateEmptyMonthlyData());
         }
-
       } catch (err) {
-        console.error('회원가입 추이 데이터 조회 중 오류:', err);
+        console.error("회원가입 추이 데이터 조회 중 오류:", err);
         // 오류가 발생해도 비어있는 데이터 생성
         setDailyData(generateEmptyDailyData());
         setWeeklyData(generateEmptyWeeklyData());
         setMonthlyData(generateEmptyMonthlyData());
-        setError('데이터를 불러오는데 실패했습니다. 임시 데이터를 표시합니다.');
+        setError("데이터를 불러오는데 실패했습니다. 임시 데이터를 표시합니다.");
       } finally {
         setLoading(false);
       }
@@ -356,38 +368,57 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
 
   return (
     <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
+      <Card.Content>
+        <div className={"text-lg font-semibold text-neutral-900"}>
           회원가입 추이
-        </Typography>
-
+        </div>
         <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          aria-label="signup trend tabs"
-          variant="fullWidth"
+          selectedKey={activeTab}
+          onSelectionChange={(key) => handleTabChange(null, Number(key))}
         >
-          <Tab label="일별" {...a11yProps(0)} />
-          <Tab label="주별" {...a11yProps(1)} />
-          <Tab label="월별" {...a11yProps(2)} />
+          <Tabs.List aria-label="목록 보기">
+            <Tabs.Tab id={0}>{"일별"}</Tabs.Tab>
+            <Tabs.Tab id={1}>{"주별"}</Tabs.Tab>
+            <Tabs.Tab id={2}>{"월별"}</Tabs.Tab>
+          </Tabs.List>
         </Tabs>
-
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-            <CircularProgress />
-          </Box>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              paddingTop: 40,
+              paddingBottom: 40,
+            }}
+          >
+            <Spinner aria-label="불러오는 중" size="sm" />
+          </div>
         ) : (
           <>
-            {error && <Alert severity="warning" sx={{ mt: 2, mb: 2 }}>{error}</Alert>}
+            {error && (
+              <Alert
+                style={{ marginTop: 8, marginBottom: 8 }}
+                status={"warning"}
+                role="alert"
+              >
+                <Alert.Content>{error}</Alert.Content>
+              </Alert>
+            )}
             <TabPanel value={activeTab} index={0}>
-              <Box sx={{ height: 400 }}>
+              <div style={{ height: 400 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={formatDailyData(dailyData)}
                     margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" interval={2} angle={-45} textAnchor="end" height={70} />
+                    <XAxis
+                      dataKey="date"
+                      interval={2}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                    />
                     <YAxis />
                     <Tooltip />
                     <Legend />
@@ -399,21 +430,30 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </Box>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
+              </div>
+              <div
+                style={{ marginTop: 8, textAlign: "center" }}
+                className={"text-sm text-neutral-700"}
+              >
                 최근 30일간 일별 회원가입 추이
-              </Typography>
+              </div>
             </TabPanel>
 
             <TabPanel value={activeTab} index={1}>
-              <Box sx={{ height: 400 }}>
+              <div style={{ height: 400 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={formatWeeklyData(weeklyData)}
                     margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" interval={1} angle={-45} textAnchor="end" height={70} />
+                    <XAxis
+                      dataKey="date"
+                      interval={1}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                    />
                     <YAxis />
                     <Tooltip />
                     <Legend />
@@ -425,21 +465,30 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </Box>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
+              </div>
+              <div
+                style={{ marginTop: 8, textAlign: "center" }}
+                className={"text-sm text-neutral-700"}
+              >
                 최근 12주간 주별 회원가입 추이
-              </Typography>
+              </div>
             </TabPanel>
 
             <TabPanel value={activeTab} index={2}>
-              <Box sx={{ height: 400 }}>
+              <div style={{ height: 400 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={formatMonthlyData(monthlyData)}
                     margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" interval={0} angle={-45} textAnchor="end" height={70} />
+                    <XAxis
+                      dataKey="date"
+                      interval={0}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                    />
                     <YAxis />
                     <Tooltip />
                     <Legend />
@@ -451,14 +500,17 @@ export default function SignupTrendChart({ includeDeleted = false }: SignupTrend
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </Box>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
+              </div>
+              <div
+                style={{ marginTop: 8, textAlign: "center" }}
+                className={"text-sm text-neutral-700"}
+              >
                 최근 12개월간 월별 회원가입 추이
-              </Typography>
+              </div>
             </TabPanel>
           </>
         )}
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }

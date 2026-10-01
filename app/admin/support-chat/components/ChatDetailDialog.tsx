@@ -1,44 +1,41 @@
-'use client';
-
-import { useState, useEffect, useRef, useCallback } from 'react';
+"use client";
 import {
-  Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
-  IconButton,
-  Typography,
-  Chip,
-  CircularProgress,
-  Alert,
-  TextField,
-  List,
-  ListItem,
   Card,
-  Divider,
-  Snackbar,
-} from '@mui/material';
+  Chip,
+  FieldError,
+  Label,
+  Modal,
+  Spinner,
+  TextArea,
+  TextField,
+} from "@heroui/react";
 import {
-  Close as CloseIcon,
+  X as CloseIcon,
   Send as SendIcon,
-  SwapHoriz as TakeoverIcon,
-  CheckCircle as CheckCircleIcon,
-  SmartToy as SmartToyIcon,
-  Person as PersonIcon,
-  SupportAgent as SupportAgentIcon,
+  ArrowLeftRight as TakeoverIcon,
+  CircleCheck as CheckCircleIcon,
+  Bot as SmartToyIcon,
+  UserRound as PersonIcon,
+  Headset as SupportAgentIcon,
   Wifi as WifiIcon,
   WifiOff as WifiOffIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
+  Pencil as EditIcon,
+  Trash2 as DeleteIcon,
   Check as CheckIcon,
-} from '@mui/icons-material';
-import supportChatService from '@/app/services/support-chat';
-import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
-import { canMutateSupportMessage } from '../lib/can-mutate-message';
-import type { SupportSessionDetail, SupportMessage, SupportSenderType } from '@/app/types/support-chat';
-import { safeToLocaleString } from '@/app/utils/formatters';
+} from "lucide-react";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+
+import supportChatService from "@/app/services/support-chat";
+import { useSupportChatSocket } from "../hooks/useSupportChatSocket";
+import { canMutateSupportMessage } from "../lib/can-mutate-message";
+import type {
+  SupportSessionDetail,
+  SupportMessage,
+  SupportSenderType,
+} from "@/app/types/support-chat";
+import { safeToLocaleString } from "@/app/utils/formatters";
 import {
   SESSION_STATUS_LABELS,
   SESSION_STATUS_COLORS,
@@ -48,8 +45,8 @@ import {
   INFO_KEY_LABELS,
   PHASE_LABELS,
   SOURCE_LABELS,
-} from '@/app/types/support-chat';
-import { useAdminSession } from '@/shared/contexts/admin-session-context';
+} from "@/app/types/support-chat";
+import { useAdminSession } from "@/shared/contexts/admin-session-context";
 
 interface ChatDetailDialogProps {
   open: boolean;
@@ -58,10 +55,17 @@ interface ChatDetailDialogProps {
   onSessionUpdated: () => void;
 }
 
-const SENDER_CONFIG: Record<SupportSenderType, { icon: React.ReactNode; label: string; bgColor: string }> = {
-  user: { icon: <PersonIcon fontSize="small" />, label: '사용자', bgColor: '#e3f2fd' },
-  bot: { icon: <SmartToyIcon fontSize="small" />, label: 'AI', bgColor: '#f3e5f5' },
-  admin: { icon: <SupportAgentIcon fontSize="small" />, label: '어드민', bgColor: '#e8f5e9' },
+const SENDER_CONFIG: Record<
+  SupportSenderType,
+  { icon: React.ReactNode; label: string; bgColor: string }
+> = {
+  user: { icon: <PersonIcon size={16} />, label: "사용자", bgColor: "#e3f2fd" },
+  bot: { icon: <SmartToyIcon size={16} />, label: "AI", bgColor: "#f3e5f5" },
+  admin: {
+    icon: <SupportAgentIcon size={16} />,
+    label: "어드민",
+    bgColor: "#e8f5e9",
+  },
 };
 
 export default function ChatDetailDialog({
@@ -72,20 +76,35 @@ export default function ChatDetailDialog({
 }: ChatDetailDialogProps) {
   const { session: adminSession } = useAdminSession();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const [session, setSession] = useState<SupportSessionDetail | null>(null);
-  const [messageInput, setMessageInput] = useState('');
+  const [messageInput, setMessageInput] = useState("");
   const [sending, setSending] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editingContent, setEditingContent] = useState('');
+  const [editingContent, setEditingContent] = useState("");
   const [editSaving, setEditSaving] = useState(false);
-  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(
+    null,
+  );
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
     open: false,
-    message: '',
-    severity: 'success',
+    message: "",
+    severity: "success",
   });
+
+  useEffect(() => {
+    if (!snackbar.open) return;
+    const timer = setTimeout(
+      () => setSnackbar((prev) => ({ ...prev, open: false })),
+      3000,
+    );
+    return () => clearTimeout(timer);
+  }, [snackbar.open, snackbar.message]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sendingRef = useRef(false);
@@ -102,38 +121,48 @@ export default function ChatDetailDialog({
     });
   }, []);
 
-  const handleMessageUpdated = useCallback((event: { id: string; content: string }) => {
-    setSession((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        messages: prev.messages.map((message) =>
-          message.id === event.id ? { ...message, content: event.content } : message
-        ),
-      };
-    });
-  }, []);
+  const handleMessageUpdated = useCallback(
+    (event: { id: string; content: string }) => {
+      setSession((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.map((message) =>
+            message.id === event.id
+              ? { ...message, content: event.content }
+              : message,
+          ),
+        };
+      });
+    },
+    [],
+  );
 
   const handleMessageDeleted = useCallback((event: { messageId: string }) => {
     setSession((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
-        messages: prev.messages.filter((message) => message.id !== event.messageId),
+        messages: prev.messages.filter(
+          (message) => message.id !== event.messageId,
+        ),
       };
     });
   }, []);
 
-  const handleStatusChanged = useCallback((event: { newStatus: string }) => {
-    setSession((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        status: event.newStatus as SupportSessionDetail['status'],
-      };
-    });
-    onSessionUpdated();
-  }, [onSessionUpdated]);
+  const handleStatusChanged = useCallback(
+    (event: { newStatus: string }) => {
+      setSession((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          status: event.newStatus as SupportSessionDetail["status"],
+        };
+      });
+      onSessionUpdated();
+    },
+    [onSessionUpdated],
+  );
 
   const { state: socketState } = useSupportChatSocket({
     sessionId,
@@ -144,18 +173,22 @@ export default function ChatDetailDialog({
   });
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const fetchSessionDetail = async () => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const detail = await supportChatService.getSessionDetail(sessionId);
       setSession(detail);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "세션 정보를 불러오는데 실패했습니다.",
+      );
     } finally {
       setLoading(false);
     }
@@ -175,18 +208,23 @@ export default function ChatDetailDialog({
 
   const handleTakeover = async () => {
     if (!session) return;
-    
+
     setActionLoading(true);
     try {
       await supportChatService.takeoverSession(sessionId);
-      setSnackbar({ open: true, message: '세션을 인수했습니다.', severity: 'success' });
+      setSnackbar({
+        open: true,
+        message: "세션을 인수했습니다.",
+        severity: "success",
+      });
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err instanceof Error ? err.message : '세션 인수에 실패했습니다.',
-        severity: 'error',
+        message:
+          err instanceof Error ? err.message : "세션 인수에 실패했습니다.",
+        severity: "error",
       });
     } finally {
       setActionLoading(false);
@@ -199,16 +237,21 @@ export default function ChatDetailDialog({
     setActionLoading(true);
     try {
       await supportChatService.resolveSession(sessionId, {
-        closingMessage: '문의해 주셔서 감사합니다. 좋은 하루 되세요!',
+        closingMessage: "문의해 주셔서 감사합니다. 좋은 하루 되세요!",
       });
-      setSnackbar({ open: true, message: '세션이 해결 완료 처리되었습니다.', severity: 'success' });
+      setSnackbar({
+        open: true,
+        message: "세션이 해결 완료 처리되었습니다.",
+        severity: "success",
+      });
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err instanceof Error ? err.message : '세션 해결 처리에 실패했습니다.',
-        severity: 'error',
+        message:
+          err instanceof Error ? err.message : "세션 해결 처리에 실패했습니다.",
+        severity: "error",
       });
     } finally {
       setActionLoading(false);
@@ -216,19 +259,25 @@ export default function ChatDetailDialog({
   };
 
   const handleSendMessage = async () => {
-    if (sendingRef.current || !messageInput.trim() || session?.status !== 'admin_handling') return;
+    if (
+      sendingRef.current ||
+      !messageInput.trim() ||
+      session?.status !== "admin_handling"
+    )
+      return;
     sendingRef.current = true;
     setSending(true);
     try {
       await supportChatService.sendMessage(sessionId, messageInput.trim());
-      setMessageInput('');
+      setMessageInput("");
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err instanceof Error ? err.message : '메시지 전송에 실패했습니다.',
-        severity: 'error',
+        message:
+          err instanceof Error ? err.message : "메시지 전송에 실패했습니다.",
+        severity: "error",
       });
     } finally {
       sendingRef.current = false;
@@ -243,7 +292,7 @@ export default function ChatDetailDialog({
 
   const cancelEditMessage = () => {
     setEditingMessageId(null);
-    setEditingContent('');
+    setEditingContent("");
   };
 
   const handleSaveEditedMessage = async (messageId: string) => {
@@ -251,18 +300,27 @@ export default function ChatDetailDialog({
 
     setEditSaving(true);
     try {
-      const result = await supportChatService.updateMessage(sessionId, messageId, {
-        content: editingContent.trim(),
-      });
+      const result = await supportChatService.updateMessage(
+        sessionId,
+        messageId,
+        {
+          content: editingContent.trim(),
+        },
+      );
       handleMessageUpdated({ id: messageId, content: result.content });
       cancelEditMessage();
-      setSnackbar({ open: true, message: '답변을 수정했습니다.', severity: 'success' });
+      setSnackbar({
+        open: true,
+        message: "답변을 수정했습니다.",
+        severity: "success",
+      });
       onSessionUpdated();
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err instanceof Error ? err.message : '답변 수정에 실패했습니다.',
-        severity: 'error',
+        message:
+          err instanceof Error ? err.message : "답변 수정에 실패했습니다.",
+        severity: "error",
       });
     } finally {
       setEditSaving(false);
@@ -270,20 +328,25 @@ export default function ChatDetailDialog({
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!window.confirm('이 답변을 삭제할까요?')) return;
+    if (!window.confirm("이 답변을 삭제할까요?")) return;
 
     setDeletingMessageId(messageId);
     try {
       await supportChatService.deleteMessage(sessionId, messageId);
       handleMessageDeleted({ messageId });
       if (editingMessageId === messageId) cancelEditMessage();
-      setSnackbar({ open: true, message: '답변을 삭제했습니다.', severity: 'success' });
+      setSnackbar({
+        open: true,
+        message: "답변을 삭제했습니다.",
+        severity: "success",
+      });
       onSessionUpdated();
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err instanceof Error ? err.message : '답변 삭제에 실패했습니다.',
-        severity: 'error',
+        message:
+          err instanceof Error ? err.message : "답변 삭제에 실패했습니다.",
+        severity: "error",
       });
     } finally {
       setDeletingMessageId(null);
@@ -291,373 +354,483 @@ export default function ChatDetailDialog({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey &&
+      !e.nativeEvent.isComposing &&
+      e.keyCode !== 229
+    ) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
   const formatDate = (dateString: string) => {
-    return safeToLocaleString(dateString, 'ko-KR', {
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+    return safeToLocaleString(dateString, "ko-KR", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const renderMessage = (message: SupportMessage) => {
     const config = SENDER_CONFIG[message.senderType];
-    const isUser = message.senderType === 'user';
-    const canMutateMessage = canMutateSupportMessage(message, adminSession?.user.id);
+    const isUser = message.senderType === "user";
+    const canMutateMessage = canMutateSupportMessage(
+      message,
+      adminSession?.user.id,
+    );
     const isEditing = editingMessageId === message.id;
 
     return (
-      <ListItem
+      <li
         key={message.id}
-        sx={{
-          flexDirection: 'column',
-          alignItems: isUser ? 'flex-start' : 'flex-end',
-          py: 1,
+        style={{
+          flexDirection: "column",
+          alignItems: isUser ? "flex-start" : "flex-end",
+          paddingBlock: 8,
         }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            mb: 0.5,
-            flexDirection: isUser ? 'row' : 'row-reverse',
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            marginBottom: 4,
+            flexDirection: isUser ? "row" : "row-reverse",
           }}
         >
           {config.icon}
-          <Typography variant="caption" color="text.secondary">
-            {config.label}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-            {formatDate(message.createdAt)}
-          </Typography>
-        </Box>
+          <p>{config.label}</p>
+          <p style={{ marginLeft: 8 }}>{formatDate(message.createdAt)}</p>
+        </div>
         <Card
-          sx={{
-            p: 1.5,
-            maxWidth: '80%',
-            minWidth: isEditing ? 'min(80%, 360px)' : undefined,
-            bgcolor: config.bgColor,
+          style={{
+            padding: 12,
+            maxWidth: "80%",
+            minWidth: isEditing ? "min(80%, 360px)" : undefined,
+            backgroundColor: config.bgColor,
             borderRadius: 2,
           }}
         >
           {canMutateMessage && !isEditing && (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mb: 0.5 }}>
-              <IconButton size="small" onClick={() => startEditMessage(message)} aria-label="답변 수정">
-                <EditIcon fontSize="inherit" />
-              </IconButton>
-              <IconButton
-                size="small"
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 4,
+                marginBottom: 4,
+              }}
+            >
+              <Button
+                onClick={() => startEditMessage(message)}
+                aria-label="답변 수정"
+                variant={"secondary"}
+                isIconOnly
+              >
+                <EditIcon size={16} />
+              </Button>
+              <Button
                 onClick={() => handleDeleteMessage(message.id)}
-                disabled={deletingMessageId === message.id}
                 aria-label="답변 삭제"
+                variant={"secondary"}
+                isDisabled={deletingMessageId === message.id}
+                isIconOnly
               >
                 {deletingMessageId === message.id ? (
-                  <CircularProgress size={14} />
+                  <Spinner aria-label="로딩 중" />
                 ) : (
-                  <DeleteIcon fontSize="inherit" />
+                  <DeleteIcon size={16} />
                 )}
-              </IconButton>
-            </Box>
+              </Button>
+            </div>
           )}
-          {(message.senderType === 'bot' || message.senderType === 'admin') && (message.metadata?.phase || message.metadata?.source || message.metadata?.webhook_handled) && (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
-              {message.metadata?.phase && (
-                <Chip
-                  label={PHASE_LABELS[message.metadata.phase]}
-                  size="small"
-                  sx={{ fontSize: '0.65rem', height: 20 }}
-                  color={message.metadata.phase === 'answering' ? 'success' : 'default'}
-                />
-              )}
-              {message.metadata?.source && (
-                <Chip
-                  label={SOURCE_LABELS[message.metadata.source]?.label || `출처: ${message.metadata.source}`}
-                  size="small"
-                  sx={{ fontSize: '0.65rem', height: 20 }}
-                  color={SOURCE_LABELS[message.metadata.source]?.color || 'default'}
-                />
-              )}
-              {message.metadata?.webhook_handled && !message.metadata?.source && (
-                <Chip
-                  label="🤖 webhook 처리"
-                  size="small"
-                  sx={{ fontSize: '0.65rem', height: 20 }}
-                  color="info"
-                />
-              )}
-              {message.metadata?.tool && (
-                <Chip
-                  label={`🔧 ${message.metadata.tool}`}
-                  size="small"
-                  sx={{ fontSize: '0.65rem', height: 20 }}
-                  variant="outlined"
-                />
-              )}
-            </Box>
-          )}
+          {(message.senderType === "bot" || message.senderType === "admin") &&
+            (message.metadata?.phase ||
+              message.metadata?.source ||
+              message.metadata?.webhook_handled) && (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 4,
+                  marginBottom: 4,
+                }}
+              >
+                {message.metadata?.phase && (
+                  <Chip size="sm">{PHASE_LABELS[message.metadata.phase]}</Chip>
+                )}
+                {message.metadata?.source && (
+                  <Chip size="sm">
+                    {SOURCE_LABELS[message.metadata.source]?.label ||
+                      `출처: ${message.metadata.source}`}
+                  </Chip>
+                )}
+                {message.metadata?.webhook_handled &&
+                  !message.metadata?.source && (
+                    <Chip size="sm">{"🤖 webhook 처리"}</Chip>
+                  )}
+                {message.metadata?.tool && (
+                  <Chip size="sm">{`🔧 ${message.metadata.tool}`}</Chip>
+                )}
+              </div>
+            )}
           {isEditing ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <TextField
-                value={editingContent}
-                onChange={(event) => setEditingContent(event.target.value)}
-                multiline
-                minRows={3}
-                size="small"
-                autoFocus
-                disabled={editSaving}
-                inputProps={{ maxLength: 2000 }}
-              />
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                <Button
-                  size="small"
-                  onClick={cancelEditMessage}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <TextField aria-label={"입력"}>
+                <TextArea
+                  value={editingContent}
+                  onChange={(event) => setEditingContent(event.target.value)}
+                  rows={3}
+                  autoFocus
+                  {...{ maxLength: 2000 }}
                   disabled={editSaving}
-                  startIcon={<CloseIcon />}
+                  aria-label={"입력"}
+                />
+              </TextField>
+              <div
+                style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+              >
+                <Button
+                  onClick={cancelEditMessage}
+                  variant={"secondary"}
+                  isDisabled={editSaving}
                 >
-                  취소
+                  {<CloseIcon size={16} />}취소
                 </Button>
                 <Button
-                  size="small"
-                  variant="contained"
                   onClick={() => handleSaveEditedMessage(message.id)}
-                  disabled={editSaving || !editingContent.trim()}
-                  startIcon={editSaving ? <CircularProgress size={14} /> : <CheckIcon />}
+                  variant={"primary"}
+                  isDisabled={editSaving || !editingContent.trim()}
                 >
+                  {editSaving ? (
+                    <Spinner aria-label="로딩 중" />
+                  ) : (
+                    <CheckIcon size={16} />
+                  )}
                   저장
                 </Button>
-              </Box>
-            </Box>
+              </div>
+            </div>
           ) : (
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-              {message.content}
-            </Typography>
+            <p style={{ whiteSpace: "pre-wrap" }}>{message.content}</p>
           )}
           {message.metadata?.confidence !== undefined && (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            <p style={{ display: "block", marginTop: 4 }}>
               신뢰도: {(message.metadata.confidence * 100).toFixed(0)}%
-            </Typography>
+            </p>
           )}
           {message.metadata?.reason && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}
-            >
+            <p style={{ display: "block", marginTop: 4, fontStyle: "italic" }}>
               사유: {message.metadata.reason}
-            </Typography>
+            </p>
           )}
         </Card>
-      </ListItem>
+      </li>
     );
   };
 
-  const canTakeover = session?.status === 'waiting_admin' || session?.status === 'bot_handling';
-  const canResolve = session?.status === 'admin_handling';
-  const canSendMessage = session?.status === 'admin_handling';
+  const canTakeover =
+    session?.status === "waiting_admin" || session?.status === "bot_handling";
+  const canResolve = session?.status === "admin_handling";
+  const canSendMessage = session?.status === "admin_handling";
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <SupportAgentIcon />
-            <Typography variant="h6">채팅 상세</Typography>
-            {session && (
-              <>
-                <Chip
-                  label={SESSION_STATUS_LABELS[session.status]}
-                  color={SESSION_STATUS_COLORS[session.status]}
-                  size="small"
-                />
-                <Typography variant="body2">
-                  {LANGUAGE_FLAGS[session.language]} {LANGUAGE_LABELS[session.language]}
-                </Typography>
-              </>
-            )}
-            {canSendMessage && (
-              <Chip
-                icon={socketState.connected ? <WifiIcon /> : <WifiOffIcon />}
-                label={socketState.connected ? (socketState.sessionJoined ? '연결됨' : '참여 중...') : '연결 중...'}
-                color={socketState.connected && socketState.sessionJoined ? 'success' : 'default'}
-                size="small"
-                variant="outlined"
-              />
-            )}
-          </Box>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', height: 500 }}>
-          {error && (
-            <Alert severity="error" sx={{ m: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          {socketState.error && (
-            <Alert severity="warning" sx={{ m: 2 }}>
-              WebSocket: {socketState.error}
-            </Alert>
-          )}
-
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-              <CircularProgress />
-            </Box>
-          ) : session ? (
-            <>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderBottom: 1, borderColor: 'divider' }}>
-                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">사용자</Typography>
-                    <Typography variant="body2">
-                      {session.user.nickname || session.user.id.substring(0, 8)}
-                    </Typography>
-                  </Box>
-                  {session.user.universityName && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">대학교</Typography>
-                      <Typography variant="body2">{session.user.universityName}</Typography>
-                    </Box>
-                  )}
-                  {session.user.phoneNumber && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">연락처</Typography>
-                      <Typography variant="body2">{session.user.phoneNumber}</Typography>
-                    </Box>
-                  )}
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">생성일</Typography>
-                    <Typography variant="body2">{formatDate(session.createdAt)}</Typography>
-                  </Box>
-                </Box>
-              </Box>
-
-              {(session.domain || session.collectedInfo) && (
-                <Box sx={{ p: 2, bgcolor: 'info.lighter', borderBottom: 1, borderColor: 'divider' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SmartToyIcon fontSize="small" />
-                    🤖 봇이 수집한 정보
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    {session.domain && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">도메인</Typography>
-                        <Typography variant="body2">{DOMAIN_LABELS[session.domain]}</Typography>
-                      </Box>
-                    )}
-                    {session.collectedInfo && Object.entries(session.collectedInfo).map(([key, value]) => (
-                      <Box key={key}>
-                        <Typography variant="caption" color="text.secondary">
-                          {INFO_KEY_LABELS[key] || key}
-                        </Typography>
-                        <Typography variant="body2">{value}</Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                  {session.domain && session.collectedInfo && Object.keys(session.collectedInfo).length > 0 && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                      💡 참고: 봇이 사용자와 대화하여 위 정보를 수집했습니다.
-                    </Typography>
-                  )}
-                </Box>
-              )}
-
-              <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
-                {session.messages.length === 0 ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                    <Typography color="text.secondary">메시지가 없습니다.</Typography>
-                  </Box>
-                ) : (
-                  <List sx={{ p: 0 }}>
-                    {session.messages.map(renderMessage)}
-                    <div ref={messagesEndRef} />
-                  </List>
-                )}
-              </Box>
-
-              {canSendMessage && (
-                <>
-                  <Divider />
-                  <Box sx={{ p: 2, display: 'flex', gap: 1 }}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="메시지를 입력하세요..."
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      disabled={sending}
-                      multiline
-                      maxRows={3}
-                    />
-                    <Button
-                      variant="contained"
-                      onClick={handleSendMessage}
-                      disabled={sending || !messageInput.trim()}
-                      aria-label="메시지 전송"
-                      sx={{ minWidth: 'auto', px: 2 }}
-                    >
-                      {sending ? <CircularProgress size={20} /> : <SendIcon />}
-                    </Button>
-                  </Box>
-                </>
-              )}
-            </>
-          ) : null}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-          {canTakeover && (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleTakeover}
-              disabled={actionLoading}
-              startIcon={actionLoading ? <CircularProgress size={16} /> : <TakeoverIcon />}
-            >
-              인수하기
-            </Button>
-          )}
-          {canResolve && (
-            <Button
-              variant="contained"
-              color="success"
-              onClick={handleResolve}
-              disabled={actionLoading}
-              startIcon={actionLoading ? <CircularProgress size={16} /> : <CheckCircleIcon />}
-            >
-              해결 완료
-            </Button>
-          )}
-          <Box sx={{ flex: 1 }} />
-          <Button onClick={onClose}>닫기</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      <Modal.Backdrop
+        isOpen={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) onClose();
+        }}
       >
-        <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
+        <Modal.Container>
+          <Modal.Dialog className="max-w-3xl">
+            <Modal.Heading
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <SupportAgentIcon size={16} />
+                <h6>채팅 상세</h6>
+                {session && (
+                  <>
+                    <Chip size="sm">
+                      {SESSION_STATUS_LABELS[session.status]}
+                    </Chip>
+                    <p>
+                      {LANGUAGE_FLAGS[session.language]}
+                      {LANGUAGE_LABELS[session.language]}
+                    </p>
+                  </>
+                )}
+                {canSendMessage && (
+                  <Chip size="sm">
+                    {socketState.connected ? (
+                      <WifiIcon size={16} />
+                    ) : (
+                      <WifiOffIcon size={16} />
+                    )}
+                    {socketState.connected
+                      ? socketState.sessionJoined
+                        ? "연결됨"
+                        : "참여 중..."
+                      : "연결 중..."}
+                  </Chip>
+                )}
+              </div>
+              <Button
+                onClick={onClose}
+                variant={"secondary"}
+                isIconOnly
+                aria-label="작업"
+              >
+                <CloseIcon size={16} />
+              </Button>
+            </Modal.Heading>
+            <Modal.Body
+              style={{
+                padding: 0,
+                display: "flex",
+                flexDirection: "column",
+                height: 500,
+              }}
+            >
+              {error && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-default p-3 text-sm"
+                  style={{ margin: 16 }}
+                >
+                  {error}
+                </div>
+              )}
+              {socketState.error && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-default p-3 text-sm"
+                  style={{ margin: 16 }}
+                >
+                  WebSocket: {socketState.error}
+                </div>
+              )}
+              {loading ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    flex: 1,
+                  }}
+                >
+                  <Spinner aria-label="로딩 중" />
+                </div>
+              ) : session ? (
+                <>
+                  <div
+                    style={{
+                      padding: 16,
+                      backgroundColor: "#f4f4f5",
+                      borderBottom: "1px solid #e4e4e7",
+                      borderColor: "#e4e4e7",
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                      <div>
+                        <p>사용자</p>
+                        <p>
+                          {session.user.nickname ||
+                            session.user.id.substring(0, 8)}
+                        </p>
+                      </div>
+                      {session.user.universityName && (
+                        <div>
+                          <p>대학교</p>
+                          <p>{session.user.universityName}</p>
+                        </div>
+                      )}
+                      {session.user.phoneNumber && (
+                        <div>
+                          <p>연락처</p>
+                          <p>{session.user.phoneNumber}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p>생성일</p>
+                        <p>{formatDate(session.createdAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {(session.domain || session.collectedInfo) && (
+                    <div
+                      style={{
+                        padding: 16,
+                        backgroundColor: "info.lighter",
+                        borderBottom: "1px solid #e4e4e7",
+                        borderColor: "#e4e4e7",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontWeight: "bold",
+                          marginBottom: 8,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <SmartToyIcon size={16} />
+                        🤖 봇이 수집한 정보
+                      </p>
+                      <div
+                        style={{ display: "flex", gap: 16, flexWrap: "wrap" }}
+                      >
+                        {session.domain && (
+                          <div>
+                            <p>도메인</p>
+                            <p>{DOMAIN_LABELS[session.domain]}</p>
+                          </div>
+                        )}
+                        {session.collectedInfo &&
+                          Object.entries(session.collectedInfo).map(
+                            ([key, value]) => (
+                              <div key={key}>
+                                <p>{INFO_KEY_LABELS[key] || key}</p>
+                                <p>{value}</p>
+                              </div>
+                            ),
+                          )}
+                      </div>
+                      {session.domain &&
+                        session.collectedInfo &&
+                        Object.keys(session.collectedInfo).length > 0 && (
+                          <p style={{ display: "block", marginTop: 8 }}>
+                            💡 참고: 봇이 사용자와 대화하여 위 정보를
+                            수집했습니다.
+                          </p>
+                        )}
+                    </div>
+                  )}
+
+                  <div style={{ flex: 1, overflow: "auto", padding: 8 }}>
+                    {session.messages.length === 0 ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          height: "100%",
+                        }}
+                      >
+                        <p>메시지가 없습니다.</p>
+                      </div>
+                    ) : (
+                      <ul style={{ padding: 0 }}>
+                        {session.messages.map(renderMessage)}
+                        <div ref={messagesEndRef} />
+                      </ul>
+                    )}
+                  </div>
+
+                  {canSendMessage && (
+                    <>
+                      <hr />
+                      <div style={{ padding: 16, display: "flex", gap: 8 }}>
+                        <TextField aria-label={"메시지를 입력하세요..."}>
+                          <TextArea
+                            placeholder="메시지를 입력하세요..."
+                            value={messageInput}
+                            onChange={(e) => setMessageInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            disabled={sending}
+                            aria-label={"메시지를 입력하세요..."}
+                          />
+                        </TextField>
+                        <Button
+                          onClick={handleSendMessage}
+                          aria-label="메시지 전송"
+                          style={{ minWidth: "auto", paddingInline: 16 }}
+                          variant={"primary"}
+                          isDisabled={sending || !messageInput.trim()}
+                        >
+                          {sending ? (
+                            <Spinner aria-label="로딩 중" />
+                          ) : (
+                            <SendIcon size={16} />
+                          )}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : null}
+            </Modal.Body>
+            <Modal.Footer
+              style={{ paddingInline: 24, paddingBlock: 16, gap: 8 }}
+            >
+              {canTakeover && (
+                <Button
+                  onClick={handleTakeover}
+                  variant={"primary"}
+                  isDisabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <Spinner aria-label="로딩 중" />
+                  ) : (
+                    <TakeoverIcon size={16} />
+                  )}
+                  인수하기
+                </Button>
+              )}
+              {canResolve && (
+                <Button
+                  onClick={handleResolve}
+                  variant={"primary"}
+                  isDisabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <Spinner aria-label="로딩 중" />
+                  ) : (
+                    <CheckCircleIcon size={16} />
+                  )}
+                  해결 완료
+                </Button>
+              )}
+              <div style={{ flex: 1 }}></div>
+              <Button onClick={onClose} variant={"secondary"}>
+                닫기
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+
+      <div
+        hidden={!snackbar.open}
+        role="status"
+        className="fixed bottom-4 right-4 rounded-xl bg-foreground text-background p-3 z-50"
+      >
+        {undefined}
+        <div
+          role="alert"
+          className="rounded-lg border border-default p-3 text-sm"
+          style={{ width: "100%" }}
         >
           {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <Button
+            variant="secondary"
+            size="sm"
+            aria-label="알림 닫기"
+            onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          >
+            닫기
+          </Button>
+        </div>
+      </div>
     </>
   );
 }

@@ -1,38 +1,31 @@
-import { useState, useEffect } from 'react';
 import {
-  Box,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
   Chip,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControlLabel,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  Spinner,
   Switch,
+  TextField,
   Tooltip,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import AdminService from '@/app/services/admin';
-import DepartmentCsvUpload from './DepartmentCsvUpload';
+} from "@heroui/react";
+import {
+  Plus as AddIcon,
+  Pencil as EditIcon,
+  Trash2 as DeleteIcon,
+  Upload as UploadFileIcon,
+} from "lucide-react";
+import { useState, useEffect } from "react";
+
+import AdminService from "@/app/services/admin";
+import DepartmentCsvUpload from "./DepartmentCsvUpload";
 import type {
   UniversityDetail,
   DepartmentItem,
   CreateDepartmentRequest,
   UpdateDepartmentRequest,
-} from '@/types/admin';
+} from "@/types/admin";
 
 interface DepartmentManagementProps {
   university: UniversityDetail;
@@ -47,16 +40,21 @@ interface FormData {
   isActive: boolean;
 }
 
-export default function DepartmentManagement({ university, onChanged }: DepartmentManagementProps) {
+export default function DepartmentManagement({
+  university,
+  onChanged,
+}: DepartmentManagementProps) {
   const [departments, setDepartments] = useState<DepartmentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [csvUploadOpen, setCsvUploadOpen] = useState(false);
-  const [editDepartment, setEditDepartment] = useState<DepartmentItem | null>(null);
+  const [editDepartment, setEditDepartment] = useState<DepartmentItem | null>(
+    null,
+  );
   const [formData, setFormData] = useState<FormData>({
-    name: '',
-    code: '',
-    nameEn: '',
+    name: "",
+    code: "",
+    nameEn: "",
     displayOrder: 0,
     isActive: true,
   });
@@ -68,13 +66,17 @@ export default function DepartmentManagement({ university, onChanged }: Departme
   const loadDepartments = async () => {
     try {
       setLoading(true);
-      const data = await AdminService.universities.departments.getList(university.id, {
-        limit: 200,
-        sortBy: 'displayOrder',
-        sortOrder: 'asc',
-      });
+      const data = await AdminService.universities.departments.getList(
+        university.id,
+        {
+          limit: 200,
+          sortBy: "displayOrder",
+          sortOrder: "asc",
+        },
+      );
       setDepartments(data.items);
-    } catch { } finally {
+    } catch {
+    } finally {
       setLoading(false);
     }
   };
@@ -82,9 +84,9 @@ export default function DepartmentManagement({ university, onChanged }: Departme
   const handleAddClick = () => {
     setEditDepartment(null);
     setFormData({
-      name: '',
-      code: '',
-      nameEn: '',
+      name: "",
+      code: "",
+      nameEn: "",
       displayOrder: departments.length,
       isActive: true,
     });
@@ -95,8 +97,8 @@ export default function DepartmentManagement({ university, onChanged }: Departme
     setEditDepartment(department);
     setFormData({
       name: department.name,
-      code: department.code || '',
-      nameEn: department.nameEn || '',
+      code: department.code || "",
+      nameEn: department.nameEn || "",
       displayOrder: department.displayOrder,
       isActive: department.isActive,
     });
@@ -104,39 +106,41 @@ export default function DepartmentManagement({ university, onChanged }: Departme
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('이 학과를 삭제하시겠습니까?')) return;
+    if (!confirm("이 학과를 삭제하시겠습니까?")) return;
 
     try {
       await AdminService.universities.departments.delete(university.id, id);
       loadDepartments();
       onChanged();
     } catch (err: any) {
-      alert(err.response?.data?.message || '삭제에 실패했습니다.');
+      alert(err.response?.data?.message || "삭제에 실패했습니다.");
     }
   };
 
   const handleSubmit = async () => {
     if (!formData.name) {
-      alert('학과명을 입력해주세요.');
+      alert("학과명을 입력해주세요.");
       return;
     }
 
     try {
       if (editDepartment) {
         const updateData: UpdateDepartmentRequest = {};
-        if (formData.name !== editDepartment.name) updateData.name = formData.name;
-        if (formData.code !== (editDepartment.code || ''))
+        if (formData.name !== editDepartment.name)
+          updateData.name = formData.name;
+        if (formData.code !== (editDepartment.code || ""))
           updateData.code = formData.code || undefined;
-        if (formData.nameEn !== (editDepartment.nameEn || ''))
+        if (formData.nameEn !== (editDepartment.nameEn || ""))
           updateData.nameEn = formData.nameEn || undefined;
         if (formData.displayOrder !== editDepartment.displayOrder)
           updateData.displayOrder = formData.displayOrder;
-        if (formData.isActive !== editDepartment.isActive) updateData.isActive = formData.isActive;
+        if (formData.isActive !== editDepartment.isActive)
+          updateData.isActive = formData.isActive;
 
         await AdminService.universities.departments.update(
           university.id,
           editDepartment.id,
-          updateData
+          updateData,
         );
       } else {
         const createData: CreateDepartmentRequest = {
@@ -147,14 +151,17 @@ export default function DepartmentManagement({ university, onChanged }: Departme
         if (formData.code) createData.code = formData.code;
         if (formData.nameEn) createData.nameEn = formData.nameEn;
 
-        await AdminService.universities.departments.create(university.id, createData);
+        await AdminService.universities.departments.create(
+          university.id,
+          createData,
+        );
       }
 
       setFormDialogOpen(false);
       loadDepartments();
       onChanged();
     } catch (err: any) {
-      alert(err.response?.data?.message || '저장에 실패했습니다.');
+      alert(err.response?.data?.message || "저장에 실패했습니다.");
     }
   };
 
@@ -165,152 +172,235 @@ export default function DepartmentManagement({ university, onChanged }: Departme
   };
 
   return (
-    <Box sx={{ py: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Box>
-          <Chip label={`총 ${departments.length}개`} size="small" />
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<UploadFileIcon />}
-            size="small"
-            onClick={() => setCsvUploadOpen(true)}
-          >
-            CSV 업로드
+    <div style={{ paddingBlock: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
+        <div>
+          <Chip size="sm">{`총 ${departments.length}개`}</Chip>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button onClick={() => setCsvUploadOpen(true)} variant={"secondary"}>
+            {<UploadFileIcon size={16} />}CSV 업로드
           </Button>
-          <Button variant="contained" startIcon={<AddIcon />} size="small" onClick={handleAddClick}>
-            학과 추가
+          <Button onClick={handleAddClick} variant={"primary"}>
+            {<AddIcon size={16} />}학과 추가
           </Button>
-        </Box>
-      </Box>
-
+        </div>
+      </div>
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            paddingBlock: 32,
+          }}
+        >
+          <Spinner aria-label="로딩 중" />
+        </div>
       ) : departments.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+        <div
+          style={{ textAlign: "center", paddingBlock: 32, color: "#52525b" }}
+        >
           등록된 학과가 없습니다.
-        </Box>
+        </div>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'grey.50' }}>
-                <TableCell width={50}>순서</TableCell>
-                <TableCell>학과명</TableCell>
-                <TableCell width={100}>코드</TableCell>
-                <TableCell width={80} align="center">활성화</TableCell>
-                <TableCell width={100} align="center">관리</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <div>
+          <table className="w-full text-sm text-left">
+            <thead>
+              <tr style={{ backgroundColor: "#f4f4f5" }}>
+                <th
+                  scope="col"
+                  style={{ width: 50 }}
+                  className="px-3 py-2 border-b border-default"
+                >
+                  순서
+                </th>
+                <th scope="col" className="px-3 py-2 border-b border-default">
+                  학과명
+                </th>
+                <th
+                  scope="col"
+                  style={{ width: 100 }}
+                  className="px-3 py-2 border-b border-default"
+                >
+                  코드
+                </th>
+                <th
+                  scope="col"
+                  style={{ width: 80 }}
+                  className="px-3 py-2 border-b border-default"
+                >
+                  활성화
+                </th>
+                <th
+                  scope="col"
+                  style={{ width: 100 }}
+                  className="px-3 py-2 border-b border-default"
+                >
+                  관리
+                </th>
+              </tr>
+            </thead>
+            <tbody>
               {departments.map((dept) => (
-                <TableRow key={dept.id} hover>
-                  <TableCell>{dept.displayOrder}</TableCell>
-                  <TableCell>
-                    <Box>
-                      <Box>{dept.name}</Box>
+                <tr key={dept.id}>
+                  <td className="px-3 py-2 border-b border-default">
+                    {dept.displayOrder}
+                  </td>
+                  <td className="px-3 py-2 border-b border-default">
+                    <div>
+                      <div>{dept.name}</div>
                       {dept.nameEn && (
-                        <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                        <div style={{ fontSize: "0.75rem", color: "#52525b" }}>
                           {dept.nameEn}
-                        </Box>
+                        </div>
                       )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    {dept.code ? (
-                      <Chip label={dept.code} size="small" variant="outlined" />
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={dept.isActive ? '활성' : '비활성'}
-                      size="small"
-                      color={dept.isActive ? 'success' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                      <Tooltip title="수정">
-                        <IconButton size="small" onClick={() => handleEdit(dept)} color="primary">
-                          <EditIcon fontSize="small" />
-                        </IconButton>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 border-b border-default">
+                    {dept.code ? <Chip size="sm">{dept.code}</Chip> : "-"}
+                  </td>
+                  <td className="px-3 py-2 border-b border-default">
+                    <Chip size="sm">{dept.isActive ? "활성" : "비활성"}</Chip>
+                  </td>
+                  <td className="px-3 py-2 border-b border-default">
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 4,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Tooltip>
+                        <Tooltip.Trigger>
+                          <Button
+                            onClick={() => handleEdit(dept)}
+                            variant={"secondary"}
+                            isIconOnly
+                            aria-label="작업 실행"
+                          >
+                            <EditIcon size={16} />
+                          </Button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>{"수정"}</Tooltip.Content>
                       </Tooltip>
-                      <Tooltip title="삭제">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDelete(dept.id)}
-                          color="error"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                      <Tooltip>
+                        <Tooltip.Trigger>
+                          <Button
+                            onClick={() => handleDelete(dept.id)}
+                            variant={"secondary"}
+                            isIconOnly
+                            aria-label="작업 실행"
+                          >
+                            <DeleteIcon size={16} />
+                          </Button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>{"삭제"}</Tooltip.Content>
                       </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </tbody>
+          </table>
+        </div>
       )}
-
-      <Dialog open={formDialogOpen} onClose={() => setFormDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editDepartment ? '학과 수정' : '학과 추가'}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField
-              label="학과명"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              fullWidth
-              required
-            />
-
-            <TextField
-              label="영문 학과명"
-              value={formData.nameEn}
-              onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-              fullWidth
-            />
-
-            <TextField
-              label="학과 코드"
-              value={formData.code}
-              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              fullWidth
-            />
-
-            <TextField
-              label="정렬 순서"
-              type="number"
-              value={formData.displayOrder}
-              onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) })}
-              fullWidth
-            />
-
-            <FormControlLabel
-              control={
+      <Modal.Backdrop
+        isOpen={formDialogOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) (() => setFormDialogOpen(false))();
+        }}
+      >
+        <Modal.Container>
+          <Modal.Dialog className="max-w-3xl">
+            <Modal.Heading>
+              {editDepartment ? "학과 수정" : "학과 추가"}
+            </Modal.Heading>
+            <Modal.Body>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                  marginTop: 8,
+                }}
+              >
+                <TextField>
+                  <Label>{"학과명"}</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    required
+                  />
+                </TextField>
+                <TextField>
+                  <Label>{"영문 학과명"}</Label>
+                  <Input
+                    value={formData.nameEn}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nameEn: e.target.value })
+                    }
+                  />
+                </TextField>
+                <TextField>
+                  <Label>{"학과 코드"}</Label>
+                  <Input
+                    value={formData.code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value })
+                    }
+                  />
+                </TextField>
+                <TextField>
+                  <Label>{"정렬 순서"}</Label>
+                  <Input
+                    type="number"
+                    value={formData.displayOrder}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        displayOrder: parseInt(e.target.value),
+                      })
+                    }
+                  />
+                </TextField>
                 <Switch
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                />
-              }
-              label="활성화"
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFormDialogOpen(false)}>취소</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editDepartment ? '수정' : '추가'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
+                  isSelected={formData.isActive}
+                  onChange={(isSelected) =>
+                    setFormData({ ...formData, isActive: isSelected })
+                  }
+                  aria-label="활성화"
+                >
+                  <Switch.Content>
+                    <Switch.Control>
+                      <Switch.Thumb />
+                    </Switch.Control>
+                    <Label>{"활성화"}</Label>
+                  </Switch.Content>
+                </Switch>
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                onClick={() => setFormDialogOpen(false)}
+                variant={"secondary"}
+              >
+                취소
+              </Button>
+              <Button onClick={handleSubmit} variant={"primary"}>
+                {editDepartment ? "수정" : "추가"}
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
       <DepartmentCsvUpload
         open={csvUploadOpen}
         onClose={() => setCsvUploadOpen(false)}
@@ -318,6 +408,6 @@ export default function DepartmentManagement({ university, onChanged }: Departme
         universityName={university.name}
         onSuccess={handleCsvUploadSuccess}
       />
-    </Box>
+    </div>
   );
 }

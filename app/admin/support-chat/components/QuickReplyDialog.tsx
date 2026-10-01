@@ -1,28 +1,26 @@
-'use client';
-
-import { useEffect, useMemo, useState } from 'react';
+"use client";
 import {
-  Box,
+  Select,
+  ListBox,
   Button,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  IconButton,
-  List,
-  ListItemButton,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  TextArea,
   TextField,
   Tooltip,
-  Typography,
-} from '@mui/material';
+} from "@heroui/react";
 import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
-import type { SupportDomain } from '@/app/types/support-chat';
+  Plus as AddIcon,
+  Trash2 as DeleteIcon,
+  X as CloseIcon,
+} from "lucide-react";
+
+import { useEffect, useMemo, useState } from "react";
+
+import type { SupportDomain } from "@/app/types/support-chat";
 import {
   QUICK_REPLY_VARIABLES,
   addQuickReply,
@@ -31,15 +29,24 @@ import {
   removeQuickReply,
   sortRepliesForDomain,
   type QuickReply,
-} from '../lib/quick-replies';
+} from "../lib/quick-replies";
 
 interface QuickReplyDialogProps {
   open: boolean;
   onClose: () => void;
   /** 현재 세션 도메인(우선 정렬용) */
+  /** 현재 세션 도메인(우선 정렬용) */
+  /** 현재 세션 도메인(우선 정렬용) */
+  /** 현재 세션 도메인(우선 정렬용) */
   domain?: SupportDomain;
   /** 변수 치환용 닉네임 */
+  /** 변수 치환용 닉네임 */
+  /** 변수 치환용 닉네임 */
+  /** 변수 치환용 닉네임 */
   nickname?: string;
+  /** 선택한 템플릿(치환 적용된 본문)을 입력창에 삽입 */
+  /** 선택한 템플릿(치환 적용된 본문)을 입력창에 삽입 */
+  /** 선택한 템플릿(치환 적용된 본문)을 입력창에 삽입 */
   /** 선택한 템플릿(치환 적용된 본문)을 입력창에 삽입 */
   onSelect: (content: string) => void;
 }
@@ -53,19 +60,22 @@ export default function QuickReplyDialog({
 }: QuickReplyDialogProps) {
   const [replies, setReplies] = useState<QuickReply[]>([]);
   const [creating, setCreating] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newContent, setNewContent] = useState('');
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
 
   useEffect(() => {
     if (open) {
       setReplies(getQuickReplies());
       setCreating(false);
-      setNewTitle('');
-      setNewContent('');
+      setNewTitle("");
+      setNewContent("");
     }
   }, [open]);
 
-  const sorted = useMemo(() => sortRepliesForDomain(replies, domain), [replies, domain]);
+  const sorted = useMemo(
+    () => sortRepliesForDomain(replies, domain),
+    [replies, domain],
+  );
 
   const handleSelect = (reply: QuickReply) => {
     onSelect(applyQuickReplyVariables(reply.content, { nickname }));
@@ -74,10 +84,16 @@ export default function QuickReplyDialog({
 
   const handleCreate = () => {
     if (!newTitle.trim() || !newContent.trim()) return;
-    setReplies(addQuickReply({ domain: domain ?? 'all', title: newTitle, content: newContent }));
+    setReplies(
+      addQuickReply({
+        domain: domain ?? "all",
+        title: newTitle,
+        content: newContent,
+      }),
+    );
     setCreating(false);
-    setNewTitle('');
-    setNewContent('');
+    setNewTitle("");
+    setNewContent("");
   };
 
   const handleRemove = (id: string) => {
@@ -85,121 +101,156 @@ export default function QuickReplyDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        빠른 답변 템플릿
-        <IconButton size="small" onClick={onClose} aria-label="닫기">
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <List sx={{ py: 0 }}>
-          {sorted.map((reply) => (
-            <ListItemButton
-              key={reply.id}
-              onClick={() => handleSelect(reply)}
-              sx={{ borderRadius: 1, mb: 0.5, alignItems: 'flex-start' }}
+    <Modal.Backdrop
+      isOpen={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose();
+      }}
+    >
+      <Modal.Container>
+        <Modal.Dialog className="max-w-3xl">
+          <Modal.Heading
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            빠른 답변 템플릿
+            <Button
+              onClick={onClose}
+              aria-label="닫기"
+              variant={"secondary"}
+              isIconOnly
             >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    {reply.title}
-                  </Typography>
-                  {reply.domain !== 'all' && (
-                    <Chip label={reply.domain} size="small" sx={{ fontSize: '0.6rem', height: 18 }} />
+              <CloseIcon size={16} />
+            </Button>
+          </Modal.Heading>
+          <Modal.Body>
+            <ul style={{ paddingBlock: 0 }}>
+              {sorted.map((reply) => (
+                <Button
+                  variant="secondary"
+                  key={reply.id}
+                  onClick={() => handleSelect(reply)}
+                  className="w-full justify-start h-auto p-3 mb-1"
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 4,
+                      }}
+                    >
+                      <p style={{ fontWeight: 700 }}>{reply.title}</p>
+                      {reply.domain !== "all" && (
+                        <Chip size="sm">{reply.domain}</Chip>
+                      )}
+                      {reply.builtin && <Chip size="sm">{"기본"}</Chip>}
+                    </div>
+                    <p
+                      style={{
+                        whiteSpace: "pre-wrap",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {reply.content}
+                    </p>
+                  </div>
+                  {!reply.builtin && (
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemove(reply.id);
+                          }}
+                          aria-label="템플릿 삭제"
+                          variant={"secondary"}
+                          isIconOnly
+                        >
+                          <DeleteIcon size={16} />
+                        </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>{"삭제"}</Tooltip.Content>
+                    </Tooltip>
                   )}
-                  {reply.builtin && (
-                    <Chip label="기본" size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 18 }} />
-                  )}
-                </Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{
-                    whiteSpace: 'pre-wrap',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
+                </Button>
+              ))}
+            </ul>
+            <hr style={{ marginBlock: 12 }} />
+            {creating ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <TextField className="flex-1 min-w-0">
+                  <Label>{"템플릿 제목"}</Label>
+                  <Input
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    {...{ maxLength: 40 }}
+                    autoFocus
+                  />
+                </TextField>
+                <TextField className="flex-1 min-w-0">
+                  <Label>{"답변 내용"}</Label>
+                  <TextArea
+                    value={newContent}
+                    onChange={(e) => setNewContent(e.target.value)}
+                    rows={3}
+                    {...{ maxLength: 2000 }}
+                  />
+                </TextField>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {QUICK_REPLY_VARIABLES.map((v) => (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      key={v.token}
+                      onClick={() =>
+                        setNewContent((prev) => `${prev}${v.token}`)
+                      }
+                    >{`${v.label} ${v.token}`}</Button>
+                  ))}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 8,
                   }}
                 >
-                  {reply.content}
-                </Typography>
-              </Box>
-              {!reply.builtin && (
-                <Tooltip title="삭제">
-                  <IconButton
-                    size="small"
-                    edge="end"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemove(reply.id);
-                    }}
-                    aria-label="템플릿 삭제"
+                  <Button
+                    onClick={() => setCreating(false)}
+                    variant={"secondary"}
                   >
-                    <DeleteIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </ListItemButton>
-          ))}
-        </List>
-
-        <Divider sx={{ my: 1.5 }} />
-
-        {creating ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <TextField
-              size="small"
-              label="템플릿 제목"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              inputProps={{ maxLength: 40 }}
-              autoFocus
-            />
-            <TextField
-              size="small"
-              label="답변 내용"
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              multiline
-              minRows={3}
-              inputProps={{ maxLength: 2000 }}
-            />
-            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-              {QUICK_REPLY_VARIABLES.map((v) => (
-                <Chip
-                  key={v.token}
-                  label={`${v.label} ${v.token}`}
-                  size="small"
-                  variant="outlined"
-                  onClick={() => setNewContent((prev) => `${prev}${v.token}`)}
-                />
-              ))}
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-              <Button size="small" onClick={() => setCreating(false)}>
-                취소
+                    취소
+                  </Button>
+                  <Button
+                    onClick={handleCreate}
+                    variant={"primary"}
+                    isDisabled={!newTitle.trim() || !newContent.trim()}
+                  >
+                    저장
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button onClick={() => setCreating(true)} variant={"secondary"}>
+                {<AddIcon size={16} />}새 템플릿 추가
               </Button>
-              <Button
-                size="small"
-                variant="contained"
-                onClick={handleCreate}
-                disabled={!newTitle.trim() || !newContent.trim()}
-              >
-                저장
-              </Button>
-            </Box>
-          </Box>
-        ) : (
-          <Button size="small" startIcon={<AddIcon />} onClick={() => setCreating(true)}>
-            새 템플릿 추가
-          </Button>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>닫기</Button>
-      </DialogActions>
-    </Dialog>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onClick={onClose} variant={"secondary"}>
+              닫기
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }

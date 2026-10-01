@@ -5,12 +5,20 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/$1',
   },
   transform: {
+    '^.+\\.(js|mjs)$': ['next/dist/build/swc/jest-transformer', {
+      isServer: false,
+      jsConfig: { compilerOptions: { jsx: 'react-jsx', esModuleInterop: true } },
+    }],
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: 'tsconfig.jest.json',
     }],
   },
+  // HeroUI v3 ships ESM; exercise the real controls in jsdom, including pnpm paths.
+  transformIgnorePatterns: [
+    'node_modules/.pnpm/(?!(?:@heroui\\+react|@heroui\\+styles|tailwind-variants)@)',
+    'node_modules/(?!.pnpm/|@heroui/|tailwind-variants/)',
+  ],
   testMatch: [
-    '**/__tests__/**/*.ts?(x)',
     '**/?(*.)+(spec|test).ts?(x)',
     '**/?(*.)+(spec|test).js?(x)',
   ],
@@ -24,6 +32,7 @@ module.exports = {
     '<rootDir>/.omc/',
     '<rootDir>/.omx/',
     '<rootDir>/tests/',
+    '<rootDir>/e2e/',
   ],
   modulePathIgnorePatterns: [
     '<rootDir>/.next/',

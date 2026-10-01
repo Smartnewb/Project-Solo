@@ -1,11 +1,12 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useState, type KeyboardEvent } from 'react';
-import { X } from 'lucide-react';
-import { Badge } from '@/shared/ui/badge';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
+import { useState, type KeyboardEvent } from "react";
+import { X } from "lucide-react";
+import { Badge } from "@/shared/ui/badge";
+
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 
 interface Props {
   value: string[];
@@ -22,17 +23,17 @@ export function StringListInput({
   disabled,
   label,
 }: Props) {
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
 
   const handleAdd = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
     if (value.includes(trimmed)) {
-      setDraft('');
+      setDraft("");
       return;
     }
     onChange([...value, trimmed]);
-    setDraft('');
+    setDraft("");
   };
 
   const handleRemove = (target: string) => {
@@ -40,7 +41,7 @@ export function StringListInput({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
+    if (event.key === "Enter") {
       event.preventDefault();
       handleAdd();
     }
@@ -57,14 +58,16 @@ export function StringListInput({
             <Badge key={item} variant="secondary" className="gap-1 pr-1">
               <span>{item}</span>
               {disabled ? null : (
-                <button
+                <Button
                   type="button"
                   onClick={() => handleRemove(item)}
                   className="inline-flex h-4 w-4 items-center justify-center rounded hover:bg-slate-300"
                   aria-label={`${item} 삭제`}
+                  variant={"secondary"}
+                  size={"md"}
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               )}
             </Badge>
           ))
@@ -76,13 +79,14 @@ export function StringListInput({
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder ?? '항목을 입력한 뒤 Enter 또는 추가'}
+            placeholder={placeholder ?? "항목을 입력한 뒤 Enter 또는 추가"}
           />
           <Button
             type="button"
-            variant="outline"
             onClick={handleAdd}
-            disabled={!draft.trim()}
+            isDisabled={!draft.trim()}
+            variant={"outline"}
+            size={"md"}
           >
             추가
           </Button>

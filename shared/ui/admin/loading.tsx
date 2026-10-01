@@ -1,16 +1,9 @@
-'use client';
-
-import { CircularProgress, Box } from '@mui/material';
-
+"use client";
+import { Spinner } from "@heroui/react";
 export function AdminLoading() {
-  return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      minHeight="60vh"
-    >
-      <CircularProgress />
-    </Box>
-  );
+	return (
+		<div className="flex min-h-[60vh] items-center justify-center">
+			<Spinner aria-label="불러오는 중" />
+		</div>
+	);
 }

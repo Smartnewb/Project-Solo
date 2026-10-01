@@ -1,49 +1,52 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useEffect, useMemo, useState } from 'react';
+import { Button } from "@heroui/react";
+
+import { useEffect, useMemo, useState } from "react";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
-} from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+} from "@tanstack/react-query";
+import { Plus, Search } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import type {
   AiProfileTemplate,
   TemplateListQuery,
-} from '@/app/types/ai-profile-generator';
-import { Alert, AlertDescription } from '@/shared/ui/alert';
-import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
+} from "@/app/types/ai-profile-generator";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
+
+import { Input } from "@/shared/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { GeneratorTabs } from '../_tabs';
-import { useAiProfileErrorHandler } from '../_shared-error';
-import { TemplateFormDialog } from './template-form-dialog';
-import { TemplateTable } from './template-table';
+} from "@/shared/ui/select";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { GeneratorTabs } from "../_tabs";
+import { useAiProfileErrorHandler } from "../_shared-error";
+import { TemplateFormDialog } from "./template-form-dialog";
+import { TemplateTable } from "./template-table";
 
 const DEFAULT_LIMIT = 20;
 
-type ActiveFilter = 'all' | 'active' | 'archived';
+type ActiveFilter = "all" | "active" | "archived";
 
 const ACTIVE_OPTIONS: Array<{ value: ActiveFilter; label: string }> = [
-  { value: 'all', label: '전체 상태' },
-  { value: 'active', label: '활성' },
-  { value: 'archived', label: '아카이브' },
+  { value: "all", label: "전체 상태" },
+  { value: "active", label: "활성" },
+  { value: "archived", label: "아카이브" },
 ];
 
 function activeFilterToFlag(filter: ActiveFilter): boolean | undefined {
-  if (filter === 'active') return true;
-  if (filter === 'archived') return false;
+  if (filter === "active") return true;
+  if (filter === "archived") return false;
   return undefined;
 }
 
@@ -55,9 +58,9 @@ export function TemplatesClient() {
     aiProfileGeneratorKeys.templates(),
   );
 
-  const [q, setQ] = useState('');
-  const [debouncedQ, setDebouncedQ] = useState('');
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
+  const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [cursor, setCursor] = useState<string | undefined>();
   const [accumulated, setAccumulated] = useState<AiProfileTemplate[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -104,7 +107,7 @@ export function TemplatesClient() {
     mutationFn: (id: string) =>
       aiProfileGenerator.archiveGenerationTemplate(id),
     onSuccess: () => {
-      toast.success('템플릿을 아카이브했습니다.');
+      toast.success("템플릿을 아카이브했습니다.");
       qc.invalidateQueries({ queryKey: aiProfileGeneratorKeys.templates() });
       setCursor(undefined);
       setAccumulated([]);
@@ -124,11 +127,11 @@ export function TemplatesClient() {
 
   const handleArchive = async (template: AiProfileTemplate) => {
     const ok = await confirm({
-      title: '템플릿 아카이브',
+      title: "템플릿 아카이브",
       message: `"${template.name}" 템플릿을 아카이브하시겠습니까? 아카이브 상태에서는 새 Draft에 사용할 수 없습니다.`,
-      confirmText: '아카이브',
-      cancelText: '취소',
-      severity: 'warning',
+      confirmText: "아카이브",
+      cancelText: "취소",
+      severity: "warning",
     });
     if (ok) archiveMutation.mutate(template.id);
   };
@@ -146,8 +149,8 @@ export function TemplatesClient() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={handleCreate}>
-            <Plus className="mr-1 h-4 w-4" /> 새 템플릿
+          <Button onClick={handleCreate} variant={"primary"} size={"md"}>
+            <Plus className="mr-1 h-4 w-4" />새 템플릿
           </Button>
         </div>
       </header>
@@ -167,6 +170,7 @@ export function TemplatesClient() {
             value={activeFilter}
             onValueChange={(value) => setActiveFilter(value as ActiveFilter)}
           >
+            <HeroSelectLabel className="sr-only">{"상태"}</HeroSelectLabel>
             <SelectTrigger>
               <SelectValue placeholder="상태" />
             </SelectTrigger>
@@ -200,12 +204,12 @@ export function TemplatesClient() {
         <span>표시 중 {accumulated.length}건</span>
         {nextCursor ? (
           <Button
-            variant="outline"
-            size="sm"
             onClick={() => setCursor(nextCursor)}
-            disabled={listQuery.isFetching}
+            isDisabled={listQuery.isFetching}
+            variant={"outline"}
+            size={"sm"}
           >
-            {listQuery.isFetching ? '불러오는 중…' : '더 보기'}
+            {listQuery.isFetching ? "불러오는 중…" : "더 보기"}
           </Button>
         ) : null}
       </div>

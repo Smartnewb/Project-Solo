@@ -1,16 +1,20 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
+import { useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+
+import { Input } from "@/shared/ui/input";
 
 interface Props {
   universityId: string | null;
   value: string | null;
-  onChange: (departmentId: string | null, departmentName: string | null) => void;
+  onChange: (
+    departmentId: string | null,
+    departmentName: string | null,
+  ) => void;
   limit?: number;
 }
 
@@ -20,8 +24,8 @@ export function DepartmentSearch({
   onChange,
   limit = 20,
 }: Props) {
-  const [q, setQ] = useState('');
-  const [debouncedQ, setDebouncedQ] = useState('');
+  const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [cursor, setCursor] = useState<string | undefined>();
 
   useEffect(() => {
@@ -33,8 +37,8 @@ export function DepartmentSearch({
   }, [q]);
 
   useEffect(() => {
-    setQ('');
-    setDebouncedQ('');
+    setQ("");
+    setDebouncedQ("");
     setCursor(undefined);
   }, [universityId]);
 
@@ -44,7 +48,7 @@ export function DepartmentSearch({
         limit,
         cursor,
       })
-    : ['admin', 'ai-profile-generator', 'departments', 'none'] as const;
+    : (["admin", "ai-profile-generator", "departments", "none"] as const);
 
   const listQuery = useQuery({
     queryKey,
@@ -89,7 +93,7 @@ export function DepartmentSearch({
               <li
                 key={d.id}
                 className={`cursor-pointer px-2 py-1.5 text-sm hover:bg-slate-50 ${
-                  selected ? 'bg-sky-50 text-sky-800' : 'text-slate-700'
+                  selected ? "bg-sky-50 text-sky-800" : "text-slate-700"
                 }`}
                 onClick={() => onChange(d.id, d.name)}
               >
@@ -102,10 +106,10 @@ export function DepartmentSearch({
       {nextCursor ? (
         <Button
           type="button"
-          size="sm"
-          variant="outline"
           onClick={() => setCursor(nextCursor)}
-          disabled={listQuery.isFetching}
+          isDisabled={listQuery.isFetching}
+          variant={"outline"}
+          size={"sm"}
         >
           더 보기
         </Button>

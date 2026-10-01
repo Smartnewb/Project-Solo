@@ -1,4 +1,4 @@
-import SalesPageV2 from './sales-v2';
+import SalesPageV2 from "./sales-v2";
 
 export default function SalesPage() {
   return <SalesPageV2 />;

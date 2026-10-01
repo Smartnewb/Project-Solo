@@ -1,24 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-} from '@mui/material';
+import { Button, Chip, Spinner } from '@heroui/react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import type { PushTargetGroup, BroadcastSchedule } from '@/app/services/admin';
-import { BROADCAST_STATUS_LABEL, BROADCAST_STATUS_COLOR } from '@/app/services/admin';
+import { BROADCAST_STATUS_LABEL } from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast';
 import { formatDateTimeKR } from '@/app/utils/formatters';
 
@@ -63,77 +51,33 @@ export default function BroadcastHistoryClient() {
   };
 
   return (
-    <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3,
-          gap: 2,
-          flexWrap: 'wrap',
-        }}
-      >
-        <Typography variant="h5" fontWeight="bold">
-          예약/발송 이력
-        </Typography>
-        <Button variant="contained" onClick={() => router.push('/admin/broadcast-push/new')}>
-          새 예약 발송
-        </Button>
-      </Box>
-
+    <section aria-labelledby="broadcast-history-heading">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 id="broadcast-history-heading" className="mb-0 text-2xl font-bold">예약/발송 이력</h1>
+        <Button onPress={() => router.push('/admin/broadcast-push/new')}>새 예약 발송</Button>
+      </header>
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center py-8"><Spinner aria-label="발송 이력 불러오는 중" /></div>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>제목</TableCell>
-                <TableCell>대상</TableCell>
-                <TableCell>예정시각</TableCell>
-                <TableCell>상태</TableCell>
-                <TableCell>성공/실패</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {schedules.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    <Typography variant="body2" color="text.secondary" py={2}>
-                      등록된 예약/발송 이력이 없습니다.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-              {schedules.map((schedule) => (
-                <TableRow
-                  key={schedule.id}
-                  hover
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => router.push(`/admin/broadcast-push/${schedule.id}`)}
-                >
-                  <TableCell>{schedule.krTitle}</TableCell>
-                  <TableCell>{targetLabel(schedule)}</TableCell>
-                  <TableCell>{formatDateTimeKR(schedule.scheduledAt)}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={BROADCAST_STATUS_LABEL[schedule.status]}
-                      color={BROADCAST_STATUS_COLOR[schedule.status]}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {schedule.sentCount}/{schedule.failedCount}
-                  </TableCell>
-                </TableRow>
+        <div className="overflow-x-auto rounded-xl border border-border bg-white">
+          <table className="w-full text-left text-sm">
+            <caption className="sr-only">예약 푸시 발송 이력</caption>
+            <thead className="bg-gray-50"><tr>{['제목', '대상', '예정시각', '상태', '성공/실패'].map(label => <th key={label} scope="col" className="px-4 py-3 font-semibold">{label}</th>)}</tr></thead>
+            <tbody>
+              {schedules.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-gray-600">등록된 예약/발송 이력이 없습니다.</td></tr>}
+              {schedules.map(schedule => (
+                <tr key={schedule.id} className="border-t border-border hover:bg-gray-50">
+                  <td className="px-4 py-3"><Link href={`/admin/broadcast-push/${schedule.id}`} className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4">{schedule.krTitle}</Link></td>
+                  <td className="px-4 py-3">{targetLabel(schedule)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{formatDateTimeKR(schedule.scheduledAt)}</td>
+                  <td className="px-4 py-3"><Chip size="sm" color={schedule.status === 'sent' ? 'success' : schedule.status === 'failed' ? 'danger' : 'accent'}>{BROADCAST_STATUS_LABEL[schedule.status]}</Chip></td>
+                  <td className="px-4 py-3">{schedule.sentCount}/{schedule.failedCount}</td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </tbody>
+          </table>
+        </div>
       )}
-    </Box>
+    </section>
   );
 }

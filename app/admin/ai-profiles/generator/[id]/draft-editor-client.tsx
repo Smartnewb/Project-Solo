@@ -1,11 +1,19 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, ArrowLeft, CheckCircle2, Copy, Save, Upload } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Archive,
+  ArrowLeft,
+  CheckCircle2,
+  Copy,
+  Save,
+  Upload,
+} from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   ALL_DOMAINS,
   DOMAIN_GROUP_LABEL,
@@ -13,12 +21,12 @@ import {
   DOMAIN_TO_GROUP,
   type AiProfileDomain,
   type AiProfileDomainStatus,
-} from '@/app/types/ai-profile-generator';
-import { AdminApiError } from '@/shared/lib/http/admin-fetch';
-import { Alert, AlertDescription } from '@/shared/ui/alert';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Badge } from '@/shared/ui/badge';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { AdminApiError } from "@/shared/lib/http/admin-fetch";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
+import { useToast } from "@/shared/ui/admin/toast";
+import { Badge } from "@/shared/ui/badge";
+
 import {
   Dialog,
   DialogContent,
@@ -26,27 +34,27 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
 import {
   DRAFT_STATUS_LABEL,
   DRAFT_STATUS_VARIANT,
   isReadonlyStatus,
-} from '../_shared/status';
-import { useAiProfileErrorHandler } from '../_shared-error';
-import { DomainCard } from './domain-card';
-import { DomainGroup } from './domain-group';
-import { DomainInstructionDialog } from './domain-instruction-dialog';
-import { GalleryPanel } from './gallery-panel';
-import { PhotoSlotCard } from './photo-slot-card';
-import { PreviewChatPanel } from './preview-chat-panel';
-import { PublishDialog } from './publish-dialog';
-import { RepresentativeImagePanel } from './representative-image-panel';
-import { SourceDataLockSection } from './source-data-lock-section';
-import { ValidationPanel } from './validation-panel';
+} from "../_shared/status";
+import { useAiProfileErrorHandler } from "../_shared-error";
+import { DomainCard } from "./domain-card";
+import { DomainGroup } from "./domain-group";
+import { DomainInstructionDialog } from "./domain-instruction-dialog";
+import { GalleryPanel } from "./gallery-panel";
+import { PhotoSlotCard } from "./photo-slot-card";
+import { PreviewChatPanel } from "./preview-chat-panel";
+import { PublishDialog } from "./publish-dialog";
+import { RepresentativeImagePanel } from "./representative-image-panel";
+import { SourceDataLockSection } from "./source-data-lock-section";
+import { ValidationPanel } from "./validation-panel";
 
 interface Props {
   draftId: string;
@@ -61,11 +69,11 @@ export function DraftEditorClient({ draftId }: Props) {
   );
 
   const [archiveOpen, setArchiveOpen] = useState(false);
-  const [archiveReason, setArchiveReason] = useState('');
+  const [archiveReason, setArchiveReason] = useState("");
   const [publishOpen, setPublishOpen] = useState(false);
   const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
-  const [templateName, setTemplateName] = useState('');
-  const [templateDescription, setTemplateDescription] = useState('');
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
   const [instructionDomain, setInstructionDomain] =
     useState<AiProfileDomain | null>(null);
 
@@ -85,12 +93,12 @@ export function DraftEditorClient({ draftId }: Props) {
         reason: archiveReason.trim() || undefined,
       }),
     onSuccess: () => {
-      toast.success('Draft를 아카이브했습니다.');
+      toast.success("Draft를 아카이브했습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.drafts(),
       });
       setArchiveOpen(false);
-      router.push('/admin/ai-profiles/generator');
+      router.push("/admin/ai-profiles/generator");
     },
     onError: handleError,
   });
@@ -101,7 +109,7 @@ export function DraftEditorClient({ draftId }: Props) {
     onSuccess: (result) => {
       const { warningCount, blockedFlagCount, canPublish } = result.summary;
       if (canPublish) {
-        toast.success('검증을 통과했습니다.');
+        toast.success("검증을 통과했습니다.");
       } else {
         toast.warning(
           `검증 완료: 경고 ${warningCount}건, 차단 ${blockedFlagCount}건`,
@@ -121,7 +129,7 @@ export function DraftEditorClient({ draftId }: Props) {
         copyMedia: true,
       }),
     onSuccess: (next) => {
-      toast.success('Draft를 복제했습니다.');
+      toast.success("Draft를 복제했습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.drafts(),
       });
@@ -137,10 +145,10 @@ export function DraftEditorClient({ draftId }: Props) {
         description: templateDescription.trim() || undefined,
       }),
     onSuccess: () => {
-      toast.success('템플릿으로 저장했습니다.');
+      toast.success("템플릿으로 저장했습니다.");
       setSaveAsTemplateOpen(false);
-      setTemplateName('');
-      setTemplateDescription('');
+      setTemplateName("");
+      setTemplateDescription("");
     },
     onError: handleError,
   });
@@ -199,7 +207,7 @@ export function DraftEditorClient({ draftId }: Props) {
   if (!draft) return null;
 
   const readOnly = isReadonlyStatus(draft.status);
-  const canPublish = draft.status === 'draft' || draft.status === 'failed';
+  const canPublish = draft.status === "draft" || draft.status === "failed";
 
   return (
     <section className="space-y-4 px-6 py-8">
@@ -211,9 +219,7 @@ export function DraftEditorClient({ draftId }: Props) {
           >
             <ArrowLeft className="h-3 w-3" /> 목록으로
           </Link>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            Draft 편집
-          </h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Draft 편집</h1>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span className="font-mono">{draft.id}</span>
             <Badge variant={DRAFT_STATUS_VARIANT[draft.status]}>
@@ -229,44 +235,51 @@ export function DraftEditorClient({ draftId }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            size="sm"
-            variant="outline"
             onClick={() => validateMutation.mutate(draft.version)}
-            disabled={validateMutation.isPending || draft.status === 'publishing'}
+            isDisabled={
+              validateMutation.isPending || draft.status === "publishing"
+            }
+            variant={"outline"}
+            size={"sm"}
           >
-            <CheckCircle2 className="mr-1 h-4 w-4" />{' '}
-            {validateMutation.isPending ? '검증 중…' : '검증'}
+            <CheckCircle2 className="mr-1 h-4 w-4" />{" "}
+            {validateMutation.isPending ? "검증 중…" : "검증"}
           </Button>
           <Button
-            size="sm"
-            variant="outline"
             onClick={() => duplicateMutation.mutate(draft.version)}
-            disabled={duplicateMutation.isPending}
+            isDisabled={duplicateMutation.isPending}
+            variant={"outline"}
+            size={"sm"}
           >
-            <Copy className="mr-1 h-4 w-4" /> 복제
+            <Copy className="mr-1 h-4 w-4" />
+            복제
           </Button>
           <Button
-            size="sm"
-            variant="outline"
             onClick={() => setSaveAsTemplateOpen(true)}
+            variant={"outline"}
+            size={"sm"}
           >
-            <Save className="mr-1 h-4 w-4" /> 템플릿으로 저장
+            <Save className="mr-1 h-4 w-4" />
+            템플릿으로 저장
           </Button>
           <Button
-            size="sm"
             onClick={() => setPublishOpen(true)}
-            disabled={!canPublish}
+            isDisabled={!canPublish}
+            variant={"primary"}
+            size={"sm"}
           >
-            <Upload className="mr-1 h-4 w-4" /> 발행
+            <Upload className="mr-1 h-4 w-4" />
+            발행
           </Button>
           {!readOnly ? (
             <Button
-              variant="outline"
-              size="sm"
               onClick={() => setArchiveOpen(true)}
-              disabled={archiveMutation.isPending}
+              isDisabled={archiveMutation.isPending}
+              variant={"outline"}
+              size={"sm"}
             >
-              <Archive className="mr-1 h-4 w-4" /> 아카이브
+              <Archive className="mr-1 h-4 w-4" />
+              아카이브
             </Button>
           ) : null}
         </div>
@@ -290,10 +303,10 @@ export function DraftEditorClient({ draftId }: Props) {
               <DomainGroup key={group} label={DOMAIN_GROUP_LABEL[group]}>
                 <div className="grid gap-4 md:grid-cols-2">
                   {domains
-                    .filter((d) => d !== 'photo')
+                    .filter((d) => d !== "photo")
                     .map((domain) => {
                       const status: AiProfileDomainStatus =
-                        draft.domainStatus?.[domain] ?? 'empty';
+                        draft.domainStatus?.[domain] ?? "empty";
                       return (
                         <DomainCard
                           key={domain}
@@ -308,7 +321,7 @@ export function DraftEditorClient({ draftId }: Props) {
                       );
                     })}
                 </div>
-                {group === 'photo' ? (
+                {group === "photo" ? (
                   <div className="grid gap-4 md:grid-cols-2">
                     <PhotoSlotCard
                       draftId={draftId}
@@ -382,18 +395,20 @@ export function DraftEditorClient({ draftId }: Props) {
           </div>
           <DialogFooter>
             <Button
-              variant="outline"
               onClick={() => setArchiveOpen(false)}
-              disabled={archiveMutation.isPending}
+              isDisabled={archiveMutation.isPending}
+              variant={"outline"}
+              size={"md"}
             >
               취소
             </Button>
             <Button
-              variant="destructive"
               onClick={() => archiveMutation.mutate(draft.version)}
-              disabled={archiveMutation.isPending}
+              isDisabled={archiveMutation.isPending}
+              variant={"danger"}
+              size={"md"}
             >
-              {archiveMutation.isPending ? '아카이브 중…' : '아카이브'}
+              {archiveMutation.isPending ? "아카이브 중…" : "아카이브"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -430,20 +445,23 @@ export function DraftEditorClient({ draftId }: Props) {
           </div>
           <DialogFooter>
             <Button
-              variant="outline"
               onClick={() => setSaveAsTemplateOpen(false)}
-              disabled={saveAsTemplateMutation.isPending}
+              isDisabled={saveAsTemplateMutation.isPending}
+              variant={"outline"}
+              size={"md"}
             >
               취소
             </Button>
             <Button
               onClick={() => saveAsTemplateMutation.mutate()}
-              disabled={
+              isDisabled={
                 saveAsTemplateMutation.isPending ||
                 templateName.trim().length === 0
               }
+              variant={"primary"}
+              size={"md"}
             >
-              {saveAsTemplateMutation.isPending ? '저장 중…' : '저장'}
+              {saveAsTemplateMutation.isPending ? "저장 중…" : "저장"}
             </Button>
           </DialogFooter>
         </DialogContent>

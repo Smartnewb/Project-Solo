@@ -11,6 +11,8 @@
   "include": [
     "app/admin/**/*.ts",
     "app/admin/**/*.tsx",
+    "app/components/admin/**/*.ts",
+    "app/components/admin/**/*.tsx",
     "components/admin/**/*.ts",
     "components/admin/**/*.tsx",
     "shared/**/*.ts",

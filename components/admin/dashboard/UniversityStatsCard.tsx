@@ -1,7 +1,8 @@
 "use client";
+import { Button, Alert, Skeleton } from "@heroui/react";
 
 import { useState, useEffect } from "react";
-import { Box, Alert, Skeleton } from "@mui/material";
+
 import {
   BarChart,
   Bar,
@@ -45,33 +46,29 @@ interface StatsData {
 
 function LoadingSkeleton() {
   return (
-    <Box className="p-6">
-      <Box className="mb-8">
-        <Skeleton variant="rectangular" height={280} sx={{ borderRadius: 2 }} />
-      </Box>
-      <Box className="space-y-3">
+    <div className="p-6">
+      <div className="mb-8">
+        <Skeleton className="h-6 w-full rounded-lg" />
+      </div>
+      <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
-          <Box key={i} className="flex items-center gap-4">
-            <Skeleton variant="text" width={120} height={24} />
-            <Skeleton
-              variant="rectangular"
-              sx={{ flex: 1, borderRadius: 1 }}
-              height={32}
-            />
-            <Skeleton variant="text" width={60} height={24} />
-          </Box>
+          <div key={i} className="flex items-center gap-4">
+            <Skeleton className="h-6 w-full rounded-lg" />
+            <Skeleton className="h-6 w-full rounded-lg" />
+            <Skeleton className="h-6 w-full rounded-lg" />
+          </div>
         ))}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
 function EmptyState() {
   return (
-    <Box className="flex flex-col items-center justify-center py-16 px-6">
-      <Box
+    <div className="flex flex-col items-center justify-center py-16 px-6">
+      <div
         className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-        sx={{ backgroundColor: "#fef3c7" }}
+        style={{ backgroundColor: "#fef3c7" }}
       >
         <svg
           className="w-8 h-8 text-amber-500"
@@ -86,9 +83,11 @@ function EmptyState() {
             d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
           />
         </svg>
-      </Box>
-      <p className="text-gray-500 text-sm">대학별 통계 데이터가 없습니다.</p>
-    </Box>
+      </div>
+      <div className="text-gray-500 text-sm">
+        대학별 통계 데이터가 없습니다.
+      </div>
+    </div>
   );
 }
 
@@ -107,7 +106,7 @@ function HorizontalBarChart({
   }));
 
   return (
-    <Box className="mb-8" sx={{ height: 320 }}>
+    <div className="mb-8" style={{ height: 320 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
@@ -166,24 +165,23 @@ function HorizontalBarChart({
           />
         </BarChart>
       </ResponsiveContainer>
-
-      <Box className="flex items-center justify-center gap-6 mt-2">
-        <Box className="flex items-center gap-2">
-          <Box
+      <div className="flex items-center justify-center gap-6 mt-2">
+        <div className="flex items-center gap-2">
+          <div
             className="w-3 h-3 rounded-sm"
-            sx={{ backgroundColor: COLORS.blue }}
-          />
+            style={{ backgroundColor: COLORS.blue }}
+          ></div>
           <span className="text-xs text-gray-600">남성</span>
-        </Box>
-        <Box className="flex items-center gap-2">
-          <Box
+        </div>
+        <div className="flex items-center gap-2">
+          <div
             className="w-3 h-3 rounded-sm"
-            sx={{ backgroundColor: COLORS.pink }}
-          />
+            style={{ backgroundColor: COLORS.pink }}
+          ></div>
           <span className="text-xs text-gray-600">여성</span>
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -207,13 +205,13 @@ function StatsTable({
   totalCount: number;
 }) {
   return (
-    <Box
+    <div
       className="overflow-hidden rounded-lg border"
-      sx={{ borderColor: COLORS.border }}
+      style={{ borderColor: COLORS.border }}
     >
-      <Box
+      <div
         className="grid gap-4 px-4 py-3 text-xs font-medium uppercase tracking-wider"
-        sx={{
+        style={{
           gridTemplateColumns: "1fr 80px 140px 70px 70px",
           backgroundColor: COLORS.lightGray,
           color: COLORS.gray,
@@ -225,12 +223,8 @@ function StatsTable({
         <span className="text-center">성비 (남:여)</span>
         <span className="text-center">남/여</span>
         <span className="text-right">비율</span>
-      </Box>
-
-      <Box
-        className="divide-y"
-        sx={{ "& > div:nth-of-type(odd)": { backgroundColor: "#fafafa" } }}
-      >
+      </div>
+      <div className="divide-y" style={{}}>
         {data.map((uni, index) => {
           const genderRatioStr = formatGenderRatio(
             uni.maleCount,
@@ -238,34 +232,32 @@ function StatsTable({
           );
 
           return (
-            <Box
+            <div
               key={index}
               className="grid gap-4 px-4 py-3 items-center transition-colors hover:bg-gray-50"
-              sx={{
+              style={{
                 gridTemplateColumns: "1fr 80px 140px 70px 70px",
                 borderColor: COLORS.border,
               }}
             >
-              <Box className="flex items-center gap-2">
-                <Box
+              <div className="flex items-center gap-2">
+                <div
                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
-                  sx={{
+                  style={{
                     backgroundColor: index < 3 ? "#fef3c7" : COLORS.lightGray,
                     color: index < 3 ? COLORS.amber : COLORS.gray,
                   }}
                 >
                   {index + 1}
-                </Box>
+                </div>
                 <span className="font-medium text-gray-900 text-sm truncate">
                   {uni.universityName}
                 </span>
-              </Box>
-
+              </div>
               <span className="text-right font-semibold text-gray-900 text-sm tabular-nums">
                 {uni.totalCount.toLocaleString()}
               </span>
-
-              <Box className="text-center">
+              <div className="text-center">
                 <span
                   className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold"
                   style={{
@@ -281,15 +273,13 @@ function StatsTable({
                     {genderRatioStr.split(":")[1]}
                   </span>
                 </span>
-              </Box>
-
-              <Box className="text-center text-xs">
+              </div>
+              <div className="text-center text-xs">
                 <span style={{ color: COLORS.blue }}>{uni.maleCount}</span>
                 <span className="text-gray-400">/</span>
                 <span style={{ color: COLORS.pink }}>{uni.femaleCount}</span>
-              </Box>
-
-              <Box className="text-right">
+              </div>
+              <div className="text-right">
                 <span
                   className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                   style={{
@@ -300,15 +290,14 @@ function StatsTable({
                 >
                   {uni.percentage.toFixed(1)}%
                 </span>
-              </Box>
-            </Box>
+              </div>
+            </div>
           );
         })}
-      </Box>
-
-      <Box
+      </div>
+      <div
         className="grid gap-4 px-4 py-3 items-center"
-        sx={{
+        style={{
           gridTemplateColumns: "1fr 80px 140px 70px 70px",
           backgroundColor: "#f0fdf4",
           borderTop: `1px solid ${COLORS.border}`,
@@ -318,11 +307,11 @@ function StatsTable({
         <span className="text-right font-bold text-gray-900 tabular-nums">
           {totalCount.toLocaleString()}
         </span>
-        <Box />
-        <Box />
+        <div></div>
+        <div></div>
         <span className="text-right font-bold text-emerald-600">100%</span>
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
@@ -372,25 +361,22 @@ export default function UniversityStatsCard({
 
   if (error) {
     return (
-      <Box className="p-6">
-        <Alert
-          severity="error"
-          sx={{
-            borderRadius: 2,
-            "& .MuiAlert-message": { width: "100%" },
-          }}
-        >
-          <Box className="flex items-center justify-between w-full">
-            <span>{error}</span>
-            <button
-              onClick={() => window.location.reload()}
-              className="text-sm font-medium text-red-700 hover:text-red-800 underline"
-            >
-              다시 시도
-            </button>
-          </Box>
+      <div className="p-6">
+        <Alert style={{ borderRadius: 8 }} status="danger" role="alert">
+          <Alert.Content>
+            <div className="flex items-center justify-between w-full">
+              <span>{error}</span>
+              <Button
+                variant="secondary"
+                onClick={() => window.location.reload()}
+                className="text-sm font-medium text-red-700 hover:text-red-800 underline"
+              >
+                다시 시도
+              </Button>
+            </div>
+          </Alert.Content>
         </Alert>
-      </Box>
+      </div>
     );
   }
 
@@ -401,9 +387,9 @@ export default function UniversityStatsCard({
   const maxCount = Math.max(...stats.universities.map((u) => u.totalCount));
 
   return (
-    <Box className="p-6">
+    <div className="p-6">
       <HorizontalBarChart data={stats.universities} maxCount={maxCount} />
       <StatsTable data={stats.universities} totalCount={stats.totalCount} />
-    </Box>
+    </div>
   );
 }

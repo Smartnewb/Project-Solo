@@ -1,144 +1,197 @@
-'use client';
-
+"use client";
+import { Alert, Card, Chip, Skeleton } from "@heroui/react";
 import {
-	Card,
-	CardContent,
-	Typography,
-	Grid,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Chip,
-	Alert,
-	Skeleton,
-	Box,
-} from '@mui/material';
-import { CountryBreakdownData, STATUS_CONFIG, formatKpiValue, formatChangeRate } from '../types';
-
+	CountryBreakdownData,
+	STATUS_CONFIG,
+	formatKpiValue,
+	formatChangeRate,
+} from "../types";
 interface CountryBreakdownProps {
 	countryBreakdown?: CountryBreakdownData;
 	loading: boolean;
 }
-
-const COUNTRY_INFO: Record<string, { flag: string; label: string }> = {
-	KR: { flag: '🇰🇷', label: '한국' },
-	JP: { flag: '🇯🇵', label: '일본' },
+const COUNTRY_INFO: Record<
+	string,
+	{
+		flag: string;
+		label: string;
+	}
+> = {
+	KR: { flag: "🇰🇷", label: "한국" },
+	JP: { flag: "🇯🇵", label: "일본" },
 };
-
-export default function CountryBreakdown({ countryBreakdown, loading }: CountryBreakdownProps) {
+export default function CountryBreakdown({
+	countryBreakdown,
+	loading,
+}: CountryBreakdownProps) {
 	if (loading) {
 		return (
 			<Card>
-				<CardContent>
-					<Skeleton variant="text" width={160} height={28} sx={{ mb: 2 }} />
-					<Grid container spacing={2}>
+				<Card.Content>
+					<Skeleton
+						style={{ ...{ marginBottom: 16 }, ...{ width: 160, height: 28 } }}
+						className="rounded-xl"
+					/>
+					<div className={"grid grid-cols-12 gap-4"}>
 						{[1, 2].map((i) => (
-							<Grid item xs={12} md={6} key={i}>
-								<Skeleton variant="rectangular" height={200} sx={{ borderRadius: 1 }} />
-							</Grid>
+							<div key={i} className={"min-w-0 col-span-12 md:col-span-6"}>
+								<Skeleton
+									style={{
+										...{ borderRadius: 8 },
+										...{ width: "100%", height: 200 },
+									}}
+									className="rounded-xl"
+								/>
+							</div>
 						))}
-					</Grid>
-				</CardContent>
+					</div>
+				</Card.Content>
 			</Card>
 		);
 	}
-
 	if (!countryBreakdown) {
 		return (
 			<Card>
-				<CardContent>
-					<Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+				<Card.Content>
+					<h2
+						style={{ marginBottom: 16 }}
+						className={"text-lg font-semibold text-neutral-900"}
+					>
 						국가별 비교
-					</Typography>
-					<Alert severity="info">국가별 데이터가 아직 생성되지 않았습니다.</Alert>
-				</CardContent>
+					</h2>
+					<Alert status={"default"}>
+						<Alert.Content>
+							국가별 데이터가 아직 생성되지 않았습니다.
+						</Alert.Content>
+					</Alert>
+				</Card.Content>
 			</Card>
 		);
 	}
-
 	return (
 		<Card>
-			<CardContent>
-				<Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+			<Card.Content>
+				<h2
+					style={{ marginBottom: 16 }}
+					className={"text-lg font-semibold text-neutral-900"}
+				>
 					국가별 비교
-				</Typography>
-				<Grid container spacing={2}>
-					{(Object.keys(countryBreakdown) as Array<'KR' | 'JP'>).map((countryCode) => {
-						const info = COUNTRY_INFO[countryCode];
-						const kpis = countryBreakdown[countryCode];
-
-						return (
-							<Grid item xs={12} md={6} key={countryCode}>
-								<Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-									<Box sx={{ bgcolor: 'grey.50', px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-										<Typography variant="body1">{info.flag}</Typography>
-										<Typography variant="subtitle2" fontWeight="bold">
-											{info.label}
-										</Typography>
-									</Box>
-									<TableContainer>
-										<Table size="small">
-											<TableHead>
-												<TableRow>
-													<TableCell sx={{ fontWeight: 600 }}>KPI</TableCell>
-													<TableCell align="right" sx={{ fontWeight: 600 }}>값</TableCell>
-													<TableCell align="right" sx={{ fontWeight: 600 }}>변화율</TableCell>
-													<TableCell align="center" sx={{ fontWeight: 600 }}>상태</TableCell>
-												</TableRow>
-											</TableHead>
-											<TableBody>
-												{kpis.map((kpi) => {
-													const change = formatChangeRate(kpi.changeRate);
-													const statusConfig = STATUS_CONFIG[kpi.status];
-													return (
-														<TableRow key={kpi.name} hover>
-															<TableCell>
-																<Typography variant="body2" fontWeight={500}>
-																	{kpi.label}
-																</Typography>
-															</TableCell>
-															<TableCell align="right">
-																<Typography variant="body2" fontWeight={600}>
-																	{formatKpiValue(kpi.currentValue, kpi.unit)}
-																</Typography>
-															</TableCell>
-															<TableCell align="right">
-																<Typography variant="body2" fontWeight="bold" sx={{ color: change.color }}>
-																	{change.text}
-																</Typography>
-															</TableCell>
-															<TableCell align="center">
-																<Chip
-																	label={statusConfig.arrow}
-																	size="small"
-																	color={statusConfig.color}
-																	sx={{ height: 22, fontSize: '0.7rem' }}
-																/>
-															</TableCell>
-														</TableRow>
-													);
-												})}
-												{kpis.length === 0 && (
-													<TableRow>
-														<TableCell colSpan={4} align="center">
-															<Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
-																데이터 없음
-															</Typography>
-														</TableCell>
-													</TableRow>
-												)}
-											</TableBody>
-										</Table>
-									</TableContainer>
-								</Box>
-							</Grid>
-						);
-					})}
-				</Grid>
-			</CardContent>
+				</h2>
+				<div className={"grid grid-cols-12 gap-4"}>
+					{(Object.keys(countryBreakdown) as Array<"KR" | "JP">).map(
+						(countryCode) => {
+							const info = COUNTRY_INFO[countryCode];
+							const kpis = countryBreakdown[countryCode];
+							return (
+								<div
+									key={countryCode}
+									className={"min-w-0 col-span-12 md:col-span-6"}
+								>
+									<div
+										style={{
+											border: "1px solid",
+											borderColor: "#e5e5e5",
+											borderRadius: 8,
+											overflow: "hidden",
+										}}
+									>
+										<div
+											style={{
+												backgroundColor: "#fafafa",
+												paddingLeft: 16,
+												paddingRight: 16,
+												paddingTop: 8,
+												paddingBottom: 8,
+												display: "flex",
+												alignItems: "center",
+												gap: 8,
+											}}
+										>
+											<p className={"text-sm text-neutral-700"}>{info.flag}</p>
+											<p className={"text-sm text-neutral-700"}>{info.label}</p>
+										</div>
+										<div className={"overflow-x-auto"}>
+											<table
+												className={
+													"min-w-[520px] w-full text-sm text-left [&_td]:p-3 [&_th]:p-3 [&_td:nth-child(n+2)]:text-right [&_th:nth-child(n+2)]:text-right [&_td:last-child]:text-center [&_th:last-child]:text-center [&_thead]:bg-neutral-50 [&_tr]:border-b"
+												}
+											>
+												<thead>
+													<tr>
+														<th style={{ fontWeight: 600 }} scope="col">
+															KPI
+														</th>
+														<th style={{ fontWeight: 600 }} scope="col">
+															값
+														</th>
+														<th style={{ fontWeight: 600 }} scope="col">
+															변화율
+														</th>
+														<th style={{ fontWeight: 600 }} scope="col">
+															상태
+														</th>
+													</tr>
+												</thead>
+												<tbody>
+													{kpis.map((kpi) => {
+														const change = formatChangeRate(kpi.changeRate);
+														const statusConfig = STATUS_CONFIG[kpi.status];
+														return (
+															<tr key={kpi.name}>
+																<td>
+																	<p className={"text-sm text-neutral-700"}>
+																		{kpi.label}
+																	</p>
+																</td>
+																<td>
+																	<p className={"text-sm text-neutral-700"}>
+																		{formatKpiValue(kpi.currentValue, kpi.unit)}
+																	</p>
+																</td>
+																<td>
+																	<p
+																		style={{ color: change.color }}
+																		className={"text-sm text-neutral-700"}
+																	>
+																		{change.text}
+																	</p>
+																</td>
+																<td>
+																	<Chip
+																		style={{ height: 22, fontSize: "0.7rem" }}
+																		size={"sm"}
+																		variant={"soft"}
+																	>
+																		<Chip.Label>
+																			{statusConfig.arrow}
+																		</Chip.Label>
+																	</Chip>
+																</td>
+															</tr>
+														);
+													})}
+													{kpis.length === 0 && (
+														<tr>
+															<td colSpan={4}>
+																<p
+																	style={{ paddingTop: 8, paddingBottom: 8 }}
+																	className={"text-sm text-neutral-700"}
+																>
+																	데이터 없음
+																</p>
+															</td>
+														</tr>
+													)}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							);
+						},
+					)}
+				</div>
+			</Card.Content>
 		</Card>
 	);
 }

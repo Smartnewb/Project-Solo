@@ -1,110 +1,49 @@
 'use client';
-
-import { Box, Paper, Typography, CircularProgress, Button, Alert } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { Button, Spinner } from '@heroui/react';
+import { RefreshCw as RefreshIcon, ExternalLink as OpenInNewIcon } from 'lucide-react';
 import { usePageMeta } from '@/app/admin/hooks/use-seo';
-
 interface Props {
-  path: string;
-  webUrl?: string;
+    path: string;
+    webUrl?: string;
 }
-
 export function OgPreviewCard({ path, webUrl }: Props) {
-  const { data, isLoading, isError, refetch } = usePageMeta(path);
-
-  return (
-    <Paper sx={{ p: 2 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 1,
-          flexWrap: 'wrap',
-          gap: 1,
-        }}
-      >
-        <Typography variant="subtitle2">OG 미리보기</Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button size="small" startIcon={<RefreshIcon />} onClick={() => refetch()}>
+    const { data, isLoading, isError, refetch } = usePageMeta(path);
+    return (<section style={{ padding: 16 }} className="rounded-xl border bg-white p-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+        <p>OG 미리보기</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button onPress={() => { void refetch(); }} variant="tertiary">{<RefreshIcon></RefreshIcon>}
             새로고침
           </Button>
-          {webUrl && (
-            <Button
-              size="small"
-              startIcon={<OpenInNewIcon />}
-              component="a"
-              href={`/api/admin-proxy${webUrl}`}
-              target="_blank"
-              rel="noopener"
-            >
+          {webUrl && (<a className="inline-flex items-center gap-2 rounded-lg border p-2" href={`/api/admin-proxy${webUrl}`} target="_blank" rel="noopener noreferrer">{<OpenInNewIcon></OpenInNewIcon>}
               검색엔진용 페이지
-            </Button>
-          )}
-        </Box>
-      </Box>
+            </a>)}
+        </div>
+      </div>
 
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+      <p style={{ display: 'block', marginBottom: 8 }}>
         {path}
-      </Typography>
+      </p>
 
-      {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-          <CircularProgress size={20} />
-        </Box>
-      ) : isError ? (
-        <Alert severity="warning" variant="outlined">
+      {isLoading ? (<div style={{ display: 'flex', justifyContent: 'center', paddingBlock: 24 }}>
+          <Spinner size="sm"></Spinner>
+        </div>) : isError ? (<p role="alert" className="rounded-lg border p-3">
           미리보기를 불러올 수 없습니다.
-        </Alert>
-      ) : data ? (
-        <Box
-          sx={{
-            border: '1px solid #e0e0e0',
-            borderRadius: 1,
-            overflow: 'hidden',
-            maxWidth: 524,
-          }}
-        >
-          {data.ogImage && (
-            <Box
-              component="img"
-              src={data.ogImage}
-              alt=""
-              sx={{
-                width: '100%',
-                aspectRatio: '1.91/1',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-            />
-          )}
-          <Box sx={{ p: 1.5, bgcolor: '#f5f5f5' }}>
-            <Typography variant="caption" color="text.secondary" noWrap component="div">
+        </p>) : data ? (<div style={{ border: '1px solid #e0e0e0', borderRadius: 1, overflow: 'hidden', maxWidth: 524 }}>
+          {data.ogImage && (<img src={data.ogImage} alt="" style={{ width: '100%', objectFit: 'cover', display: 'block' }}></img>)}
+          <div style={{ padding: 12, backgroundColor: '#f5f5f5' }}>
+            <p>
               {data.canonicalUrl ?? path}
-            </Typography>
-            <Typography variant="body2" fontWeight="bold" noWrap>
+            </p>
+            <p>
               {data.title}
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
+            </p>
+            <p style={{ display: '-webkit-box', overflow: 'hidden' }}>
               {data.description}
-            </Typography>
-          </Box>
-        </Box>
-      ) : (
-        <Typography variant="body2" color="text.secondary">
+            </p>
+          </div>
+        </div>) : (<p>
           데이터 없음
-        </Typography>
-      )}
-    </Paper>
-  );
+        </p>)}
+    </section>);
 }

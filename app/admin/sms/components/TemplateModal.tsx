@@ -1,14 +1,12 @@
 // TITLE: - 템플릿 생성 모달
-
 'use client';
-
+import { Modal, Button, Input, TextArea } from '@heroui/react';
 import { useEffect } from 'react';
 import { Controller } from 'react-hook-form';
 import { X, Info } from 'lucide-react';
 import { SmsTemplate } from '../types';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { smsTemplateSchema, type SmsTemplateFormData } from '@/app/admin/hooks/forms/schemas/sms.schema';
-
 interface TemplateModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -16,41 +14,31 @@ interface TemplateModalProps {
     editingTemplate?: SmsTemplate | null;
     mode?: 'create' | 'edit';
 }
-
 // MARK: - 템플릿 생성 모달
-export function TemplateModal({
-    isOpen,
-    onClose,
-    onSave,
-    editingTemplate,
-    mode = 'create'
-}: TemplateModalProps) {
+export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode = 'create' }: TemplateModalProps) {
     const { control, watch, reset, handleFormSubmit, formState: { isSubmitting } } = useAdminForm<SmsTemplateFormData>({
         schema: smsTemplateSchema,
         defaultValues: { title: '', content: '' },
     });
-
     const watchedTitle = watch('title') ?? '';
     const watchedContent = watch('content') ?? '';
-
     // (수정 시) 템플릿 데이터 불러오기
     useEffect(() => {
         if (mode === 'edit' && editingTemplate) {
             reset({ title: editingTemplate.title, content: editingTemplate.content });
-        } else {
+        }
+        else {
             reset({ title: '', content: '' });
         }
     }, [mode, editingTemplate, isOpen, reset]);
-
-    if (!isOpen) return null;
-
+    if (!isOpen)
+        return null;
     // 변수 삽입 함수
     const insertVariable = (variable: string) => {
         // Content field update via reset-based append
         const currentContent = watchedContent;
         reset({ title: watchedTitle, content: currentContent + `{${variable}}` });
     };
-
     const handleSave = handleFormSubmit(async (data) => {
         const newTemplate = {
             id: mode === 'edit' ? editingTemplate?.id : Date.now().toString(),
@@ -59,37 +47,28 @@ export function TemplateModal({
             createdAt: mode === 'edit' ? editingTemplate?.createdAt : new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
-
         onSave(newTemplate);
         handleClose();
     });
-
     const handleClose = () => {
         reset({ title: '', content: '' });
         onClose();
     };
-
     // === 렌더링(JSX) ===
-    return (
-        <>
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-                    style={{ marginTop: 0}}
-                >
+    return (<>
+            {isOpen && (<Modal.Backdrop isOpen onOpenChange={open => { if (!open) handleClose(); }}><Modal.Container size="lg">
 
                     {/* MARK: - 모달 전체 */}
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-sm sm:max-w-md md:max-w-lg"
-                        onClick={(e) => {e.stopPropagation()}}>
+                    <Modal.Dialog aria-label={mode === 'edit' ? '템플릿 수정' : '새 템플릿 만들기'}>
                             {/* 모달 헤더 */}
                             <div className="flex justify-between items-center px-4 sm:px-6 py-4 border-b">
                                 <h2 className="text-base sm:text-lg font-medium text-gray-900">
                                     {mode === 'edit' ? '템플릿 수정' : '새 템플릿 만들기'}
                                 </h2>
 
-                                <button onClick={handleClose} className="p-1.5 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <X size={20}/>
-                                </button>
+                                <Button onPress={handleClose} className="p-1.5 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 transition-colors" variant="secondary">
+                                    <X size={20}></X>
+                                </Button>
                             </div>
 
                             {/* MARK: - 모달 바디 */}
@@ -97,73 +76,40 @@ export function TemplateModal({
                                     {/* 템플릿 제목 입력 */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1.5"> 템플릿 제목 *</label>
-                                        <Controller
-                                            name="title"
-                                            control={control}
-                                            render={({ field, fieldState }) => (
-                                                <>
-                                                    <input
-                                                        {...field}
-                                                        type="text"
-                                                        maxLength={50}
-                                                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] ${fieldState.error ? 'border-red-500' : 'border-gray-300'}`}
-                                                        placeholder="예: 신규 회원 환영 메세지"
-                                                    />
+                                        <Controller name="title" control={control} render={({ field, fieldState }) => (<>
+                                                    <Input {...field} type="text" maxLength={50} className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] ${fieldState.error ? 'border-red-500' : 'border-gray-300'}`} placeholder="예: 신규 회원 환영 메세지"></Input>
                                                     <div className="flex justify-between">
-                                                        {fieldState.error ? (
-                                                            <p className="text-xs text-red-500 mt-1">{fieldState.error.message}</p>
-                                                        ) : (
-                                                            <p className="text-xs text-gray-500 mt-1">
+                                                        {fieldState.error ? (<p className="text-xs text-red-500 mt-1">{fieldState.error.message}</p>) : (<p className="text-xs text-gray-500 mt-1">
                                                                 템플릿을 구분할 수 있는 제목을 입력하세요
-                                                            </p>
-                                                        )}
+                                                            </p>)}
                                                         <p className="text-xs text-gray-400 mt-1">
                                                             {watchedTitle.length}/50자
                                                         </p>
                                                     </div>
-                                                </>
-                                            )}
-                                        />
+                                                </>)}></Controller>
                                     </div>
 
                                     {/* MARK: - 템플릿 컨텐츠 입력 */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1.5">메세지 내용 *</label>
-                                        <Controller
-                                            name="content"
-                                            control={control}
-                                            render={({ field, fieldState }) => (
-                                                <>
-                                                    <textarea
-                                                        {...field}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        placeholder="예: 안녕하세요! 서비스 가입을 환영합니다. 궁금한 사항이 있으시면 언제든 문의해주세요."
-                                                        rows={5}
-                                                        maxLength={2400}
-                                                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] resize-none ${fieldState.error ? 'border-red-500' : 'border-gray-300'}`}
-                                                    />
+                                        <Controller name="content" control={control} render={({ field, fieldState }) => (<>
+                                                    <TextArea {...field} onClick={(e) => e.stopPropagation()} placeholder="예: 안녕하세요! 서비스 가입을 환영합니다. 궁금한 사항이 있으시면 언제든 문의해주세요." rows={5} maxLength={2400} className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] resize-none ${fieldState.error ? 'border-red-500' : 'border-gray-300'}`}></TextArea>
                                                     <div className="flex justify-between">
-                                                        {fieldState.error ? (
-                                                            <p className="text-xs text-red-500 mt-1">{fieldState.error.message}</p>
-                                                        ) : (
-                                                            <p className="text-xs text-gray-500 mt-1">
+                                                        {fieldState.error ? (<p className="text-xs text-red-500 mt-1">{fieldState.error.message}</p>) : (<p className="text-xs text-gray-500 mt-1">
                                                                 SMS 최대 길이: 90바이트 (한글 45글자)
-                                                            </p>
-                                                        )}
+                                                            </p>)}
                                                         <p className="text-xs text-gray-400 mt-1">
                                                             {watchedContent.length}/2400자
                                                         </p>
                                                     </div>
-                                                </>
-                                            )}
-                                        />
+                                                </>)}></Controller>
                                     </div>
 
                                     {/* MARK: - 변수 섹션 */}
                                     <div className="bg-gray-50 rounded-md p-3 sm:p-4 mt-2">
                                         {/* 섹션 헤더 */}
                                         <div className="flex items-center gap-1.5 mb-2.5">
-                                            <Info size={16} className="text-gray-500"/>
+                                            <Info size={16} className="text-gray-500"></Info>
                                             <span className="text-xs sm:text-sm font-medium text-gray-700">사용 가능한 변수</span>
                                         </div>
 
@@ -192,31 +138,23 @@ export function TemplateModal({
                             {/* MARK: - 모달 푸터 구현 */}
                             <div className="flex flex-col-reverse rounded-lg sm:flex-row gap-2 sm:gap-3 justify-end px-4 sm:px-6 py-3 sm:py-4 border-t bg-gray-50">
                                 {/* 취소 버튼 */}
-                                <button
-                                    onClick={handleClose}
-                                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition-colors">
+                                <Button onPress={handleClose} className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition-colors" variant="secondary">
                                         취소
-                                    </button>
+                                    </Button>
 
                                 {/* 저장 버튼 */}
-                                <button
-                                    onClick={handleSave}
-                                    disabled={isSubmitting}
-                                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium bg-[#885AEB] text-white rounded-md hover:bg-[#e00b41] disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                                    >
+                                <Button onPress={() => void handleSave()} isDisabled={isSubmitting} className="w-full sm:w-auto px-4 py-2 text-sm font-medium bg-[#885AEB] text-white rounded-md hover:bg-[#e00b41] disabled:cursor-not-allowed transition-colors flex items-center gap-2" variant="secondary">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="17" viewBox="0 0 14 17" fill="none">
-                                            <path d="M2 1.5C0.896875 1.5 0 2.39688 0 3.5V13.5C0 14.6031 0.896875 15.5 2 15.5H12C13.1031 15.5 14 14.6031 14 13.5V5.91563C14 5.38438 13.7906 4.875 13.4156 4.5L11 2.08438C10.625 1.70938 10.1156 1.5 9.58438 1.5H2ZM2 4.5C2 3.94688 2.44688 3.5 3 3.5H9C9.55313 3.5 10 3.94688 10 4.5V6.5C10 7.05312 9.55313 7.5 9 7.5H3C2.44688 7.5 2 7.05312 2 6.5V4.5ZM7 9.5C7.53043 9.5 8.03914 9.71071 8.41421 10.0858C8.78929 10.4609 9 10.9696 9 11.5C9 12.0304 8.78929 12.5391 8.41421 12.9142C8.03914 13.2893 7.53043 13.5 7 13.5C6.46957 13.5 5.96086 13.2893 5.58579 12.9142C5.21071 12.5391 5 12.0304 5 11.5C5 10.9696 5.21071 10.4609 5.58579 10.0858C5.96086 9.71071 6.46957 9.5 7 9.5Z" fill="white"/>
+                                            <path d="M2 1.5C0.896875 1.5 0 2.39688 0 3.5V13.5C0 14.6031 0.896875 15.5 2 15.5H12C13.1031 15.5 14 14.6031 14 13.5V5.91563C14 5.38438 13.7906 4.875 13.4156 4.5L11 2.08438C10.625 1.70938 10.1156 1.5 9.58438 1.5H2ZM2 4.5C2 3.94688 2.44688 3.5 3 3.5H9C9.55313 3.5 10 3.94688 10 4.5V6.5C10 7.05312 9.55313 7.5 9 7.5H3C2.44688 7.5 2 7.05312 2 6.5V4.5ZM7 9.5C7.53043 9.5 8.03914 9.71071 8.41421 10.0858C8.78929 10.4609 9 10.9696 9 11.5C9 12.0304 8.78929 12.5391 8.41421 12.9142C8.03914 13.2893 7.53043 13.5 7 13.5C6.46957 13.5 5.96086 13.2893 5.58579 12.9142C5.21071 12.5391 5 12.0304 5 11.5C5 10.9696 5.21071 10.4609 5.58579 10.0858C5.96086 9.71071 6.46957 9.5 7 9.5Z" fill="white"></path>
                                         </svg>
                                     {isSubmitting ? '저장 중...' : mode === 'edit' ? '수정 완료' : '템플릿 저장'}
-                                    </button>
+                                    </Button>
 
                             </div>
 
 
-                    </div>
+                    </Modal.Dialog>
 
-                </div>
-            )}
-        </>
-    );
+                </Modal.Container></Modal.Backdrop>)}
+        </>);
 }

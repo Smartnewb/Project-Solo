@@ -1,109 +1,43 @@
 'use client';
-
-import { Button, Stack, Typography } from '@mui/material';
-import {
-  CheckCircle2,
-  CheckSquare,
-  Eye,
-  ShieldBan,
-  Trash2,
-  XCircle,
-} from 'lucide-react';
+import { Button } from '@heroui/react';
+import { CheckCircle2, CheckSquare, Eye, ShieldBan, Trash2, XCircle, } from 'lucide-react';
 import type { AuditAction, SelectedAuditGroup } from '../types';
-
 type Props = {
-  readonly group: SelectedAuditGroup;
-  readonly visibleCount: number;
-  readonly busy: boolean;
-  readonly onSelectVisible: () => void;
-  readonly onAction: (action: AuditAction) => void;
-  readonly onBlacklist: () => void;
+    readonly group: SelectedAuditGroup;
+    readonly visibleCount: number;
+    readonly busy: boolean;
+    readonly onSelectVisible: () => void;
+    readonly onAction: (action: AuditAction) => void;
+    readonly onBlacklist: () => void;
 };
-
-export function AuditBulkToolbar({
-  group,
-  visibleCount,
-  busy,
-  onSelectVisible,
-  onAction,
-  onBlacklist,
-}: Props) {
-  const disabled = group.selectedIds.length === 0 || busy;
-  const selectVisibleDisabled = visibleCount === 0 || busy;
-  const blacklistDisabled = disabled || group.selectedUserIds.length !== 1;
-
-  return (
-    <Stack
-      direction={{ xs: 'column', md: 'row' }}
-      spacing={1}
-      alignItems={{ xs: 'stretch', md: 'center' }}
-      justifyContent="space-between"
-      sx={{ border: '1px solid #dbe3ef', borderRadius: 2, p: 1.5, bgcolor: '#f8fafc' }}
-    >
-      <Typography variant="body2" fontWeight={700}>
+export function AuditBulkToolbar({ group, visibleCount, busy, onSelectVisible, onAction, onBlacklist, }: Props) {
+    const disabled = group.selectedIds.length === 0 || busy;
+    const selectVisibleDisabled = visibleCount === 0 || busy;
+    const blacklistDisabled = disabled || group.selectedUserIds.length !== 1;
+    return (<div style={{ border: '1px solid #dbe3ef', borderRadius: 2, padding: 12, backgroundColor: '#f8fafc' }}>
+      <p>
         선택 {group.selectedIds.length.toLocaleString()}장
         {group.selectedUserIds.length > 1 ? ` · ${group.selectedUserIds.length}명` : ''}
-      </Typography>
-      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<CheckSquare size={16} />}
-          disabled={selectVisibleDisabled}
-          onClick={onSelectVisible}
-        >
+      </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <Button isDisabled={selectVisibleDisabled} onPress={onSelectVisible} variant="secondary">{<CheckSquare></CheckSquare>}
           전체선택
         </Button>
-        <Button
-          size="small"
-          variant="contained"
-          color="success"
-          startIcon={<CheckCircle2 size={16} />}
-          disabled={disabled}
-          onClick={() => onAction('mark-ok')}
-        >
+        <Button isDisabled={disabled} onPress={() => onAction('mark-ok')} variant="primary">{<CheckCircle2></CheckCircle2>}
           정상 처리
         </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          color="warning"
-          startIcon={<Eye size={16} />}
-          disabled={disabled}
-          onClick={() => onAction('second-review')}
-        >
+        <Button isDisabled={disabled} onPress={() => onAction('second-review')} variant="secondary">{<Eye></Eye>}
           2차 검토
         </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<XCircle size={16} />}
-          disabled={disabled}
-          onClick={() => onAction('reject')}
-        >
+        <Button isDisabled={disabled} onPress={() => onAction('reject')} variant="secondary">{<XCircle></XCircle>}
           사진 변경 요청
         </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          color="error"
-          startIcon={<Trash2 size={16} />}
-          disabled={disabled}
-          onClick={() => onAction('delete')}
-        >
+        <Button isDisabled={disabled} onPress={() => onAction('delete')} variant="secondary">{<Trash2></Trash2>}
           즉시 삭제
         </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          color="error"
-          startIcon={<ShieldBan size={16} />}
-          disabled={blacklistDisabled}
-          onClick={onBlacklist}
-        >
+        <Button isDisabled={blacklistDisabled} onPress={onBlacklist} variant="secondary">{<ShieldBan></ShieldBan>}
           블랙리스트
         </Button>
-      </Stack>
-    </Stack>
-  );
+      </div>
+    </div>);
 }

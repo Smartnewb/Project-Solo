@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Options<T> {
   parse: (params: URLSearchParams) => T;
@@ -19,9 +25,7 @@ export function useQuerySyncedState<T>({
     parse(searchParams ?? new URLSearchParams()),
   );
 
-  const lastWrittenRef = useRef<string>(
-    serialize(value).toString(),
-  );
+  const lastWrittenRef = useRef<string>(serialize(value).toString());
 
   // state → URL
   useEffect(() => {
@@ -40,7 +44,7 @@ export function useQuerySyncedState<T>({
     const current = currentParams.toString();
     if (next !== current) {
       lastWrittenRef.current = next;
-      router.replace(next ? `?${next}` : '?', { scroll: false });
+      router.replace(next ? `?${next}` : "?", { scroll: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, router]);

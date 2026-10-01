@@ -1,16 +1,17 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Sparkles } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
-import { useToast } from '@/shared/ui/admin/toast';
-import { useAiProfileErrorHandler } from '../_shared-error';
-import { DepartmentSearch } from './department-search';
-import { UniversitySearch } from './university-search';
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Sparkles } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
+
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { useToast } from "@/shared/ui/admin/toast";
+import { useAiProfileErrorHandler } from "../_shared-error";
+import { DepartmentSearch } from "./department-search";
+import { UniversitySearch } from "./university-search";
 
 interface Props {
   universityId: string | null;
@@ -34,7 +35,7 @@ export function SourceDataPicker({
   const handleError = useAiProfileErrorHandler();
   const [universityName, setUniversityName] = useState<string | null>(null);
   const [departmentName, setDepartmentName] = useState<string | null>(null);
-  const [suggestInstruction, setSuggestInstruction] = useState('');
+  const [suggestInstruction, setSuggestInstruction] = useState("");
 
   const suggestMutation = useMutation({
     mutationFn: () =>
@@ -44,7 +45,7 @@ export function SourceDataPicker({
     onSuccess: (result) => {
       const top = result.suggestions?.[0];
       if (!top) {
-        toast.info('제안 결과가 없습니다.');
+        toast.info("제안 결과가 없습니다.");
         return;
       }
       setUniversityName(top.universityName);
@@ -55,9 +56,7 @@ export function SourceDataPicker({
         top.universityName,
         top.departmentName,
       );
-      toast.success(
-        `추천: ${top.universityName} · ${top.departmentName}`,
-      );
+      toast.success(`추천: ${top.universityName} · ${top.departmentName}`);
     },
     onError: handleError,
   });
@@ -69,8 +68,8 @@ export function SourceDataPicker({
           <Label>대학</Label>
           {universityId && universityName ? (
             <div className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-700">
-              {universityName}{' '}
-              <button
+              {universityName}{" "}
+              <Button
                 type="button"
                 className="ml-2 text-xs text-slate-500 hover:underline"
                 onClick={() => {
@@ -78,9 +77,11 @@ export function SourceDataPicker({
                   setDepartmentName(null);
                   onChange(null, null);
                 }}
+                variant={"secondary"}
+                size={"md"}
               >
                 변경
-              </button>
+              </Button>
             </div>
           ) : (
             <UniversitySearch
@@ -97,17 +98,19 @@ export function SourceDataPicker({
           <Label>학과</Label>
           {departmentId && departmentName ? (
             <div className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-700">
-              {departmentName}{' '}
-              <button
+              {departmentName}{" "}
+              <Button
                 type="button"
                 className="ml-2 text-xs text-slate-500 hover:underline"
                 onClick={() => {
                   setDepartmentName(null);
                   onChange(universityId, null, universityName, null);
                 }}
+                variant={"secondary"}
+                size={"md"}
               >
                 변경
-              </button>
+              </Button>
             </div>
           ) : (
             <DepartmentSearch
@@ -134,16 +137,16 @@ export function SourceDataPicker({
             />
             <Button
               type="button"
-              size="sm"
-              variant="outline"
               onClick={() => suggestMutation.mutate()}
-              disabled={
+              isDisabled={
                 suggestMutation.isPending ||
                 suggestInstruction.trim().length === 0
               }
+              variant={"outline"}
+              size={"sm"}
             >
               <Sparkles className="mr-1 h-3.5 w-3.5" />
-              {suggestMutation.isPending ? '추천 중…' : '추천'}
+              {suggestMutation.isPending ? "추천 중…" : "추천"}
             </Button>
           </div>
         </div>

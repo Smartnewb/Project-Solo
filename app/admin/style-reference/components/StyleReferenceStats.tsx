@@ -1,63 +1,45 @@
 'use client';
-
-import { Box, Card, CardContent, Typography, CircularProgress } from '@mui/material';
+import { Spinner } from '@heroui/react';
 import { useStyleReferenceStats } from '@/app/admin/hooks';
 import { CATEGORY_LABELS, GENDER_LABELS } from '../constants';
-
 export function StyleReferenceStats() {
-  const { data, isLoading } = useStyleReferenceStats();
-
-  const total = data?.stats?.reduce((acc, s) => acc + s.count, 0) ?? 0;
-  const active = data?.stats?.reduce((acc, s) => acc + s.activeCount, 0) ?? 0;
-  const inactive = total - active;
-
-  const summaryCards = [
-    { label: '전체', value: total, color: '#111827' },
-    { label: '활성', value: active, color: '#059669' },
-    { label: '비활성', value: inactive, color: '#dc2626' },
-  ];
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-        <CircularProgress size={24} />
-      </Box>
-    );
-  }
-
-  return (
-    <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-      {summaryCards.map(({ label, value, color }) => (
-        <Card key={label} variant="outlined" sx={{ minWidth: 100 }}>
-          <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-            <Typography variant="h5" fontWeight="bold" sx={{ color }}>
+    const { data, isLoading } = useStyleReferenceStats();
+    const total = data?.stats?.reduce((acc, s) => acc + s.count, 0) ?? 0;
+    const active = data?.stats?.reduce((acc, s) => acc + s.activeCount, 0) ?? 0;
+    const inactive = total - active;
+    const summaryCards = [
+        { label: '전체', value: total, color: '#111827' },
+        { label: '활성', value: active, color: '#059669' },
+        { label: '비활성', value: inactive, color: '#dc2626' },
+    ];
+    if (isLoading) {
+        return (<div style={{ display: 'flex', justifyContent: 'center', paddingBlock: 16 }}>
+        <Spinner size="sm"></Spinner>
+      </div>);
+    }
+    return (<div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+      {summaryCards.map(({ label, value, color }) => (<div key={label} style={{ minWidth: 100 }} className="rounded-xl border p-4">
+          <div style={{ paddingBlock: 12, paddingInline: 16 }} className="p-4">
+            <h1 className="text-2xl font-bold">
               {value}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
+            </h1>
+            <p>
               {label}
-            </Typography>
-          </CardContent>
-        </Card>
-      ))}
-      {data?.stats?.map((s) => (
-        <Card
-          key={`${s.gender}-${s.category}`}
-          variant="outlined"
-          sx={{ minWidth: 120 }}
-        >
-          <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-            <Typography variant="h6" fontWeight="bold">
+            </p>
+          </div>
+        </div>))}
+      {data?.stats?.map((s) => (<div key={`${s.gender}-${s.category}`} style={{ minWidth: 120 }} className="rounded-xl border p-4">
+          <div style={{ paddingBlock: 12, paddingInline: 16 }} className="p-4">
+            <h2 className="text-lg font-semibold">
               {s.activeCount}
-              <Typography component="span" variant="caption" color="text.secondary">
+              <p>
                 /{s.count}
-              </Typography>
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
+              </p>
+            </h2>
+            <p>
               {GENDER_LABELS[s.gender]} · {CATEGORY_LABELS[s.category]}
-            </Typography>
-          </CardContent>
-        </Card>
-      ))}
-    </Box>
-  );
+            </p>
+          </div>
+        </div>))}
+    </div>);
 }

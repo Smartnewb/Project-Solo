@@ -1,57 +1,64 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { Button as HeroActionButton } from "@heroui/react";
+import { Button } from "@heroui/react";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Plus, Search } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   GENERATABLE_DOMAINS,
   type AiProfileDraftListQuery,
   type AiProfileDraftStatus,
-} from '@/app/types/ai-profile-generator';
-import { Alert, AlertDescription } from '@/shared/ui/alert';
-import { Badge } from '@/shared/ui/badge';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
+} from "@/app/types/ai-profile-generator";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
+import { Badge } from "@/shared/ui/badge";
+
+import { Input } from "@/shared/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { aiProfileGeneratorKeys } from '../_shared/query-keys';
-import { formatDate, shortId } from './_shared/format';
-import { PaginationFooter } from './_shared/pagination-footer';
+} from "@/shared/ui/select";
+import { aiProfileGeneratorKeys } from "../_shared/query-keys";
+import { formatDate, shortId } from "./_shared/format";
+import { PaginationFooter } from "./_shared/pagination-footer";
 import {
   DRAFT_STATUS_LABEL,
   DRAFT_STATUS_VALUES,
   DRAFT_STATUS_VARIANT,
-} from './_shared/status';
-import { useQuerySyncedState } from './_shared/use-query-synced-state';
-import { DraftCreateDialog } from './draft-create-dialog';
-import { GeneratorTabs } from './_tabs';
+} from "./_shared/status";
+import { useQuerySyncedState } from "./_shared/use-query-synced-state";
+import { DraftCreateDialog } from "./draft-create-dialog";
+import { GeneratorTabs } from "./_tabs";
 
 const DEFAULT_LIMIT = 20;
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'all', label: '전체 상태' },
-  ...DRAFT_STATUS_VALUES.map((v) => ({ value: v, label: DRAFT_STATUS_LABEL[v] })),
+  { value: "all", label: "전체 상태" },
+  ...DRAFT_STATUS_VALUES.map((v) => ({
+    value: v,
+    label: DRAFT_STATUS_LABEL[v],
+  })),
 ];
 
 function parseQueryFromURL(params: URLSearchParams): AiProfileDraftListQuery {
-  const statusRaw = params.get('status');
+  const statusRaw = params.get("status");
   const status = DRAFT_STATUS_VALUES.includes(statusRaw as AiProfileDraftStatus)
     ? (statusRaw as AiProfileDraftStatus)
     : undefined;
 
-  const page = Number(params.get('page'));
-  const limit = Number(params.get('limit'));
+  const page = Number(params.get("page"));
+  const limit = Number(params.get("limit"));
 
   return {
     status,
-    q: params.get('q') ?? undefined,
+    q: params.get("q") ?? undefined,
     page: Number.isFinite(page) && page > 0 ? page : 1,
     limit: Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_LIMIT,
   };
@@ -59,11 +66,11 @@ function parseQueryFromURL(params: URLSearchParams): AiProfileDraftListQuery {
 
 function serializeQuery(query: AiProfileDraftListQuery): URLSearchParams {
   const params = new URLSearchParams();
-  if (query.status) params.set('status', query.status);
-  if (query.q) params.set('q', query.q);
-  if (query.page && query.page > 1) params.set('page', String(query.page));
+  if (query.status) params.set("status", query.status);
+  if (query.q) params.set("q", query.q);
+  if (query.page && query.page > 1) params.set("page", String(query.page));
   if (query.limit && query.limit !== DEFAULT_LIMIT)
-    params.set('limit', String(query.limit));
+    params.set("limit", String(query.limit));
   return params;
 }
 
@@ -74,13 +81,13 @@ export function GeneratorListClient() {
     parse: parseQueryFromURL,
     serialize: serializeQuery,
   });
-  const [searchInput, setSearchInput] = useState<string>(() => query.q ?? '');
+  const [searchInput, setSearchInput] = useState<string>(() => query.q ?? "");
   const [createOpen, setCreateOpen] = useState(false);
 
   // Debounce search input (300ms)
   useEffect(() => {
     const trimmed = searchInput.trim();
-    if ((query.q ?? '') === trimmed) return;
+    if ((query.q ?? "") === trimmed) return;
     const t = setTimeout(() => {
       setQuery((prev) => ({ ...prev, q: trimmed || undefined, page: 1 }));
     }, 300);
@@ -108,12 +115,17 @@ export function GeneratorListClient() {
             AI 인연 프로필 생성기
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            유저에게 <strong>AI 인연</strong>으로 소개되어 매칭·채팅에 쓰이는 Companion 프로필을 생성·수정합니다.
+            유저에게 <strong>AI 인연</strong>으로 소개되어 매칭·채팅에 쓰이는
+            Companion 프로필을 생성·수정합니다.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-1 h-4 w-4" /> 새 Draft 생성
+          <Button
+            onClick={() => setCreateOpen(true)}
+            variant={"primary"}
+            size={"md"}
+          >
+            <Plus className="mr-1 h-4 w-4" />새 Draft 생성
           </Button>
         </div>
       </header>
@@ -130,16 +142,17 @@ export function GeneratorListClient() {
         </div>
         <div className="w-44">
           <Select
-            value={query.status ?? 'all'}
+            value={query.status ?? "all"}
             onValueChange={(value) =>
               setQuery((prev) => ({
                 ...prev,
                 status:
-                  value === 'all' ? undefined : (value as AiProfileDraftStatus),
+                  value === "all" ? undefined : (value as AiProfileDraftStatus),
                 page: 1,
               }))
             }
           >
+            <HeroSelectLabel className="sr-only">{"상태"}</HeroSelectLabel>
             <SelectTrigger>
               <SelectValue placeholder="상태" />
             </SelectTrigger>
@@ -156,9 +169,7 @@ export function GeneratorListClient() {
 
       {listQuery.isError ? (
         <Alert variant="destructive">
-          <AlertDescription>
-            Draft 목록을 불러오지 못했습니다.
-          </AlertDescription>
+          <AlertDescription>Draft 목록을 불러오지 못했습니다.</AlertDescription>
         </Alert>
       ) : null}
 
@@ -176,31 +187,44 @@ export function GeneratorListClient() {
           <tbody>
             {listQuery.isLoading ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                <td
+                  colSpan={5}
+                  className="px-4 py-6 text-center text-slate-400"
+                >
                   불러오는 중…
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                <td
+                  colSpan={5}
+                  className="px-4 py-6 text-center text-slate-400"
+                >
                   Draft가 없습니다.
                 </td>
               </tr>
             ) : (
               items.map((draft) => {
                 const readyCount = GENERATABLE_DOMAINS.filter(
-                  (d) => draft.domainStatus?.[d] === 'ready',
+                  (d) => draft.domainStatus?.[d] === "ready",
                 ).length;
                 return (
                   <tr
                     key={draft.id}
                     className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
-                    onClick={() =>
-                      router.push(`/admin/ai-profiles/generator/${draft.id}`)
-                    }
                   >
                     <td className="px-4 py-2 font-mono text-xs text-slate-700">
-                      {shortId(draft.id)}
+                      <HeroActionButton
+                        variant="ghost"
+                        className="h-auto justify-start whitespace-normal p-0"
+                        onClick={() =>
+                          router.push(
+                            `/admin/ai-profiles/generator/${draft.id}`,
+                          )
+                        }
+                      >
+                        {shortId(draft.id)}
+                      </HeroActionButton>
                     </td>
                     <td className="px-4 py-2">
                       <Badge variant={DRAFT_STATUS_VARIANT[draft.status]}>
@@ -215,14 +239,14 @@ export function GeneratorListClient() {
                     </td>
                     <td className="px-4 py-2 text-right">
                       <Button
-                        variant="outline"
-                        size="sm"
                         onClick={(event) => {
                           event.stopPropagation();
                           router.push(
                             `/admin/ai-profiles/generator/${draft.id}`,
                           );
                         }}
+                        variant={"outline"}
+                        size={"sm"}
                       >
                         편집
                       </Button>

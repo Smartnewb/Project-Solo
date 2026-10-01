@@ -1,33 +1,30 @@
-'use client';
-
-import { useState, useCallback } from 'react';
+"use client";
 import {
-  Box,
-  Stack,
-  Typography,
-  TextField,
+  Tabs,
   Button,
-  Chip,
-  Paper,
-  Divider,
-  CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
-  Alert,
   Card,
-  CardActionArea,
-} from '@mui/material';
-import { ExpandMore, Send, ContentCopy } from '@mui/icons-material';
+  Chip,
+  FieldError,
+  Label,
+  Spinner,
+  TextArea,
+  TextField,
+  Tooltip,
+} from "@heroui/react";
+import {
+  ChevronDown as ExpandMore,
+  Send,
+  Copy as ContentCopy,
+} from "lucide-react";
+
+import { useState, useCallback } from "react";
+
 import {
   QA_CATEGORIES,
   LEVEL_META,
   type QaQuestion,
   type GradeLevel,
-} from './question-set';
+} from "./question-set";
 
 interface Source {
   question: string;
@@ -42,7 +39,7 @@ interface PlaygroundResult {
 }
 interface RunRecord {
   question: string;
-  language: 'ko' | 'ja';
+  language: "ko" | "ja";
   expected?: string;
   level?: GradeLevel;
   result: PlaygroundResult;
@@ -50,19 +47,22 @@ interface RunRecord {
 }
 
 function confidenceColor(c: number): string {
-  if (c >= 0.7) return '#16a34a';
-  if (c >= 0.5) return '#ca8a04';
-  return '#dc2626';
+  if (c >= 0.7) return "#16a34a";
+  if (c >= 0.5) return "#ca8a04";
+  return "#dc2626";
 }
 
 export default function PlaygroundClient() {
-  const [question, setQuestion] = useState('');
-  const [language, setLanguage] = useState<'ko' | 'ja'>('ko');
+  const [question, setQuestion] = useState("");
+  const [language, setLanguage] = useState<"ko" | "ja">("ko");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState<RunRecord | null>(null);
   const [history, setHistory] = useState<RunRecord[]>([]);
-  const [presetMeta, setPresetMeta] = useState<{ expected: string; level: GradeLevel } | null>(null);
+  const [presetMeta, setPresetMeta] = useState<{
+    expected: string;
+    level: GradeLevel;
+  } | null>(null);
 
   const pickPreset = useCallback((q: QaQuestion) => {
     setQuestion(q.text);
@@ -77,9 +77,9 @@ export default function PlaygroundClient() {
     setError(null);
     const startedAt = performance.now();
     try {
-      const res = await fetch('/api/admin/cs-playground', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/cs-playground", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: msg, language }),
       });
       const data = await res.json();
@@ -98,229 +98,277 @@ export default function PlaygroundClient() {
       setCurrent(record);
       setHistory((prev) => [record, ...prev].slice(0, 30));
     } catch (e) {
-      setError(e instanceof Error ? e.message : '네트워크 오류');
+      setError(e instanceof Error ? e.message : "네트워크 오류");
     } finally {
       setLoading(false);
     }
   }, [question, language, loading, presetMeta]);
 
   return (
-    <Box sx={{ p: 3, height: '100vh', display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box>
-        <Typography variant="h5" fontWeight={700}>
-          CS Playground
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          openclaw 답변을 세션 생성 없이 미리보기·검수합니다. 좌측 질문셋을 누르면 입력칸에 채워지고
-          정답 기준이 함께 표시됩니다.
-        </Typography>
-      </Box>
-
-      <Box sx={{ flex: 1, display: 'flex', gap: 2, overflow: 'hidden' }}>
+    <div
+      style={{
+        padding: 24,
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}
+    >
+      <div>
+        <h5>CS Playground</h5>
+        <p>
+          openclaw 답변을 세션 생성 없이 미리보기·검수합니다. 좌측 질문셋을
+          누르면 입력칸에 채워지고 정답 기준이 함께 표시됩니다.
+        </p>
+      </div>
+      <div style={{ flex: 1, display: "flex", gap: 16, overflow: "hidden" }}>
         {/* 좌측: 질문셋 카드 — 클릭 즉시 입력칸 채움 */}
-        <Paper
-          variant="outlined"
-          sx={{ width: 400, flexShrink: 0, overflow: 'auto', p: 1.5 }}
+        <div
+          style={{ width: 400, flexShrink: 0, overflow: "auto", padding: 12 }}
         >
-          <Typography variant="subtitle2" sx={{ px: 0.5, pb: 1 }} color="text.secondary">
+          <p style={{ paddingInline: 4, paddingBottom: 8 }}>
             실 유저 질문셋 (30) · 카드 클릭 → 입력
-          </Typography>
-          <Stack spacing={2}>
+          </p>
+          <div className="flex flex-col gap-3 min-w-0">
             {QA_CATEGORIES.map((cat) => (
-              <Box key={cat.label}>
-                <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ px: 0.5 }}>
-                  {cat.label}
-                </Typography>
-                <Stack spacing={1} sx={{ mt: 0.75 }}>
+              <div key={cat.label}>
+                <p style={{ paddingInline: 4 }}>{cat.label}</p>
+                <div className="flex flex-col gap-3 min-w-0">
                   {cat.questions.map((q) => {
                     const selected = question.trim() === q.text;
                     return (
                       <Card
                         key={q.id}
-                        variant="outlined"
-                        sx={{
-                          borderColor: selected ? 'primary.main' : 'divider',
+                        style={{
+                          borderColor: "#e4e4e7",
                           borderLeft: `3px solid ${LEVEL_META[q.level].color}`,
-                          bgcolor: selected ? 'action.selected' : 'background.paper',
+                          backgroundColor: selected
+                            ? "action.selected"
+                            : "#ffffff",
                         }}
                       >
-                        <CardActionArea onClick={() => pickPreset(q)} sx={{ px: 1.5, py: 1 }}>
-                          <Stack direction="row" spacing={1} alignItems="flex-start">
-                            <Tooltip title={LEVEL_META[q.level].label}>
-                              <span style={{ fontSize: 14, lineHeight: '20px' }}>
-                                {LEVEL_META[q.level].emoji}
-                              </span>
+                        <Button
+                          variant="secondary"
+                          className="w-full h-auto justify-start p-3"
+                          onClick={() => pickPreset(q)}
+                        >
+                          <div className="flex flex-row gap-3 min-w-0">
+                            <Tooltip>
+                              <Tooltip.Trigger>
+                                <span
+                                  style={{ fontSize: 14, lineHeight: "20px" }}
+                                >
+                                  {LEVEL_META[q.level].emoji}
+                                </span>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                {LEVEL_META[q.level].label}
+                              </Tooltip.Content>
                             </Tooltip>
-                            <Typography variant="body2">{q.text}</Typography>
-                          </Stack>
-                        </CardActionArea>
+                            <p>{q.text}</p>
+                          </div>
+                        </Button>
                       </Card>
                     );
                   })}
-                </Stack>
-              </Box>
+                </div>
+              </div>
             ))}
-          </Stack>
-        </Paper>
-
+          </div>
+        </div>
         {/* 우측: 입력 + 답변 */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'auto' }}>
-          <Paper variant="outlined" sx={{ p: 2 }}>
-            <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <ToggleButtonGroup
-                  size="small"
-                  exclusive
-                  value={language}
-                  onChange={(_, v) => v && setLanguage(v)}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            overflow: "auto",
+          }}
+        >
+          <div style={{ padding: 16 }}>
+            <div className="flex flex-col gap-3 min-w-0">
+              <div className="flex flex-row gap-3 min-w-0">
+                <Tabs
+                  selectedKey={language}
+                  onSelectionChange={(key) =>
+                    setLanguage(String(key) as "ko" | "ja")
+                  }
                 >
-                  <ToggleButton value="ko">한국어 (KR)</ToggleButton>
-                  <ToggleButton value="ja">日本語 (JP)</ToggleButton>
-                </ToggleButtonGroup>
+                  <Tabs.ListContainer>
+                    <Tabs.List>
+                      <Tabs.Tab id={"ko"}>
+                        한국어 (KR)
+                        <Tabs.Indicator />
+                      </Tabs.Tab>
+                      <Tabs.Tab id={"ja"}>
+                        日本語 (JP)
+                        <Tabs.Indicator />
+                      </Tabs.Tab>
+                    </Tabs.List>
+                  </Tabs.ListContainer>
+                </Tabs>
                 {presetMeta && (
-                  <Chip
-                    size="small"
-                    label={`${LEVEL_META[presetMeta.level].emoji} ${LEVEL_META[presetMeta.level].label}`}
-                    sx={{ bgcolor: 'transparent', border: `1px solid ${LEVEL_META[presetMeta.level].color}`, color: LEVEL_META[presetMeta.level].color }}
-                  />
+                  <Chip size="sm">{`${LEVEL_META[presetMeta.level].emoji} ${LEVEL_META[presetMeta.level].label}`}</Chip>
                 )}
-              </Stack>
+              </div>
               <TextField
-                multiline
-                minRows={2}
-                fullWidth
-                placeholder="CS 질문을 입력하거나 좌측 질문셋을 선택하세요."
-                value={question}
-                onChange={(e) => {
-                  setQuestion(e.target.value);
-                  setPresetMeta(null);
-                }}
-                onKeyDown={(e) => {
-                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') run();
-                }}
-              />
+                aria-label={"CS 질문을 입력하거나 좌측 질문셋을 선택하세요."}
+              >
+                <TextArea
+                  rows={2}
+                  placeholder="CS 질문을 입력하거나 좌측 질문셋을 선택하세요."
+                  value={question}
+                  onChange={(e) => {
+                    setQuestion(e.target.value);
+                    setPresetMeta(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
+                  }}
+                  aria-label={"CS 질문을 입력하거나 좌측 질문셋을 선택하세요."}
+                />
+              </TextField>
               {presetMeta && (
-                <Alert severity="info" sx={{ py: 0 }}>
-                  <strong>정답 기준:</strong> {presetMeta.expected}
-                </Alert>
-              )}
-              <Box>
-                <Button
-                  variant="contained"
-                  startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <Send />}
-                  disabled={loading || !question.trim()}
-                  onClick={run}
+                <div
+                  role="alert"
+                  className="rounded-lg border border-default p-3 text-sm"
+                  style={{ paddingBlock: 0 }}
                 >
-                  {loading ? '답변 생성 중… (~20-30s)' : 'openclaw 답변 받기  (⌘/Ctrl+Enter)'}
+                  <strong>정답 기준:</strong>
+                  {presetMeta.expected}
+                </div>
+              )}
+              <div>
+                <Button
+                  onClick={run}
+                  variant={"primary"}
+                  isDisabled={loading || !question.trim()}
+                >
+                  {loading ? <Spinner aria-label="로딩 중" /> : <Send />}
+                  {loading
+                    ? "답변 생성 중… (~20-30s)"
+                    : "openclaw 답변 받기  (⌘/Ctrl+Enter)"}
                 </Button>
-              </Box>
-            </Stack>
-          </Paper>
-
-          {error && <Alert severity="error">{error}</Alert>}
-
+              </div>
+            </div>
+          </div>
+          {error && (
+            <div
+              role="alert"
+              className="rounded-lg border border-default p-3 text-sm"
+            >
+              {error}
+            </div>
+          )}
           {current && <AnswerCard record={current} />}
-
           {history.length > 1 && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+            <div>
+              <p style={{ marginBottom: 8 }}>
                 이전 검수 ({history.length - 1})
-              </Typography>
-              <Stack spacing={1}>
+              </p>
+              <div className="flex flex-col gap-3 min-w-0">
                 {history.slice(1).map((r, i) => (
                   <AnswerCard key={i} record={r} compact />
                 ))}
-              </Stack>
-            </Box>
+              </div>
+            </div>
           )}
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function AnswerCard({ record, compact }: { record: RunRecord; compact?: boolean }) {
+function AnswerCard({
+  record,
+  compact,
+}: {
+  record: RunRecord;
+  compact?: boolean;
+}) {
   const { question, result, expected, level, ms, language } = record;
   const copyAnswer = () => {
     void navigator.clipboard?.writeText(result.answer);
   };
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Stack spacing={1.5}>
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-          <Chip size="small" label={language.toUpperCase()} />
-          <Chip
-            size="small"
-            label={`confidence ${result.confidence.toFixed(3)}`}
-            sx={{ color: '#fff', bgcolor: confidenceColor(result.confidence) }}
-          />
-          <Chip size="small" variant="outlined" label={`domain: ${result.domain}`} />
-          <Chip size="small" variant="outlined" label={`${ms}ms`} />
+    <div style={{ padding: 16 }}>
+      <div className="flex flex-col gap-3 min-w-0">
+        <div className="flex flex-row gap-3 min-w-0">
+          <Chip size="sm">{language.toUpperCase()}</Chip>
+          <Chip size="sm">{`confidence ${result.confidence.toFixed(3)}`}</Chip>
+          <Chip size="sm">{`domain: ${result.domain}`}</Chip>
+          <Chip size="sm">{`${ms}ms`}</Chip>
           {result.confidence < 0.5 && (
-            <Chip size="small" color="warning" label="에스컬레이션 (conf<0.5)" />
+            <Chip size="sm">{"에스컬레이션 (conf<0.5)"}</Chip>
           )}
-        </Stack>
+        </div>
 
-        <Box>
-          <Typography variant="caption" color="text.secondary">
-            질문
-          </Typography>
-          <Typography variant="body2" fontWeight={600}>
-            {question}
-          </Typography>
-        </Box>
+        <div>
+          <p>질문</p>
+          <p>{question}</p>
+        </div>
 
         {expected && (
-          <Alert severity={level === 'red' ? 'warning' : 'info'} sx={{ py: 0 }}>
-            <strong>{level ? LEVEL_META[level].emoji : ''} 정답 기준:</strong> {expected}
-          </Alert>
+          <div
+            role="alert"
+            className="rounded-lg border border-default p-3 text-sm"
+            style={{ paddingBlock: 0 }}
+          >
+            <strong>{level ? LEVEL_META[level].emoji : ""} 정답 기준:</strong>
+            {expected}
+          </div>
         )}
 
-        <Box>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="caption" color="text.secondary">
-              openclaw 답변
-            </Typography>
-            <Button size="small" startIcon={<ContentCopy sx={{ fontSize: 14 }} />} onClick={copyAnswer}>
-              복사
+        <div>
+          <div className="flex flex-row gap-3 min-w-0">
+            <p>openclaw 답변</p>
+            <Button onClick={copyAnswer} variant={"secondary"}>
+              {<ContentCopy size={14} />}복사
             </Button>
-          </Stack>
-          <Typography
-            variant="body1"
-            sx={{ whiteSpace: 'pre-wrap', bgcolor: 'action.hover', p: 1.5, borderRadius: 1 }}
+          </div>
+          <p
+            style={{
+              whiteSpace: "pre-wrap",
+              backgroundColor: "#f4f4f5",
+              padding: 12,
+              borderRadius: 1,
+            }}
           >
-            {result.answer || '(빈 답변 — 생성 실패 또는 에스컬레이션)'}
-          </Typography>
-        </Box>
+            {result.answer || "(빈 답변 — 생성 실패 또는 에스컬레이션)"}
+          </p>
+        </div>
 
         {!compact && result.sources?.length > 0 && (
-          <Accordion disableGutters elevation={0}>
-            <AccordionSummary expandIcon={<ExpandMore />} sx={{ px: 0 }}>
-              <Typography variant="caption" color="text.secondary">
-                검색 근거 {result.sources.length}건 (similarity 순)
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ px: 0 }}>
-              <Stack spacing={1}>
+          <details className="border-b border-default">
+            <summary className="cursor-pointer py-2 font-semibold">
+              <p>검색 근거 {result.sources.length}건 (similarity 순)</p>
+            </summary>
+            <div className="py-2">
+              <div className="flex flex-col gap-3 min-w-0">
                 {result.sources.map((s, i) => (
-                  <Box key={i} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1 }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Chip size="small" label={s.similarity.toFixed(3)} />
-                      <Typography variant="body2" fontWeight={600}>
-                        {s.question}
-                      </Typography>
-                    </Stack>
-                    <Divider sx={{ my: 0.5 }} />
-                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {s.answer}
-                    </Typography>
-                  </Box>
+                  <div
+                    key={i}
+                    style={{
+                      border: "1px solid #e4e4e7",
+                      borderColor: "#e4e4e7",
+                      borderRadius: 1,
+                      padding: 8,
+                    }}
+                  >
+                    <div className="flex flex-row gap-3 min-w-0">
+                      <Chip size="sm">{s.similarity.toFixed(3)}</Chip>
+                      <p>{s.question}</p>
+                    </div>
+                    <hr style={{ marginBlock: 4 }} />
+                    <p style={{ whiteSpace: "pre-wrap" }}>{s.answer}</p>
+                  </div>
                 ))}
-              </Stack>
-            </AccordionDetails>
-          </Accordion>
+              </div>
+            </div>
+          </details>
         )}
-      </Stack>
-    </Paper>
+      </div>
+    </div>
   );
 }

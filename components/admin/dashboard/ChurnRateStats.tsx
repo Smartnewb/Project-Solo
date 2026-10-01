@@ -1,19 +1,10 @@
 "use client";
+import { Alert, Chip, Skeleton } from "@heroui/react";
+
+import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
 
 import { useState, useEffect } from "react";
-import {
-  Box,
-  CircularProgress,
-  Alert,
-  Typography,
-  Chip,
-  Skeleton,
-} from "@mui/material";
-import {
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  TrendingFlat as TrendingFlatIcon,
-} from "@mui/icons-material";
+
 import AdminService from "@/app/services/admin";
 
 interface ChurnRateCardProps {
@@ -57,11 +48,11 @@ function getChurnLevel(rate: number): {
 
 function getTrendIcon(rate: number) {
   if (rate < 1) {
-    return <TrendingDownIcon sx={{ fontSize: 18 }} />;
+    return <TrendingDown />;
   } else if (rate < 3) {
-    return <TrendingFlatIcon sx={{ fontSize: 18 }} />;
+    return <ArrowRight />;
   } else {
-    return <TrendingUpIcon sx={{ fontSize: 18 }} />;
+    return <TrendingUp />;
   }
 }
 
@@ -76,203 +67,181 @@ function ChurnRateCard({
   const churnLevel = rate !== null ? getChurnLevel(rate) : null;
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         position: "relative",
-        p: 3,
-        borderRadius: 3,
+        padding: 12,
+        borderRadius: 12,
         backgroundColor: "#fff",
         border: "1px solid #e5e7eb",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         transition: "all 0.2s ease",
         overflow: "hidden",
-        "&:hover": {
-          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-          borderColor: accentColor,
-        },
-        "&::before": {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 3,
-          background: `linear-gradient(90deg, ${accentColor}, ${iconColor})`,
-        },
       }}
     >
-      <Box
-        sx={{
+      <div
+        style={{
           display: "flex",
           alignItems: "flex-start",
           justifyContent: "space-between",
-          mb: 2,
+          marginBottom: 8,
         }}
       >
-        <Box>
-          <Typography
-            variant="body2"
-            sx={{
+        <div>
+          <div
+            style={{
               fontWeight: 600,
               color: "#374151",
-              mb: 0.5,
+              marginBottom: 2,
               fontSize: "0.875rem",
             }}
+            className={"text-sm text-neutral-700"}
           >
             {title}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#9ca3af",
-              fontSize: "0.75rem",
-            }}
+          </div>
+          <div
+            style={{ color: "#9ca3af", fontSize: "0.75rem" }}
+            className={"text-sm text-neutral-700"}
           >
             {subtitle}
-          </Typography>
-        </Box>
+          </div>
+        </div>
         {!loading && rate !== null && churnLevel && (
           <Chip
-            icon={getTrendIcon(rate)}
-            label={churnLevel.label}
-            size="small"
-            sx={{
+            style={{
               backgroundColor: churnLevel.bgColor,
               color: churnLevel.color,
               border: `1px solid ${churnLevel.borderColor}`,
               fontWeight: 600,
               fontSize: "0.7rem",
               height: 24,
-              "& .MuiChip-icon": {
-                color: churnLevel.color,
-              },
             }}
-          />
+            size={"sm"}
+            variant={"soft"}
+          >
+            {churnLevel.label}
+          </Chip>
         )}
-      </Box>
-
+      </div>
       {loading ? (
-        <Skeleton
-          variant="text"
-          width="60%"
-          height={48}
-          sx={{ borderRadius: 1 }}
-        />
+        <Skeleton className="h-6 w-full rounded-lg" />
       ) : (
-        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-          <Typography
-            sx={{
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+          <div
+            style={{
               fontSize: "2.25rem",
               fontWeight: 700,
               color: churnLevel ? churnLevel.color : "#374151",
               lineHeight: 1,
               fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
             }}
+            className={"text-sm text-neutral-700"}
           >
             {rate !== null ? rate.toFixed(2) : "-"}
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: "1rem",
-              fontWeight: 600,
-              color: "#9ca3af",
-            }}
+          </div>
+          <div
+            style={{ fontSize: "1rem", fontWeight: 600, color: "#9ca3af" }}
+            className={"text-sm text-neutral-700"}
           >
             %
-          </Typography>
-        </Box>
+          </div>
+        </div>
       )}
-
-      <Box
-        sx={{
+      <div
+        style={{
           display: "flex",
           alignItems: "center",
-          gap: 1.5,
-          mt: 2,
-          pt: 2,
+          gap: 6,
+          marginTop: 8,
+          paddingTop: 8,
           borderTop: "1px solid #f3f4f6",
         }}
       >
-        <Box
-          sx={{
+        <div
+          style={{
             display: "flex",
             alignItems: "center",
-            gap: 0.5,
-            px: 1,
-            py: 0.25,
-            borderRadius: 1,
+            gap: 2,
+            paddingLeft: 4,
+            paddingRight: 4,
+            paddingTop: 1,
+            paddingBottom: 1,
+            borderRadius: 4,
             backgroundColor: "#f9fafb",
           }}
         >
-          <Box
-            sx={{
+          <div
+            style={{
               width: 8,
               height: 8,
               borderRadius: "50%",
               backgroundColor: "#10b981",
             }}
-          />
-          <Typography
-            variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.65rem" }}
+          ></div>
+          <div
+            style={{ color: "#6b7280", fontSize: "0.65rem" }}
+            className={"text-sm text-neutral-700"}
           >
             &lt;1%
-          </Typography>
-        </Box>
-        <Box
-          sx={{
+          </div>
+        </div>
+        <div
+          style={{
             display: "flex",
             alignItems: "center",
-            gap: 0.5,
-            px: 1,
-            py: 0.25,
-            borderRadius: 1,
+            gap: 2,
+            paddingLeft: 4,
+            paddingRight: 4,
+            paddingTop: 1,
+            paddingBottom: 1,
+            borderRadius: 4,
             backgroundColor: "#f9fafb",
           }}
         >
-          <Box
-            sx={{
+          <div
+            style={{
               width: 8,
               height: 8,
               borderRadius: "50%",
               backgroundColor: "#f59e0b",
             }}
-          />
-          <Typography
-            variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.65rem" }}
+          ></div>
+          <div
+            style={{ color: "#6b7280", fontSize: "0.65rem" }}
+            className={"text-sm text-neutral-700"}
           >
             1-3%
-          </Typography>
-        </Box>
-        <Box
-          sx={{
+          </div>
+        </div>
+        <div
+          style={{
             display: "flex",
             alignItems: "center",
-            gap: 0.5,
-            px: 1,
-            py: 0.25,
-            borderRadius: 1,
+            gap: 2,
+            paddingLeft: 4,
+            paddingRight: 4,
+            paddingTop: 1,
+            paddingBottom: 1,
+            borderRadius: 4,
             backgroundColor: "#f9fafb",
           }}
         >
-          <Box
-            sx={{
+          <div
+            style={{
               width: 8,
               height: 8,
               borderRadius: "50%",
               backgroundColor: "#ef4444",
             }}
-          />
-          <Typography
-            variant="caption"
-            sx={{ color: "#6b7280", fontSize: "0.65rem" }}
+          ></div>
+          <div
+            style={{ color: "#6b7280", fontSize: "0.65rem" }}
+            className={"text-sm text-neutral-700"}
           >
             &gt;3%
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -346,39 +315,26 @@ export default function ChurnRateStats() {
 
   if (error && !churnRates.daily && !churnRates.weekly && !churnRates.monthly) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error}</Alert>
-      </Box>
+      <div style={{ padding: 12 }}>
+        <Alert status="danger" role="alert">
+          <Alert.Content>{error}</Alert.Content>
+        </Alert>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <div style={{ padding: 12 }}>
       {error && (
         <Alert
-          severity="warning"
-          sx={{
-            mb: 3,
-            borderRadius: 2,
-            "& .MuiAlert-message": {
-              fontSize: "0.8125rem",
-            },
-          }}
+          style={{ marginBottom: 12, borderRadius: 8 }}
+          status={"warning"}
+          role="alert"
         >
-          {error}
+          <Alert.Content>{error}</Alert.Content>
         </Alert>
       )}
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(3, 1fr)",
-          },
-          gap: 2,
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
         <ChurnRateCard
           title="일간 이탈률"
           subtitle="최근 24시간"
@@ -403,31 +359,30 @@ export default function ChurnRateStats() {
           iconColor="#ec4899"
           accentColor="#f472b6"
         />
-      </Box>
-
-      <Box
-        sx={{
-          mt: 3,
-          p: 2,
-          borderRadius: 2,
+      </div>
+      <div
+        style={{
+          marginTop: 12,
+          padding: 8,
+          borderRadius: 8,
           backgroundColor: "#f9fafb",
           border: "1px solid #e5e7eb",
         }}
       >
-        <Typography
-          variant="caption"
-          sx={{
+        <div
+          style={{
             color: "#6b7280",
             fontSize: "0.75rem",
             lineHeight: 1.5,
             display: "block",
           }}
+          className={"text-sm text-neutral-700"}
         >
-          <strong style={{ color: "#374151" }}>이탈률이란?</strong> 특정 기간
+          <strong style={{ color: "#374151" }}>이탈률이란?</strong>특정 기간
           동안 서비스를 떠난 회원의 비율입니다. 낮은 이탈률은 회원 만족도가 높고
           서비스가 안정적임을 의미합니다.
-        </Typography>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }

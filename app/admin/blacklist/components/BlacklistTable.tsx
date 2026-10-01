@@ -1,24 +1,12 @@
-'use client';
+"use client";
+import { Button, Skeleton } from "@heroui/react";
 
-import React from 'react';
-import {
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Skeleton,
-  Box,
-  Button,
-  Stack,
-  Typography,
-  Paper,
-  TableContainer,
-} from '@mui/material';
-import { Clock, RotateCcw } from 'lucide-react';
-import type { BlacklistItem } from '@/app/services/admin';
-import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
-import { AdminNameLabel } from './AdminNameLabel';
+import React from "react";
+
+import { Clock, RotateCcw } from "lucide-react";
+import type { BlacklistItem } from "@/app/services/admin";
+import { formatDateTimeWithoutTimezoneConversion } from "@/app/utils/formatters";
+import { AdminNameLabel } from "./AdminNameLabel";
 
 interface Props {
   data: BlacklistItem[];
@@ -27,95 +15,117 @@ interface Props {
   onViewHistory: (userId: string) => void;
 }
 
-export function BlacklistTable({ data, loading, onRelease, onViewHistory }: Props) {
+export function BlacklistTable({
+  data,
+  loading,
+  onRelease,
+  onViewHistory,
+}: Props) {
   return (
-    <TableContainer component={Paper} variant="outlined">
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>이름</TableCell>
-            <TableCell>전화번호</TableCell>
-            <TableCell sx={{ minWidth: 240 }}>사유</TableCell>
-            <TableCell>등록일</TableCell>
-            <TableCell>등록자</TableCell>
-            <TableCell align="right">액션</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
+    <div className={"overflow-x-auto"}>
+      <table
+        className={
+          "w-full text-sm text-left [&_td]:p-3 [&_thead]:bg-neutral-50 [&_tr]:border-b"
+        }
+      >
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>전화번호</th>
+            <th style={{ minWidth: 240 }}>사유</th>
+            <th>등록일</th>
+            <th>등록자</th>
+            <th>액션</th>
+          </tr>
+        </thead>
+        <tbody>
           {loading &&
             Array.from({ length: 10 }).map((_, idx) => (
-              <TableRow key={`skel-${idx}`}>
-                <TableCell><Skeleton width={80} /></TableCell>
-                <TableCell><Skeleton width={120} /></TableCell>
-                <TableCell><Skeleton width="80%" /></TableCell>
-                <TableCell><Skeleton width={140} /></TableCell>
-                <TableCell><Skeleton width={80} /></TableCell>
-                <TableCell align="right"><Skeleton width={140} /></TableCell>
-              </TableRow>
+              <tr key={`skel-${idx}`}>
+                <td>
+                  <Skeleton className="h-6 w-full rounded-lg" />
+                </td>
+                <td>
+                  <Skeleton className="h-6 w-full rounded-lg" />
+                </td>
+                <td>
+                  <Skeleton className="h-6 w-full rounded-lg" />
+                </td>
+                <td>
+                  <Skeleton className="h-6 w-full rounded-lg" />
+                </td>
+                <td>
+                  <Skeleton className="h-6 w-full rounded-lg" />
+                </td>
+                <td>
+                  <Skeleton className="h-6 w-full rounded-lg" />
+                </td>
+              </tr>
             ))}
-
           {!loading && data.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={6}>
-                <Box py={4} textAlign="center">
-                  <Typography color="text.secondary">활성 블랙리스트 없음</Typography>
-                </Box>
-              </TableCell>
-            </TableRow>
+            <tr>
+              <td colSpan={6}>
+                <div>
+                  <div className={"text-sm text-neutral-700"}>
+                    활성 블랙리스트 없음
+                  </div>
+                </div>
+              </td>
+            </tr>
           )}
-
           {!loading &&
             data.map((item) => (
-              <TableRow key={item.blacklistId} hover>
-                <TableCell>{item.name}</TableCell>
-                <TableCell>{item.phoneNumber}</TableCell>
-                <TableCell>
-                  <Box
+              <tr key={item.blacklistId}>
+                <td>{item.name}</td>
+                <td>{item.phoneNumber}</td>
+                <td>
+                  <div
                     title={item.reason}
-                    sx={{
-                      display: '-webkit-box',
+                    style={{
+                      display: "-webkit-box",
                       WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'pre-wrap',
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "pre-wrap",
                     }}
                   >
                     {item.reason}
-                  </Box>
-                </TableCell>
-                <TableCell>
+                  </div>
+                </td>
+                <td>
                   {formatDateTimeWithoutTimezoneConversion(item.blacklistedAt)}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td>
                   <AdminNameLabel adminId={item.blacklistedBy} />
-                </TableCell>
-                <TableCell align="right">
-                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                </td>
+                <td>
+                  <div className={"flex flex-wrap items-center gap-2"}>
                     <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<Clock size={14} />}
                       onClick={() => onViewHistory(item.userId)}
+                      variant={"secondary"}
+                      isDisabled={undefined}
+                      size={"sm"}
+                      className="rounded-xl"
                     >
-                      이력
+                      {<Clock size={14} />}이력
                     </Button>
                     <Button
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                      startIcon={<RotateCcw size={14} />}
                       onClick={() => onRelease(item)}
+                      variant={"secondary"}
+                      isDisabled={undefined}
+                      size={"sm"}
+                      className="rounded-xl"
                     >
-                      해제
+                      {<RotateCcw size={14} />}해제
                     </Button>
-                  </Stack>
-                </TableCell>
-              </TableRow>
+                  </div>
+                </td>
+              </tr>
             ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+        </tbody>
+      </table>
+    </div>
   );
 }
 

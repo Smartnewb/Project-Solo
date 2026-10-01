@@ -1,145 +1,127 @@
-import { Box, Chip, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Chip } from '@heroui/react';
 import type { RegistryRow } from './push-registry-model';
-import {
-	describeNotification,
-	formatAudienceKo,
-	formatCategoryName,
-	formatPersistence,
-	formatThrottle,
-	formatTriggerKo,
-	getRequiredFields,
-	toReadableTemplateText,
-} from './push-registry-model';
-
-export function PushRegistryTable({ rows }: { rows: RegistryRow[] }) {
-	return (
-		<>
-			<Paper variant="outlined" sx={{ mb: 2, borderRadius: 1, overflowX: 'auto', display: { xs: 'none', md: 'block' } }}>
-				<Table size="small" sx={{ minWidth: 860, tableLayout: 'fixed' }}>
-					<TableHead>
-						<TableRow>
-							<TableCell sx={{ width: '24%' }}>알림</TableCell>
-							<TableCell sx={{ width: '30%' }}>발송 상황 / 대상</TableCell>
-							<TableCell sx={{ width: '30%' }}>메시지 (registry 샘플)</TableCell>
-							<TableCell sx={{ width: '16%' }}>이동 / 운영</TableCell>
-						</TableRow>
-					</TableHead>
-					<TableBody>
-						{rows.map((row) => (
-							<TableRow key={row.eventType}>
-								<TableCell>
-									<NotificationIdentity row={row} />
-								</TableCell>
-								<TableCell>
-									<NotificationSituation row={row} />
-								</TableCell>
-								<TableCell>
-									<NotificationTemplates row={row} />
-								</TableCell>
-								<TableCell>
-									<NotificationOperations row={row} />
-								</TableCell>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
-			</Paper>
-			<Stack spacing={1.5} sx={{ mb: 2, display: { xs: 'flex', md: 'none' } }}>
-				{rows.map((row) => (
-					<Paper key={row.eventType} variant="outlined" sx={{ p: 2, borderRadius: 1 }}>
-						<NotificationIdentity row={row} />
-						<Box sx={{ mt: 1.5 }}>
-							<NotificationSituation row={row} />
-						</Box>
-						<Box sx={{ mt: 1.5 }}>
-							<NotificationTemplates row={row} />
-						</Box>
-						<Box sx={{ mt: 1.5 }}>
-							<NotificationOperations row={row} />
-						</Box>
-					</Paper>
-				))}
-			</Stack>
-		</>
-	);
+import { describeNotification, formatAudienceKo, formatCategoryName, formatPersistence, formatThrottle, formatTriggerKo, getRequiredFields, toReadableTemplateText, } from './push-registry-model';
+export function PushRegistryTable({ rows }: {
+    rows: RegistryRow[];
+}) {
+    return (<>
+			<section style={{ marginBottom: 16, borderRadius: 1, overflowX: 'auto' }} className="rounded-xl border bg-white p-4">
+				<table style={{ minWidth: 860 }} className="w-full text-sm">
+					<thead className="bg-gray-50 text-left">
+						<tr className="border-b">
+							<th scope="col" style={{ width: '24%' }} className="border-b px-4 py-3">알림</th>
+							<th scope="col" style={{ width: '30%' }} className="border-b px-4 py-3">발송 상황 / 대상</th>
+							<th scope="col" style={{ width: '30%' }} className="border-b px-4 py-3">메시지 (registry 샘플)</th>
+							<th scope="col" style={{ width: '16%' }} className="border-b px-4 py-3">이동 / 운영</th>
+						</tr>
+					</thead>
+					<tbody>
+						{rows.map((row) => (<tr key={row.eventType} className="border-b">
+								<td className="border-b px-4 py-3">
+									<NotificationIdentity row={row}></NotificationIdentity>
+								</td>
+								<td className="border-b px-4 py-3">
+									<NotificationSituation row={row}></NotificationSituation>
+								</td>
+								<td className="border-b px-4 py-3">
+									<NotificationTemplates row={row}></NotificationTemplates>
+								</td>
+								<td className="border-b px-4 py-3">
+									<NotificationOperations row={row}></NotificationOperations>
+								</td>
+							</tr>))}
+					</tbody>
+				</table>
+			</section>
+			<div style={{ marginBottom: 16 }}>
+				{rows.map((row) => (<section key={row.eventType} style={{ padding: 16, borderRadius: 1 }} className="rounded-xl border bg-white p-4">
+						<NotificationIdentity row={row}></NotificationIdentity>
+						<div style={{ marginTop: 12 }}>
+							<NotificationSituation row={row}></NotificationSituation>
+						</div>
+						<div style={{ marginTop: 12 }}>
+							<NotificationTemplates row={row}></NotificationTemplates>
+						</div>
+						<div style={{ marginTop: 12 }}>
+							<NotificationOperations row={row}></NotificationOperations>
+						</div>
+					</section>))}
+			</div>
+		</>);
 }
-
-function NotificationIdentity({ row }: { row: RegistryRow }) {
-	return (
-		<>
-			<Typography fontWeight={700}>{row.eventType}</Typography>
-			<Typography variant="caption" color="text.secondary">
+function NotificationIdentity({ row }: {
+    row: RegistryRow;
+}) {
+    return (<>
+			<p>{row.eventType}</p>
+			<p>
 				{formatCategoryName(row.entry.category)} · {row.entry.category}
-			</Typography>
-			<RequiredFields fields={getRequiredFields(row.entry)} />
-		</>
-	);
+			</p>
+			<RequiredFields fields={getRequiredFields(row.entry)}></RequiredFields>
+		</>);
 }
-
-function NotificationSituation({ row }: { row: RegistryRow }) {
-	return (
-		<>
-			<Typography variant="body2" fontWeight={700}>
+function NotificationSituation({ row }: {
+    row: RegistryRow;
+}) {
+    return (<>
+			<p>
 				{describeNotification(row)}
-			</Typography>
-			<Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+			</p>
+			<p style={{ marginTop: 6 }}>
 				{formatAudienceKo(row.entry)}
-			</Typography>
-			<Typography variant="caption" color="text.secondary">
+			</p>
+			<p>
 				{formatTriggerKo(row.entry)}
-			</Typography>
-		</>
-	);
+			</p>
+		</>);
 }
-
-function NotificationTemplates({ row }: { row: RegistryRow }) {
-	return (
-		<>
-			<TemplateText locale="ko" title={row.entry.template.ko.title} body={row.entry.template.ko.body} />
-			<TemplateText locale="ja" title={row.entry.template.ja.title} body={row.entry.template.ja.body} />
-		</>
-	);
+function NotificationTemplates({ row }: {
+    row: RegistryRow;
+}) {
+    return (<>
+			<TemplateText locale="ko" title={row.entry.template.ko.title} body={row.entry.template.ko.body}></TemplateText>
+			<TemplateText locale="ja" title={row.entry.template.ja.title} body={row.entry.template.ja.body}></TemplateText>
+		</>);
 }
-
-function NotificationOperations({ row }: { row: RegistryRow }) {
-	const { entry } = row;
-	return (
-		<>
-			<Typography variant="body2">화면: {entry.route}</Typography>
-			<Typography variant="body2">딥링크: {entry.deepLink ?? '-'}</Typography>
-			<Typography variant="body2" sx={{ mt: 0.75 }}>
+function NotificationOperations({ row }: {
+    row: RegistryRow;
+}) {
+    const { entry } = row;
+    return (<>
+			<p>화면: {entry.route}</p>
+			<p>딥링크: {entry.deepLink ?? '-'}</p>
+			<p style={{ marginTop: 6 }}>
 				저장: {formatPersistence(entry)}
-			</Typography>
-			<Typography variant="body2">채팅방 안 억제: {entry.suppressInRoom ? '예' : '아니오'}</Typography>
-			<Typography variant="body2">온라인 체크 생략: {entry.skipOnlineCheck ? '예' : '아니오'}</Typography>
-			<Typography variant="body2">알림함 저장 생략: {entry.skipPersist ? '예' : '아니오'}</Typography>
-			<Typography variant="body2">배지: {entry.badge ?? '-'}</Typography>
-			<Typography variant="body2">Throttle: {formatThrottle(entry)}</Typography>
-			<Typography variant="caption" color="text.secondary">
+			</p>
+			<p>채팅방 안 억제: {entry.suppressInRoom ? '예' : '아니오'}</p>
+			<p>온라인 체크 생략: {entry.skipOnlineCheck ? '예' : '아니오'}</p>
+			<p>알림함 저장 생략: {entry.skipPersist ? '예' : '아니오'}</p>
+			<p>배지: {entry.badge ?? '-'}</p>
+			<p>Throttle: {formatThrottle(entry)}</p>
+			<p>
 				트리거 타입: {entry.trigger.type === 'cron' ? '크론' : '이벤트'}
-			</Typography>
-		</>
-	);
+			</p>
+		</>);
 }
-
-function RequiredFields({ fields }: { fields: string[] }) {
-	return (
-		<Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.5 }}>
-			<Typography variant="body2">필요 값:</Typography>
-			{fields.length > 0 ? fields.map((field) => <Chip key={field} size="small" label={field} variant="outlined" />) : <Typography variant="body2">-</Typography>}
-		</Stack>
-	);
+function RequiredFields({ fields }: {
+    fields: string[];
+}) {
+    return (<div style={{ marginTop: 4 }}>
+			<p>필요 값:</p>
+			{fields.length > 0 ? fields.map((field) => <Chip key={field} size="sm">{field}</Chip>) : <p>-</p>}
+		</div>);
 }
-
-function TemplateText({ locale, title, body }: { locale: string; title: string; body: string }) {
-	return (
-		<Box sx={{ mb: 0.75 }}>
-			<Typography variant="body2" fontWeight={700}>
+function TemplateText({ locale, title, body }: {
+    locale: string;
+    title: string;
+    body: string;
+}) {
+    return (<div style={{ marginBottom: 6 }}>
+			<p>
 				{locale}: {toReadableTemplateText(title)}
-			</Typography>
-			<Typography variant="caption" color="text.secondary">
+			</p>
+			<p>
 				{toReadableTemplateText(body)}
-			</Typography>
-		</Box>
-	);
+			</p>
+		</div>);
 }

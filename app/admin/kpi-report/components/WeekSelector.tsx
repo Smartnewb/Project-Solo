@@ -1,13 +1,7 @@
-'use client';
-
-import { Box, IconButton, Typography, Button, CircularProgress } from '@mui/material';
-import {
-	ChevronLeft as ChevronLeftIcon,
-	ChevronRight as ChevronRightIcon,
-	Refresh as RefreshIcon,
-} from '@mui/icons-material';
-import { getCurrentWeekInfo } from '../types';
-
+"use client";
+import { Button, Spinner } from "@heroui/react";
+import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { getCurrentWeekInfo } from "../types";
 interface WeekSelectorProps {
 	year: number;
 	week: number;
@@ -16,17 +10,24 @@ interface WeekSelectorProps {
 	onGenerate: () => void;
 	generating: boolean;
 }
-
 function getMaxWeeksInYear(year: number): number {
 	const dec28 = new Date(year, 11, 28);
-	const dayOfYear = Math.floor((dec28.getTime() - new Date(year, 0, 1).getTime()) / 86400000) + 1;
+	const dayOfYear =
+		Math.floor((dec28.getTime() - new Date(year, 0, 1).getTime()) / 86400000) +
+		1;
 	return Math.ceil(dayOfYear / 7);
 }
-
-export default function WeekSelector({ year, week, weekLabel, onWeekChange, onGenerate, generating }: WeekSelectorProps) {
+export default function WeekSelector({
+	year,
+	week,
+	weekLabel,
+	onWeekChange,
+	onGenerate,
+	generating,
+}: WeekSelectorProps) {
 	const current = getCurrentWeekInfo();
-	const isCurrentOrFuture = year > current.year || (year === current.year && week >= current.week);
-
+	const isCurrentOrFuture =
+		year > current.year || (year === current.year && week >= current.week);
 	const handlePrev = () => {
 		if (week <= 1) {
 			const prevYear = year - 1;
@@ -35,7 +36,6 @@ export default function WeekSelector({ year, week, weekLabel, onWeekChange, onGe
 			onWeekChange(year, week - 1);
 		}
 	};
-
 	const handleNext = () => {
 		if (isCurrentOrFuture) return;
 		const maxWeeks = getMaxWeeksInYear(year);
@@ -45,28 +45,54 @@ export default function WeekSelector({ year, week, weekLabel, onWeekChange, onGe
 			onWeekChange(year, week + 1);
 		}
 	};
-
 	return (
-		<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-			<IconButton onClick={handlePrev} size="small">
-				<ChevronLeftIcon />
-			</IconButton>
-			<Typography variant="h6" fontWeight="bold" sx={{ minWidth: 140, textAlign: 'center' }}>
-				{weekLabel}
-			</Typography>
-			<IconButton onClick={handleNext} size="small" disabled={isCurrentOrFuture}>
-				<ChevronRightIcon />
-			</IconButton>
+		<div
+			style={{
+				display: "flex",
+				flexWrap: "wrap",
+				alignItems: "center",
+				gap: 16,
+			}}
+		>
 			<Button
-				variant="outlined"
-				size="small"
-				startIcon={generating ? <CircularProgress size={16} /> : <RefreshIcon />}
-				onClick={onGenerate}
-				disabled={generating}
-				sx={{ ml: 2, textTransform: 'none' }}
+				onClick={handlePrev}
+				variant={"tertiary"}
+				isIconOnly={true}
+				aria-label="이전 주"
+				size={"sm"}
 			>
-				{generating ? '생성 중...' : '리포트 생성'}
+				<ChevronLeft size={18} />
 			</Button>
-		</Box>
+			<h2
+				style={{ minWidth: 140, textAlign: "center" }}
+				className={"text-lg font-semibold text-neutral-900"}
+			>
+				{weekLabel}
+			</h2>
+			<Button
+				onClick={handleNext}
+				variant={"tertiary"}
+				isDisabled={isCurrentOrFuture}
+				isIconOnly={true}
+				aria-label="다음 주"
+				size={"sm"}
+			>
+				<ChevronRight size={18} />
+			</Button>
+			<Button
+				onClick={onGenerate}
+				style={{ marginLeft: 16, textTransform: "none" }}
+				variant={"secondary"}
+				isDisabled={generating}
+				size={"sm"}
+			>
+				{generating ? (
+					<Spinner aria-label="불러오는 중" size="sm" />
+				) : (
+					<RefreshCw size={18} />
+				)}
+				{generating ? "생성 중..." : "리포트 생성"}
+			</Button>
+		</div>
 	);
 }

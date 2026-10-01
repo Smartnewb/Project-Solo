@@ -1,10 +1,16 @@
 "use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
+
+import { Button, Checkbox, Label, ListBox, Select } from "@heroui/react";
 
 import { useEffect, useState } from "react";
 import { salesService } from "@/app/services/sales";
 import { CustomSalesResponse, IapStatsResponse } from "../types";
 import { paymentType } from "../types";
-import { CLUSTER_REGION_OPTIONS, getClusterRegionLabel } from "../constants/regions";
+import {
+  CLUSTER_REGION_OPTIONS,
+  getClusterRegionLabel,
+} from "../constants/regions";
 import {
   PAYMENT_TYPE_OPTIONS,
   getPaymentTypeLabel,
@@ -18,7 +24,7 @@ import {
   Legend,
 } from "recharts";
 import { formatCurrency, formateDateToString } from "../utils";
-import { safeToLocaleDateString } from '@/app/utils/formatters';
+import { safeToLocaleDateString } from "@/app/utils/formatters";
 
 interface TotalAmountProps {
   startDate?: Date;
@@ -89,8 +95,6 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       const startDateString = formateDateToString(start);
       const endDateString = formateDateToString(end);
 
-      ;
-
       const response = await salesService.getSalesCustom({
         startDate: startDateString,
         endDate: endDateString,
@@ -99,13 +103,9 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         byRegion: true,
       });
 
-      ;
-      ;
-
       if (response) {
         setTotalData(response);
       } else {
-        ;
         setError("매출 데이터를 불러올 수 없습니다.");
         setTotalData(null);
       }
@@ -120,9 +120,8 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
   const fetchIapStats = async () => {
     try {
       const response = await salesService.getIapStats();
-      ;
       setIapStats(response);
-    } catch { }
+    } catch {}
   };
 
   const handleRefresh = () => {
@@ -169,10 +168,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
 
   // 지역별 필터링된 총합 계산 함수
   const getFilteredTotals = () => {
-    ;
-
     if (!totalData) {
-      ;
       return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
     }
 
@@ -183,7 +179,6 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         totalCount: totalData.totalCount || 0,
         totalPaidUsers: totalData.totalPaidUsers || 0,
       };
-      ;
       return result;
     }
 
@@ -192,8 +187,6 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       const filteredRegionData = totalData.regionalData.filter((item) =>
         selectedRegions.includes(item.region),
       );
-      ;
-
       if (filteredRegionData.length > 0) {
         const result = filteredRegionData.reduce(
           (acc, regionData) => ({
@@ -204,13 +197,11 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
           }),
           { totalSales: 0, totalCount: 0, totalPaidUsers: 0 },
         );
-        ;
         return result;
       }
     }
 
     // 선택된 지역 데이터가 없는 경우
-    ;
     return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
   };
 
@@ -345,14 +336,14 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{data.name}</p>
-          <p className="text-[#ff385c]">매출액: {formatCurrency(data.value)}</p>
-          <p className="text-[#ff385c]">
+          <p className="text-[#7A4AE2]">매출액: {formatCurrency(data.value)}</p>
+          <p className="text-[#7A4AE2]">
             거래건수: {formatNumber(data.count)}건
           </p>
           <p className="text-orange-600">
             유료 사용자: {formatNumber(data.paidUserCount || 0)}명
           </p>
-          <p className="text-[#ff385c]">비율: {data.percentage.toFixed(1)}%</p>
+          <p className="text-[#7A4AE2]">비율: {data.percentage.toFixed(1)}%</p>
         </div>
       );
     }
@@ -433,12 +424,14 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
           <h2 className="text-lg font-semibold">총 매출액</h2>
         </div>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors"
+            className="px-4 py-2 bg-[#7A4AE2] text-white rounded-lg hover:bg-[#7A4AE2] transition-colors"
+            variant={"secondary"}
+            size={"md"}
           >
             새로고침
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -450,59 +443,74 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
             <label className="text-sm font-medium text-gray-700">지역별</label>
             <div className="flex flex-wrap gap-2">
               {CLUSTER_REGION_OPTIONS.map((option) => (
-                <label
+                <Checkbox
                   key={option.value}
-                  className="flex items-center gap-1 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedRegions.includes(option.value)}
-                    onChange={(e) => {
-                      if (option.value === "all") {
-                        // 전체 선택/해제
-                        if (e.target.checked) {
-                          setSelectedRegions(["all"]);
-                        } else {
-                          setSelectedRegions([]);
-                        }
+                  isSelected={selectedRegions.includes(option.value)}
+                  isIndeterminate={undefined}
+                  onChange={(isSelected) => {
+                    if (option.value === "all") {
+                      // 전체 선택/해제
+                      if (isSelected) {
+                        setSelectedRegions(["all"]);
                       } else {
-                        // 개별 지역 선택/해제
-                        setSelectedRegions((prev) => {
-                          const newRegions = prev.filter((r) => r !== "all"); // 전체 제거
-                          if (e.target.checked) {
-                            return [...newRegions, option.value];
-                          } else {
-                            return newRegions.filter((r) => r !== option.value);
-                          }
-                        });
+                        setSelectedRegions([]);
                       }
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-sm text-gray-700">{option.label}</span>
-                </label>
+                    } else {
+                      // 개별 지역 선택/해제
+                      setSelectedRegions((prev) => {
+                        const newRegions = prev.filter((r) => r !== "all"); // 전체 제거
+                        if (isSelected) {
+                          return [...newRegions, option.value];
+                        } else {
+                          return newRegions.filter((r) => r !== option.value);
+                        }
+                      });
+                    }
+                  }}
+                >
+                  <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <Label>
+                      <span className="text-sm text-gray-700">
+                        {option.label}
+                      </span>
+                    </Label>
+                  </Checkbox.Content>
+                </Checkbox>
               ))}
             </div>
           </div>
 
           {/* 결제 타입별 필터 */}
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">
-              결제 타입별
-            </label>
-            <select
-              value={selectedPaymentType}
-              onChange={(e) =>
-                setSelectedPaymentType(e.target.value as paymentType)
+            <Select
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#7A4AE2]"
+              selectedKey={selectedPaymentType}
+              onSelectionChange={(key) =>
+                setSelectedPaymentType(key as paymentType)
               }
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff385c]"
+              isDisabled={undefined}
+              aria-label="필터"
             >
-              {PAYMENT_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <HeroSelectLabel className="text-sm font-medium text-gray-700">
+                결제 타입별
+              </HeroSelectLabel>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {PAYMENT_TYPE_OPTIONS.map((option) => (
+                    <ListBox.Item key={option.value} id={option.value}>
+                      {option.label}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
           </div>
         </div>
       </div>
@@ -517,7 +525,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       {/* 로딩 상태 */}
       {isLoading && (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7A4AE2]"></div>
           <span className="ml-2">데이터를 불러오는 중...</span>
         </div>
       )}
@@ -533,7 +541,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                   ? `${getClusterRegionLabel(selectedRegions[0])} 매출액`
                   : `선택된 지역 (${selectedRegions.length}개) 매출액`}
             </h3>
-            <div className="text-4xl font-bold text-[#ff385c] mb-4">
+            <div className="text-4xl font-bold text-[#7A4AE2] mb-4">
               {formatCurrency(getFilteredTotals().totalSales)}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
@@ -600,12 +608,14 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                             );
                         return (
                           filteredData.length > 5 && (
-                            <button
+                            <Button
                               onClick={() => setShowAllRegions((prev) => !prev)}
-                              className="px-3 py-1.5 text-sm font-medium text-[#ff385c] bg-[#f7f7f7] rounded-md hover:bg-[#ffd1da] transition-colors"
+                              className="px-3 py-1.5 text-sm font-medium text-[#7A4AE2] bg-[#f7f7f7] rounded-md hover:bg-[#ffd1da] transition-colors"
+                              variant={"secondary"}
+                              size={"md"}
                             >
                               {showAllRegions ? "접기" : "더보기"}
-                            </button>
+                            </Button>
                           )
                         );
                       })()}
@@ -654,7 +664,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                     <span
                                       className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium ${
                                         index < 3
-                                          ? "bg-[#ff385c] text-white"
+                                          ? "bg-[#7A4AE2] text-white"
                                           : "bg-gray-200 text-gray-600"
                                       }`}
                                     >
@@ -687,13 +697,13 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                   <div className="flex items-center justify-end gap-2">
                                     <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                                       <div
-                                        className="h-full bg-[#ff385c] rounded-full"
+                                        className="h-full bg-[#7A4AE2] rounded-full"
                                         style={{
                                           width: `${calculatePercentages()[regionData.region] || 0}%`,
                                         }}
                                       />
                                     </div>
-                                    <span className="text-sm font-medium text-[#ff385c] min-w-[3rem] text-right">
+                                    <span className="text-sm font-medium text-[#7A4AE2] min-w-[3rem] text-right">
                                       {(
                                         calculatePercentages()[
                                           regionData.region
@@ -722,7 +732,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                               {formatNumber(getFilteredTotals().totalPaidUsers)}
                               명
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-[#ff385c]">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-[#7A4AE2]">
                               100.0%
                             </td>
                           </tr>

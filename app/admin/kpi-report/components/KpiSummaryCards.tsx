@@ -1,6 +1,5 @@
-'use client';
-
-import { Box, Card, CardContent, Grid, Typography, Skeleton, Chip } from '@mui/material';
+"use client";
+import { Card, Chip, Skeleton } from "@heroui/react";
 import {
 	KpiValue,
 	KpiCategory,
@@ -9,13 +8,11 @@ import {
 	STATUS_CONFIG,
 	formatKpiValue,
 	formatChangeRate,
-} from '../types';
-
+} from "../types";
 interface KpiSummaryCardsProps {
 	kpis: KpiValue[];
 	loading: boolean;
 }
-
 const REPRESENTATIVE_KPI: Record<KpiCategory, number> = {
 	acquisition: 0,
 	onboarding: 0,
@@ -23,72 +20,106 @@ const REPRESENTATIVE_KPI: Record<KpiCategory, number> = {
 	matching: 0,
 	monetization: 0,
 };
-
-export default function KpiSummaryCards({ kpis, loading }: KpiSummaryCardsProps) {
+export default function KpiSummaryCards({
+	kpis,
+	loading,
+}: KpiSummaryCardsProps) {
 	if (loading) {
 		return (
-			<Grid container spacing={2}>
+			<div className={"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"}>
 				{CATEGORIES.map((cat) => (
-					<Grid item xs={12} sm={6} md={2.4} key={cat}>
+					<div key={cat} className={"min-w-0"}>
 						<Card>
-							<CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-								<Skeleton variant="text" width={80} height={20} />
-								<Skeleton variant="text" width={100} height={36} sx={{ mt: 1 }} />
-								<Skeleton variant="text" width={60} height={20} />
-							</CardContent>
+							<Card.Content style={{ padding: 16 }}>
+								<Skeleton
+									style={{ width: 80, height: 20 }}
+									className="rounded-xl"
+								/>
+								<Skeleton
+									style={{ ...{ marginTop: 8 }, ...{ width: 100, height: 36 } }}
+									className="rounded-xl"
+								/>
+								<Skeleton
+									style={{ width: 60, height: 20 }}
+									className="rounded-xl"
+								/>
+							</Card.Content>
 						</Card>
-					</Grid>
+					</div>
 				))}
-			</Grid>
+			</div>
 		);
 	}
-
 	return (
-		<Grid container spacing={2}>
+		<div className={"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"}>
 			{CATEGORIES.map((category) => {
 				const config = CATEGORY_CONFIG[category];
 				const categoryKpis = kpis.filter((k) => k.category === category);
 				const representative = categoryKpis[REPRESENTATIVE_KPI[category]];
-
 				if (!representative) return null;
-
 				const change = formatChangeRate(representative.changeRate);
 				const statusConfig = STATUS_CONFIG[representative.status];
-
 				return (
-					<Grid item xs={12} sm={6} md={2.4} key={category}>
-						<Card sx={{ borderTop: `3px solid ${config.color}` }}>
-							<CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-									<Typography variant="caption" sx={{ fontSize: '1rem' }}>
+					<div key={category} className={"min-w-0"}>
+						<Card style={{ borderTop: `3px solid ${config.color}` }}>
+							<Card.Content style={{ padding: 16 }}>
+								<div
+									style={{
+										display: "flex",
+										alignItems: "center",
+										gap: 4,
+										marginBottom: 8,
+									}}
+								>
+									<span
+										style={{ fontSize: "1rem" }}
+										className={"text-sm text-neutral-700"}
+									>
 										{config.icon}
-									</Typography>
-									<Typography variant="caption" color="text.secondary" fontWeight={600}>
+									</span>
+									<span className={"text-sm text-neutral-700"}>
 										{config.label}
-									</Typography>
-								</Box>
-								<Typography variant="h5" fontWeight="bold">
-									{formatKpiValue(representative.currentValue, representative.unit)}
-								</Typography>
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-									<Typography variant="caption" fontWeight="bold" sx={{ color: change.color }}>
+									</span>
+								</div>
+								<h2 className={"text-lg font-semibold text-neutral-900"}>
+									{formatKpiValue(
+										representative.currentValue,
+										representative.unit,
+									)}
+								</h2>
+								<div
+									style={{
+										display: "flex",
+										alignItems: "center",
+										gap: 8,
+										marginTop: 4,
+									}}
+								>
+									<span
+										style={{ color: change.color }}
+										className={"text-sm text-neutral-700"}
+									>
 										{change.text}
-									</Typography>
+									</span>
 									<Chip
-										label={statusConfig.arrow}
-										size="small"
-										color={statusConfig.color}
-										sx={{ height: 20, fontSize: '0.65rem' }}
-									/>
-								</Box>
-								<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+										style={{ height: 20, fontSize: "0.65rem" }}
+										size={"sm"}
+										variant={"soft"}
+									>
+										<Chip.Label>{statusConfig.arrow}</Chip.Label>
+									</Chip>
+								</div>
+								<span
+									style={{ display: "block", marginTop: 4 }}
+									className={"text-sm text-neutral-700"}
+								>
 									{representative.label}
-								</Typography>
-							</CardContent>
+								</span>
+							</Card.Content>
 						</Card>
-					</Grid>
+					</div>
 				);
 			})}
-		</Grid>
+		</div>
 	);
 }

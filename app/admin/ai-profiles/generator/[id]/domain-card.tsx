@@ -1,26 +1,22 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pencil, RefreshCcw } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Pencil, RefreshCcw } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   DOMAIN_LABEL,
   type AiProfileDomain,
   type AiProfileDomainStatus,
-} from '@/app/types/ai-profile-generator';
-import { Button } from '@/shared/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/shared/ui/card';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
-import { DomainStatusBadge } from './domain-status-badge';
-import { FieldEditDialog } from './field-edit-dialog';
-import { FieldRegenerateDialog } from './field-regenerate-dialog';
+} from "@/app/types/ai-profile-generator";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
+import { DomainStatusBadge } from "./domain-status-badge";
+import { FieldEditDialog } from "./field-edit-dialog";
+import { FieldRegenerateDialog } from "./field-regenerate-dialog";
 
 interface Props {
   draftId: string;
@@ -53,7 +49,10 @@ function collectLeaves(
     return;
   }
   if (Array.isArray(value)) {
-    if (value.length === 0 || value.every((v) => typeof v !== 'object' || v === null)) {
+    if (
+      value.length === 0 ||
+      value.every((v) => typeof v !== "object" || v === null)
+    ) {
       out.push({ path: prefix, relativePath: relativePrefix, value });
       return;
     }
@@ -63,7 +62,7 @@ function collectLeaves(
     });
     return;
   }
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>);
     if (entries.length === 0) {
       out.push({ path: prefix, relativePath: relativePrefix, value });
@@ -79,11 +78,11 @@ function collectLeaves(
 }
 
 function previewValue(value: unknown): string {
-  if (value === null || value === undefined) return '—';
-  if (typeof value === 'string') {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "string") {
     return value.length > 60 ? `${value.slice(0, 60)}…` : value;
   }
-  if (typeof value === 'number' || typeof value === 'boolean') {
+  if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
   try {
@@ -114,7 +113,7 @@ export function DomainCard({
     });
 
   const generateMutation = useMutation({
-    mutationFn: (mode: 'generate' | 'regenerate') =>
+    mutationFn: (mode: "generate" | "regenerate") =>
       aiProfileGenerator.generateDomain(draftId, domain, {
         expectedVersion: version,
         mode,
@@ -129,17 +128,17 @@ export function DomainCard({
   } | null>(null);
   const [regenState, setRegenState] = useState<{ path: string } | null>(null);
 
-  const isBusy = status === 'generating' || generateMutation.isPending;
-  const canGenerate = status === 'empty';
+  const isBusy = status === "generating" || generateMutation.isPending;
+  const canGenerate = status === "empty";
   const canRegenerate =
-    status === 'ready' ||
-    status === 'stale' ||
-    status === 'blocked' ||
-    status === 'failed';
+    status === "ready" ||
+    status === "stale" ||
+    status === "blocked" ||
+    status === "failed";
 
   const leaves: Leaf[] = [];
   if (payload !== null && payload !== undefined) {
-    collectLeaves(payload, domain, '', 0, leaves);
+    collectLeaves(payload, domain, "", 0, leaves);
   }
 
   return (
@@ -155,29 +154,30 @@ export function DomainCard({
           <div className="flex flex-wrap items-center gap-2">
             {canGenerate ? (
               <Button
-                size="sm"
-                onClick={() => generateMutation.mutate('generate')}
-                disabled={isBusy}
+                onClick={() => generateMutation.mutate("generate")}
+                isDisabled={isBusy}
+                variant={"primary"}
+                size={"sm"}
               >
-                {generateMutation.isPending ? '생성 중…' : '생성'}
+                {generateMutation.isPending ? "생성 중…" : "생성"}
               </Button>
             ) : null}
             {canRegenerate ? (
               <Button
-                size="sm"
-                variant="outline"
-                onClick={() => generateMutation.mutate('regenerate')}
-                disabled={isBusy}
+                onClick={() => generateMutation.mutate("regenerate")}
+                isDisabled={isBusy}
+                variant={"outline"}
+                size={"sm"}
               >
                 전체 재생성
               </Button>
             ) : null}
             {onOpenInstruction ? (
               <Button
-                size="sm"
-                variant="outline"
                 onClick={() => onOpenInstruction(domain)}
-                disabled={isBusy}
+                isDisabled={isBusy}
+                variant={"outline"}
+                size={"sm"}
               >
                 자연어 수정
               </Button>
@@ -197,7 +197,7 @@ export function DomainCard({
                 >
                   <div className="flex-1 space-y-0.5">
                     <div className="font-mono text-[10px] text-slate-500">
-                      {leaf.relativePath || '(root)'}
+                      {leaf.relativePath || "(root)"}
                     </div>
                     <div className="truncate text-slate-800">
                       {previewValue(leaf.value)}
@@ -205,7 +205,7 @@ export function DomainCard({
                   </div>
                   {!readOnly ? (
                     <div className="flex shrink-0 gap-1">
-                      <button
+                      <Button
                         type="button"
                         onClick={() =>
                           setEditState({
@@ -215,19 +215,23 @@ export function DomainCard({
                         }
                         className="rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
                         aria-label="편집"
-                        disabled={isBusy}
+                        isDisabled={isBusy}
+                        variant={"secondary"}
+                        size={"md"}
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
                         onClick={() => setRegenState({ path: leaf.path })}
                         className="rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
                         aria-label="재생성"
-                        disabled={isBusy}
+                        isDisabled={isBusy}
+                        variant={"secondary"}
+                        size={"md"}
                       >
                         <RefreshCcw className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </div>
                   ) : null}
                 </li>

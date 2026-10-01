@@ -1,5 +1,5 @@
-import { PolicyClient } from './policy-client';
+import { PolicyClient } from "./policy-client";
 
 export default function PolicyPage() {
-	return <PolicyClient />;
+  return <PolicyClient />;
 }

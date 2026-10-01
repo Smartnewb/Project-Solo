@@ -1,8 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
-import type { SupportMessage, SupportSessionStatus } from '@/app/types/support-chat';
+import { useEffect, useRef, useState, useCallback } from "react";
+import { io, Socket } from "socket.io-client";
+import type {
+  SupportMessage,
+  SupportSessionStatus,
+} from "@/app/types/support-chat";
 
 interface SocketState {
   connected: boolean;
@@ -50,7 +53,8 @@ interface UseSupportChatSocketReturn {
   reconnect: () => void;
 }
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:8044';
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8044";
 
 export function useSupportChatSocket({
   sessionId,
@@ -73,7 +77,7 @@ export function useSupportChatSocket({
       return tokenRef.current;
     }
     try {
-      const res = await fetch('/api/admin/auth/token');
+      const res = await fetch("/api/admin/auth/token");
       if (!res.ok) return null;
       const data = await res.json();
       const token = data.accessToken ?? null;
@@ -91,7 +95,7 @@ export function useSupportChatSocket({
 
     const token = await getAccessToken();
     if (!token) {
-      setState((prev) => ({ ...prev, error: '인증 토큰이 없습니다.' }));
+      setState((prev) => ({ ...prev, error: "인증 토큰이 없습니다." }));
       return;
     }
 
@@ -99,54 +103,73 @@ export function useSupportChatSocket({
       auth: (cb) => {
         cb({ token: `Bearer ${token}` });
       },
-      transports: ['websocket'],
+      transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
-    socket.on('connect', () => {
+    socket.on("connect", () => {
       setState((prev) => ({ ...prev, connected: true, error: null }));
 
-      socket.emit('join_session', { sessionId }, (response: { success: boolean; error?: string }) => {
-        if (response.success) {
-          setState((prev) => ({ ...prev, sessionJoined: true }));
-        } else {
-          setState((prev) => ({ ...prev, error: response.error || '세션 참여에 실패했습니다.' }));
-        }
-      });
+      socket.emit(
+        "join_session",
+        { sessionId },
+        (response: { success: boolean; error?: string }) => {
+          if (response.success) {
+            setState((prev) => ({ ...prev, sessionJoined: true }));
+          } else {
+            setState((prev) => ({
+              ...prev,
+              error: response.error || "세션 참여에 실패했습니다.",
+            }));
+          }
+        },
+      );
     });
 
-    socket.on('connect_error', (error) => {
-      setState((prev) => ({ ...prev, connected: false, error: `연결 실패: ${error.message}` }));
+    socket.on("connect_error", (error) => {
+      setState((prev) => ({
+        ...prev,
+        connected: false,
+        error: `연결 실패: ${error.message}`,
+      }));
     });
 
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       setState((prev) => ({ ...prev, connected: false, sessionJoined: false }));
     });
 
-    socket.on('new_message', (message: SupportMessage) => {
+    socket.on("new_message", (message: SupportMessage) => {
       onNewMessage?.(message);
     });
 
-    socket.on('message_updated', (event: MessageUpdatedEvent) => {
+    socket.on("message_updated", (event: MessageUpdatedEvent) => {
       onMessageUpdated?.(event);
     });
 
-    socket.on('message_deleted', (event: MessageDeletedEvent) => {
+    socket.on("message_deleted", (event: MessageDeletedEvent) => {
       onMessageDeleted?.(event);
     });
 
-    socket.on('session_status_changed', (event: SessionStatusChangedEvent) => {
+    socket.on("session_status_changed", (event: SessionStatusChangedEvent) => {
       onStatusChanged?.(event);
     });
 
-    socket.on('typing', (event: TypingEvent) => {
+    socket.on("typing", (event: TypingEvent) => {
       onTyping?.(event);
     });
 
     socketRef.current = socket;
-  }, [sessionId, getAccessToken, onNewMessage, onMessageUpdated, onMessageDeleted, onStatusChanged, onTyping]);
+  }, [
+    sessionId,
+    getAccessToken,
+    onNewMessage,
+    onMessageUpdated,
+    onMessageDeleted,
+    onStatusChanged,
+    onTyping,
+  ]);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
@@ -156,32 +179,38 @@ export function useSupportChatSocket({
     }
   }, []);
 
-  const sendMessage = useCallback(async (content: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (!socketRef.current?.connected || !state.sessionJoined) {
-        resolve(false);
-        return;
-      }
-
-      socketRef.current.emit(
-        'send_message',
-        { sessionId, content },
-        (response: { success: boolean; error?: string }) => {
-          if (response.success) {
-            resolve(true);
-          } else {
-            resolve(false);
-          }
+  const sendMessage = useCallback(
+    async (content: string): Promise<boolean> => {
+      return new Promise((resolve) => {
+        if (!socketRef.current?.connected || !state.sessionJoined) {
+          resolve(false);
+          return;
         }
-      );
-    });
-  }, [sessionId, state.sessionJoined]);
 
-  const setTyping = useCallback((isTyping: boolean) => {
-    if (socketRef.current?.connected && state.sessionJoined) {
-      socketRef.current.emit('typing', { sessionId, isTyping });
-    }
-  }, [sessionId, state.sessionJoined]);
+        socketRef.current.emit(
+          "send_message",
+          { sessionId, content },
+          (response: { success: boolean; error?: string }) => {
+            if (response.success) {
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          },
+        );
+      });
+    },
+    [sessionId, state.sessionJoined],
+  );
+
+  const setTyping = useCallback(
+    (isTyping: boolean) => {
+      if (socketRef.current?.connected && state.sessionJoined) {
+        socketRef.current.emit("typing", { sessionId, isTyping });
+      }
+    },
+    [sessionId, state.sessionJoined],
+  );
 
   const reconnect = useCallback(() => {
     tokenRef.current = null;

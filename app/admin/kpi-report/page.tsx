@@ -1,5 +1,4 @@
-import KpiReportV2 from './kpi-report-v2';
-
+import KpiReportV2 from "./kpi-report-v2";
 export default function KpiReportPage() {
-  return <KpiReportV2 />;
+	return <KpiReportV2 />;
 }

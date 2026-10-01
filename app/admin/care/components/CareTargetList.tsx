@@ -1,7 +1,6 @@
 'use client';
 
-import { Box, Typography, TextField, InputAdornment, Skeleton, Pagination } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import { Avatar, Button, Chip, Input, Label, Pagination, Skeleton, TextField } from '@heroui/react';
 import type { CareTarget } from '@/app/services/admin/care';
 import { calculateAge } from '@/app/utils/formatters';
 
@@ -16,183 +15,16 @@ interface CareTargetListProps {
 	onPageChange: (page: number) => void;
 }
 
-function FailureBadge({ days }: { days: number }) {
-	const color = days >= 7 ? '#ef4444' : days >= 5 ? '#f59e0b' : '#6b7280';
-	const bg = days >= 7 ? '#fef2f2' : days >= 5 ? '#fef9c3' : '#f3f4f6';
-	return (
-		<Box
-			component="span"
-			sx={{
-				bgcolor: bg,
-				color,
-				px: 1,
-				py: 0.25,
-				borderRadius: 3,
-				fontSize: 10,
-				fontWeight: 600,
-				whiteSpace: 'nowrap',
-			}}
-		>
-			{days}일 실패
-		</Box>
-	);
-}
-
-function SearchField({
-	value,
-	onChange,
-}: {
-	value: string;
-	onChange: (v: string) => void;
-}) {
-	return (
-		<TextField
-			size="small"
-			fullWidth
-			placeholder="이름 또는 유저 ID 검색..."
-			value={value}
-			onChange={(e) => onChange(e.target.value)}
-			InputProps={{
-				startAdornment: (
-					<InputAdornment position="start">
-						<SearchIcon sx={{ fontSize: 18, color: '#9ca3af' }} />
-					</InputAdornment>
-				),
-			}}
-			sx={{ mb: 1.5 }}
-		/>
-	);
-}
-
-export default function CareTargetList({
-	targets,
-	selectedTarget,
-	onSelect,
-	loading,
-	searchTerm,
-	onSearchChange,
-	pagination,
-	onPageChange,
-}: CareTargetListProps) {
-	if (!loading && targets.length === 0) {
-		return (
-			<Box>
-				<SearchField value={searchTerm} onChange={onSearchChange} />
-				<Typography
-					color="text.secondary"
-					sx={{ textAlign: 'center', mt: 4, fontSize: 13 }}
-				>
-					{searchTerm ? '검색 결과가 없습니다' : '현재 케어가 필요한 유저가 없습니다'}
-				</Typography>
-			</Box>
-		);
-	}
-
-	return (
-		<Box>
-			<SearchField value={searchTerm} onChange={onSearchChange} />
-
-			{loading ? (
-				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-					{[1, 2, 3].map((i) => (
-						<Skeleton key={i} variant="rounded" height={80} sx={{ borderRadius: 2 }} />
-					))}
-				</Box>
-			) : (
-				<>
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-						{targets.map((target) => {
-							const isSelected = selectedTarget?.id === target.id;
-							const age = calculateAge(target.birthday);
-							const genderLabel = target.gender === 'MALE' ? '남' : '여';
-							return (
-								<Box
-									key={target.id}
-									onClick={() => onSelect(target)}
-									sx={{
-										p: 1.5,
-										border: isSelected
-											? '2px solid #2563eb'
-											: '1px solid #e5e7eb',
-										borderRadius: 2,
-										bgcolor: isSelected ? '#f8faff' : 'white',
-										cursor: 'pointer',
-										'&:hover': {
-											bgcolor: isSelected ? '#f8faff' : '#f9fafb',
-										},
-									}}
-								>
-									<Box
-										sx={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											alignItems: 'flex-start',
-										}}
-									>
-										<Box
-											sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
-										>
-											<Box
-												component="img"
-												src={
-													target.profile_image_url ||
-													'/default-avatar.png'
-												}
-												sx={{
-													width: 36,
-													height: 36,
-													borderRadius: '50%',
-													objectFit: 'cover',
-													bgcolor: '#e5e7eb',
-													flexShrink: 0,
-												}}
-											/>
-											<Box>
-												<Typography sx={{ fontWeight: 600, fontSize: 13 }}>
-													{target.name}
-												</Typography>
-												<Typography sx={{ fontSize: 11, color: '#666' }}>
-													{target.university_name} / {genderLabel} /{' '}
-													{age}세
-												</Typography>
-											</Box>
-										</Box>
-										<FailureBadge
-											days={target.consecutive_failure_days}
-										/>
-									</Box>
-									<Typography sx={{ mt: 0.5, fontSize: 10, color: '#9ca3af' }}>
-										마지막 실패:{' '}
-										{target.last_failure_at
-											? new Date(
-													target.last_failure_at,
-												).toLocaleDateString('ko-KR', {
-													month: 'numeric',
-													day: 'numeric',
-													hour: '2-digit',
-													minute: '2-digit',
-												})
-											: '-'}
-										{target.last_failure_reason &&
-											` · 사유: ${target.last_failure_reason}`}
-									</Typography>
-								</Box>
-							);
-						})}
-					</Box>
-
-					{!searchTerm && pagination.total > pagination.limit && (
-						<Box sx={{ display: 'flex', justifyContent: 'center', mt: 1.5 }}>
-							<Pagination
-								count={Math.ceil(pagination.total / pagination.limit)}
-								page={pagination.page}
-								onChange={(_, page) => onPageChange(page)}
-								size="small"
-							/>
-						</Box>
-					)}
-				</>
-			)}
-		</Box>
-	);
+export default function CareTargetList({ targets, selectedTarget, onSelect, loading, searchTerm, onSearchChange, pagination, onPageChange }: CareTargetListProps) {
+  const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.limit));
+  const first = Math.max(1, Math.min(pagination.page - 2, totalPages - 4));
+  const pages = [...new Set([1, ...Array.from({length: Math.min(5,totalPages)}, (_,i) => first+i), totalPages])];
+  return <section aria-label="케어 대상" className="space-y-3">
+    <TextField value={searchTerm} onChange={onSearchChange}><Label>케어 대상 검색</Label><Input placeholder="이름 또는 유저 ID 검색..." /></TextField>
+    {loading ? <div className="space-y-2" aria-label="대상 불러오는 중">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div> : !targets.length ? <p className="py-8 text-center text-sm text-gray-600">{searchTerm ? '검색 결과가 없습니다' : '현재 케어가 필요한 유저가 없습니다'}</p> : <ul className="space-y-2">{targets.map(target => <li key={target.id}><Button variant="secondary" aria-pressed={selectedTarget?.id === target.id} fullWidth onPress={() => onSelect(target)} className={`h-auto flex-col items-stretch gap-2 border p-3 text-left ${selectedTarget?.id === target.id ? 'border-[#7A4AE2] ring-1 ring-[#7A4AE2]' : 'border-border'}`}>
+      <span className="flex items-center gap-2"><Avatar size="sm"><Avatar.Image src={target.profile_image_url || '/default-avatar.png'} alt="" /><Avatar.Fallback>{target.name.slice(0,1)}</Avatar.Fallback></Avatar><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{target.name}</span><span className="block text-xs text-gray-600">{target.university_name} / {target.gender === 'MALE' ? '남' : '여'} / {calculateAge(target.birthday)}세</span></span><Chip size="sm" color={target.consecutive_failure_days >= 7 ? 'danger' : target.consecutive_failure_days >= 5 ? 'warning' : 'default'}>{target.consecutive_failure_days}일 실패</Chip></span>
+      <span className="text-xs text-gray-600">마지막 실패: {target.last_failure_at ? new Date(target.last_failure_at).toLocaleDateString('ko-KR', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '-'}{target.last_failure_reason && ` · 사유: ${target.last_failure_reason}`}</span>
+    </Button></li>)}</ul>}
+    {!loading && totalPages > 1 && <Pagination size="sm" aria-label="케어 대상 페이지"><Pagination.Content><Pagination.Item><Pagination.Previous isDisabled={pagination.page <= 1} onPress={() => onPageChange(pagination.page - 1)} aria-label="이전 페이지"><Pagination.PreviousIcon /></Pagination.Previous></Pagination.Item>{pages.map(page => <Pagination.Item key={page}><Pagination.Link isActive={page === pagination.page} onPress={() => onPageChange(page)} aria-label={`${page}페이지`}>{page}</Pagination.Link></Pagination.Item>)}<Pagination.Item><Pagination.Next isDisabled={pagination.page >= totalPages} onPress={() => onPageChange(pagination.page + 1)} aria-label="다음 페이지"><Pagination.NextIcon /></Pagination.Next></Pagination.Item></Pagination.Content></Pagination>}
+  </section>;
 }

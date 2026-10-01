@@ -1,25 +1,10 @@
 'use client';
 
-import { useCountry } from '@/contexts/CountryContext';
+import { Button } from '@heroui/react';
+import { Globe } from 'lucide-react';
+import { useAdminSession } from '@/shared/contexts/admin-session-context';
 
-interface CountryFABProps {
-  onClick: () => void;
-}
-
-export default function CountryFAB({ onClick }: CountryFABProps) {
-  const { country, countryFlag, countryLabel } = useCountry();
-
-  const bgColor = country === 'kr' ? 'bg-[#ff385c] hover:bg-[#ff385c]' : 'bg-red-500 hover:bg-red-600';
-
-  return (
-    <button
-      onClick={onClick}
-      className={`fixed top-4 right-4 z-50 w-12 h-12 rounded-full ${bgColor}
-                  text-white text-xl shadow-lg hover:shadow-xl hover:scale-105
-                  transition-all duration-200 flex items-center justify-center`}
-      title={`현재: ${countryLabel} - 클릭하여 변경`}
-    >
-      {countryFlag}
-    </button>
-  );
+export default function CountryFAB({ onClick }: { onClick: () => void }) {
+  const { session } = useAdminSession();
+  return <Button onPress={onClick} className="fixed right-4 top-4 z-50" aria-label="운영 국가 변경"><Globe size={18} />{session?.selectedCountry?.toUpperCase() ?? '국가 선택'}</Button>;
 }

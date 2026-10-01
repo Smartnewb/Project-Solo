@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import supportChatService from '@/app/services/support-chat';
-import type { SupportSessionSummary } from '@/app/types/support-chat';
+import { useState, useEffect, useRef, useCallback } from "react";
+import supportChatService from "@/app/services/support-chat";
+import type { SupportSessionSummary } from "@/app/types/support-chat";
 
 const POLLING_INTERVAL = 30_000;
 const RESOLVED_FETCH_LIMIT = 100;
@@ -25,9 +25,17 @@ interface UseSessionPollingReturn {
 }
 
 export function useSessionPolling(): UseSessionPollingReturn {
-  const [activeSessions, setActiveSessions] = useState<SupportSessionSummary[]>([]);
-  const [resolvedSessions, setResolvedSessions] = useState<SupportSessionSummary[]>([]);
-  const [statusCounts, setStatusCounts] = useState<StatusCounts>({ waiting: 0, handling: 0, resolved: 0 });
+  const [activeSessions, setActiveSessions] = useState<SupportSessionSummary[]>(
+    [],
+  );
+  const [resolvedSessions, setResolvedSessions] = useState<
+    SupportSessionSummary[]
+  >([]);
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>({
+    waiting: 0,
+    handling: 0,
+    resolved: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newSessionIds, setNewSessionIds] = useState<Set<string>>(new Set());
@@ -37,9 +45,9 @@ export function useSessionPolling(): UseSessionPollingReturn {
 
   const fetchActive = useCallback(async () => {
     const [waitingRes, handlingRes, botRes] = await Promise.all([
-      supportChatService.getSessions({ status: 'waiting_admin', limit: 100 }),
-      supportChatService.getSessions({ status: 'admin_handling', limit: 100 }),
-      supportChatService.getSessions({ status: 'bot_handling', limit: 100 }),
+      supportChatService.getSessions({ status: "waiting_admin", limit: 100 }),
+      supportChatService.getSessions({ status: "admin_handling", limit: 100 }),
+      supportChatService.getSessions({ status: "bot_handling", limit: 100 }),
     ]);
 
     const waiting = waitingRes.sessions;
@@ -78,12 +86,12 @@ export function useSessionPolling(): UseSessionPollingReturn {
   const fetchResolved = useCallback(async () => {
     const [resolvedRes, adminResolvedRes] = await Promise.all([
       supportChatService.getSessions({
-        status: 'resolved',
+        status: "resolved",
         page: 1,
         limit: RESOLVED_FETCH_LIMIT,
       }),
       supportChatService.getSessions({
-        status: 'admin_resolved',
+        status: "admin_resolved",
         page: 1,
         limit: RESOLVED_FETCH_LIMIT,
       }),
@@ -91,13 +99,13 @@ export function useSessionPolling(): UseSessionPollingReturn {
 
     const uniqueSessions = Array.from(
       new Map(
-        [...resolvedRes.sessions, ...adminResolvedRes.sessions].map((session) => [
-          session.sessionId,
-          session,
-        ])
-      ).values()
+        [...resolvedRes.sessions, ...adminResolvedRes.sessions].map(
+          (session) => [session.sessionId, session],
+        ),
+      ).values(),
     ).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
 
     setResolvedSessions(uniqueSessions);
@@ -115,7 +123,11 @@ export function useSessionPolling(): UseSessionPollingReturn {
     try {
       await Promise.all([fetchActive(), fetchResolved()]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '세션 목록을 불러오는데 실패했습니다.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "세션 목록을 불러오는데 실패했습니다.",
+      );
     } finally {
       setLoading(false);
     }

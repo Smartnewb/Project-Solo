@@ -1,15 +1,18 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useEffect, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { Button } from "@heroui/react";
+
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   PHOTO_SLOTS,
   PHOTO_SLOT_LABEL,
   type PhotoSlot,
-} from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -17,19 +20,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/select";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   open: boolean;
@@ -38,7 +41,7 @@ interface Props {
   version: number;
 }
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 10 * 1024 * 1024;
 
 export function MediaUploadDialog({
@@ -56,9 +59,9 @@ export function MediaUploadDialog({
 
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [slot, setSlot] = useState<PhotoSlot>('representative');
-  const [prompt, setPrompt] = useState('');
-  const [tags, setTags] = useState('');
+  const [slot, setSlot] = useState<PhotoSlot>("representative");
+  const [prompt, setPrompt] = useState("");
+  const [tags, setTags] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const resetState = () => {
@@ -67,11 +70,11 @@ export function MediaUploadDialog({
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
-    setSlot('representative');
-    setPrompt('');
-    setTags('');
+    setSlot("representative");
+    setPrompt("");
+    setTags("");
     setValidationError(null);
-    if (inputRef.current) inputRef.current.value = '';
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   useEffect(() => {
@@ -99,12 +102,12 @@ export function MediaUploadDialog({
       return;
     }
     if (!ALLOWED_TYPES.includes(next.type)) {
-      setValidationError('JPEG, PNG, WebP 형식만 업로드할 수 있습니다.');
+      setValidationError("JPEG, PNG, WebP 형식만 업로드할 수 있습니다.");
       setFile(null);
       return;
     }
     if (next.size > MAX_SIZE) {
-      setValidationError('파일 크기는 10MB 이하여야 합니다.');
+      setValidationError("파일 크기는 10MB 이하여야 합니다.");
       setFile(null);
       return;
     }
@@ -115,7 +118,7 @@ export function MediaUploadDialog({
   const mutation = useMutation({
     mutationFn: () => {
       if (!file) {
-        throw new Error('업로드할 파일을 선택하세요.');
+        throw new Error("업로드할 파일을 선택하세요.");
       }
       return aiProfileGenerator.uploadMedia(draftId, {
         file,
@@ -126,7 +129,7 @@ export function MediaUploadDialog({
       });
     },
     onSuccess: () => {
-      toast.success('사진이 업로드되었습니다.');
+      toast.success("사진이 업로드되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -152,16 +155,33 @@ export function MediaUploadDialog({
 
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="media-upload-file">이미지 파일</Label>
+            <Label htmlFor="media-upload-picker">이미지 파일</Label>
+            <Button
+              id="media-upload-picker"
+              aria-label="이미지 파일 선택"
+              variant="secondary"
+              isDisabled={mutation.isPending}
+              onPress={() => inputRef.current?.click()}
+              aria-describedby="media-upload-selection"
+            >
+              이미지 파일 선택
+            </Button>
+            <p
+              id="media-upload-selection"
+              className="text-sm text-slate-600"
+              role="status"
+            >
+              {file?.name || "선택된 파일 없음"}
+            </p>
             <input
               ref={inputRef}
               id="media-upload-file"
               type="file"
+              hidden
               accept="image/jpeg,image/png,image/webp"
               onChange={(event) =>
                 handleFileChange(event.target.files?.[0] ?? null)
               }
-              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-accent"
               disabled={mutation.isPending}
             />
           </div>
@@ -178,8 +198,8 @@ export function MediaUploadDialog({
           ) : null}
 
           <div className="space-y-1.5">
-            <Label>슬롯</Label>
             <Select value={slot} onValueChange={(v) => setSlot(v as PhotoSlot)}>
+              <HeroSelectLabel>슬롯</HeroSelectLabel>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -221,9 +241,10 @@ export function MediaUploadDialog({
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={mutation.isPending}
+            isDisabled={mutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
@@ -232,9 +253,11 @@ export function MediaUploadDialog({
               setValidationError(null);
               mutation.mutate();
             }}
-            disabled={mutation.isPending || !file}
+            isDisabled={mutation.isPending || !file}
+            variant={"primary"}
+            size={"md"}
           >
-            {mutation.isPending ? '업로드 중…' : '업로드'}
+            {mutation.isPending ? "업로드 중…" : "업로드"}
           </Button>
         </DialogFooter>
       </DialogContent>

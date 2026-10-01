@@ -34,7 +34,73 @@ export type CardNewsLayoutMode = 'article' | 'image_only' | 'longform';
 export const CARD_NEWS_LAYOUT_MODES: CardNewsLayoutMode[] = ['article', 'image_only', 'longform'];
 export type CardNewsTrack = 'cards' | 'longform';
 
+export type NoticeCountry = 'kr' | 'jp';
+
+export interface NoticeVariant {
+  editableHtml?: string;
+  title: string;
+  displayTitle?: string | null;
+  subtitle?: string | null;
+  description?: string | null;
+  safeHtml: string;
+  safeCss: string;
+  fallbackMarkdown: string;
+  links: Array<{ label: string; url: string }>;
+  digest: string;
+  policyVersion: number;
+  revision: number;
+}
+
+export interface NoticeHtmlState {
+  revision: number;
+  sourceDigest: string;
+  variants: { kr: NoticeVariant; jp?: NoticeVariant };
+  pushes?: Partial<Record<NoticeCountry, {
+    status: 'pending' | 'sending' | 'sent' | 'failed';
+    attempted?: boolean;
+    dispatchStartedAt?: string;
+    revision: number;
+    title: string;
+    body: string;
+    requestedAt: string;
+    translatedTitle?: string;
+    translatedBody?: string;
+  }>>;
+  translation: { status: 'pending' | 'done' | 'failed'; attempts: number };
+  previous?: { variants: NoticeHtmlState['variants']; sourceDigest: string };
+  audit: { actorId: string; action: 'update' | 'restore'; at: string };
+}
+
+export interface NoticeHtmlInput {
+  html: string;
+  css?: string;
+  previewDigest?: string;
+  expectedRevision?: number;
+}
+
+export interface NoticeHtmlPreviewRequest {
+  title: string;
+  displayTitle?: string | null;
+  subtitle?: string | null;
+  description?: string | null;
+  categoryCode: 'announcement';
+  layoutMode: 'longform';
+  hasReward: false;
+  noticeHtmlInput: Pick<NoticeHtmlInput, 'html' | 'css'>;
+  textEdits?: Array<{ id: string; text: string }>;
+}
+
+export interface NoticeHtmlPreviewResponse {
+  previewDigest: string;
+  kr: NoticeVariant;
+  document: string;
+  textSegments?: Array<{ id: string; text: string }>;
+  editableHtml?: string;
+  editableCss?: string;
+}
+
 export interface AdminCardNewsItem {
+  noticeHtmlState?: NoticeHtmlState | null;
   id: string;
   title: string;
   displayTitle?: string | null;
@@ -154,6 +220,7 @@ export interface BulkCreateVideoResponse {
 }
 
 export interface CreateCardNewsRequest {
+  noticeHtmlInput?: NoticeHtmlInput;
   title: string;
   displayTitle?: string | null;
   subtitle?: string;
@@ -178,6 +245,7 @@ export interface CreateCardNewsRequest {
 }
 
 export interface UpdateCardNewsRequest {
+  noticeHtmlInput?: NoticeHtmlInput;
   title?: string;
   displayTitle?: string | null;
   subtitle?: string;
@@ -202,6 +270,7 @@ export interface UpdateCardNewsRequest {
 }
 
 export interface PublishCardNewsRequest {
+  expectedRevision?: number;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }

@@ -1,7 +1,6 @@
-'use client';
-
-import { useQuery } from '@tanstack/react-query';
-import { adminGet } from '@/shared/lib/http/admin-fetch';
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { adminGet } from "@/shared/lib/http/admin-fetch";
 
 interface AdminUserResponse {
   data: {
@@ -9,16 +8,22 @@ interface AdminUserResponse {
   };
 }
 
-export function AdminNameLabel({ adminId }: { adminId: string | null | undefined }) {
+export function AdminNameLabel({
+  adminId,
+}: {
+  adminId: string | null | undefined;
+}) {
   const { data } = useQuery({
-    queryKey: ['admin-user-name', adminId],
+    queryKey: ["admin-user-name", adminId],
     queryFn: async () => {
       if (!adminId) return null;
       try {
-        const res = await adminGet<AdminUserResponse>(`/admin/v2/users/${adminId}`);
+        const res = await adminGet<AdminUserResponse>(
+          `/admin/v2/users/${adminId}`,
+        );
         return res.data?.name ?? adminId;
       } catch (err) {
-        console.warn('admin name lookup failed', adminId, err);
+        console.warn("admin name lookup failed", adminId, err);
         return adminId;
       }
     },

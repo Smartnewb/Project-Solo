@@ -1,43 +1,30 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { Controller } from 'react-hook-form';
+"use client";
 import {
-  Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Button,
-  CircularProgress,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  Spinner,
   TextField,
-  IconButton,
-  Pagination,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import AdminService from '@/app/services/admin';
-import { safeToLocaleString } from '@/app/utils/formatters';
-import { useAdminForm } from '@/app/admin/hooks/forms';
+} from "@heroui/react";
+import { Search as SearchIcon, Copy as ContentCopyIcon } from "lucide-react";
+
+import { useState, useEffect } from "react";
+import { Controller } from "react-hook-form";
+
+import AdminService from "@/app/services/admin";
+import { safeToLocaleString } from "@/app/utils/formatters";
+import { useAdminForm } from "@/app/admin/hooks/forms";
 import {
   resetPasswordSearchSchema,
   type ResetPasswordSearchValues,
-} from '@/app/admin/hooks/forms/schemas/reset-password.schema';
+} from "@/app/admin/hooks/forms/schemas/reset-password.schema";
 
 function ResetPasswordPageContent() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -50,22 +37,23 @@ function ResetPasswordPageContent() {
 
   // 결과 다이얼로그
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [temporaryPassword, setTemporaryPassword] = useState("");
 
-  const { control, handleFormSubmit, getValues } = useAdminForm<ResetPasswordSearchValues>({
-    schema: resetPasswordSearchSchema,
-    defaultValues: {
-      searchQuery: '',
-    },
-  });
+  const { control, handleFormSubmit, getValues } =
+    useAdminForm<ResetPasswordSearchValues>({
+      schema: resetPasswordSearchSchema,
+      defaultValues: {
+        searchQuery: "",
+      },
+    });
 
   const searchUsers = async (pageNum: number = 1) => {
-    const query = getValues('searchQuery').trim();
+    const query = getValues("searchQuery").trim();
     if (!query) return;
 
     try {
       setLoading(true);
-      setError('');
+      setError("");
       setSearched(true);
 
       const isPhoneNumber = /^[\d\-]+$/.test(query);
@@ -84,7 +72,7 @@ function ResetPasswordPageContent() {
       setTotalPages(Math.ceil(total / 10) || 1);
       setPage(pageNum);
     } catch (err: any) {
-      setError(err.response?.data?.message || '검색 중 오류가 발생했습니다.');
+      setError(err.response?.data?.message || "검색 중 오류가 발생했습니다.");
       setUsers([]);
     } finally {
       setLoading(false);
@@ -109,12 +97,16 @@ function ResetPasswordPageContent() {
 
     try {
       setResetLoading(true);
-      const result = await AdminService.userAppearance.resetPassword(selectedUser.userId || selectedUser.id);
-      setTemporaryPassword(result.temporaryPassword || result.data?.temporaryPassword || '');
+      const result = await AdminService.userAppearance.resetPassword(
+        selectedUser.userId || selectedUser.id,
+      );
+      setTemporaryPassword(
+        result.temporaryPassword || result.data?.temporaryPassword || "",
+      );
       setConfirmDialogOpen(false);
       setPasswordDialogOpen(true);
     } catch (err: any) {
-      alert(err.response?.data?.message || '비밀번호 초기화에 실패했습니다.');
+      alert(err.response?.data?.message || "비밀번호 초기화에 실패했습니다.");
     } finally {
       setResetLoading(false);
     }
@@ -123,202 +115,265 @@ function ResetPasswordPageContent() {
   const handleCopyPassword = () => {
     if (temporaryPassword) {
       navigator.clipboard.writeText(temporaryPassword);
-      alert('임시 비밀번호가 복사되었습니다.');
+      alert("임시 비밀번호가 복사되었습니다.");
     }
   };
 
   const handlePasswordDialogClose = () => {
     setPasswordDialogOpen(false);
-    setTemporaryPassword('');
+    setTemporaryPassword("");
     setSelectedUser(null);
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return '-';
-    return safeToLocaleString(dateString, 'ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
+    if (!dateString) return "-";
+    return safeToLocaleString(dateString, "ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
   };
 
   return (
-    <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight="bold">
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h5 className="text-lg font-semibold text-foreground">
           비밀번호 초기화
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        </h5>
+        <p style={{ marginTop: 8 }}>
           회원의 비밀번호를 초기화하고 임시 비밀번호를 발급합니다.
-        </Typography>
-      </Box>
-
+        </p>
+      </div>
       {/* 검색 영역 */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 1, alignItems: 'center' }}>
+      <div
+        style={{
+          marginBottom: 24,
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+        }}
+      >
         <Controller
           name="searchQuery"
           control={control}
           render={({ field }) => (
             <TextField
-              {...field}
-              size="small"
-              placeholder="이름 또는 전화번호로 검색"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSearchSubmit();
-              }}
-              sx={{ width: 400 }}
-            />
+              style={{ width: 400 }}
+              aria-label={"이름 또는 전화번호로 검색"}
+            >
+              <Input
+                {...field}
+                placeholder="이름 또는 전화번호로 검색"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onSearchSubmit();
+                }}
+                aria-label={"이름 또는 전화번호로 검색"}
+              />
+            </TextField>
           )}
         />
         <Button
-          variant="contained"
-          startIcon={<SearchIcon />}
           onClick={onSearchSubmit}
-          disabled={loading}
+          variant={"primary"}
+          isDisabled={loading}
         >
-          검색
+          {<SearchIcon size={16} />}검색
         </Button>
-      </Box>
-
+      </div>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div
+          role="alert"
+          className="rounded-lg border border-default p-3 text-sm"
+          style={{ marginBottom: 16 }}
+        >
           {error}
-        </Alert>
+        </div>
       )}
-
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            paddingBlock: 64,
+          }}
+        >
+          <Spinner aria-label="로딩 중" />
+        </div>
       ) : !searched ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography color="text.secondary">
-            비밀번호를 초기화할 회원을 검색해주세요.
-          </Typography>
-        </Box>
+        <div style={{ textAlign: "center", paddingBlock: 64 }}>
+          <p>비밀번호를 초기화할 회원을 검색해주세요.</p>
+        </div>
       ) : users.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography color="text.secondary">검색 결과가 없습니다.</Typography>
-        </Box>
+        <div style={{ textAlign: "center", paddingBlock: 64 }}>
+          <p>검색 결과가 없습니다.</p>
+        </div>
       ) : (
         <>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              총 {totalCount}명의 검색 결과
-            </Typography>
-          </Box>
+          <div style={{ marginBottom: 16 }}>
+            <p>총 {totalCount}명의 검색 결과</p>
+          </div>
 
-          <TableContainer component={Paper} sx={{ mb: 3 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>이름</TableCell>
-                  <TableCell>전화번호</TableCell>
-                  <TableCell>상태</TableCell>
-                  <TableCell>가입일</TableCell>
-                  <TableCell align="center">액션</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+          <div style={{ marginBottom: 24 }}>
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    이름
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    전화번호
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    상태
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    가입일
+                  </th>
+                  <th scope="col" className="px-3 py-2 border-b border-default">
+                    액션
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
                 {users.map((user) => (
-                  <TableRow key={user.userId} sx={user.deletedAt ? { opacity: 0.6 } : {}}>
-                    <TableCell>{user.name || '-'}</TableCell>
-                    <TableCell>{user.phoneNumber || '-'}</TableCell>
-                    <TableCell>
+                  <tr key={user.userId}>
+                    <td className="px-3 py-2 border-b border-default">
+                      {user.name || "-"}
+                    </td>
+                    <td className="px-3 py-2 border-b border-default">
+                      {user.phoneNumber || "-"}
+                    </td>
+                    <td className="px-3 py-2 border-b border-default">
                       {(() => {
-                        if (user.deletedAt) return `탈퇴 (${formatDate(user.deletedAt)})`;
-                        if (user.status === 'approved') return '활성';
-                        if (user.status === 'pending') return '대기';
-                        if (user.status === 'rejected') return '거절';
-                        return user.status || '-';
+                        if (user.deletedAt)
+                          return `탈퇴 (${formatDate(user.deletedAt)})`;
+                        if (user.status === "approved") return "활성";
+                        if (user.status === "pending") return "대기";
+                        if (user.status === "rejected") return "거절";
+                        return user.status || "-";
                       })()}
-                    </TableCell>
-                    <TableCell>{formatDate(user.createdAt)}</TableCell>
-                    <TableCell align="center">
+                    </td>
+                    <td className="px-3 py-2 border-b border-default">
+                      {formatDate(user.createdAt)}
+                    </td>
+                    <td className="px-3 py-2 border-b border-default">
                       <Button
-                        variant="outlined"
-                        color="warning"
-                        size="small"
                         onClick={() => handleResetClick(user)}
+                        variant={"secondary"}
                       >
                         비밀번호 초기화
                       </Button>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </tbody>
+            </table>
+          </div>
 
           {totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={handlePageChange}
-                color="primary"
-              />
-            </Box>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <nav aria-label="페이지" className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  isDisabled={page <= 1}
+                  onPress={() => handlePageChange(null, page - 1)}
+                >
+                  이전
+                </Button>
+                <span>
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="secondary"
+                  isDisabled={page >= totalPages}
+                  onPress={() => handlePageChange(null, page + 1)}
+                >
+                  다음
+                </Button>
+              </nav>
+            </div>
           )}
         </>
       )}
-
       {/* 확인 다이얼로그 */}
-      <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
-        <DialogTitle>비밀번호 초기화</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            <strong>{selectedUser?.name}</strong>님의 비밀번호를 초기화하시겠습니까?
-            <br />
-            <br />
-            초기화 시 임시 비밀번호가 발급되며, 기존 비밀번호는 사용할 수 없게 됩니다.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)} disabled={resetLoading}>
-            취소
-          </Button>
-          <Button
-            onClick={confirmReset}
-            color="warning"
-            variant="contained"
-            disabled={resetLoading}
-          >
-            {resetLoading ? <CircularProgress size={20} /> : '초기화'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
+      <Modal.Backdrop
+        isOpen={confirmDialogOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) (() => setConfirmDialogOpen(false))();
+        }}
+      >
+        <Modal.Container>
+          <Modal.Dialog className="max-w-3xl">
+            <Modal.Heading>비밀번호 초기화</Modal.Heading>
+            <Modal.Body>
+              <p>
+                <strong>{selectedUser?.name}</strong>님의 비밀번호를
+                초기화하시겠습니까?
+                <br />
+                <br />
+                초기화 시 임시 비밀번호가 발급되며, 기존 비밀번호는 사용할 수
+                없게 됩니다.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                onClick={() => setConfirmDialogOpen(false)}
+                variant={"secondary"}
+                isDisabled={resetLoading}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={confirmReset}
+                variant={"primary"}
+                isDisabled={resetLoading}
+              >
+                {resetLoading ? <Spinner aria-label="로딩 중" /> : "초기화"}
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
       {/* 임시 비밀번호 표시 다이얼로그 */}
-      <Dialog open={passwordDialogOpen} onClose={handlePasswordDialogClose}>
-        <DialogTitle>비밀번호 초기화 완료</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            비밀번호가 성공적으로 초기화되었습니다.
-            <br />
-            아래 임시 비밀번호를 회원에게 전달해주세요.
-          </DialogContentText>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TextField
-              fullWidth
-              label="임시 비밀번호"
-              value={temporaryPassword}
-              InputProps={{
-                readOnly: true,
-              }}
-            />
-            <IconButton onClick={handleCopyPassword} color="primary">
-              <ContentCopyIcon />
-            </IconButton>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handlePasswordDialogClose} variant="contained">
-            확인
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      <Modal.Backdrop
+        isOpen={passwordDialogOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) handlePasswordDialogClose();
+        }}
+      >
+        <Modal.Container>
+          <Modal.Dialog className="max-w-3xl">
+            <Modal.Heading>비밀번호 초기화 완료</Modal.Heading>
+            <Modal.Body>
+              <p style={{ marginBottom: 16 }}>
+                비밀번호가 성공적으로 초기화되었습니다.
+                <br />
+                아래 임시 비밀번호를 회원에게 전달해주세요.
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <TextField>
+                  <Label>{"임시 비밀번호"}</Label>
+                  <Input value={temporaryPassword} readOnly />
+                </TextField>
+                <Button
+                  onClick={handleCopyPassword}
+                  variant={"secondary"}
+                  isIconOnly
+                  aria-label="작업 실행"
+                >
+                  <ContentCopyIcon size={16} />
+                </Button>
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button onClick={handlePasswordDialogClose} variant={"primary"}>
+                확인
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </div>
   );
 }
 

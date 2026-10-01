@@ -1,5 +1,6 @@
+import {selectHeroValue,heroSelectTrigger} from '@/app/admin/content/test-utils/hero-select';
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import ProfileImageAuditPage from '@/app/admin/profile-image-audit/profile-image-audit-v2';
@@ -91,7 +92,7 @@ describe('ProfileImageAuditPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: '프로필 이미지 전수검사' })).toBeInTheDocument();
     expect(await screen.findAllByTestId('profile-image-audit-card')).toHaveLength(18);
-    expect(screen.getByText('서울대학교')).toBeInTheDocument();
+    expect(await screen.findByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
     expect(screen.getByText('대표 사진')).toBeInTheDocument();
     expect(screen.getAllByText('관리자 승인').length).toBeGreaterThan(0);
@@ -133,7 +134,7 @@ describe('ProfileImageAuditPage', () => {
     expect(mockedAudit.list).toHaveBeenCalledWith(
       expect.objectContaining({ page: 1, limit: 18, auditStatus: 'unreviewed' }),
     );
-    expect(screen.getByText('서울대학교')).toBeInTheDocument();
+    expect(await screen.findByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
     expect(screen.getByText('등급 A')).toBeInTheDocument();
     expect(screen.getByText('연세대학교')).toBeInTheDocument();
@@ -150,11 +151,9 @@ describe('ProfileImageAuditPage', () => {
       expect(screen.queryByAltText('profile-image-1 프로필 이미지 크게 보기')).not.toBeInTheDocument();
     });
 
-    const rankSelects = screen.getAllByRole('combobox', { name: '등급' });
-    const firstRankSelect = rankSelects[0];
-    if (!firstRankSelect) throw new Error('first rank select was not rendered');
-    await user.click(firstRankSelect);
-    await user.click(await screen.findByRole('option', { name: 'S' }));
+    const firstCard = screen.getAllByTestId('profile-image-audit-card')[0];
+    await user.click(within(firstCard).getByRole('button', {name:/등급$/}));
+    await user.click(await screen.findByRole('option', {name:'S', exact:true}));
     await waitFor(() => {
       expect(mockedUserReview.updateUserRank).toHaveBeenCalledWith('user-1', 'S');
     });
@@ -171,8 +170,7 @@ describe('ProfileImageAuditPage', () => {
     expect(await screen.findByLabelText('직접 작성')).toHaveValue(
       '더 원활한 매칭을 위해 사진을 변경해주세요!',
     );
-    await user.click(screen.getByRole('combobox', { name: '사진 변경 요청 사유' }));
-    await user.click(await screen.findByRole('option', { name: '화질 문제로 사진 변경이 필요합니다.' }));
+    await selectHeroValue('사진 변경 요청 사유','화질 문제로 사진 변경이 필요합니다.');
     await user.click(await screen.findByRole('button', { name: '처리' }));
 
     await waitFor(() => {

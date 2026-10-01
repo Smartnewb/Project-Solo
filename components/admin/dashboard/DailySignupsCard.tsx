@@ -1,9 +1,10 @@
-'use client';
+"use client";
+import { Card, Spinner } from "@heroui/react";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
-import AdminService from '@/app/services/admin';
-import { getRegionLabel } from '@/components/admin/common/RegionFilter';
+import { useState, useEffect } from "react";
+
+import AdminService from "@/app/services/admin";
+import { getRegionLabel } from "@/components/admin/common/RegionFilter";
 
 interface DailySignupsCardProps {
   region?: string;
@@ -11,24 +12,34 @@ interface DailySignupsCardProps {
   useCluster?: boolean;
 }
 
-export default function DailySignupsCard({ region, includeDeleted = false, useCluster = true }: DailySignupsCardProps) {
+export default function DailySignupsCard({
+  region,
+  includeDeleted = false,
+  useCluster = true,
+}: DailySignupsCardProps) {
   const [dailySignups, setDailySignups] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 지역 라벨 생성
-  const regionLabel = region ? getRegionLabel(region as any, useCluster) : '전체 지역';
+  const regionLabel = region
+    ? getRegionLabel(region as any, useCluster)
+    : "전체 지역";
 
   useEffect(() => {
     const fetchDailySignups = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getDailySignupCount(region, includeDeleted, useCluster);
+        const data = await AdminService.stats.getDailySignupCount(
+          region,
+          includeDeleted,
+          useCluster,
+        );
         setDailySignups(data.dailySignups);
         setError(null);
       } catch (err) {
-        console.error('오늘 가입한 회원 수 조회 중 오류:', err);
-        setError('데이터를 불러오는데 실패했습니다.');
+        console.error("오늘 가입한 회원 수 조회 중 오류:", err);
+        setError("데이터를 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
       }
@@ -42,25 +53,23 @@ export default function DailySignupsCard({ region, includeDeleted = false, useCl
   }, [region, includeDeleted, useCluster]);
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography color="textSecondary" gutterBottom>
+    <Card>
+      <Card.Content>
+        <div className={"text-sm text-neutral-700"}>
           오늘의 신규 가입 ({regionLabel})
-        </Typography>
+        </div>
         {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" height="40px">
-            <CircularProgress size={24} />
-          </Box>
+          <div>
+            <Spinner aria-label="불러오는 중" size="sm" />
+          </div>
         ) : error ? (
-          <Typography color="error" variant="body2">
-            {error}
-          </Typography>
+          <div className={"text-sm text-neutral-700"}>{error}</div>
         ) : (
-          <Typography variant="h4">
+          <div className={"text-lg font-semibold text-neutral-900"}>
             {dailySignups?.toLocaleString() || 0}
-          </Typography>
+          </div>
         )}
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }

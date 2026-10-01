@@ -1,22 +1,8 @@
 "use client";
+import { Alert, Button, Input, Label, Spinner, TextField } from "@heroui/react";
 
 import { useState, useEffect } from "react";
-import {
-  Typography,
-  Box,
-  CircularProgress,
-  Alert,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Button,
-  Stack,
-} from "@mui/material";
+
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import AdminService from "@/app/services/admin";
 
@@ -158,14 +144,12 @@ export default function WithdrawalReasonStats() {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <Box className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-lg px-3 py-2">
-          <Typography className="text-sm font-medium text-slate-800">
-            {payload[0].name}
-          </Typography>
-          <Typography className="text-sm text-slate-600">
-            {`${payload[0].value}명 (${payload[0].payload.percentage.toFixed(1)}%)`}
-          </Typography>
-        </Box>
+        <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-lg px-3 py-2">
+          <div className={"text-sm text-neutral-700"}>{payload[0].name}</div>
+          <div
+            className={"text-sm text-neutral-700"}
+          >{`${payload[0].value}명 (${payload[0].payload.percentage.toFixed(1)}%)`}</div>
+        </div>
       );
     }
     return null;
@@ -173,114 +157,105 @@ export default function WithdrawalReasonStats() {
 
   if (loading) {
     return (
-      <Box className="flex items-center justify-center py-12">
-        <CircularProgress size={28} className="text-indigo-500" />
-        <Typography className="ml-3 text-sm text-slate-500">
+      <div className="flex items-center justify-center py-12">
+        <Spinner aria-label="불러오는 중" size="sm" />
+        <div className={"text-sm text-neutral-700"}>
           데이터를 불러오는 중...
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   }
 
   if (error && reasonStats.length === 0) {
     return (
-      <Box className="py-6">
-        <Alert severity="error">{error}</Alert>
-      </Box>
+      <div className="py-6">
+        <Alert status="danger" role="alert">
+          <Alert.Content>{error}</Alert.Content>
+        </Alert>
+      </div>
     );
   }
 
   const totalCount = reasonStats.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <Box className="overflow-hidden">
-      <Box className="mb-4 p-3 bg-slate-50/80 rounded-lg border border-slate-100">
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={1.5}
-          alignItems={{ xs: "stretch", sm: "center" }}
-          flexWrap="wrap"
-        >
+    <div className="overflow-hidden">
+      <div className="mb-4 p-3 bg-slate-50/80 rounded-lg border border-slate-100">
+        <div className={"flex flex-wrap items-center gap-2"}>
           <TextField
-            label="시작일"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            size="small"
-            sx={{
-              minWidth: 140,
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "white",
-                fontSize: "0.875rem",
-              },
-            }}
-          />
+            className="w-full"
+            isDisabled={undefined}
+            isInvalid={undefined}
+          >
+            <Label>{"시작일"}</Label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              style={{ minWidth: 140 }}
+              aria-label={"시작일"}
+            />
+          </TextField>
           <TextField
-            label="종료일"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            size="small"
-            sx={{
-              minWidth: 140,
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "white",
-                fontSize: "0.875rem",
-              },
-            }}
-          />
-          <Stack direction="row" spacing={1}>
+            className="w-full"
+            isDisabled={undefined}
+            isInvalid={undefined}
+          >
+            <Label>{"종료일"}</Label>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{ minWidth: 140 }}
+              aria-label={"종료일"}
+            />
+          </TextField>
+          <div className={"flex flex-wrap items-center gap-2"}>
             <Button
-              variant="contained"
               onClick={handlePeriodSearch}
-              disabled={loading}
-              size="small"
-              sx={{
+              style={{
                 textTransform: "none",
                 backgroundColor: "#6366f1",
-                "&:hover": { backgroundColor: "#4f46e5" },
-                boxShadow: "none",
                 fontSize: "0.8125rem",
               }}
+              variant={"primary"}
+              isDisabled={loading}
+              size={"sm"}
+              className="rounded-xl"
             >
               조회
             </Button>
             <Button
-              variant="outlined"
               onClick={handleResetPeriod}
-              disabled={loading}
-              size="small"
-              sx={{
+              style={{
                 textTransform: "none",
                 borderColor: "#e2e8f0",
                 color: "#64748b",
-                "&:hover": {
-                  borderColor: "#cbd5e1",
-                  backgroundColor: "white",
-                },
                 fontSize: "0.8125rem",
               }}
+              variant={"secondary"}
+              isDisabled={loading}
+              size={"sm"}
+              className="rounded-xl"
             >
               전체
             </Button>
-          </Stack>
-        </Stack>
+          </div>
+        </div>
         {periodError && (
           <Alert
-            severity="error"
             className="mt-2"
-            sx={{ py: 0.5, fontSize: "0.8125rem" }}
+            style={{ paddingTop: 2, paddingBottom: 2, fontSize: "0.8125rem" }}
+            status="danger"
+            role="alert"
           >
-            {periodError}
+            <Alert.Content>{periodError}</Alert.Content>
           </Alert>
         )}
-      </Box>
-
-      <Box className="flex flex-col lg:flex-row gap-4">
-        <Box className="w-full lg:w-1/2 flex flex-col items-center">
-          <Box className="w-full h-[260px] relative">
+      </div>
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="w-full lg:w-1/2 flex flex-col items-center">
+          <div className="w-full h-[260px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -304,142 +279,134 @@ export default function WithdrawalReasonStats() {
                 <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            <Box className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-              <Typography className="text-2xl font-bold text-slate-800">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+              <div className={"text-sm text-neutral-700"}>
                 {totalCount.toLocaleString()}
-              </Typography>
-              <Typography className="text-xs text-slate-500">
-                총 탈퇴
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        <Box className="w-full lg:w-1/2">
-          <TableContainer
-            component={Paper}
-            elevation={0}
-            className="border border-slate-200 rounded-lg overflow-hidden"
-            sx={{ maxHeight: 280 }}
-          >
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell
-                    sx={{
+              </div>
+              <div className={"text-sm text-neutral-700"}>총 탈퇴</div>
+            </div>
+          </div>
+        </div>
+        <div className="w-full lg:w-1/2">
+          <div style={{ maxHeight: 280 }} className={"overflow-x-auto"}>
+            <table
+              className={
+                "w-full text-sm text-left [&_td]:p-3 [&_thead]:bg-neutral-50 [&_tr]:border-b"
+              }
+            >
+              <thead>
+                <tr>
+                  <th
+                    style={{
                       backgroundColor: "#f8fafc",
                       fontWeight: 600,
                       fontSize: "0.8125rem",
                       color: "#475569",
                       borderBottom: "1px solid #e2e8f0",
-                      py: 1.5,
+                      paddingTop: 6,
+                      paddingBottom: 6,
                     }}
                   >
                     탈퇴 사유
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
+                  </th>
+                  <th
+                    style={{
                       backgroundColor: "#f8fafc",
                       fontWeight: 600,
                       fontSize: "0.8125rem",
                       color: "#475569",
                       borderBottom: "1px solid #e2e8f0",
-                      py: 1.5,
+                      paddingTop: 6,
+                      paddingBottom: 6,
                     }}
                   >
                     인원
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
+                  </th>
+                  <th
+                    style={{
                       backgroundColor: "#f8fafc",
                       fontWeight: 600,
                       fontSize: "0.8125rem",
                       color: "#475569",
                       borderBottom: "1px solid #e2e8f0",
-                      py: 1.5,
+                      paddingTop: 6,
+                      paddingBottom: 6,
                     }}
                   >
                     비율
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
                 {reasonStats.map((row, index) => (
-                  <TableRow
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "#f8fafc" },
-                      "&:last-child td": { borderBottom: 0 },
-                    }}
-                  >
-                    <TableCell
-                      sx={{
+                  <tr key={index} style={{}}>
+                    <td
+                      style={{
                         fontSize: "0.8125rem",
                         color: "#334155",
-                        py: 1.25,
+                        paddingTop: 5,
+                        paddingBottom: 5,
                         borderBottom: "1px solid #f1f5f9",
                       }}
                     >
-                      <Box className="flex items-center gap-2">
-                        <Box
+                      <div className="flex items-center gap-2">
+                        <div
                           className="w-2 h-2 rounded-full flex-shrink-0"
                           style={{
                             backgroundColor: COLORS[index % COLORS.length],
                           }}
-                        />
+                        ></div>
                         <span className="truncate">
                           {row.displayName || row.reason}
                         </span>
-                      </Box>
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
+                      </div>
+                    </td>
+                    <td
+                      style={{
                         fontSize: "0.8125rem",
                         color: "#475569",
                         fontWeight: 500,
-                        py: 1.25,
+                        paddingTop: 5,
+                        paddingBottom: 5,
                         borderBottom: "1px solid #f1f5f9",
                       }}
                     >
                       {row.count.toLocaleString()}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
+                    </td>
+                    <td
+                      style={{
                         fontSize: "0.8125rem",
                         color: "#64748b",
-                        py: 1.25,
+                        paddingTop: 5,
+                        paddingBottom: 5,
                         borderBottom: "1px solid #f1f5f9",
                       }}
                     >
                       {row.percentage.toFixed(1)}%
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      </Box>
-
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
       {error && (
         <Alert
-          severity="info"
           className="mt-4"
-          sx={{
+          style={{
             fontSize: "0.8125rem",
-            py: 0.5,
+            paddingTop: 2,
+            paddingBottom: 2,
             backgroundColor: "#f0f9ff",
             borderColor: "#bae6fd",
-            "& .MuiAlert-icon": { color: "#0ea5e9" },
           }}
+          status={"default"}
+          role="alert"
         >
-          {error}
+          <Alert.Content>{error}</Alert.Content>
         </Alert>
       )}
-    </Box>
+    </div>
   );
 }

@@ -1,8 +1,9 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import type { AiProfileTemplate } from '@/app/types/ai-profile-generator';
-import { Badge } from '@/shared/ui/badge';
-import { Button } from '@/shared/ui/button';
+import type { AiProfileTemplate } from "@/app/types/ai-profile-generator";
+import { Badge } from "@/shared/ui/badge";
+
 import {
   Table,
   TableBody,
@@ -10,8 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/shared/ui/table';
-import { formatDate } from '../_shared/format';
+} from "@/shared/ui/table";
+import { formatDate } from "../_shared/format";
 
 interface Props {
   items: AiProfileTemplate[];
@@ -21,7 +22,7 @@ interface Props {
 }
 
 function truncate(value: string | null | undefined, max = 60): string {
-  if (!value) return '-';
+  if (!value) return "-";
   return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
@@ -54,13 +55,16 @@ export function TemplateTable({ items, isLoading, onEdit, onArchive }: Props) {
             ))
           ) : items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="py-6 text-center text-slate-400">
+              <TableCell
+                colSpan={8}
+                className="py-6 text-center text-slate-400"
+              >
                 템플릿이 없습니다.
               </TableCell>
             </TableRow>
           ) : (
             items.map((template) => {
-              const archived = template.status === 'archived';
+              const archived = template.status === "archived";
               return (
                 <TableRow key={template.id}>
                   <TableCell className="font-medium text-slate-900">
@@ -73,8 +77,8 @@ export function TemplateTable({ items, isLoading, onEdit, onArchive }: Props) {
                     v{template.version}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={archived ? 'outline' : 'default'}>
-                      {archived ? '아카이브' : '활성'}
+                    <Badge variant={archived ? "outline" : "default"}>
+                      {archived ? "아카이브" : "활성"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right text-slate-700">
@@ -91,16 +95,16 @@ export function TemplateTable({ items, isLoading, onEdit, onArchive }: Props) {
                       {archived ? null : (
                         <>
                           <Button
-                            variant="outline"
-                            size="sm"
                             onClick={() => onEdit(template)}
+                            variant={"outline"}
+                            size={"sm"}
                           >
                             편집
                           </Button>
                           <Button
-                            variant="outline"
-                            size="sm"
                             onClick={() => onArchive(template)}
+                            variant={"outline"}
+                            size={"sm"}
                           >
                             아카이브
                           </Button>

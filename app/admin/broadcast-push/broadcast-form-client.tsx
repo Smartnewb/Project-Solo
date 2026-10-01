@@ -1,28 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  Radio,
-  RadioGroup,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Checkbox,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Paper,
-  CircularProgress,
-  Autocomplete,
-  Stack,
-} from '@mui/material';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import { Button, Checkbox, Input, Label, ListBox, Modal, Radio, RadioGroup, ComboBox, Spinner, TextArea, TextField, Description } from '@heroui/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AdminService, { countriesForScope } from '@/app/services/admin';
 import type {
@@ -214,255 +193,60 @@ export default function BroadcastFormClient() {
         : '-';
 
   return (
-    <Box sx={{ maxWidth: 720 }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
-        예약 푸시 발송 등록
-      </Typography>
-
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <FormControl component="fieldset">
-          <FormLabel component="legend">발송 대상</FormLabel>
-          <RadioGroup
-            row
-            value={targetType}
-            onChange={(e) => setTargetType(e.target.value as TargetType)}
-          >
-            <FormControlLabel value="all" control={<Radio />} label="전체 활성유저" />
-            <FormControlLabel value="group" control={<Radio />} label="특정 그룹" />
-          </RadioGroup>
-        </FormControl>
-
-        {targetType === 'group' && (
-          <Box sx={{ mt: 2 }}>
-            <Autocomplete
-              options={groups}
-              loading={groupsLoading}
-              value={selectedGroup}
-              getOptionLabel={(g) => `${g.name} (${g.type === 'static' ? '정적' : '동적'})`}
-              isOptionEqualToValue={(a, b) => a.id === b.id}
-              onChange={(_, value) => handleSelectGroup(value)}
-              renderInput={(params) => <TextField {...params} label="타겟 그룹 선택" />}
-            />
-            {selectedGroup && (
-              <Box sx={{ mt: 1 }}>
-                {groupPreview.loading ? (
-                  <CircularProgress size={16} />
-                ) : groupPreview.total !== undefined ? (
-                  <Typography variant="body2" color="text.secondary">
-                    예상 대상자 수: KR {(groupPreview.kr ?? 0).toLocaleString()} · JP{' '}
-                    {(groupPreview.jp ?? 0).toLocaleString()} · 합계{' '}
-                    {groupPreview.total.toLocaleString()}명
-                  </Typography>
-                ) : null}
-              </Box>
-            )}
-          </Box>
-        )}
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-          문구
-        </Typography>
-        {targetType === 'group' && !selectedGroup ? (
-          <Alert severity="info">먼저 발송 대상 그룹을 선택하면 필요한 국가 문구만 표시됩니다.</Alert>
-        ) : (
-          <Stack spacing={2}>
-            {needKr && (
-              <>
-                <TextField
-                  label="KR 제목"
-                  required
-                  value={krTitle}
-                  onChange={(e) => setKrTitle(e.target.value)}
-                  inputProps={{ maxLength: MAX_TITLE }}
-                  helperText={`${krTitle.length}/${MAX_TITLE}`}
-                  fullWidth
-                />
-                <TextField
-                  label="KR 본문"
-                  required
-                  multiline
-                  minRows={3}
-                  value={krBody}
-                  onChange={(e) => setKrBody(e.target.value)}
-                  inputProps={{ maxLength: MAX_BODY }}
-                  helperText={`${krBody.length}/${MAX_BODY}`}
-                  fullWidth
-                />
-              </>
-            )}
-            {needJp && (
-              <>
-                <TextField
-                  label="JP 제목"
-                  required
-                  value={jpTitle}
-                  onChange={(e) => setJpTitle(e.target.value)}
-                  inputProps={{ maxLength: MAX_TITLE }}
-                  helperText={`${jpTitle.length}/${MAX_TITLE}`}
-                  fullWidth
-                />
-                <TextField
-                  label="JP 본문"
-                  required
-                  multiline
-                  minRows={3}
-                  value={jpBody}
-                  onChange={(e) => setJpBody(e.target.value)}
-                  inputProps={{ maxLength: MAX_BODY }}
-                  helperText={`${jpBody.length}/${MAX_BODY}`}
-                  fullWidth
-                />
-              </>
-            )}
-            <TextField
-              label="딥링크"
-              placeholder="sometimes://home"
-              value={deepLink}
-              onChange={(e) => setDeepLink(e.target.value)}
-              fullWidth
-            />
-          </Stack>
-        )}
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-          발송 예정 시각
-        </Typography>
-        <TextField
-          type="datetime-local"
-          label="발송 예정 시각 (KST)"
-          value={scheduledAt}
-          onChange={(e) => setScheduledAt(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          sx={{ width: 320 }}
-        />
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-          테스트 발송 (필수)
-        </Typography>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          예약 등록 전 반드시 테스트 발송으로 문구를 확인해야 합니다.
-        </Alert>
-        <TextField
-          label="테스트 수신 관리자 userId"
-          value={testUserId}
-          onChange={(e) => setTestUserId(e.target.value)}
-          sx={{ mb: 2, width: 320 }}
-        />
-        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-          {needKr && (
-            <Button
-              variant="outlined"
-              onClick={() => handleTestSend('kr')}
-              disabled={testSendingCountry === 'kr'}
-            >
-              {testSendingCountry === 'kr' ? <CircularProgress size={18} /> : 'KR 문구 테스트 발송'}
-            </Button>
-          )}
-          {needJp && (
-            <Button
-              variant="outlined"
-              onClick={() => handleTestSend('jp')}
-              disabled={testSendingCountry === 'jp'}
-            >
-              {testSendingCountry === 'jp' ? <CircularProgress size={18} /> : 'JP 문구 테스트 발송'}
-            </Button>
-          )}
-        </Stack>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={testConfirmed}
-              onChange={(e) => setTestConfirmed(e.target.checked)}
-            />
-          }
-          label="테스트 푸시를 수신했음을 확인했습니다."
-        />
-      </Paper>
-
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button
-          variant="contained"
-          color="error"
-          size="large"
-          disabled={!canSubmit}
-          onClick={handleOpenConfirm}
-        >
-          예약 등록
-        </Button>
-      </Box>
-
-      <Dialog
-        open={confirmOpen}
-        onClose={() => !submitting && setConfirmOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>예약 발송 최종 확인</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
-            주의: 예약 등록 후에는 취소할 수 없습니다. 등록 즉시 예약이 확정됩니다.
-          </Alert>
-          <Stack spacing={1.5}>
-            <SummaryRow label="발송 대상" value={targetSummary} />
-            <SummaryRow label="예정 시각" value={formatDateTimeKR(scheduledAt)} />
-            {needKr && <SummaryRow label="KR 제목" value={krTitle} />}
-            {needJp && <SummaryRow label="JP 제목" value={jpTitle} />}
-            <SummaryRow label="딥링크" value={deepLink || '-'} />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} disabled={submitting}>
-            취소
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleConfirmSubmit}
-            disabled={submitting}
-          >
-            {submitting ? <CircularProgress size={18} /> : '예약 등록 진행'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={Boolean(result)} maxWidth="xs" fullWidth>
-        <DialogTitle>예약 등록 완료</DialogTitle>
-        <DialogContent>
-          <Stack spacing={1}>
-            <Typography variant="body2">예약 ID: {result?.id}</Typography>
-            <Typography variant="body2">
-              예상 대상 인원: {result?.targetPreviewCount.toLocaleString()}명
-            </Typography>
-            <Typography variant="body2">
-              발송 예정 시각: {result ? formatDateTimeKR(result.scheduledAt) : '-'}
-            </Typography>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="contained" onClick={() => router.push('/admin/broadcast-push')}>
-            이력 보기
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+    <section className="max-w-3xl space-y-6" aria-labelledby="broadcast-form-heading">
+      <h1 id="broadcast-form-heading" className="text-2xl font-bold">예약 푸시 발송 등록</h1>
+      <section className="space-y-4 rounded-xl border border-border bg-white p-6">
+        <RadioGroup value={targetType} onChange={value => setTargetType(value as TargetType)} orientation="horizontal">
+          <Label>발송 대상</Label>
+          <Radio value="all"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control><Label>전체 활성유저</Label></Radio.Content></Radio>
+          <Radio value="group"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control><Label>특정 그룹</Label></Radio.Content></Radio>
+        </RadioGroup>
+        {targetType === 'group' && <>
+          <ComboBox defaultItems={groups} value={selectedGroup?.id ?? null} onChange={key => handleSelectGroup(groups.find(group => group.id === key) ?? null)} isDisabled={groupsLoading} fullWidth>
+            <Label>타겟 그룹 선택</Label><ComboBox.InputGroup><Input placeholder="그룹 이름 검색" /><ComboBox.Trigger /></ComboBox.InputGroup>
+            <ComboBox.Popover><ListBox<PushTargetGroup>>{group => <ListBox.Item id={group.id} textValue={group.name}>{group.name} ({group.type === 'static' ? '정적' : '동적'})</ListBox.Item>}</ListBox></ComboBox.Popover>
+          </ComboBox>
+          {selectedGroup && (groupPreview.loading ? <Spinner size="sm" aria-label="대상자 수 확인 중" /> : groupPreview.total !== undefined && <p className="text-sm text-gray-600">예상 대상자 수: KR {(groupPreview.kr ?? 0).toLocaleString()} · JP {(groupPreview.jp ?? 0).toLocaleString()} · 합계 {groupPreview.total.toLocaleString()}명</p>)}
+        </>}
+      </section>
+      <section className="space-y-4 rounded-xl border border-border bg-white p-6">
+        <h2 className="text-base font-semibold">문구</h2>
+        {targetType === 'group' && !selectedGroup ? <p role="status">먼저 발송 대상 그룹을 선택하면 필요한 국가 문구만 표시됩니다.</p> : <>
+          {needKr && <><CopyField label="KR 제목" value={krTitle} onChange={setKrTitle} maxLength={MAX_TITLE} /><CopyField label="KR 본문" value={krBody} onChange={setKrBody} maxLength={MAX_BODY} multiline /></>}
+          {needJp && <><CopyField label="JP 제목" value={jpTitle} onChange={setJpTitle} maxLength={MAX_TITLE} /><CopyField label="JP 본문" value={jpBody} onChange={setJpBody} maxLength={MAX_BODY} multiline /></>}
+          <TextField value={deepLink} onChange={setDeepLink}><Label>딥링크</Label><Input placeholder="sometimes://home" /></TextField>
+        </>}
+      </section>
+      <section className="rounded-xl border border-border bg-white p-6">
+        <h2 className="text-base font-semibold">발송 예정 시각</h2>
+        <TextField value={scheduledAt} onChange={setScheduledAt}><Label>발송 예정 시각 (기기 현지 시간)</Label><Input type="datetime-local" /><Description>입력한 시간은 기기의 시간대를 기준으로 서버에 전달합니다. 확인창에는 한국 시간으로 표시됩니다.</Description></TextField>
+      </section>
+      <section className="space-y-4 rounded-xl border border-border bg-white p-6">
+        <h2 className="text-base font-semibold">테스트 발송 (필수)</h2>
+        <p>예약 등록 전 반드시 테스트 발송으로 문구를 확인해야 합니다.</p>
+        <TextField value={testUserId} onChange={setTestUserId}><Label>테스트 수신 관리자 userId</Label><Input /></TextField>
+        <div className="flex flex-wrap gap-3">
+          {needKr && <Button variant="secondary" onPress={() => handleTestSend('kr')} isDisabled={testSendingCountry !== null}>KR 문구 테스트 발송{testSendingCountry === 'kr' && <Spinner size="sm" />}</Button>}
+          {needJp && <Button variant="secondary" onPress={() => handleTestSend('jp')} isDisabled={testSendingCountry !== null}>JP 문구 테스트 발송{testSendingCountry === 'jp' && <Spinner size="sm" />}</Button>}
+        </div>
+        <Checkbox isSelected={testConfirmed} onChange={setTestConfirmed}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Label>테스트 푸시를 수신했음을 확인했습니다.</Label></Checkbox.Content></Checkbox>
+      </section>
+      <div className="flex justify-end"><Button isDisabled={!canSubmit || submitting} onPress={handleOpenConfirm}>예약 등록</Button></div>
+      <Modal.Backdrop isOpen={confirmOpen} onOpenChange={open => !submitting && setConfirmOpen(open)} isDismissable={!submitting} isKeyboardDismissDisabled={submitting}><Modal.Container size="md"><Modal.Dialog><Modal.Header><Modal.Heading>예약 발송 최종 확인</Modal.Heading></Modal.Header>
+          <Modal.Body><p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">주의: 예약 등록 후에는 취소할 수 없습니다. 등록 즉시 예약이 확정됩니다.</p>
+            <dl className="space-y-3"><SummaryRow label="발송 대상" value={targetSummary} /><SummaryRow label="예정 시각" value={formatDateTimeKR(scheduledAt)} />{needKr && <SummaryRow label="KR 제목" value={krTitle} />}{needJp && <SummaryRow label="JP 제목" value={jpTitle} />}<SummaryRow label="딥링크" value={deepLink || '-'} /></dl>
+          </Modal.Body><Modal.Footer><Button variant="secondary" onPress={() => setConfirmOpen(false)} isDisabled={submitting}>취소</Button><Button onPress={handleConfirmSubmit} isDisabled={submitting}>예약 등록 진행{submitting && <Spinner size="sm" />}</Button></Modal.Footer>
+        </Modal.Dialog></Modal.Container></Modal.Backdrop>
+      <Modal.Backdrop isOpen={Boolean(result)} isDismissable={false} isKeyboardDismissDisabled><Modal.Container size="sm"><Modal.Dialog><Modal.Header><Modal.Heading>예약 등록 완료</Modal.Heading></Modal.Header><Modal.Body>
+          <p>예약 ID: {result?.id}</p><p>예상 대상 인원: {result?.targetPreviewCount.toLocaleString()}명</p><p>발송 예정 시각: {result ? formatDateTimeKR(result.scheduledAt) : '-'}</p>
+        </Modal.Body><Modal.Footer><Button onPress={() => router.push('/admin/broadcast-push')}>이력 보기</Button></Modal.Footer></Modal.Dialog></Modal.Container></Modal.Backdrop>
+    </section>
   );
 }
 
+function CopyField({ label, value, onChange, maxLength, multiline }: { label: string; value: string; onChange: (value: string) => void; maxLength: number; multiline?: boolean }) {
+  return <TextField value={value} onChange={onChange} isRequired><Label>{label}</Label>{multiline ? <TextArea rows={3} maxLength={maxLength} /> : <Input maxLength={maxLength} />}<Description>{value.length}/{maxLength}</Description></TextField>;
+}
 function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <Box sx={{ display: 'flex', gap: 2 }}>
-      <Typography variant="body2" color="text.secondary" sx={{ width: 100, flexShrink: 0 }}>
-        {label}
-      </Typography>
-      <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
-        {value}
-      </Typography>
-    </Box>
-  );
+  return <div className="grid grid-cols-[100px_1fr] gap-4 text-sm"><dt className="text-gray-600">{label}</dt><dd className="break-words">{value}</dd></div>;
 }

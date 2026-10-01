@@ -1,8 +1,10 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
+import { Button } from "@heroui/react";
 
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   CONTENT_TIERS,
   CONTENT_TIER_LABEL,
@@ -11,20 +13,20 @@ import {
   type AiProfileContentTier,
   type AiProfileRelationshipStage,
   type PreviewChatTurn,
-} from '@/app/types/ai-profile-generator';
-import { Alert, AlertDescription } from '@/shared/ui/alert';
-import { Button } from '@/shared/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+} from "@/app/types/ai-profile-generator";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/select";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   draftId: string;
@@ -32,25 +34,24 @@ interface Props {
 }
 
 const MAX_USER_TURNS = 3;
-type Mode = 'single' | 'turns';
+type Mode = "single" | "turns";
 
 export function PreviewChatPanel({ draftId, disabled = false }: Props) {
   const handleError = useAiProfileErrorHandler(
     aiProfileGeneratorKeys.draftDetail(draftId),
   );
-  const [mode, setMode] = useState<Mode>('turns');
+  const [mode, setMode] = useState<Mode>("turns");
   const [userMessages, setUserMessages] = useState<string[]>([]);
   const [turns, setTurns] = useState<PreviewChatTurn[]>([]);
-  const [input, setInput] = useState('');
-  const [stage, setStage] =
-    useState<AiProfileRelationshipStage>('stranger');
-  const [tier, setTier] = useState<AiProfileContentTier | 'default'>('default');
+  const [input, setInput] = useState("");
+  const [stage, setStage] = useState<AiProfileRelationshipStage>("stranger");
+  const [tier, setTier] = useState<AiProfileContentTier | "default">("default");
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: (messages: string[]) => {
-      const contentTier = tier === 'default' ? undefined : tier;
-      if (mode === 'single') {
+      const contentTier = tier === "default" ? undefined : tier;
+      if (mode === "single") {
         return aiProfileGenerator.previewChat(draftId, {
           userMessage: messages[messages.length - 1],
           relationshipStage: stage,
@@ -68,7 +69,7 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
       setErrorText(null);
     },
     onError: (error) => {
-      setErrorText(error instanceof Error ? error.message : '요청 실패');
+      setErrorText(error instanceof Error ? error.message : "요청 실패");
       handleError(error);
     },
   });
@@ -76,23 +77,22 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
   const send = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
-    const next =
-      mode === 'turns' ? [...userMessages, trimmed] : [trimmed];
-    if (mode === 'turns' && next.length > MAX_USER_TURNS) return;
+    const next = mode === "turns" ? [...userMessages, trimmed] : [trimmed];
+    if (mode === "turns" && next.length > MAX_USER_TURNS) return;
     setUserMessages(next);
-    setInput('');
+    setInput("");
     mutation.mutate(next);
   };
 
   const reset = () => {
     setUserMessages([]);
     setTurns([]);
-    setInput('');
+    setInput("");
     setErrorText(null);
   };
 
   const reachedLimit =
-    mode === 'turns' && userMessages.length >= MAX_USER_TURNS;
+    mode === "turns" && userMessages.length >= MAX_USER_TURNS;
   const inputDisabled = disabled || mutation.isPending || reachedLimit;
 
   return (
@@ -103,16 +103,16 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
             <CardTitle className="text-base">Preview Chat</CardTitle>
             <p className="text-xs text-slate-500">
               {disabled
-                ? '편집 가능한 Draft에서만 시뮬레이션할 수 있습니다.'
-                : '현재 Draft 스냅샷으로 시뮬레이션합니다. 저장되지 않습니다.'}
+                ? "편집 가능한 Draft에서만 시뮬레이션할 수 있습니다."
+                : "현재 Draft 스냅샷으로 시뮬레이션합니다. 저장되지 않습니다."}
             </p>
           </div>
           {!disabled ? (
             <Button
-              variant="outline"
-              size="sm"
               onClick={reset}
-              disabled={mutation.isPending}
+              isDisabled={mutation.isPending}
+              variant={"outline"}
+              size={"sm"}
             >
               초기화
             </Button>
@@ -120,6 +120,7 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={mode} onValueChange={(v) => setMode(v as Mode)}>
+            <HeroSelectLabel className="sr-only">미리보기 모드</HeroSelectLabel>
             <SelectTrigger className="h-7 w-32 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -130,10 +131,9 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
           </Select>
           <Select
             value={stage}
-            onValueChange={(v) =>
-              setStage(v as AiProfileRelationshipStage)
-            }
+            onValueChange={(v) => setStage(v as AiProfileRelationshipStage)}
           >
+            <HeroSelectLabel className="sr-only">관계 단계</HeroSelectLabel>
             <SelectTrigger className="h-7 w-32 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -146,6 +146,7 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
             </SelectContent>
           </Select>
           <Select value={tier} onValueChange={(v) => setTier(v as typeof tier)}>
+            <HeroSelectLabel className="sr-only">콘텐츠 등급</HeroSelectLabel>
             <SelectTrigger className="h-7 w-36 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -171,14 +172,14 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
             <div
               key={idx}
               className={`flex ${
-                turn.role === 'user' ? 'justify-end' : 'justify-start'
+                turn.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
               <div
                 className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${
-                  turn.role === 'user'
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white text-slate-800 shadow-sm'
+                  turn.role === "user"
+                    ? "bg-emerald-500 text-white"
+                    : "bg-white text-slate-800 shadow-sm"
                 }`}
               >
                 {turn.content}
@@ -216,11 +217,12 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
             className="text-xs"
           />
           <Button
-            size="sm"
             onClick={send}
-            disabled={inputDisabled || input.trim().length === 0}
+            isDisabled={inputDisabled || input.trim().length === 0}
+            variant={"primary"}
+            size={"sm"}
           >
-            {mutation.isPending ? '전송 중…' : '전송'}
+            {mutation.isPending ? "전송 중…" : "전송"}
           </Button>
         </div>
       </CardContent>

@@ -1,365 +1,96 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Alert,
-  CircularProgress,
-  Button,
-  ButtonGroup,
-} from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import {
-  Refresh as RefreshIcon,
-  Chat as ChatIcon,
-  Message as MessageIcon,
-  Timer as TimerIcon,
-  TrendingUp as TrendingUpIcon,
-  Male as MaleIcon,
-  Female as FemaleIcon,
-} from '@mui/icons-material';
-import chatService, {
-  ChatStatsResponse,
-  DatePreset,
-} from '@/app/services/chat';
+import { Button, Card, TextField, Input, Label, Spinner } from '@heroui/react';
+import { RefreshCw, MessagesSquare, MessageSquare, Timer, TrendingUp, User } from 'lucide-react';
+import chatService, { type ChatStatsResponse, type DatePreset, type ChatStatsParams } from '@/app/services/chat';
 
 const DATE_PRESETS: { label: string; value: DatePreset }[] = [
-  { label: '7일', value: '7days' },
-  { label: '14일', value: '14days' },
-  { label: '30일', value: '30days' },
-  { label: '전체', value: 'all' },
+  { label: '7일', value: '7days' }, { label: '14일', value: '14days' },
+  { label: '30일', value: '30days' }, { label: '전체', value: 'all' },
 ];
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ReactNode;
-  color?: string;
+function StatCard({ title, value, subtitle, icon }: { title: string; value: string | number; subtitle?: string; icon: React.ReactNode }) {
+  return <Card className="h-full border shadow-none"><Card.Content className="space-y-2 p-4">
+    <div className="flex items-center gap-2"><span className="text-[var(--accent)]" aria-hidden="true">{icon}</span><h3 className="text-sm text-gray-600">{title}</h3></div>
+    <p className="text-2xl font-bold tabular-nums">{value}</p>
+    {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
+  </Card.Content></Card>;
 }
 
-const StatCard = ({ title, value, subtitle, icon, color = '#1976d2' }: StatCardProps) => (
-  <Card sx={{ height: '100%' }}>
-    <CardContent>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Box sx={{ color }}>{icon}</Box>
-        <Typography variant="subtitle2" color="text.secondary">
-          {title}
-        </Typography>
-      </Box>
-      <Typography variant="h4" sx={{ fontWeight: 'bold', color }}>
-        {value}
-      </Typography>
-      {subtitle && (
-        <Typography variant="caption" color="text.secondary">
-          {subtitle}
-        </Typography>
-      )}
-    </CardContent>
-  </Card>
-);
+function formatMinutes(minutes: number) {
+  const rounded = Math.round(minutes);
+  return minutes < 60 ? `${minutes.toFixed(1)}분` : `${Math.floor(rounded / 60)}시간 ${rounded % 60}분`;
+}
 
 export default function ChatStatsTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [stats, setStats] = useState<ChatStatsResponse | null>(null);
-
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  // Keep calendar dates as entered; converting local midnight to UTC changes the day in KR/JP.
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<DatePreset>('30days');
 
-  const fetchStats = async (preset?: DatePreset) => {
+  const fetchStats = async (params: ChatStatsParams) => {
     setLoading(true);
     setError('');
-
-    try {
-      const params: any = {};
-
-      if (preset) {
-        params.preset = preset;
-      } else if (startDate && endDate) {
-        params.startDate = startDate.toISOString().split('T')[0];
-        params.endDate = endDate.toISOString().split('T')[0];
-      } else {
-        params.preset = selectedPreset;
-      }
-
-      const response = await chatService.getChatStats(params);
-      setStats(response);
-    } catch (error: any) {
-      setError(error.message || '채팅 통계를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    try { setStats(await chatService.getChatStats(params)); }
+    catch (err: unknown) { setError(err instanceof Error ? err.message : '채팅 통계를 불러오는데 실패했습니다.'); }
+    finally { setLoading(false); }
   };
+  useEffect(() => { void fetchStats({ preset: '30days' }); }, []);
 
-  const handlePresetClick = (preset: DatePreset) => {
-    setSelectedPreset(preset);
-    setStartDate(null);
-    setEndDate(null);
-    fetchStats(preset);
-  };
+  const customRange = !!startDate && !!endDate;
+  const reversedRange = customRange && startDate > endDate;
+  const queryCurrent = () => void fetchStats(customRange ? { startDate, endDate } : { preset: selectedPreset });
+  const maxCount = Math.max(0, ...(stats?.hourlyDistribution.map(item => item.count) ?? []));
 
-  const handleCustomDateSearch = () => {
-    if (!startDate || !endDate) return;
-    fetchStats();
-  };
-
-  useEffect(() => {
-    fetchStats(selectedPreset);
-  }, []);
-
-  const formatMinutes = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes.toFixed(1)}분`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return `${hours}시간 ${mins}분`;
-  };
-
-  return (
-    <Box>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="시작 날짜"
-              value={startDate}
-              onChange={(date) => {
-                setStartDate(date);
-              }}
-              slotProps={{
-                textField: { size: 'small' }
-              }}
-            />
-            <DatePicker
-              label="종료 날짜"
-              value={endDate}
-              onChange={(date) => {
-                setEndDate(date);
-              }}
-              slotProps={{
-                textField: { size: 'small' }
-              }}
-            />
-          </LocalizationProvider>
-
-          <Button
-            variant="contained"
-            onClick={handleCustomDateSearch}
-            disabled={loading || !startDate || !endDate}
-            startIcon={loading ? <CircularProgress size={20} /> : <RefreshIcon />}
-          >
-            조회
-          </Button>
-
-          <ButtonGroup variant="outlined" size="small">
-            {DATE_PRESETS.map((preset) => (
-              <Button
-                key={preset.value}
-                onClick={() => handlePresetClick(preset.value)}
-                variant={selectedPreset === preset.value && !startDate && !endDate ? 'contained' : 'outlined'}
-                disabled={loading}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </ButtonGroup>
-        </Box>
-
-        {stats && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-            조회 기간: {stats.startDate} ~ {stats.endDate}
-          </Typography>
-        )}
-      </Paper>
-
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
-        </Box>
-      ) : stats ? (
-        <>
-          <Typography variant="h6" gutterBottom>
-            요약 통계
-          </Typography>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="전체 채팅방"
-                value={stats.summary.totalRooms.toLocaleString()}
-                subtitle={`활성: ${stats.summary.activeRooms.toLocaleString()}개`}
-                icon={<ChatIcon />}
-                color="#1976d2"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="전체 메시지"
-                value={stats.summary.totalMessages.toLocaleString()}
-                subtitle={`평균 ${stats.summary.avgMessagesPerRoom}개/방`}
-                icon={<MessageIcon />}
-                color="#2e7d32"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="응답률"
-                value={`${stats.summary.responseRate}%`}
-                subtitle="양방향 대화 비율"
-                icon={<TrendingUpIcon />}
-                color="#ed6c02"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="평균 첫 응답 시간"
-                value={formatMinutes(stats.summary.avgFirstResponseTimeMinutes)}
-                subtitle="첫 메시지 후 응답까지"
-                icon={<TimerIcon />}
-                color="#9c27b0"
-              />
-            </Grid>
-          </Grid>
-
-          <Typography variant="h6" gutterBottom>
-            성별 분석
-          </Typography>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={4}>
-              <StatCard
-                title="남성 첫 메시지 비율"
-                value={`${stats.summary.maleFirstMessageRate}%`}
-                icon={<MaleIcon />}
-                color="#1976d2"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <StatCard
-                title="여성 첫 메��지 비율"
-                value={`${stats.summary.femaleFirstMessageRate}%`}
-                icon={<FemaleIcon />}
-                color="#d32f2f"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <StatCard
-                title="24시간 내 대화 비율"
-                value={`${stats.summary.conversationWithin24hRate}%`}
-                subtitle="채팅방 생성 후 24시간 내"
-                icon={<TimerIcon />}
-                color="#0288d1"
-              />
-            </Grid>
-          </Grid>
-
-          <Typography variant="h6" gutterBottom>
-            시간대별 메시지 분포
-          </Typography>
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.5, height: 150, overflowX: 'auto' }}>
-              {stats.hourlyDistribution.map((item) => {
-                const maxCount = Math.max(...stats.hourlyDistribution.map(h => h.count));
-                const height = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
-                return (
-                  <Box
-                    key={item.hour}
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      minWidth: 30,
-                    }}
-                  >
-                    <Typography variant="caption" sx={{ mb: 0.5 }}>
-                      {item.count > 0 ? item.count : ''}
-                    </Typography>
-                    <Box
-                      sx={{
-                        width: 20,
-                        height: `${Math.max(height, 2)}%`,
-                        bgcolor: item.hour >= 9 && item.hour <= 23 ? '#1976d2' : '#90caf9',
-                        borderRadius: '2px 2px 0 0',
-                        transition: 'height 0.3s',
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      {item.hour}
-                    </Typography>
-                  </Box>
-                );
-              })}
-            </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
-              시간 (0~23시)
-            </Typography>
-          </Paper>
-
-          <Typography variant="h6" gutterBottom>
-            메시지 길이 분포
-          </Typography>
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Grid container spacing={1}>
-              {stats.messageLengthDistribution.map((item) => (
-                <Grid item xs={6} sm={4} md={2} key={item.range}>
-                  <Box sx={{ textAlign: 'center', p: 1 }}>
-                    <Typography variant="subtitle2">{item.range}자</Typography>
-                    <Typography variant="h6" color="primary">
-                      {item.percentage}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {item.count.toLocaleString()}개
-                    </Typography>
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
-
-          <Typography variant="h6" gutterBottom>
-            일별 트렌드
-          </Typography>
-          <Paper sx={{ p: 2 }}>
-            <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
-                    <th style={{ padding: '8px', textAlign: 'left' }}>날짜</th>
-                    <th style={{ padding: '8px', textAlign: 'right' }}>메시지 수</th>
-                    <th style={{ padding: '8px', textAlign: 'right' }}>새 채팅방</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.dailyTrend.slice().reverse().map((item) => (
-                    <tr key={item.date} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                      <td style={{ padding: '8px' }}>{item.date}</td>
-                      <td style={{ padding: '8px', textAlign: 'right' }}>
-                        {item.messageCount.toLocaleString()}
-                      </td>
-                      <td style={{ padding: '8px', textAlign: 'right' }}>
-                        {item.newRoomCount.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Box>
-          </Paper>
-        </>
-      ) : null}
-    </Box>
-  );
+  return <div className="space-y-6">
+    {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-red-200 p-3"><p>{error}</p><Button variant="secondary" onPress={queryCurrent} isDisabled={loading || reversedRange}>재시도</Button></div>}
+    <section className="space-y-3 rounded-xl border bg-white p-4" aria-label="통계 조회 기간">
+      <div className="flex flex-wrap items-end gap-3">
+        <TextField isDisabled={loading}><Label>시작 날짜</Label><Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></TextField>
+        <TextField isDisabled={loading} isInvalid={reversedRange}><Label>종료 날짜</Label><Input type="date" min={startDate || undefined} value={endDate} onChange={e => setEndDate(e.target.value)} /></TextField>
+        <Button onPress={queryCurrent} isDisabled={loading || !customRange || reversedRange}><RefreshCw size={16} />조회</Button>
+        <div className="flex gap-1" role="group" aria-label="기간 바로 선택">
+          {DATE_PRESETS.map(preset => <Button key={preset.value} size="sm" variant={selectedPreset === preset.value && !startDate && !endDate ? 'primary' : 'secondary'} aria-pressed={selectedPreset === preset.value && !startDate && !endDate} isDisabled={loading} onPress={() => {
+            setSelectedPreset(preset.value); setStartDate(''); setEndDate(''); void fetchStats({ preset: preset.value });
+          }}>{preset.label}</Button>)}
+        </div>
+      </div>
+      {reversedRange && <p role="alert" className="text-sm text-red-700">종료 날짜는 시작 날짜 이후여야 합니다.</p>}
+      {stats && <p className="text-sm text-gray-600">조회 기간: {stats.startDate} ~ {stats.endDate}</p>}
+    </section>
+    {loading ? <div role="status" aria-label="채팅 통계 불러오는 중" className="flex justify-center py-8"><Spinner /></div> : stats && <>
+      <section className="space-y-3"><h2 className="text-lg font-semibold">요약 통계</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard title="전체 채팅방" value={stats.summary.totalRooms.toLocaleString()} subtitle={`활성: ${stats.summary.activeRooms.toLocaleString()}개`} icon={<MessagesSquare size={20} />} />
+        <StatCard title="전체 메시지" value={stats.summary.totalMessages.toLocaleString()} subtitle={`평균 ${stats.summary.avgMessagesPerRoom}개/방`} icon={<MessageSquare size={20} />} />
+        <StatCard title="응답률" value={`${stats.summary.responseRate}%`} subtitle="양방향 대화 비율" icon={<TrendingUp size={20} />} />
+        <StatCard title="평균 첫 응답 시간" value={formatMinutes(stats.summary.avgFirstResponseTimeMinutes)} subtitle="첫 메시지 후 응답까지" icon={<Timer size={20} />} />
+      </div></section>
+      <section className="space-y-3"><h2 className="text-lg font-semibold">성별 분석</h2><div className="grid gap-3 sm:grid-cols-3">
+        <StatCard title="남성 첫 메시지 비율" value={`${stats.summary.maleFirstMessageRate}%`} icon={<User size={20} />} />
+        <StatCard title="여성 첫 메시지 비율" value={`${stats.summary.femaleFirstMessageRate}%`} icon={<User size={20} />} />
+        <StatCard title="24시간 내 대화 비율" value={`${stats.summary.conversationWithin24hRate}%`} subtitle="채팅방 생성 후 24시간 내" icon={<Timer size={20} />} />
+      </div></section>
+      <section className="space-y-3"><h2 className="text-lg font-semibold">시간대별 메시지 분포</h2>
+        <figure className="rounded-xl border bg-white p-4"><div className="flex items-end gap-2 overflow-x-auto" aria-hidden="true">
+          {stats.hourlyDistribution.map(item => <div key={item.hour} className="flex min-w-7 flex-1 flex-col items-center text-xs">
+            <div className="flex h-36 w-full flex-col items-center justify-end gap-1"><span>{item.count}</span><div className="w-5 rounded-t bg-[var(--accent)]" style={{ height: maxCount ? `${item.count / maxCount * 110}px` : 0 }} /></div><span className="mt-1">{item.hour}</span>
+          </div>)}
+        </div><figcaption className="mt-3 text-center text-sm text-gray-600">시간 (0~23시)</figcaption>
+          <table className="sr-only"><caption>시간대별 메시지 수</caption><thead><tr><th scope="col">시간</th><th scope="col">메시지 수</th></tr></thead><tbody>{stats.hourlyDistribution.map(item => <tr key={item.hour}><th scope="row">{item.hour}시</th><td>{item.count}</td></tr>)}</tbody></table>
+        </figure>
+      </section>
+      <section className="space-y-3"><h2 className="text-lg font-semibold">메시지 길이 분포</h2><dl className="grid grid-cols-2 gap-3 rounded-xl border bg-white p-4 sm:grid-cols-3 xl:grid-cols-6">
+        {stats.messageLengthDistribution.map(item => <div key={item.range} className="space-y-1 text-center"><dt className="text-sm">{item.range}자</dt><dd className="text-xl font-semibold">{item.percentage}%</dd><dd className="text-sm text-gray-600">{item.count.toLocaleString()}개</dd></div>)}
+      </dl></section>
+      <section className="space-y-3"><h2 className="text-lg font-semibold">일별 트렌드</h2><div className="max-h-80 overflow-auto rounded-xl border bg-white">
+        <table className="w-full text-sm"><caption className="sr-only">날짜별 메시지와 새 채팅방 수</caption><thead className="sticky top-0 bg-gray-50"><tr>{['날짜', '메시지 수', '새 채팅방'].map((title, index) => <th key={title} scope="col" className={`border-b p-3 ${index ? 'text-right' : 'text-left'}`}>{title}</th>)}</tr></thead>
+          <tbody>{stats.dailyTrend.slice().reverse().map(item => <tr key={item.date} className="border-b last:border-0"><th scope="row" className="p-3 text-left font-normal">{item.date}</th><td className="p-3 text-right tabular-nums">{item.messageCount.toLocaleString()}</td><td className="p-3 text-right tabular-nums">{item.newRoomCount.toLocaleString()}</td></tr>)}</tbody>
+        </table>
+      </div></section>
+    </>}
+  </div>;
 }

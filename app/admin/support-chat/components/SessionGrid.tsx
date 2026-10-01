@@ -1,56 +1,52 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Chip,
-  CircularProgress,
-  MenuItem,
-  Paper,
-  Select,
-  Tab,
-  Tabs,
-  Typography,
-} from '@mui/material';
-import supportChatService from '@/app/services/support-chat';
+import { Button as HeroActionButton } from "@heroui/react";
+import { Chip, Label, ListBox, Select, Spinner, Tabs } from "@heroui/react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import supportChatService from "@/app/services/support-chat";
 import type {
   SupportDomain,
   SupportMessage,
   SupportSenderType,
   SupportSessionSummary,
-} from '@/app/types/support-chat';
+} from "@/app/types/support-chat";
 import {
   DOMAIN_COLORS,
   DOMAIN_LABELS,
   LANGUAGE_FLAGS,
   SESSION_STATUS_COLORS,
   SESSION_STATUS_LABELS,
-} from '@/app/types/support-chat';
-import { useReadState } from '../lib/read-state';
+} from "@/app/types/support-chat";
+import { useReadState } from "../lib/read-state";
 
 interface SessionGridProps {
   activeSessions: SupportSessionSummary[];
   resolvedSessions: SupportSessionSummary[];
-  activeTab: 'active' | 'resolved';
-  onTabChange: (tab: 'active' | 'resolved') => void;
-  domainFilter: SupportDomain | 'all';
-  onDomainFilterChange: (domain: SupportDomain | 'all') => void;
+  activeTab: "active" | "resolved";
+  onTabChange: (tab: "active" | "resolved") => void;
+  domainFilter: SupportDomain | "all";
+  onDomainFilterChange: (domain: SupportDomain | "all") => void;
   onOpenSession: (sessionId: string) => void;
 }
 
-const SENDER_STYLE: Record<SupportSenderType, { label: string; bg: string; align: 'flex-start' | 'flex-end' }> = {
-  user: { label: '사용자', bg: '#e3f2fd', align: 'flex-start' },
-  bot: { label: 'AI', bg: '#f3e5f5', align: 'flex-end' },
-  admin: { label: '어드민', bg: '#e8f5e9', align: 'flex-end' },
+const SENDER_STYLE: Record<
+  SupportSenderType,
+  { label: string; bg: string; align: "flex-start" | "flex-end" }
+> = {
+  user: { label: "사용자", bg: "#e3f2fd", align: "flex-start" },
+  bot: { label: "AI", bg: "#f3e5f5", align: "flex-end" },
+  admin: { label: "어드민", bg: "#e8f5e9", align: "flex-end" },
 };
 
 function timeAgo(iso?: string): string {
-  if (!iso) return '';
+  if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
-  if (Number.isNaN(diff)) return '';
+  if (Number.isNaN(diff)) return "";
   const min = Math.floor(diff / 60_000);
-  if (min < 1) return '방금';
+  if (min < 1) return "방금";
   if (min < 60) return `${min}분 전`;
   const hour = Math.floor(min / 60);
   if (hour < 24) return `${hour}시간 전`;
@@ -67,18 +63,21 @@ function SessionCard({
   onOpen: () => void;
 }) {
   const [messages, setMessages] = useState<SupportMessage[] | null>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    setError('');
+    setError("");
     supportChatService
       .getSessionDetail(session.sessionId)
       .then((detail) => {
         if (!cancelled) setMessages(detail.messages);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : '대화를 불러오지 못했습니다.');
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : "대화를 불러오지 못했습니다.",
+          );
       });
     return () => {
       cancelled = true;
@@ -86,102 +85,117 @@ function SessionCard({
   }, [session.sessionId, session.messageCount]);
 
   return (
-    <Paper
-      onClick={onOpen}
-      elevation={0}
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
+    <HeroActionButton
+      variant="ghost"
+      className="h-auto w-full justify-start whitespace-normal text-left"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
         height: 380,
-        cursor: 'pointer',
-        overflow: 'hidden',
-        borderRadius: 2,
-        border: unread ? 3 : 1,
-        borderColor: unread ? 'error.main' : 'divider',
-        boxShadow: unread ? '0 0 0 3px rgba(211,47,47,0.12)' : 'none',
-        transition: 'border-color 120ms, box-shadow 120ms',
-        '&:hover': { borderColor: unread ? 'error.dark' : 'primary.main' },
+        cursor: "pointer",
+        overflow: "hidden",
+        borderRadius: 12,
+        border: unread ? "3px solid" : "1px solid",
+        borderColor: "#e4e4e7",
+        boxShadow: unread ? "0 0 0 3px rgba(211,47,47,0.12)" : "none",
+        transition: "border-color 120ms, box-shadow 120ms",
       }}
+      onClick={onOpen}
     >
-      <Box
-        sx={{
-          p: 1.5,
-          bgcolor: unread ? 'rgba(211,47,47,0.06)' : 'grey.50',
-          borderBottom: 1,
-          borderColor: 'divider',
+      <div
+        style={{
+          padding: 12,
+          backgroundColor: "#f4f4f5",
+          borderBottom: "1px solid #e4e4e7",
+          borderColor: "#e4e4e7",
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
-          <Typography
-            variant="subtitle2"
-            sx={{ fontWeight: unread ? 800 : 500, color: unread ? 'error.main' : 'text.primary' }}
-            noWrap
-          >
-            {LANGUAGE_FLAGS[session.language]} {session.userNickname || session.userId.slice(0, 8)}
-          </Typography>
-          {unread && <Chip label="미확인" color="error" size="small" sx={{ fontWeight: 700, height: 20 }} />}
-          <Box sx={{ flex: 1 }} />
-          <Typography variant="caption" color="text.secondary">
-            {timeAgo(session.waitingSince || session.createdAt)}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-          <Chip
-            label={SESSION_STATUS_LABELS[session.status]}
-            color={SESSION_STATUS_COLORS[session.status]}
-            size="small"
-            sx={{ height: 20 }}
-          />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 4,
+          }}
+        >
+          <p style={{ fontWeight: unread ? 800 : 500, color: "#52525b" }}>
+            {LANGUAGE_FLAGS[session.language]}
+            {session.userNickname || session.userId.slice(0, 8)}
+          </p>
+          {unread && <Chip size="sm">{"미확인"}</Chip>}
+          <div style={{ flex: 1 }}></div>
+          <p>{timeAgo(session.waitingSince || session.createdAt)}</p>
+        </div>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          <Chip size="sm">{SESSION_STATUS_LABELS[session.status]}</Chip>
           {session.domain && (
-            <Chip
-              label={DOMAIN_LABELS[session.domain]}
-              color={DOMAIN_COLORS[session.domain]}
-              variant="outlined"
-              size="small"
-              sx={{ height: 20 }}
-            />
+            <Chip size="sm">{DOMAIN_LABELS[session.domain]}</Chip>
           )}
-          <Chip label={`${session.messageCount}건`} size="small" variant="outlined" sx={{ height: 20 }} />
-        </Box>
-      </Box>
-
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        {error && <Alert severity="error" sx={{ py: 0 }}>{error}</Alert>}
+          <Chip size="sm">{`${session.messageCount}건`}</Chip>
+        </div>
+      </div>
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: 12,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}
+      >
+        {error && (
+          <div
+            role="alert"
+            className="rounded-lg border border-default p-3 text-sm"
+            style={{ paddingBlock: 0 }}
+          >
+            {error}
+          </div>
+        )}
         {!error && messages === null && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
-            <CircularProgress size={20} />
-          </Box>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              paddingBlock: 24,
+            }}
+          >
+            <Spinner aria-label="로딩 중" />
+          </div>
         )}
         {messages?.map((message) => {
           const style = SENDER_STYLE[message.senderType];
           return (
-            <Box key={message.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: style.align }}>
-              <Typography variant="caption" color="text.secondary">
-                {style.label}
-              </Typography>
-              <Box
-                sx={{
-                  maxWidth: '90%',
-                  px: 1,
-                  py: 0.5,
+            <div
+              key={message.id}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: style.align,
+              }}
+            >
+              <p>{style.label}</p>
+              <div
+                style={{
+                  maxWidth: "90%",
+                  paddingInline: 8,
+                  paddingBlock: 4,
                   borderRadius: 1.5,
-                  bgcolor: style.bg,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
+                  backgroundColor: style.bg,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
                 }}
               >
-                <Typography variant="body2">{message.content}</Typography>
-              </Box>
-            </Box>
+                <p>{message.content}</p>
+              </div>
+            </div>
           );
         })}
-        {messages?.length === 0 && (
-          <Typography variant="body2" color="text.secondary">
-            메시지가 없습니다.
-          </Typography>
-        )}
-      </Box>
-    </Paper>
+        {messages?.length === 0 && <p>메시지가 없습니다.</p>}
+      </div>
+    </HeroActionButton>
   );
 }
 
@@ -197,61 +211,112 @@ export default function SessionGrid({
   const { isUnread, markRead } = useReadState();
 
   const sessions = useMemo(() => {
-    const base = activeTab === 'active' ? activeSessions : resolvedSessions;
+    const base = activeTab === "active" ? activeSessions : resolvedSessions;
     return base
-      .filter((s) => domainFilter === 'all' || s.domain === domainFilter)
+      .filter((s) => domainFilter === "all" || s.domain === domainFilter)
       .slice()
       .sort(
         (a, b) =>
           new Date(b.waitingSince || b.createdAt).getTime() -
-          new Date(a.waitingSince || a.createdAt).getTime()
+          new Date(a.waitingSince || a.createdAt).getTime(),
       );
   }, [activeSessions, resolvedSessions, activeTab, domainFilter]);
 
-  const unreadCount = sessions.filter((s) => isUnread(s.sessionId, s.messageCount)).length;
+  const unreadCount = sessions.filter((s) =>
+    isUnread(s.sessionId, s.messageCount),
+  ).length;
 
   const handleOpen = useCallback(
     (session: SupportSessionSummary) => {
       markRead(session.sessionId, session.messageCount);
       onOpenSession(session.sessionId);
     },
-    [markRead, onOpenSession]
+    [markRead, onOpenSession],
   );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-        <Tabs value={activeTab} onChange={(_, value) => onTabChange(value)} sx={{ minHeight: 40 }}>
-          <Tab label={`진행 중 (${activeSessions.length})`} value="active" sx={{ minHeight: 40 }} />
-          <Tab label={`완료 (${resolvedSessions.length})`} value="resolved" sx={{ minHeight: 40 }} />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          marginBottom: 8,
+        }}
+      >
+        <Tabs
+          selectedKey={activeTab}
+          onSelectionChange={(key) =>
+            ((_, value) => onTabChange(value))(null, String(key) as any)
+          }
+          style={{ minHeight: 40 }}
+        >
+          <Tabs.ListContainer>
+            <Tabs.List>
+              <Tabs.Tab id={"active"}>
+                {`진행 중 (${activeSessions.length})`}
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id={"resolved"}>
+                {`완료 (${resolvedSessions.length})`}
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
         </Tabs>
         <Select
-          size="small"
-          value={domainFilter}
-          onChange={(event) => onDomainFilterChange(event.target.value as SupportDomain | 'all')}
+          selectedKey={domainFilter || null}
+          onSelectionChange={(key) =>
+            ((event) =>
+              onDomainFilterChange(
+                event.target.value as SupportDomain | "all",
+              ))({ target: { value: key } } as any)
+          }
+          aria-label={"필터"}
         >
-          <MenuItem value="all">전체 도메인</MenuItem>
-          {(Object.keys(DOMAIN_LABELS) as SupportDomain[]).map((domain) => (
-            <MenuItem key={domain} value={domain}>
-              {DOMAIN_LABELS[domain]}
-            </MenuItem>
-          ))}
+          <HeroSelectLabel className="sr-only">상담 도메인</HeroSelectLabel>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              <ListBox.Item id={"all"} textValue={"전체 도메인"}>
+                전체 도메인
+              </ListBox.Item>
+              {(Object.keys(DOMAIN_LABELS) as SupportDomain[]).map((domain) => (
+                <ListBox.Item
+                  key={domain}
+                  id={domain}
+                  textValue={String(DOMAIN_LABELS[domain])}
+                >
+                  {DOMAIN_LABELS[domain]}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
-        <Box sx={{ flex: 1 }} />
-        <Typography variant="body2" sx={{ fontWeight: 700, color: unreadCount ? 'error.main' : 'text.secondary' }}>
+        <div style={{ flex: 1 }}></div>
+        <p style={{ fontWeight: 700, color: "#52525b" }}>
           미확인 {unreadCount}건
-        </Typography>
-      </Box>
-
-      <Box
-        sx={{
+        </p>
+      </div>
+      <div
+        style={{
           flex: 1,
-          overflowY: 'auto',
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          alignContent: 'start',
-          pb: 2,
+          overflowY: "auto",
+          display: "grid",
+          gap: 16,
+          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+          alignContent: "start",
+          paddingBottom: 16,
         }}
       >
         {sessions.map((session) => (
@@ -263,11 +328,9 @@ export default function SessionGrid({
           />
         ))}
         {sessions.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-            표시할 문의가 없습니다.
-          </Typography>
+          <p style={{ padding: 16 }}>표시할 문의가 없습니다.</p>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }

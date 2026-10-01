@@ -4,7 +4,6 @@ import '@testing-library/jest-dom';
 import GhostChatV2 from '@/app/admin/ghost-chat/ghost-chat-v2';
 
 let mockSessionFromUrl: string | null = null;
-let mockIsMobile = false;
 const mockReplace = jest.fn();
 const mockSelectSession = jest.fn();
 const mockSendMessage = jest.fn();
@@ -13,13 +12,7 @@ const mockClearSelectedSession = jest.fn();
 const mockReconnect = jest.fn();
 const mockUseAdminSession = jest.fn();
 
-jest.mock('@mui/material', () => {
-	const actual = jest.requireActual('@mui/material');
-	return {
-		...actual,
-		useMediaQuery: jest.fn(() => mockIsMobile),
-	};
-});
+jest.mock('@/shared/ui/admin/toast/toast-context', () => ({useToast: () => ({info: jest.fn(),error: jest.fn(),success: jest.fn()})}));
 
 jest.mock('next/navigation', () => ({
 	useRouter: jest.fn(() => ({
@@ -95,7 +88,7 @@ jest.mock('@/app/admin/ghost-chat/components/GhostContextPanel', () => ({
 describe('GhostChatV2', () => {
 	beforeEach(() => {
 		mockSessionFromUrl = null;
-		mockIsMobile = false;
+		Object.defineProperty(window, 'matchMedia', {writable:true, value:jest.fn(() => ({matches:false,addEventListener:jest.fn(),removeEventListener:jest.fn()}))});
 		mockReplace.mockReset();
 		mockSelectSession.mockReset();
 		mockSendMessage.mockReset();

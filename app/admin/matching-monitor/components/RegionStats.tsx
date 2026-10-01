@@ -1,78 +1,75 @@
-'use client';
-
-import {
-	Card,
-	CardContent,
-	Typography,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Chip,
-} from '@mui/material';
-import type { RegionStat } from '../types';
-
-export default function RegionStats({ data }: { data: RegionStat[] }) {
+"use client";
+import { Card, Chip } from "@heroui/react";
+import type { RegionStat } from "../types";
+export default function RegionStats({
+	data,
+}: {
+	data: RegionStat[];
+}) {
 	return (
 		<Card>
-			<CardContent>
-				<Typography variant="subtitle1" fontWeight={700} gutterBottom>
-					지역별 매칭 실패 현황
-				</Typography>
-				<TableContainer>
-					<Table size="small">
-						<TableHead>
-							<TableRow>
-								<TableCell>지역</TableCell>
-								<TableCell align="right">실패 건수</TableCell>
-								<TableCell align="right">후보 0명</TableCell>
-								<TableCell align="right">지역 내 풀</TableCell>
-								<TableCell align="right">광역 풀</TableCell>
-								<TableCell align="right">전국 풀</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
+			<Card.Content>
+				<p className={"text-sm text-neutral-700"}>지역별 매칭 실패 현황</p>
+				<div className={"overflow-x-auto"}>
+					<table
+						className={
+							"w-full text-sm text-left [&_td]:p-3 [&_thead]:bg-neutral-50 [&_tr]:border-b"
+						}
+					>
+						<thead>
+							<tr>
+								<th scope="col">지역</th>
+								<th scope="col">실패 건수</th>
+								<th scope="col">후보 0명</th>
+								<th scope="col">지역 내 풀</th>
+								<th scope="col">광역 풀</th>
+								<th scope="col">전국 풀</th>
+							</tr>
+						</thead>
+						<tbody>
 							{data.length === 0 ? (
-								<TableRow>
-									<TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+								<tr>
+									<td
+										colSpan={6}
+										style={{
+											paddingTop: 32,
+											paddingBottom: 32,
+											color: "#525252",
+										}}
+									>
 										데이터 없음
-									</TableCell>
-								</TableRow>
+									</td>
+								</tr>
 							) : (
 								data.map((region) => (
-									<TableRow key={region.region}>
-										<TableCell>{region.region}</TableCell>
-										<TableCell align="right">
-											<Chip
-												label={region.failureCount.toLocaleString()}
-												size="small"
-												color={region.failureCount >= 10 ? 'error' : 'default'}
-												variant="outlined"
-											/>
-										</TableCell>
-										<TableCell align="right">
+									<tr key={region.region}>
+										<td>{region.region}</td>
+										<td>
+											<Chip size={"sm"} variant={"soft"}>
+												<Chip.Label>
+													{region.failureCount.toLocaleString()}
+												</Chip.Label>
+											</Chip>
+										</td>
+										<td>
 											{region.zeroCandidateCount > 0 ? (
-												<Typography variant="body2" color="error.main" fontWeight={600}>
+												<p className={"text-sm text-neutral-700"}>
 													{region.zeroCandidateCount}
-												</Typography>
+												</p>
 											) : (
 												0
 											)}
-										</TableCell>
-										<TableCell align="right">{region.avgPoolInRegion.toLocaleString()}</TableCell>
-										<TableCell align="right">{region.avgPoolInMetro.toLocaleString()}</TableCell>
-										<TableCell align="right">
-											{region.avgPoolNationwide.toLocaleString()}
-										</TableCell>
-									</TableRow>
+										</td>
+										<td>{region.avgPoolInRegion.toLocaleString()}</td>
+										<td>{region.avgPoolInMetro.toLocaleString()}</td>
+										<td>{region.avgPoolNationwide.toLocaleString()}</td>
+									</tr>
 								))
 							)}
-						</TableBody>
-					</Table>
-				</TableContainer>
-			</CardContent>
+						</tbody>
+					</table>
+				</div>
+			</Card.Content>
 		</Card>
 	);
 }

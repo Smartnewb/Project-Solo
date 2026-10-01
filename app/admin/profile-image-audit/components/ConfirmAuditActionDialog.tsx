@@ -1,124 +1,74 @@
 'use client';
-
+import { Button, Modal, TextField, Label, TextArea, Description, Select, ListBox } from '@heroui/react';
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
 import { ACTION_LABELS, REJECT_REASON_OPTIONS, SIMPLE_REJECT_REASON } from '../constants';
 import { getActionTone } from '../profile-image-audit-utils';
 import type { AuditAction } from '../types';
-
 const CUSTOM_REJECT_REASON_VALUE = '__custom__';
-
 type Props = {
-  readonly action: AuditAction | null;
-  readonly selectedCount: number;
-  readonly busy: boolean;
-  readonly onClose: () => void;
-  readonly onConfirm: (rejectReason?: string) => void;
+    readonly action: AuditAction | null;
+    readonly selectedCount: number;
+    readonly busy: boolean;
+    readonly onClose: () => void;
+    readonly onConfirm: (rejectReason?: string) => void;
 };
-
-export function ConfirmAuditActionDialog({
-  action,
-  selectedCount,
-  busy,
-  onClose,
-  onConfirm,
-}: Props) {
-  const open = action != null;
-  const tone = action ? getActionTone(action) : 'primary';
-  const [selectedRejectReason, setSelectedRejectReason] = useState(SIMPLE_REJECT_REASON);
-  const [rejectReason, setRejectReason] = useState(SIMPLE_REJECT_REASON);
-  const normalizedRejectReason = rejectReason.trim();
-
-  useEffect(() => {
-    if (action === 'reject') {
-      setSelectedRejectReason(SIMPLE_REJECT_REASON);
-      setRejectReason(SIMPLE_REJECT_REASON);
-    }
-  }, [action]);
-
-  return (
-    <Dialog open={open} onClose={busy ? undefined : onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{action ? ACTION_LABELS[action] : '처리 확인'}</DialogTitle>
-      <DialogContent dividers>
-        <Typography>
+export function ConfirmAuditActionDialog({ action, selectedCount, busy, onClose, onConfirm, }: Props) {
+    const open = action != null;
+    const tone = action ? getActionTone(action) : 'primary';
+    const [selectedRejectReason, setSelectedRejectReason] = useState(SIMPLE_REJECT_REASON);
+    const [rejectReason, setRejectReason] = useState(SIMPLE_REJECT_REASON);
+    const normalizedRejectReason = rejectReason.trim();
+    useEffect(() => {
+        if (action === 'reject') {
+            setSelectedRejectReason(SIMPLE_REJECT_REASON);
+            setRejectReason(SIMPLE_REJECT_REASON);
+        }
+    }, [action]);
+    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
+            if (!next)
+                !busy && onClose();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+      <Modal.Heading>{action ? ACTION_LABELS[action] : '처리 확인'}</Modal.Heading>
+      <Modal.Body>
+        <p>
           선택한 프로필 이미지 {selectedCount.toLocaleString()}장을 처리합니다.
-        </Typography>
-        {action === 'reject' && (
-          <Stack spacing={2} mt={2}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="profile-image-reject-reason-label">사진 변경 요청 사유</InputLabel>
-              <Select
-                labelId="profile-image-reject-reason-label"
-                label="사진 변경 요청 사유"
-                value={selectedRejectReason}
-                onChange={(event) => {
-                  const nextReason = event.target.value;
-                  setSelectedRejectReason(nextReason);
-                  if (nextReason !== CUSTOM_REJECT_REASON_VALUE) {
+        </p>
+        {action === 'reject' && (<div style={{ marginTop: 16 }}>
+            <div>
+              <label id="profile-image-reject-reason-label">사진 변경 요청 사유</label>
+              <Select value={selectedRejectReason} aria-label={"사진 변경 요청 사유"} onChange={(key) => {
+                const value = String(key ?? "");
+                const nextReason = value;
+                setSelectedRejectReason(nextReason);
+                if (nextReason !== CUSTOM_REJECT_REASON_VALUE) {
                     setRejectReason(nextReason);
-                  }
-                }}
-              >
-                {REJECT_REASON_OPTIONS.map((reason) => (
-                  <MenuItem key={reason} value={reason}>
+                }
+            }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+                {REJECT_REASON_OPTIONS.map((reason) => (<ListBox.Item key={reason} id={reason} textValue={String(reason)}>
                     {reason}
-                  </MenuItem>
-                ))}
-                <MenuItem value={CUSTOM_REJECT_REASON_VALUE}>직접 작성</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              label="직접 작성"
-              value={rejectReason}
-              onChange={(event) => {
+                  </ListBox.Item>))}
+                <ListBox.Item id={CUSTOM_REJECT_REASON_VALUE} textValue={"\uC9C1\uC811 \uC791\uC131"}>직접 작성</ListBox.Item>
+              </ListBox></Select.Popover></Select>
+            </div>
+            <TextField isInvalid={normalizedRejectReason.length === 0} className="mb-4"><Label>{"직접 작성"}</Label><TextArea value={rejectReason} onChange={(event) => {
                 setSelectedRejectReason(CUSTOM_REJECT_REASON_VALUE);
                 setRejectReason(event.target.value);
-              }}
-              multiline
-              minRows={3}
-              fullWidth
-              inputProps={{ maxLength: 255 }}
-              helperText={`${normalizedRejectReason.length}/255`}
-              error={normalizedRejectReason.length === 0}
-            />
-            <Alert severity="info">
+            }} {...{ maxLength: 255 }}></TextArea><Description>{`${normalizedRejectReason.length}/255`}</Description></TextField>
+            <aside role="alert" className="rounded-lg border p-3">
               입력한 사유가 사진 변경 요청 사유로 기록됩니다.
-            </Alert>
-          </Stack>
-        )}
-        {action === 'delete' && (
-          <Alert severity="error" sx={{ mt: 2 }}>
+            </aside>
+          </div>)}
+        {action === 'delete' && (<aside role="alert" className="rounded-lg border p-3" style={{ marginTop: 16 }}>
             삭제는 되돌리기 어려운 조치입니다. 명백히 부적절한 이미지만 선택하세요.
-          </Alert>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={busy}>
+          </aside>)}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button onPress={onClose} isDisabled={busy} variant="tertiary">
           취소
         </Button>
-        <Button
-          onClick={() => onConfirm(action === 'reject' ? normalizedRejectReason : undefined)}
-          disabled={busy || (action === 'reject' && normalizedRejectReason.length === 0)}
-          color={tone}
-          variant="contained"
-        >
+        <Button onPress={() => onConfirm(action === 'reject' ? normalizedRejectReason : undefined)} isDisabled={busy || (action === 'reject' && normalizedRejectReason.length === 0)} variant="primary">
           처리
         </Button>
-      </DialogActions>
-    </Dialog>
-  );
+      </Modal.Footer>
+    </Modal.Dialog></Modal.Container></Modal.Backdrop>);
 }

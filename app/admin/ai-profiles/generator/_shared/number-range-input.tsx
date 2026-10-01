@@ -1,8 +1,7 @@
-'use client';
-
-import type { ChangeEvent } from 'react';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
+"use client";
+import type { ChangeEvent } from "react";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 
 interface Props {
   value: { min?: number; max?: number };
@@ -23,8 +22,8 @@ function parseNumber(raw: string): number | undefined {
 export function NumberRangeInput({
   value,
   onChange,
-  minLabel = '최소',
-  maxLabel = '최대',
+  minLabel = "최소",
+  maxLabel = "최대",
   disabled,
 }: Props) {
   const handleMin = (event: ChangeEvent<HTMLInputElement>) => {
@@ -44,7 +43,7 @@ export function NumberRangeInput({
         <Input
           type="number"
           inputMode="numeric"
-          value={value.min ?? ''}
+          value={value.min ?? ""}
           onChange={handleMin}
           placeholder="min"
           disabled={disabled}
@@ -55,7 +54,7 @@ export function NumberRangeInput({
         <Input
           type="number"
           inputMode="numeric"
-          value={value.max ?? ''}
+          value={value.max ?? ""}
           onChange={handleMax}
           placeholder="max"
           disabled={disabled}

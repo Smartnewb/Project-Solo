@@ -1,39 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Box,
-  Paper,
-  TextField,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Avatar,
-  Chip,
-  Alert,
-  CircularProgress,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormControl,
-  FormLabel,
-  IconButton,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Refresh as RefreshIcon,
-  Close as CloseIcon,
-  AccountBalance as AccountBalanceIcon,
-} from '@mui/icons-material';
+import { Avatar, Button, Chip, Description, Input, Label, Modal, Radio, RadioGroup, Spinner, TextArea, TextField } from '@heroui/react';
+import { Search, X, Landmark } from 'lucide-react';
 import AdminService from '@/app/services/admin';
 import type {
   RefundUserSearchResult,
@@ -80,10 +49,13 @@ export default function ChatRefundTab() {
   const [smsContent, setSmsContent] = useState('');
 
   const [processing, setProcessing] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const locked = searchLoading || roomsLoading || previewLoading || processing || reasonModalOpen || previewModalOpen;
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleSearch = async () => {
+    if (locked) return;
     if (!searchName.trim()) {
       setError('이름을 입력해주세요.');
       return;
@@ -110,6 +82,7 @@ export default function ChatRefundTab() {
   };
 
   const handleUserSelect = async (user: RefundUserSearchResult) => {
+    if (locked) return;
     setSelectedUser(user);
     setRoomsLoading(true);
     setError('');
@@ -130,13 +103,15 @@ export default function ChatRefundTab() {
   };
 
   const handleRefundClick = (room: EligibleChatRoom) => {
+    if (locked) return;
     setSelectedRoom(room);
     setSelectedReason('A');
     setReasonModalOpen(true);
   };
 
   const handleReasonSubmit = async () => {
-    if (!selectedUser || !selectedRoom) return;
+    if (!selectedUser || !selectedRoom || previewLoading) return;
+    setPreviewLoading(true);
 
     setReasonModalOpen(false);
     setError('');
@@ -153,11 +128,11 @@ export default function ChatRefundTab() {
       setPreviewModalOpen(true);
     } catch (error: any) {
       setError(error.response?.data?.message || '환불 미리보기에 실패했습니다.');
-    }
+    } finally { setPreviewLoading(false); }
   };
 
   const handleProcessRefund = async () => {
-    if (!selectedUser || !selectedRoom || !previewData) return;
+    if (!selectedUser || !selectedRoom || !previewData || processing) return;
 
     setProcessing(true);
     setError('');
@@ -190,6 +165,8 @@ export default function ChatRefundTab() {
       setError(errorMessage);
 
       if (error.response?.status === 409) {
+        setPreviewModalOpen(false);
+        setPreviewData(null);
         setEligibleRooms(prevRooms =>
           prevRooms.filter(room => room.chatRoomId !== selectedRoom.chatRoomId)
         );
@@ -203,269 +180,48 @@ export default function ChatRefundTab() {
     return safeToLocaleString(dateString);
   };
 
-  return (
-    <Box>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage('')}>
-          {successMessage}
-        </Alert>
-      )}
-
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <TextField
-            label="사용자 이름"
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            size="small"
-            fullWidth
-            placeholder="검색할 사용자 이름을 입력하세요"
-          />
-          <Button
-            variant="contained"
-            onClick={handleSearch}
-            disabled={searchLoading}
-            startIcon={searchLoading ? <CircularProgress size={20} /> : <SearchIcon />}
-            sx={{ minWidth: 100 }}
-          >
-            검색
-          </Button>
-        </Box>
-      </Paper>
-
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h6" gutterBottom>
-            검색 결과
-          </Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>이름</TableCell>
-                  <TableCell>전화번호</TableCell>
-                  <TableCell>작업</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} align="center">
-                      <Typography color="text.secondary">
-                        검색된 사용자가 없습니다.
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => (
-                    <TableRow
-                      key={user.userId}
-                      hover
-                      selected={selectedUser?.userId === user.userId}
-                      sx={{ cursor: 'pointer' }}
-                    >
-                      <TableCell>{user.name}</TableCell>
-                      <TableCell>{user.phoneNumber}</TableCell>
-                      <TableCell>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => handleUserSelect(user)}
-                          disabled={roomsLoading && selectedUser?.userId === user.userId}
-                        >
-                          {roomsLoading && selectedUser?.userId === user.userId ? (
-                            <CircularProgress size={20} />
-                          ) : (
-                            '선택'
-                          )}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h6" gutterBottom>
-            환불 가능 채팅방
-            {selectedUser && ` - ${selectedUser.name}`}
-          </Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>상대방</TableCell>
-                  <TableCell>대학교</TableCell>
-                  <TableCell>메시지 수</TableCell>
-                  <TableCell>생성일</TableCell>
-                  <TableCell>작업</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!selectedUser ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Typography color="text.secondary">
-                        사용자를 먼저 선택해주세요.
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : eligibleRooms.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Typography color="text.secondary">
-                        {roomsLoading ? '조회 중...' : '환불 가능한 채팅방이 없습니다.'}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  eligibleRooms.map((room) => (
-                    <TableRow key={room.chatRoomId} hover>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {room.partnerInfo.profileImageUrl && (
-                            <Avatar
-                              src={room.partnerInfo.profileImageUrl}
-                              sx={{ width: 32, height: 32 }}
-                            />
-                          )}
-                          <Typography variant="body2">{room.partnerInfo.name}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>{room.partnerInfo.university}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={`${room.totalMessageCount}개`}
-                          size="small"
-                          color={room.totalMessageCount === 0 ? 'default' : 'primary'}
-                        />
-                      </TableCell>
-                      <TableCell>{formatDate(room.createdAt)}</TableCell>
-                      <TableCell>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="primary"
-                          startIcon={<AccountBalanceIcon />}
-                          onClick={() => handleRefundClick(room)}
-                        >
-                          환불하기
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      </Box>
-
-      <Dialog open={reasonModalOpen} onClose={() => setReasonModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">환불 사유 선택</Typography>
-          <IconButton onClick={() => setReasonModalOpen(false)}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <FormControl component="fieldset" fullWidth sx={{ mt: 1 }}>
-            <FormLabel component="legend">환불 사유를 선택해주세요</FormLabel>
-            <RadioGroup
-              value={selectedReason}
-              onChange={(e) => setSelectedReason(e.target.value as RefundReasonCode)}
-            >
-              {REFUND_REASONS.map((reason) => (
-                <FormControlLabel
-                  key={reason.code}
-                  value={reason.code}
-                  control={<Radio />}
-                  label={reason.text}
-                />
-              ))}
-            </RadioGroup>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setReasonModalOpen(false)}>취소</Button>
-          <Button onClick={handleReasonSubmit} variant="contained" color="primary">
-            다음
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={previewModalOpen}
-        onClose={() => !processing && setPreviewModalOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">SMS 미리보기 및 확인</Typography>
-          <IconButton onClick={() => !processing && setPreviewModalOpen(false)} disabled={processing}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {previewData && (
-            <Box>
-              <Paper sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  환불 정보
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography variant="body2">
-                    <strong>사용자:</strong> {previewData.userName}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>전화번호:</strong> {previewData.phoneNumber}
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>환급 구슬:</strong> {previewData.refundGemAmount}개
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>사유:</strong> {previewData.refundReasonText}
-                  </Typography>
-                </Box>
-              </Paper>
-
-              <TextField
-                label="SMS 내용"
-                value={smsContent}
-                onChange={(e) => setSmsContent(e.target.value)}
-                multiline
-                rows={4}
-                fullWidth
-                helperText="필요시 SMS 내용을 수정할 수 있습니다."
-              />
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPreviewModalOpen(false)} disabled={processing}>
-            취소
-          </Button>
-          <Button
-            onClick={handleProcessRefund}
-            variant="contained"
-            color="primary"
-            disabled={processing}
-            startIcon={processing ? <CircularProgress size={20} /> : <AccountBalanceIcon />}
-          >
-            {processing ? '처리 중...' : '환불 처리'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
+  return <div className="space-y-4">
+    {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-red-200 p-3"><p>{error}</p><Button variant="tertiary" isIconOnly aria-label="오류 닫기" onPress={() => setError('')}><X size={16} /></Button></div>}
+    {successMessage && <div role="status" className="flex items-center justify-between gap-3 rounded-lg border p-3"><p>{successMessage}</p><Button variant="tertiary" isIconOnly aria-label="결과 닫기" onPress={() => setSuccessMessage('')}><X size={16} /></Button></div>}
+    <form className="flex items-end gap-3 rounded-xl border bg-white p-4" onSubmit={e => { e.preventDefault(); void handleSearch(); }}>
+      <TextField className="flex-1" isDisabled={locked}><Label>사용자 이름</Label><Input value={searchName} onChange={e => setSearchName(e.target.value)} placeholder="검색할 사용자 이름을 입력하세요" /></TextField>
+      <Button type="submit" isDisabled={locked}>{searchLoading ? <Spinner size="sm" /> : <Search size={16} />}검색</Button>
+    </form>
+    {previewLoading && <p role="status" className="flex items-center gap-2"><Spinner size="sm" />환불 미리보기 불러오는 중...</p>}
+    <div className="grid gap-4 xl:grid-cols-2">
+      <section className="min-w-0 space-y-3"><h2 className="text-lg font-semibold">검색 결과</h2><div className="overflow-x-auto rounded-xl border bg-white">
+        <table className="w-full text-sm"><caption className="sr-only">환불 대상 사용자 검색 결과</caption><thead className="bg-gray-50"><tr>{['이름', '전화번호', '작업'].map(title => <th key={title} scope="col" className="border-b p-3 text-left">{title}</th>)}</tr></thead>
+          <tbody>{users.length === 0 ? <tr><td colSpan={3} className="p-6 text-center text-gray-600">검색된 사용자가 없습니다.</td></tr> : users.map(user => <tr key={user.userId} className={`border-b last:border-0 ${selectedUser?.userId === user.userId ? 'bg-gray-50' : ''}`}>
+            <th scope="row" className="p-3 text-left font-normal">{user.name}</th><td className="p-3">{user.phoneNumber}</td><td className="p-3"><Button size="sm" variant="secondary" aria-label={`${user.name} 선택`} aria-pressed={selectedUser?.userId === user.userId} isDisabled={locked} onPress={() => void handleUserSelect(user)}>{roomsLoading && selectedUser?.userId === user.userId ? <Spinner size="sm" /> : '선택'}</Button></td>
+          </tr>)}</tbody>
+        </table>
+      </div></section>
+      <section className="min-w-0 space-y-3"><h2 className="text-lg font-semibold">환불 가능 채팅방{selectedUser && ` - ${selectedUser.name}`}</h2><div className="overflow-x-auto rounded-xl border bg-white">
+        <table className="w-full text-sm"><caption className="sr-only">선택 사용자의 환불 가능 채팅방</caption><thead className="bg-gray-50"><tr>{['상대방', '대학교', '메시지 수', '생성일', '작업'].map(title => <th key={title} scope="col" className="whitespace-nowrap border-b p-3 text-left">{title}</th>)}</tr></thead>
+          <tbody>{!selectedUser || eligibleRooms.length === 0 ? <tr><td colSpan={5} className="p-6 text-center text-gray-600">{!selectedUser ? '사용자를 먼저 선택해주세요.' : roomsLoading ? '조회 중...' : '환불 가능한 채팅방이 없습니다.'}</td></tr> : eligibleRooms.map(room => <tr key={room.chatRoomId} className="border-b last:border-0">
+            <th scope="row" className="p-3 text-left font-normal"><div className="flex items-center gap-2"><Avatar size="sm"><Avatar.Image src={room.partnerInfo.profileImageUrl} alt="" /><Avatar.Fallback>{room.partnerInfo.name.slice(0,1)}</Avatar.Fallback></Avatar>{room.partnerInfo.name}</div></th>
+            <td className="p-3">{room.partnerInfo.university}</td><td className="p-3"><Chip size="sm" variant="soft">{room.totalMessageCount}개</Chip></td><td className="whitespace-nowrap p-3">{formatDate(room.createdAt)}</td><td className="p-3"><Button size="sm" onPress={() => handleRefundClick(room)} isDisabled={locked} aria-label={`${room.partnerInfo.name} 채팅방 환불하기`}><Landmark size={16} />환불하기</Button></td>
+          </tr>)}</tbody>
+        </table>
+      </div></section>
+    </div>
+    <Modal.Backdrop isOpen={reasonModalOpen} onOpenChange={setReasonModalOpen}>
+      <Modal.Container size="md"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>환불 사유 선택</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="환불 사유 닫기" onPress={() => setReasonModalOpen(false)}><X size={18} /></Button></Modal.Header>
+        <Modal.Body><RadioGroup value={selectedReason} onChange={value => setSelectedReason(value as RefundReasonCode)}><Label>환불 사유를 선택해주세요</Label>{REFUND_REASONS.map(reason => <Radio key={reason.code} value={reason.code}><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control><Label>{reason.text}</Label></Radio.Content></Radio>)}</RadioGroup></Modal.Body>
+        <Modal.Footer><Button variant="secondary" onPress={() => setReasonModalOpen(false)}>취소</Button><Button onPress={() => void handleReasonSubmit()}>다음</Button></Modal.Footer>
+      </Modal.Dialog></Modal.Container>
+    </Modal.Backdrop>
+    <Modal.Backdrop isOpen={previewModalOpen} onOpenChange={open => !processing && setPreviewModalOpen(open)} isDismissable={!processing} isKeyboardDismissDisabled={processing}>
+      <Modal.Container size="lg"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>SMS 미리보기 및 확인</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="환불 미리보기 닫기" isDisabled={processing} onPress={() => setPreviewModalOpen(false)}><X size={18} /></Button></Modal.Header>
+        <Modal.Body className="space-y-4">{previewData && <>
+          <section className="space-y-2 rounded-lg bg-gray-50 p-4"><h3 className="font-semibold">환불 정보</h3><dl className="space-y-2 text-sm">{[
+            ['사용자', previewData.userName], ['전화번호', previewData.phoneNumber], ['환급 구슬', `${previewData.refundGemAmount}개`], ['사유', previewData.refundReasonText],
+          ].map(([title, value]) => <div key={title} className="flex gap-3"><dt className="min-w-20 text-gray-600">{title}</dt><dd>{value}</dd></div>)}</dl></section>
+          <TextField isDisabled={processing}><Label>SMS 내용</Label><TextArea value={smsContent} onChange={e => setSmsContent(e.target.value)} rows={4} /><Description>필요시 SMS 내용을 수정할 수 있습니다.</Description></TextField>
+          {error && <p role="alert" className="text-red-700">{error}</p>}
+        </>}</Modal.Body>
+        <Modal.Footer><Button variant="secondary" isDisabled={processing} onPress={() => setPreviewModalOpen(false)}>취소</Button><Button isDisabled={processing} onPress={() => void handleProcessRefund()}>{processing ? <Spinner size="sm" /> : <Landmark size={16} />}{processing ? '처리 중...' : '환불 처리'}</Button></Modal.Footer>
+      </Modal.Dialog></Modal.Container>
+    </Modal.Backdrop>
+  </div>;
 }

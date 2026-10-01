@@ -1,21 +1,14 @@
-'use client';
+"use client";
+import { Alert, Button, Chip, Separator, Spinner } from "@heroui/react";
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import {
-  Box,
-  Typography,
-  Chip,
-  Button,
-  CircularProgress,
-  Alert,
-  Divider,
-} from '@mui/material';
-import { RotateCcw, Clock } from 'lucide-react';
-import { blacklist, type BlacklistHistoryEntry } from '@/app/services/admin';
-import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
-import { AdminNameLabel } from './AdminNameLabel';
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+
+import { RotateCcw, Clock } from "lucide-react";
+import { blacklist, type BlacklistHistoryEntry } from "@/app/services/admin";
+import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
+import { formatDateTimeWithoutTimezoneConversion } from "@/app/utils/formatters";
+import { AdminNameLabel } from "./AdminNameLabel";
 
 interface Props {
   userId: string;
@@ -29,7 +22,7 @@ function durationDays(start: string, end: string): number {
 
 export function BlacklistHistoryTimeline({ userId, onRelease }: Props) {
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['blacklist-history', userId],
+    queryKey: ["blacklist-history", userId],
     queryFn: () => blacklist.getHistory(userId),
     enabled: !!userId,
     staleTime: 60_000,
@@ -37,15 +30,19 @@ export function BlacklistHistoryTimeline({ userId, onRelease }: Props) {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" py={4}>
-        <CircularProgress size={24} />
-      </Box>
+      <div>
+        <Spinner aria-label="불러오는 중" size="sm" />
+      </div>
     );
   }
 
   if (isError) {
     return (
-      <Alert severity="error">{getAdminErrorMessage(error, '이력 조회 실패')}</Alert>
+      <Alert status="danger" role="alert">
+        <Alert.Content>
+          {getAdminErrorMessage(error, "이력 조회 실패")}
+        </Alert.Content>
+      </Alert>
     );
   }
 
@@ -55,123 +52,125 @@ export function BlacklistHistoryTimeline({ userId, onRelease }: Props) {
 
   if (total === 0) {
     return (
-      <Box py={4} textAlign="center">
-        <Clock size={28} color="#9ca3af" style={{ display: 'inline-block' }} />
-        <Typography color="text.secondary" mt={1}>
-          블랙리스트 이력 없음
-        </Typography>
-      </Box>
+      <div>
+        <Clock size={28} style={{ display: "inline-block" }} />
+        <div className={"text-sm text-neutral-700"}>블랙리스트 이력 없음</div>
+      </div>
     );
   }
 
   return (
-    <Box>
-      <Box mb={2}>
-        <Typography variant="body2" color="text.secondary">
+    <div>
+      <div>
+        <div className={"text-sm text-neutral-700"}>
           전체 {total}건 · 활성 {activeCount}건
-        </Typography>
-      </Box>
-
-      <Box display="flex" flexDirection="column" gap={2}>
+        </div>
+      </div>
+      <div>
         {history.map((entry) => {
           const isActive = entry.releasedAt === null;
-          const barColor = isActive ? '#dc2626' : '#9ca3af';
+          const barColor = isActive ? "#dc2626" : "#9ca3af";
           const duration = entry.releasedAt
             ? durationDays(entry.blacklistedAt, entry.releasedAt)
             : null;
 
           return (
-            <Box
+            <div
               key={entry.id}
-              sx={{
-                display: 'flex',
-                gap: 1.5,
-                p: 2,
-                borderRadius: 1,
-                bgcolor: '#f9fafb',
+              style={{
+                display: "flex",
+                gap: 6,
+                padding: 8,
+                borderRadius: 4,
+                backgroundColor: "#f9fafb",
                 borderLeft: `4px solid ${barColor}`,
               }}
             >
-              <Box flex={1}>
-                <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <Chip
-                    size="small"
-                    label={isActive ? '활성' : '해제됨'}
-                    color={isActive ? 'error' : 'default'}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDateTimeWithoutTimezoneConversion(entry.blacklistedAt)}
+              <div>
+                <div>
+                  <Chip size={"sm"} variant={"soft"}>
+                    {isActive ? "활성" : "해제됨"}
+                  </Chip>
+                  <div className={"text-sm text-neutral-700"}>
+                    {formatDateTimeWithoutTimezoneConversion(
+                      entry.blacklistedAt,
+                    )}
                     {entry.releasedAt && (
                       <>
-                        {' → '}
-                        {formatDateTimeWithoutTimezoneConversion(entry.releasedAt)}
+                        {" → "}
+                        {formatDateTimeWithoutTimezoneConversion(
+                          entry.releasedAt,
+                        )}
                         {duration !== null && ` · ${duration}일 지속`}
                       </>
                     )}
-                  </Typography>
-                </Box>
-
-                <Box mb={1}>
-                  <Typography variant="body2" fontWeight={600} component="span">
-                    사유:{' '}
-                  </Typography>
-                  <Typography variant="body2" component="span" sx={{ whiteSpace: 'pre-wrap' }}>
+                  </div>
+                </div>
+                <div>
+                  <div className={"text-sm text-neutral-700"}>사유: </div>
+                  <div
+                    style={{ whiteSpace: "pre-wrap" }}
+                    className={"text-sm text-neutral-700"}
+                  >
                     {entry.reason}
-                  </Typography>
-                </Box>
-
+                  </div>
+                </div>
                 {entry.memo && (
-                  <Box mb={1}>
-                    <Typography variant="body2" fontWeight={600} component="span" color="text.secondary">
-                      메모:{' '}
-                    </Typography>
-                    <Typography variant="body2" component="span" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                  <div>
+                    <div className={"text-sm text-neutral-700"}>메모: </div>
+                    <div
+                      style={{ whiteSpace: "pre-wrap" }}
+                      className={"text-sm text-neutral-700"}
+                    >
                       {entry.memo}
-                    </Typography>
-                  </Box>
+                    </div>
+                  </div>
                 )}
-
-                <Typography variant="caption" color="text.secondary" component="div">
+                <div className={"text-sm text-neutral-700"}>
                   등록자: <AdminNameLabel adminId={entry.blacklistedBy} />
-                </Typography>
-
+                </div>
                 {entry.releasedAt && (
                   <>
-                    <Divider sx={{ my: 1 }} />
+                    <Separator
+                      style={{ marginTop: 4, marginBottom: 4 }}
+                    ></Separator>
                     {entry.releaseReason && (
-                      <Box mb={0.5}>
-                        <Typography variant="body2" fontWeight={600} component="span" color="text.secondary">
-                          해제 사유:{' '}
-                        </Typography>
-                        <Typography variant="body2" component="span" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                      <div>
+                        <div className={"text-sm text-neutral-700"}>
+                          해제 사유:{" "}
+                        </div>
+                        <div
+                          style={{ whiteSpace: "pre-wrap" }}
+                          className={"text-sm text-neutral-700"}
+                        >
                           {entry.releaseReason}
-                        </Typography>
-                      </Box>
+                        </div>
+                      </div>
                     )}
-                    <Typography variant="caption" color="text.secondary" component="div">
+                    <div className={"text-sm text-neutral-700"}>
                       해제자: <AdminNameLabel adminId={entry.releasedBy} />
-                    </Typography>
+                    </div>
                   </>
                 )}
-
                 {isActive && onRelease && (
-                  <Box mt={1.5}>
+                  <div>
                     <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<RotateCcw size={14} />}
                       onClick={() => onRelease(entry)}
+                      variant={"secondary"}
+                      isDisabled={undefined}
+                      size={"sm"}
+                      className="rounded-xl"
                     >
-                      해제하기
+                      {<RotateCcw size={14} />}해제하기
                     </Button>
-                  </Box>
+                  </div>
                 )}
-              </Box>
-            </Box>
+              </div>
+            </div>
           );
         })}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 

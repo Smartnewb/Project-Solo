@@ -1,24 +1,16 @@
-'use client';
+"use client";
+import { Button as HeroActionButton } from "@heroui/react";
 
-import { useMemo, useState } from 'react';
-import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from '@mui/material';
-import type { AdminClusterItem } from '@/types/admin';
-import { CLUSTER_GEO } from '../constants';
+
+import { useMemo, useState } from "react";
+import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
+
+import type { AdminClusterItem } from "@/types/admin";
+import { CLUSTER_GEO } from "../constants";
 
 interface ClusterTreemapViewProps {
   clusters: AdminClusterItem[];
-  country: 'KR' | 'JP';
+  country: "KR" | "JP";
 }
 
 interface TreemapNode {
@@ -30,13 +22,17 @@ interface TreemapNode {
   children?: TreemapNode[];
 }
 
-export default function ClusterTreemapView({ clusters, country }: ClusterTreemapViewProps) {
-  const [selectedCluster, setSelectedCluster] = useState<AdminClusterItem | null>(null);
+export default function ClusterTreemapView({
+  clusters,
+  country,
+}: ClusterTreemapViewProps) {
+  const [selectedCluster, setSelectedCluster] =
+    useState<AdminClusterItem | null>(null);
   const geoMap = CLUSTER_GEO[country] || {};
 
   const treemapData = useMemo(() => {
     const children: TreemapNode[] = clusters.map((cluster) => {
-      const color = geoMap[cluster.id]?.color || '#94A3B8';
+      const color = geoMap[cluster.id]?.color || "#94A3B8";
       return {
         name: cluster.name,
         clusterId: cluster.id,
@@ -54,7 +50,10 @@ export default function ClusterTreemapView({ clusters, country }: ClusterTreemap
     return children;
   }, [clusters, geoMap]);
 
-  const totalUsers = useMemo(() => clusters.reduce((sum, c) => sum + c.userCount, 0), [clusters]);
+  const totalUsers = useMemo(
+    () => clusters.reduce((sum, c) => sum + c.userCount, 0),
+    [clusters],
+  );
 
   const CustomContent = (props: any) => {
     const { x, y, width, height, name, color, depth, clusterId } = props;
@@ -78,7 +77,7 @@ export default function ClusterTreemapView({ clusters, country }: ClusterTreemap
               opacity: 0.15,
               stroke: color,
               strokeWidth: 2,
-              cursor: 'pointer',
+              cursor: "pointer",
             }}
             onClick={() => {
               const cluster = clusters.find((c) => c.id === clusterId);
@@ -102,11 +101,12 @@ export default function ClusterTreemapView({ clusters, country }: ClusterTreemap
           height={height}
           style={{
             fill: color,
-            opacity: selectedCluster && selectedCluster.id !== clusterId ? 0.2 : 0.7,
-            stroke: '#fff',
+            opacity:
+              selectedCluster && selectedCluster.id !== clusterId ? 0.2 : 0.7,
+            stroke: "#fff",
             strokeWidth: 1,
-            cursor: 'pointer',
-            transition: 'opacity 0.2s',
+            cursor: "pointer",
+            transition: "opacity 0.2s",
           }}
           onClick={() => {
             const cluster = clusters.find((c) => c.id === clusterId);
@@ -121,12 +121,14 @@ export default function ClusterTreemapView({ clusters, country }: ClusterTreemap
             dominantBaseline="central"
             style={{
               fontSize: Math.min(12, width / 6),
-              fill: '#fff',
+              fill: "#fff",
               fontWeight: 600,
-              pointerEvents: 'none',
+              pointerEvents: "none",
             }}
           >
-            {name.length > width / 8 ? name.slice(0, Math.floor(width / 8)) + '…' : name}
+            {name.length > width / 8
+              ? name.slice(0, Math.floor(width / 8)) + "…"
+              : name}
           </text>
         )}
         {showCount && univ && (
@@ -137,8 +139,8 @@ export default function ClusterTreemapView({ clusters, country }: ClusterTreemap
             dominantBaseline="central"
             style={{
               fontSize: Math.min(10, width / 8),
-              fill: 'rgba(255,255,255,0.8)',
-              pointerEvents: 'none',
+              fill: "rgba(255,255,255,0.8)",
+              pointerEvents: "none",
             }}
           >
             {univ.userCount.toLocaleString()}명
@@ -156,34 +158,41 @@ export default function ClusterTreemapView({ clusters, country }: ClusterTreemap
     const cluster = clusters.find((c) => c.id === data.clusterId);
 
     return (
-      <Paper sx={{ p: 1.5, maxWidth: 220 }}>
-        <Typography variant="body2" fontWeight={700}>{data.name}</Typography>
-        <Typography variant="caption" color="text.secondary">
-          {cluster?.name} · {data.size?.toLocaleString()}명
-        </Typography>
-      </Paper>
+      <div style={{ padding: 12, maxWidth: 220 }}>
+        <p>{data.name}</p>
+        <p>
+          {cluster?.name}· {data.size?.toLocaleString()}명
+        </p>
+      </div>
     );
   };
 
   return (
-    <Box>
+    <div>
       {/* 트리맵 */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle2" color="text.secondary">
+      <div style={{ padding: 16, marginBottom: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <p>
             총 {totalUsers.toLocaleString()}명 · {clusters.length}개 클러스터
-          </Typography>
+          </p>
           {selectedCluster && (
-            <Typography
-              variant="body2"
-              sx={{ cursor: 'pointer', color: 'primary.main' }}
+            <HeroActionButton
+              variant="ghost"
+              className="h-auto w-full justify-start whitespace-normal text-left"
+              style={{ cursor: "pointer", color: "#52525b" }}
               onClick={() => setSelectedCluster(null)}
             >
               전체 보기
-            </Typography>
+            </HeroActionButton>
           )}
-        </Box>
-
+        </div>
         <ResponsiveContainer width="100%" height={500}>
           <Treemap
             data={treemapData}
@@ -195,83 +204,135 @@ export default function ClusterTreemapView({ clusters, country }: ClusterTreemap
             <Tooltip content={<CustomTooltip />} />
           </Treemap>
         </ResponsiveContainer>
-
         {/* 클러스터 범례 */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2, justifyContent: 'center' }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            flexWrap: "wrap",
+            marginTop: 16,
+            justifyContent: "center",
+          }}
+        >
           {clusters.map((cluster) => {
-            const color = geoMap[cluster.id]?.color || '#94A3B8';
-            const isActive = !selectedCluster || selectedCluster.id === cluster.id;
+            const color = geoMap[cluster.id]?.color || "#94A3B8";
+            const isActive =
+              !selectedCluster || selectedCluster.id === cluster.id;
             return (
-              <Box
+              <HeroActionButton
+                variant="ghost"
+                className="h-auto w-full justify-start whitespace-normal text-left"
                 key={cluster.id}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  cursor: 'pointer',
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  cursor: "pointer",
                   opacity: isActive ? 1 : 0.4,
-                  transition: 'opacity 0.2s',
+                  transition: "opacity 0.2s",
                 }}
                 onClick={() =>
-                  setSelectedCluster(selectedCluster?.id === cluster.id ? null : cluster)
+                  setSelectedCluster(
+                    selectedCluster?.id === cluster.id ? null : cluster,
+                  )
                 }
               >
-                <Box
-                  sx={{
+                <div
+                  style={{
                     width: 10,
                     height: 10,
-                    borderRadius: '2px',
+                    borderRadius: "2px",
                     backgroundColor: color,
                   }}
-                />
-                <Typography variant="caption">
-                  {cluster.name} ({cluster.userCount.toLocaleString()})
-                </Typography>
-              </Box>
+                ></div>
+                <p>
+                  {cluster.name}({cluster.userCount.toLocaleString()})
+                </p>
+              </HeroActionButton>
             );
           })}
-        </Box>
-      </Paper>
-
+        </div>
+      </div>
       {/* 선택된 클러스터 상세 테이블 */}
       {selectedCluster && (
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.5 }}>
-            {selectedCluster.name} — 대학별 유저 현황
-          </Typography>
-          <TableContainer sx={{ maxHeight: 400 }}>
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>#</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>대학명</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>지역</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>유저수</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>비율</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+        <div style={{ padding: 16 }}>
+          <p style={{ marginBottom: 12 }}>
+            {selectedCluster.name}— 대학별 유저 현황
+          </p>
+          <div style={{ maxHeight: 400 }}>
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr>
+                  <th
+                    scope="col"
+                    style={{ fontWeight: 600 }}
+                    className="px-3 py-2 border-b border-default"
+                  >
+                    #
+                  </th>
+                  <th
+                    scope="col"
+                    style={{ fontWeight: 600 }}
+                    className="px-3 py-2 border-b border-default"
+                  >
+                    대학명
+                  </th>
+                  <th
+                    scope="col"
+                    style={{ fontWeight: 600 }}
+                    className="px-3 py-2 border-b border-default"
+                  >
+                    지역
+                  </th>
+                  <th
+                    scope="col"
+                    style={{ fontWeight: 600 }}
+                    className="px-3 py-2 border-b border-default"
+                  >
+                    유저수
+                  </th>
+                  <th
+                    scope="col"
+                    style={{ fontWeight: 600 }}
+                    className="px-3 py-2 border-b border-default"
+                  >
+                    비율
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
                 {[...selectedCluster.universities]
                   .sort((a, b) => b.userCount - a.userCount)
                   .map((univ, idx) => (
-                    <TableRow key={univ.id} hover>
-                      <TableCell>{idx + 1}</TableCell>
-                      <TableCell>{univ.name}</TableCell>
-                      <TableCell>{univ.region}</TableCell>
-                      <TableCell align="right">{univ.userCount.toLocaleString()}</TableCell>
-                      <TableCell align="right">
+                    <tr key={univ.id}>
+                      <td className="px-3 py-2 border-b border-default">
+                        {idx + 1}
+                      </td>
+                      <td className="px-3 py-2 border-b border-default">
+                        {univ.name}
+                      </td>
+                      <td className="px-3 py-2 border-b border-default">
+                        {univ.region}
+                      </td>
+                      <td className="px-3 py-2 border-b border-default">
+                        {univ.userCount.toLocaleString()}
+                      </td>
+                      <td className="px-3 py-2 border-b border-default">
                         {selectedCluster.userCount > 0
-                          ? ((univ.userCount / selectedCluster.userCount) * 100).toFixed(1)
+                          ? (
+                              (univ.userCount / selectedCluster.userCount) *
+                              100
+                            ).toFixed(1)
                           : 0}
                         %
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }

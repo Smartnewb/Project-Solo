@@ -1,64 +1,66 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { ChangeEvent, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Alert,
-  Box,
+  Disclosure,
+  Tabs,
   Button,
-  CircularProgress,
-  FormControl,
-  FormHelperText,
-  InputLabel,
-  MenuItem,
-  Paper,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
   Select,
+  Spinner,
+  TextArea,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+} from "@heroui/react";
+import {
+  Plus as AddIcon,
+  Trash2 as DeleteIcon,
+  ChevronDown as ExpandMoreIcon,
+  ChevronDown as KeyboardArrowDownIcon,
+  ChevronUp as KeyboardArrowUpIcon,
+  Camera as PhotoCameraIcon,
+} from "lucide-react";
+
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import type {
   PixelCampusChoice,
   PixelCampusCut,
   PixelCampusEpisode,
   PixelCampusEpisodePayload,
-} from '@/types/admin';
+} from "@/types/admin";
 import {
   useCreatePixelCampusEpisode,
   usePixelCampusEpisodes,
   useUpdatePixelCampusEpisode,
   useUploadPixelCampusAsset,
-} from '@/app/admin/hooks/use-pixel-campus';
-import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-import { AXIS_OPTIONS, DIRECTION_LABELS } from '../constants';
-import { EpisodePreview } from './EpisodePreview';
+} from "@/app/admin/hooks/use-pixel-campus";
+import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
+import { AXIS_OPTIONS, DIRECTION_LABELS } from "../constants";
+import { EpisodePreview } from "./EpisodePreview";
 
-const lockedStatuses = new Set(['scheduled', 'published', 'archived']);
+const lockedStatuses = new Set(["scheduled", "published", "archived"]);
 const MAX_CUTS = 5;
 const MAX_CUT_TEXT_LENGTH = 300;
 
-function emptyCut(speaker: PixelCampusCut['speaker'] = 'miho'): PixelCampusCut {
-  return { speaker, text: '' };
+function emptyCut(speaker: PixelCampusCut["speaker"] = "miho"): PixelCampusCut {
+  return { speaker, text: "" };
 }
 
-function createChoice(displayOrder: 1 | 2, choice?: PixelCampusChoice): PixelCampusChoice {
+function createChoice(
+  displayOrder: 1 | 2,
+  choice?: PixelCampusChoice,
+): PixelCampusChoice {
   return {
-    label: choice?.label ?? '',
+    label: choice?.label ?? "",
     displayOrder,
-    axis: choice?.axis ?? 'initiative',
+    axis: choice?.axis ?? "initiative",
     direction: choice?.direction ?? (displayOrder === 1 ? 1 : -1),
     weight: choice?.weight ?? 2,
-    revealCopy: choice?.revealCopy ?? '',
+    revealCopy: choice?.revealCopy ?? "",
   };
 }
 
@@ -66,15 +68,15 @@ function initialCuts(episode?: PixelCampusEpisode | null): PixelCampusCut[] {
   if (episode?.cuts?.length) {
     return episode.cuts.slice(0, MAX_CUTS).map((cut) => ({
       speaker: cut.speaker,
-      text: cut.text ?? '',
+      text: cut.text ?? "",
     }));
   }
 
   if (episode?.situationText) {
-    return [{ speaker: 'miho', text: episode.situationText }];
+    return [{ speaker: "miho", text: episode.situationText }];
   }
 
-  return [emptyCut('miho'), emptyCut('me'), emptyCut('miho')];
+  return [emptyCut("miho"), emptyCut("me"), emptyCut("miho")];
 }
 
 interface FormState {
@@ -87,13 +89,15 @@ interface FormState {
 }
 
 function initialState(episode?: PixelCampusEpisode | null): FormState {
-  const sortedChoices = [...(episode?.choices ?? [])].sort((a, b) => a.displayOrder - b.displayOrder);
+  const sortedChoices = [...(episode?.choices ?? [])].sort(
+    (a, b) => a.displayOrder - b.displayOrder,
+  );
 
   return {
-    chapterNo: episode?.chapterNo ? String(episode.chapterNo) : '',
-    episodeNo: episode?.episodeNo ? String(episode.episodeNo) : '',
-    title: episode?.title ?? '',
-    sceneImageUrl: episode?.sceneImageUrl ?? '',
+    chapterNo: episode?.chapterNo ? String(episode.chapterNo) : "",
+    episodeNo: episode?.episodeNo ? String(episode.episodeNo) : "",
+    title: episode?.title ?? "",
+    sceneImageUrl: episode?.sceneImageUrl ?? "",
     cuts: initialCuts(episode),
     choices: [
       createChoice(1, sortedChoices[0]),
@@ -104,7 +108,7 @@ function initialState(episode?: PixelCampusEpisode | null): FormState {
 
 interface Props {
   episode?: PixelCampusEpisode | null;
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
 }
 
 export function EpisodeForm({ episode, mode }: Props) {
@@ -116,14 +120,21 @@ export function EpisodeForm({ episode, mode }: Props) {
   const updateEpisode = useUpdatePixelCampusEpisode();
   const uploadAsset = useUploadPixelCampusAsset();
   const episodesQuery = usePixelCampusEpisodes(
-    mode === 'create' ? { status: 'all', page: 1, limit: 100 } : {},
-    mode === 'create',
+    mode === "create" ? { status: "all", page: 1, limit: 100 } : {},
+    mode === "create",
   );
-  const isLocked = mode === 'edit' && !!episode && lockedStatuses.has(episode.status);
+  const isLocked =
+    mode === "edit" && !!episode && lockedStatuses.has(episode.status);
   const isSaving = createEpisode.isPending || updateEpisode.isPending;
 
   useEffect(() => {
-    if (mode !== 'create' || autoNumberApplied || form.chapterNo || form.episodeNo) return;
+    if (
+      mode !== "create" ||
+      autoNumberApplied ||
+      form.chapterNo ||
+      form.episodeNo
+    )
+      return;
 
     const episodes = episodesQuery.data?.items;
     if (!episodes?.length) return;
@@ -147,23 +158,29 @@ export function EpisodeForm({ episode, mode }: Props) {
     mode,
   ]);
 
-  const payload = useMemo<PixelCampusEpisodePayload>(() => ({
-    chapterNo: Number(form.chapterNo),
-    episodeNo: Number(form.episodeNo),
-    title: form.title.trim(),
-    sceneImageUrl: form.sceneImageUrl.trim() || null,
-    cuts: form.cuts
-      .map((cut) => ({ speaker: cut.speaker, text: cut.text.trim() }))
-      .filter((cut) => cut.text),
-    choices: form.choices.map((choice, index) => ({
-      ...choice,
-      label: choice.label.trim(),
-      displayOrder: index + 1,
-      revealCopy: choice.revealCopy.trim(),
-    })),
-  }), [form]);
+  const payload = useMemo<PixelCampusEpisodePayload>(
+    () => ({
+      chapterNo: Number(form.chapterNo),
+      episodeNo: Number(form.episodeNo),
+      title: form.title.trim(),
+      sceneImageUrl: form.sceneImageUrl.trim() || null,
+      cuts: form.cuts
+        .map((cut) => ({ speaker: cut.speaker, text: cut.text.trim() }))
+        .filter((cut) => cut.text),
+      choices: form.choices.map((choice, index) => ({
+        ...choice,
+        label: choice.label.trim(),
+        displayOrder: index + 1,
+        revealCopy: choice.revealCopy.trim(),
+      })),
+    }),
+    [form],
+  );
 
-  const setField = (field: 'chapterNo' | 'episodeNo' | 'title' | 'sceneImageUrl', value: string) => {
+  const setField = (
+    field: "chapterNo" | "episodeNo" | "title" | "sceneImageUrl",
+    value: string,
+  ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -179,14 +196,18 @@ export function EpisodeForm({ episode, mode }: Props) {
   const addCut = () => {
     setForm((prev) => ({
       ...prev,
-      cuts: prev.cuts.length >= MAX_CUTS ? prev.cuts : [...prev.cuts, emptyCut()],
+      cuts:
+        prev.cuts.length >= MAX_CUTS ? prev.cuts : [...prev.cuts, emptyCut()],
     }));
   };
 
   const removeCut = (index: number) => {
     setForm((prev) => ({
       ...prev,
-      cuts: prev.cuts.length <= 1 ? prev.cuts : prev.cuts.filter((_, cutIndex) => cutIndex !== index),
+      cuts:
+        prev.cuts.length <= 1
+          ? prev.cuts
+          : prev.cuts.filter((_, cutIndex) => cutIndex !== index),
     }));
   };
 
@@ -211,18 +232,22 @@ export function EpisodeForm({ episode, mode }: Props) {
   };
 
   const validate = (): string | null => {
-    if (!payload.chapterNo || payload.chapterNo < 1) return '챕터 번호를 입력해주세요.';
-    if (!payload.episodeNo || payload.episodeNo < 1) return '에피소드 번호를 입력해주세요.';
-    if (!payload.title) return '제목을 입력해주세요.';
-    if (payload.cuts.length < 1) return '컷 대사를 1개 이상 입력해주세요.';
-    if (payload.cuts.length > MAX_CUTS) return '컷은 최대 5개까지 입력할 수 있습니다.';
+    if (!payload.chapterNo || payload.chapterNo < 1)
+      return "챕터 번호를 입력해주세요.";
+    if (!payload.episodeNo || payload.episodeNo < 1)
+      return "에피소드 번호를 입력해주세요.";
+    if (!payload.title) return "제목을 입력해주세요.";
+    if (payload.cuts.length < 1) return "컷 대사를 1개 이상 입력해주세요.";
+    if (payload.cuts.length > MAX_CUTS)
+      return "컷은 최대 5개까지 입력할 수 있습니다.";
     if (payload.cuts.some((cut) => cut.text.length > MAX_CUT_TEXT_LENGTH)) {
-      return '컷 대사는 300자 이하로 입력해주세요.';
+      return "컷 대사는 300자 이하로 입력해주세요.";
     }
-    if (payload.choices.length !== 2) return '선택지는 2개여야 합니다.';
-    if (payload.choices.some((choice) => !choice.label)) return '두 선택지 라벨을 모두 입력해주세요.';
+    if (payload.choices.length !== 2) return "선택지는 2개여야 합니다.";
+    if (payload.choices.some((choice) => !choice.label))
+      return "두 선택지 라벨을 모두 입력해주세요.";
     if (payload.choices.some((choice) => !choice.revealCopy)) {
-      return '두 선택지의 리빌 카피를 모두 입력해주세요.';
+      return "두 선택지의 리빌 카피를 모두 입력해주세요.";
     }
     return null;
   };
@@ -233,17 +258,19 @@ export function EpisodeForm({ episode, mode }: Props) {
     setError(null);
 
     if (!file.type.match(/^image\/(jpeg|png|gif|webp)$/)) {
-      setError('JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.');
+      setError("JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.");
       return;
     }
 
     try {
       const result = await uploadAsset.mutateAsync(file);
-      setField('sceneImageUrl', result.url);
+      setField("sceneImageUrl", result.url);
     } catch (uploadError) {
-      setError(getAdminErrorMessage(uploadError, '이미지 업로드에 실패했습니다.'));
+      setError(
+        getAdminErrorMessage(uploadError, "이미지 업로드에 실패했습니다."),
+      );
     } finally {
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
@@ -256,336 +283,454 @@ export function EpisodeForm({ episode, mode }: Props) {
 
     setError(null);
     try {
-      if (mode === 'create') {
+      if (mode === "create") {
         await createEpisode.mutateAsync(payload);
       } else if (episode) {
         await updateEpisode.mutateAsync({ id: episode.id, payload });
       }
-      router.push('/admin/pixel-campus');
+      router.push("/admin/pixel-campus");
     } catch (saveError) {
-      setError(getAdminErrorMessage(saveError, '저장에 실패했습니다.'));
+      setError(getAdminErrorMessage(saveError, "저장에 실패했습니다."));
     }
   };
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 420px' }, gap: 3 }}>
-      <Box>
+    <div style={{ display: "grid", gap: 24 }}>
+      <div>
         {isLocked && (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            예약, 게시중, 보관 상태의 에피소드는 수정할 수 없습니다. 상태 변경은 별도 액션을 사용해주세요.
-          </Alert>
+          <div
+            role="alert"
+            className="rounded-lg border border-default p-3 text-sm"
+            style={{ marginBottom: 16 }}
+          >
+            예약, 게시중, 보관 상태의 에피소드는 수정할 수 없습니다. 상태 변경은
+            별도 액션을 사용해주세요.
+          </div>
         )}
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          <div
+            role="alert"
+            className="rounded-lg border border-default p-3 text-sm"
+            style={{ marginBottom: 16 }}
+          >
             {error}
-          </Alert>
+            <Button
+              variant="secondary"
+              aria-label="알림 닫기"
+              onClick={() => setError(null)}
+            >
+              닫기
+            </Button>
+          </div>
         )}
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-              기본 정보
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-              <TextField
-                label="챕터 번호"
-                type="number"
-                value={form.chapterNo}
-                onChange={(event) => setField('chapterNo', event.target.value)}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ padding: 24 }}>
+            <h6 style={{ marginBottom: 16 }}>기본 정보</h6>
+            <div style={{ display: "grid", gap: 16 }}>
+              <TextField>
+                <Label>{"챕터 번호"}</Label>
+                <Input
+                  type="number"
+                  value={form.chapterNo}
+                  onChange={(event) =>
+                    setField("chapterNo", event.target.value)
+                  }
+                  {...{ min: 1 }}
+                  disabled={isLocked}
+                />
+              </TextField>
+              <TextField>
+                <Label>{"에피소드 번호"}</Label>
+                <Input
+                  type="number"
+                  value={form.episodeNo}
+                  onChange={(event) =>
+                    setField("episodeNo", event.target.value)
+                  }
+                  {...{ min: 1 }}
+                  disabled={isLocked}
+                />
+                <FieldError>
+                  {mode === "create"
+                    ? "목록 기준 다음 회차를 자동 입력합니다."
+                    : undefined}
+                </FieldError>
+              </TextField>
+            </div>
+            <TextField style={{ marginTop: 16 }}>
+              <Label>{"제목"}</Label>
+              <Input
+                value={form.title}
+                onChange={(event) => setField("title", event.target.value)}
                 disabled={isLocked}
-                inputProps={{ min: 1 }}
-                fullWidth
               />
-              <TextField
-                label="에피소드 번호"
-                type="number"
-                value={form.episodeNo}
-                onChange={(event) => setField('episodeNo', event.target.value)}
-                disabled={isLocked}
-                inputProps={{ min: 1 }}
-                helperText={mode === 'create' ? '목록 기준 다음 회차를 자동 입력합니다.' : undefined}
-                fullWidth
-              />
-            </Box>
-            <TextField
-              label="제목"
-              value={form.title}
-              onChange={(event) => setField('title', event.target.value)}
-              disabled={isLocked}
-              fullWidth
-              sx={{ mt: 2 }}
-            />
-          </Paper>
-
-          <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-              장면 이미지
-            </Typography>
-            <Box
-              sx={{
-                width: '100%',
+            </TextField>
+          </div>
+          <div style={{ padding: 24 }}>
+            <h6 style={{ marginBottom: 16 }}>장면 이미지</h6>
+            <div
+              style={{
+                width: "100%",
                 maxWidth: 520,
-                aspectRatio: '16 / 10',
+                aspectRatio: "16 / 10",
                 borderRadius: 1.5,
-                border: '1px solid',
-                borderColor: form.sceneImageUrl ? 'divider' : 'warning.main',
-                bgcolor: 'grey.100',
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                mb: 1.5,
+                border: "1px solid",
+                borderColor: "#e4e4e7",
+                backgroundColor: "#f4f4f5",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 12,
               }}
             >
               {form.sceneImageUrl ? (
-                <Box
-                  component="img"
+                <img
                   src={form.sceneImageUrl}
                   alt="장면 이미지"
-                  sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                ></img>
               ) : (
-                <Typography variant="body2" color="text.secondary">
-                  장면 이미지 없음
-                </Typography>
+                <p>장면 이미지 없음</p>
               )}
-            </Box>
+            </div>
             {!form.sceneImageUrl && (
-              <FormHelperText error sx={{ mb: 1 }}>
+              <p className="text-sm text-danger">
                 게시하려면 장면 이미지가 필요합니다.
-              </FormHelperText>
+              </p>
             )}
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={uploadAsset.isPending ? <CircularProgress size={16} /> : <PhotoCameraIcon />}
-                disabled={isLocked || uploadAsset.isPending}
-              >
-                {form.sceneImageUrl ? '이미지 변경' : '이미지 업로드'}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <label className="button button--secondary cursor-pointer">
+                {form.sceneImageUrl ? "이미지 변경" : "이미지 업로드"}
                 <input
                   type="file"
+                  disabled={isLocked || uploadAsset.isPending}
                   hidden
                   accept="image/jpeg,image/png,image/gif,image/webp"
                   onChange={handleImageUpload}
                 />
-              </Button>
+              </label>
               {form.sceneImageUrl && (
                 <Button
-                  variant="outlined"
-                  color="error"
-                  disabled={isLocked}
-                  onClick={() => setField('sceneImageUrl', '')}
+                  onClick={() => setField("sceneImageUrl", "")}
+                  variant={"secondary"}
+                  isDisabled={isLocked}
                 >
                   제거
                 </Button>
               )}
-            </Box>
-          </Paper>
-
-          <Paper variant="outlined" sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Typography variant="h6" fontWeight={700}>
-                컷 대사
-              </Typography>
+            </div>
+          </div>
+          <div style={{ padding: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 16,
+                marginBottom: 16,
+              }}
+            >
+              <h6>컷 대사</h6>
               <Button
-                variant="outlined"
-                size="small"
-                startIcon={<AddIcon />}
                 onClick={addCut}
-                disabled={isLocked || form.cuts.length >= MAX_CUTS}
+                variant={"secondary"}
+                isDisabled={isLocked || form.cuts.length >= MAX_CUTS}
               >
-                컷 추가
+                {<AddIcon size={16} />}컷 추가
               </Button>
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {form.cuts.map((cut, index) => (
-                <Paper key={index} variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
-                    <ToggleButtonGroup
-                      exclusive
-                      size="small"
-                      value={cut.speaker}
-                      onChange={(_, value: PixelCampusCut['speaker'] | null) => {
-                        if (value) setCut(index, { speaker: value });
-                      }}
-                      disabled={isLocked}
+                <div
+                  key={index}
+                  style={{ padding: 16, backgroundColor: "#f4f4f5" }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      marginBottom: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Tabs
+                      selectedKey={cut.speaker}
+                      onSelectionChange={(key) =>
+                        key &&
+                        setCut(index, {
+                          speaker: key as PixelCampusCut["speaker"],
+                        })
+                      }
                     >
-                      <ToggleButton value="miho">미호</ToggleButton>
-                      <ToggleButton value="me">나</ToggleButton>
-                    </ToggleButtonGroup>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tabs.ListContainer>
+                        <Tabs.List>
+                          <Tabs.Tab id={"miho"}>
+                            미호
+                            <Tabs.Indicator />
+                          </Tabs.Tab>
+                          <Tabs.Tab id={"me"}>
+                            나<Tabs.Indicator />
+                          </Tabs.Tab>
+                        </Tabs.List>
+                      </Tabs.ListContainer>
+                    </Tabs>
+                    <div style={{ display: "flex", gap: 4 }}>
                       <Button
-                        size="small"
-                        variant="text"
                         onClick={() => moveCut(index, -1)}
-                        disabled={isLocked || index === 0}
-                        startIcon={<KeyboardArrowUpIcon />}
+                        variant={"secondary"}
+                        isDisabled={isLocked || index === 0}
                       >
-                        위
+                        {<KeyboardArrowUpIcon size={16} />}위
                       </Button>
                       <Button
-                        size="small"
-                        variant="text"
                         onClick={() => moveCut(index, 1)}
-                        disabled={isLocked || index === form.cuts.length - 1}
-                        startIcon={<KeyboardArrowDownIcon />}
+                        variant={"secondary"}
+                        isDisabled={isLocked || index === form.cuts.length - 1}
                       >
-                        아래
+                        {<KeyboardArrowDownIcon size={16} />}아래
                       </Button>
                       <Button
-                        size="small"
-                        variant="text"
-                        color="error"
                         onClick={() => removeCut(index)}
-                        disabled={isLocked || form.cuts.length <= 1}
-                        startIcon={<DeleteIcon />}
+                        variant={"secondary"}
+                        isDisabled={isLocked || form.cuts.length <= 1}
                       >
-                        삭제
+                        {<DeleteIcon size={16} />}삭제
                       </Button>
-                    </Box>
-                  </Box>
-                  <TextField
-                    label={`컷 ${index + 1}`}
-                    value={cut.text}
-                    onChange={(event) => setCut(index, { text: event.target.value.slice(0, MAX_CUT_TEXT_LENGTH) })}
-                    disabled={isLocked}
-                    fullWidth
-                    multiline
-                    rows={3}
-                    helperText={`${cut.text.length}/${MAX_CUT_TEXT_LENGTH}`}
-                  />
-                </Paper>
+                    </div>
+                  </div>
+                  <TextField>
+                    <Label>{`컷 ${index + 1}`}</Label>
+                    <TextArea
+                      value={cut.text}
+                      onChange={(event) =>
+                        setCut(index, {
+                          text: event.target.value.slice(
+                            0,
+                            MAX_CUT_TEXT_LENGTH,
+                          ),
+                        })
+                      }
+                      disabled={isLocked}
+                    />
+                    <FieldError>{`${cut.text.length}/${MAX_CUT_TEXT_LENGTH}`}</FieldError>
+                  </TextField>
+                </div>
               ))}
-            </Box>
-          </Paper>
-
-          <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-              선택지
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+            </div>
+          </div>
+          <div style={{ padding: 24 }}>
+            <h6 style={{ marginBottom: 16 }}>선택지</h6>
+            <div style={{ display: "grid", gap: 16 }}>
               {form.choices.map((choice, index) => (
-                <Paper key={index} variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                  <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                    선택지 {index + 1}
-                  </Typography>
-                  <TextField
-                    label="라벨"
-                    value={choice.label}
-                    onChange={(event) => setChoice(index, { label: event.target.value })}
-                    disabled={isLocked}
-                    fullWidth
-                    size="small"
-                    sx={{ mb: 2 }}
-                  />
-                  <TextField
-                    label="리빌 카피"
-                    value={choice.revealCopy}
-                    onChange={(event) => setChoice(index, { revealCopy: event.target.value })}
-                    disabled={isLocked}
-                    fullWidth
-                    multiline
-                    rows={3}
-                  />
-                </Paper>
+                <div
+                  key={index}
+                  style={{ padding: 16, backgroundColor: "#f4f4f5" }}
+                >
+                  <p style={{ marginBottom: 16 }}>선택지 {index + 1}</p>
+                  <TextField style={{ marginBottom: 16 }}>
+                    <Label>{"라벨"}</Label>
+                    <Input
+                      value={choice.label}
+                      onChange={(event) =>
+                        setChoice(index, { label: event.target.value })
+                      }
+                      disabled={isLocked}
+                    />
+                  </TextField>
+                  <TextField>
+                    <Label>{"리빌 카피"}</Label>
+                    <TextArea
+                      value={choice.revealCopy}
+                      onChange={(event) =>
+                        setChoice(index, { revealCopy: event.target.value })
+                      }
+                      disabled={isLocked}
+                    />
+                  </TextField>
+                </div>
               ))}
-            </Box>
-
-            <Accordion variant="outlined" disableGutters sx={{ mt: 2 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle2">고급 설정</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            </div>
+            <Disclosure>
+              <Disclosure.Heading>
+                <Disclosure.Trigger className="w-full py-3 text-left">
+                  <p>고급 설정</p>
+                </Disclosure.Trigger>
+              </Disclosure.Heading>
+              <Disclosure.Content>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 16 }}
+                >
                   {form.choices.map((choice, index) => {
                     const directionLabels = DIRECTION_LABELS[choice.axis];
 
                     return (
-                      <Paper key={index} variant="outlined" sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                          선택지 {index + 1} 점수
-                        </Typography>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 2 }}>
-                          <FormControl size="small" fullWidth>
-                            <InputLabel id={`axis-${index}`}>축</InputLabel>
+                      <div key={index} style={{ padding: 16 }}>
+                        <p style={{ marginBottom: 16 }}>
+                          선택지 {index + 1}점수
+                        </p>
+                        <div style={{ display: "grid", gap: 16 }}>
+                          <div>
                             <Select
-                              labelId={`axis-${index}`}
-                              label="축"
-                              value={choice.axis}
-                              disabled={isLocked}
-                              onChange={(event) => setChoice(index, { axis: event.target.value as PixelCampusChoice['axis'] })}
+                              selectedKey={choice.axis || null}
+                              onSelectionChange={(key) =>
+                                ((event) =>
+                                  setChoice(index, {
+                                    axis: event.target
+                                      .value as PixelCampusChoice["axis"],
+                                  }))({ target: { value: key } } as any)
+                              }
+                              aria-label={"축"}
                             >
-                              {AXIS_OPTIONS.map((axis) => (
-                                <MenuItem key={axis.value} value={axis.value}>
-                                  {axis.label}
-                                </MenuItem>
-                              ))}
+                              <HeroSelectLabel id={`axis-${index}`}>
+                                축
+                              </HeroSelectLabel>
+                              <Select.Trigger>
+                                <Select.Value />
+                                <Select.Indicator />
+                              </Select.Trigger>
+                              <Select.Popover>
+                                <ListBox>
+                                  {AXIS_OPTIONS.map((axis) => (
+                                    <ListBox.Item
+                                      key={axis.value}
+                                      id={axis.value}
+                                      textValue={String(axis.label)}
+                                    >
+                                      {axis.label}
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Select.Popover>
                             </Select>
-                          </FormControl>
-                          <FormControl size="small" fullWidth>
-                            <InputLabel id={`direction-${index}`}>방향</InputLabel>
+                          </div>
+                          <div>
                             <Select
-                              labelId={`direction-${index}`}
-                              label="방향"
-                              value={choice.direction}
-                              disabled={isLocked}
-                              onChange={(event) => setChoice(index, { direction: Number(event.target.value) as -1 | 1 })}
+                              selectedKey={choice.direction || null}
+                              onSelectionChange={(key) =>
+                                ((event) =>
+                                  setChoice(index, {
+                                    direction: Number(event.target.value) as
+                                      | -1
+                                      | 1,
+                                  }))({ target: { value: key } } as any)
+                              }
+                              aria-label={"방향"}
                             >
-                              <MenuItem value={1}>+ {directionLabels.positive}</MenuItem>
-                              <MenuItem value={-1}>- {directionLabels.negative}</MenuItem>
+                              <HeroSelectLabel id={`direction-${index}`}>
+                                방향
+                              </HeroSelectLabel>
+                              <Select.Trigger>
+                                <Select.Value />
+                                <Select.Indicator />
+                              </Select.Trigger>
+                              <Select.Popover>
+                                <ListBox>
+                                  <ListBox.Item
+                                    id={1}
+                                    textValue={
+                                      "+" + String(directionLabels.positive)
+                                    }
+                                  >
+                                    + {directionLabels.positive}
+                                  </ListBox.Item>
+                                  <ListBox.Item
+                                    id={-1}
+                                    textValue={
+                                      "-" + String(directionLabels.negative)
+                                    }
+                                  >
+                                    - {directionLabels.negative}
+                                  </ListBox.Item>
+                                </ListBox>
+                              </Select.Popover>
                             </Select>
-                          </FormControl>
-                          <FormControl size="small" fullWidth>
-                            <InputLabel id={`weight-${index}`}>가중치</InputLabel>
+                          </div>
+                          <div>
                             <Select
-                              labelId={`weight-${index}`}
-                              label="가중치"
-                              value={choice.weight}
-                              disabled={isLocked}
-                              onChange={(event) => setChoice(index, { weight: Number(event.target.value) as 1 | 2 | 3 })}
+                              selectedKey={choice.weight || null}
+                              onSelectionChange={(key) =>
+                                ((event) =>
+                                  setChoice(index, {
+                                    weight: Number(event.target.value) as
+                                      | 1
+                                      | 2
+                                      | 3,
+                                  }))({ target: { value: key } } as any)
+                              }
+                              aria-label={"가중치"}
                             >
-                              {[1, 2, 3].map((weight) => (
-                                <MenuItem key={weight} value={weight}>
-                                  {weight}
-                                </MenuItem>
-                              ))}
+                              <HeroSelectLabel id={`weight-${index}`}>
+                                가중치
+                              </HeroSelectLabel>
+                              <Select.Trigger>
+                                <Select.Value />
+                                <Select.Indicator />
+                              </Select.Trigger>
+                              <Select.Popover>
+                                <ListBox>
+                                  {[1, 2, 3].map((weight) => (
+                                    <ListBox.Item
+                                      key={weight}
+                                      id={weight}
+                                      textValue={String(weight)}
+                                    >
+                                      {weight}
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Select.Popover>
                             </Select>
-                          </FormControl>
-                        </Box>
-                      </Paper>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          </Paper>
-        </Box>
-
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-          <Button onClick={() => router.push('/admin/pixel-campus')} disabled={isSaving}>
+                </div>
+              </Disclosure.Content>
+            </Disclosure>
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 8,
+            marginTop: 16,
+          }}
+        >
+          <Button
+            onClick={() => router.push("/admin/pixel-campus")}
+            variant={"secondary"}
+            isDisabled={isSaving}
+          >
             목록
           </Button>
           <Button
-            variant="contained"
             onClick={handleSubmit}
-            disabled={isLocked || isSaving}
+            variant={"primary"}
+            isDisabled={isLocked || isSaving}
           >
-            {isSaving ? '저장 중...' : '저장'}
+            {isSaving ? "저장 중..." : "저장"}
           </Button>
-        </Box>
-      </Box>
-
-      <Box>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-          앱 미리보기
-        </Typography>
+        </div>
+      </div>
+      <div>
+        <p style={{ marginBottom: 8 }}>앱 미리보기</p>
         <EpisodePreview
           sceneImageUrl={form.sceneImageUrl}
           cuts={form.cuts}
           choices={form.choices}
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }

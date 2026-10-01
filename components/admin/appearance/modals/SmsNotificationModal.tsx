@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  Typography,
-  CircularProgress,
   Alert,
-  IconButton
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import AdminService from '@/app/services/admin';
+  Button,
+  Description,
+  Label,
+  Modal,
+  Spinner,
+  TextArea,
+  TextField,
+} from "@heroui/react";
+import { X } from "lucide-react";
+import React, { useState } from "react";
+
+import AdminService from "@/app/services/admin";
 
 interface SmsNotificationModalProps {
   open: boolean;
@@ -30,9 +28,9 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
   userId,
   phoneNumber,
   userName,
-  onSuccess
+  onSuccess,
 }) => {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -42,7 +40,7 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
     for (let i = 0; i < str.length; i++) {
       // 한글 체크 (유니코드 범위: AC00-D7A3, 가-힣)
       const charCode = str.charCodeAt(i);
-      if (charCode >= 0xAC00 && charCode <= 0xD7A3) {
+      if (charCode >= 0xac00 && charCode <= 0xd7a3) {
         byte += 2; // 한글은 2바이트
       } else {
         byte += 1; // 그 외 문자는 1바이트
@@ -56,7 +54,11 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
   const MAX_USER_INPUT_BYTE = 69; // 사용자가 입력할 수 있는 최대 바이트 (기본 템플릿 제외)
   const SMS_PREFIX = "[web발신]\n[썸타임]\n"; // SMS 기본 템플릿
 
-  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMessageChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const newMessage = e.target.value;
     const messageByte = getByteLength(newMessage);
     setByteCount(messageByte);
@@ -65,12 +67,14 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
 
   const handleSubmit = async () => {
     if (!userId || !message.trim()) {
-      setError('메시지 내용을 입력해주세요.');
+      setError("메시지 내용을 입력해주세요.");
       return;
     }
 
     if (byteCount > MAX_USER_INPUT_BYTE) {
-      setError(`메시지는 ${MAX_USER_INPUT_BYTE}바이트를 초과할 수 없습니다. (현재: ${byteCount}바이트)`);
+      setError(
+        `메시지는 ${MAX_USER_INPUT_BYTE}바이트를 초과할 수 없습니다. (현재: ${byteCount}바이트)`,
+      );
       return;
     }
 
@@ -88,14 +92,14 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
         handleClose();
       }, 1000);
     } catch (error: any) {
-      setError(error.message || 'SMS 발송 중 오류가 발생했습니다.');
+      setError(error.message || "SMS 발송 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setMessage('');
+    setMessage("");
     setError(null);
     setSuccess(false);
     setByteCount(0);
@@ -103,93 +107,117 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
-        }
+    <Modal.Backdrop
+      isOpen={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleClose?.();
       }}
+      isDismissable={handleClose !== undefined}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">SMS 발송</Typography>
-        <IconButton edge="end" color="inherit" onClick={handleClose} aria-label="close">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ mt: 2 }}>
-          {phoneNumber && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                수신자
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                {userName ? `${userName} (${phoneNumber})` : phoneNumber}
-              </Typography>
-            </Box>
-          )}
-
-          <TextField
-            label="메시지"
-            fullWidth
-            multiline
-            rows={4}
-            value={message}
-            onChange={handleMessageChange}
-            margin="normal"
-            variant="outlined"
-            disabled={loading}
-            placeholder="SMS 내용을 입력하세요"
-            InputLabelProps={{ shrink: true }}
-            error={byteCount > MAX_USER_INPUT_BYTE}
-            helperText={`${byteCount}/${MAX_USER_INPUT_BYTE}바이트 (한글: 2바이트, 영어/숫자/공백: 1바이트)`}
-          />
-
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              SMS가 성공적으로 발송되었습니다.
-            </Alert>
-          )}
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button
-          onClick={handleClose}
-          color="inherit"
-          disabled={loading}
-          sx={{ borderRadius: 2 }}
-        >
-          취소
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          color="primary"
-          disabled={loading || !message.trim() || byteCount > MAX_USER_INPUT_BYTE}
-          sx={{ borderRadius: 2, position: 'relative' }}
-        >
-          {loading ? (
-            <>
-              <CircularProgress size={24} sx={{ color: 'white', position: 'absolute' }} />
-              <span style={{ opacity: 0 }}>발송하기</span>
-            </>
-          ) : (
-            '발송하기'
-          )}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      <Modal.Container size="md" scroll="inside">
+        <Modal.Dialog>
+          <Modal.Header
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Modal.Heading>
+              <div className={"text-lg font-semibold text-neutral-900"}>
+                SMS 발송
+              </div>
+              <Button
+                onClick={handleClose}
+                aria-label="close"
+                variant={"ghost"}
+                isDisabled={undefined}
+                isIconOnly={true}
+                size={"md"}
+                className="rounded-lg"
+              >
+                <X />
+              </Button>
+            </Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            <div style={{ marginTop: 8 }}>
+              {phoneNumber && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className={"text-sm text-neutral-700"}>수신자</div>
+                  <div
+                    style={{ fontWeight: "medium" }}
+                    className={"text-sm text-neutral-700"}
+                  >
+                    {userName ? `${userName} (${phoneNumber})` : phoneNumber}
+                  </div>
+                </div>
+              )}
+              <TextField
+                className="w-full"
+                isDisabled={loading}
+                isInvalid={byteCount > MAX_USER_INPUT_BYTE}
+              >
+                <Label>{"메시지"}</Label>
+                <TextArea
+                  rows={4}
+                  value={message}
+                  onChange={handleMessageChange}
+                  placeholder="SMS 내용을 입력하세요"
+                  aria-label={"메시지"}
+                />
+                <Description>{`${byteCount}/${MAX_USER_INPUT_BYTE}바이트 (한글: 2바이트, 영어/숫자/공백: 1바이트)`}</Description>
+              </TextField>
+              {error && (
+                <Alert style={{ marginTop: 8 }} status="danger" role="alert">
+                  <Alert.Content>{error}</Alert.Content>
+                </Alert>
+              )}
+              {success && (
+                <Alert style={{ marginTop: 8 }} status={"success"} role="alert">
+                  <Alert.Content>
+                    SMS가 성공적으로 발송되었습니다.
+                  </Alert.Content>
+                </Alert>
+              )}
+            </div>
+          </Modal.Body>
+          <Modal.Footer
+            style={{ paddingLeft: 12, paddingRight: 12, paddingBottom: 12 }}
+          >
+            <Button
+              onClick={handleClose}
+              style={{ borderRadius: 8 }}
+              variant={"ghost"}
+              isDisabled={loading}
+              size={"md"}
+              className="rounded-xl"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              style={{ borderRadius: 8, position: "relative" }}
+              variant={"primary"}
+              isDisabled={
+                loading || !message.trim() || byteCount > MAX_USER_INPUT_BYTE
+              }
+              size={"md"}
+              className="rounded-xl"
+            >
+              {loading ? (
+                <>
+                  <Spinner aria-label="불러오는 중" size="sm" />
+                  <span style={{ opacity: 0 }}>발송하기</span>
+                </>
+              ) : (
+                "발송하기"
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 };
 

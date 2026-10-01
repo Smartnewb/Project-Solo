@@ -1,24 +1,12 @@
+import { Button, Chip, Label, Switch, Tooltip } from "@heroui/react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  Avatar,
-  Box,
-  Pagination,
-  Tooltip,
-  Switch,
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import SchoolIcon from '@mui/icons-material/School';
-import type { UniversityItem } from '@/types/admin';
+  Pencil as EditIcon,
+  Trash2 as DeleteIcon,
+  Eye as VisibilityIcon,
+  GraduationCap as SchoolIcon,
+} from "lucide-react";
+
+import type { UniversityItem } from "@/types/admin";
 
 interface UniversityTableProps {
   universities: UniversityItem[];
@@ -42,135 +30,229 @@ export default function UniversityTable({
   onPageChange,
 }: UniversityTableProps) {
   const getTypeLabel = (type: string) => {
-    return type === 'UNIVERSITY' ? '4년제' : '전문대';
+    return type === "UNIVERSITY" ? "4년제" : "전문대";
   };
 
   const getTypeColor = (type: string) => {
-    return type === 'UNIVERSITY' ? 'primary' : 'secondary';
+    return type === "UNIVERSITY" ? "primary" : "secondary";
   };
 
   return (
-    <Box>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ bgcolor: 'grey.50' }}>
-              <TableCell width={60}>로고</TableCell>
-              <TableCell>대학명</TableCell>
-              <TableCell width={100}>코드</TableCell>
-              <TableCell width={120}>지역</TableCell>
-              <TableCell width={100}>유형</TableCell>
-              <TableCell width={120}>설립</TableCell>
-              <TableCell width={80} align="center">학과수</TableCell>
-              <TableCell width={100} align="center">활성화</TableCell>
-              <TableCell width={150} align="center">관리</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+    <div>
+      <div>
+        <table className="w-full text-sm text-left">
+          <thead>
+            <tr style={{ backgroundColor: "#f4f4f5" }}>
+              <th
+                scope="col"
+                style={{ width: 60 }}
+                className="px-3 py-2 border-b border-default"
+              >
+                로고
+              </th>
+              <th scope="col" className="px-3 py-2 border-b border-default">
+                대학명
+              </th>
+              <th
+                scope="col"
+                style={{ width: 100 }}
+                className="px-3 py-2 border-b border-default"
+              >
+                코드
+              </th>
+              <th
+                scope="col"
+                style={{ width: 120 }}
+                className="px-3 py-2 border-b border-default"
+              >
+                지역
+              </th>
+              <th
+                scope="col"
+                style={{ width: 100 }}
+                className="px-3 py-2 border-b border-default"
+              >
+                유형
+              </th>
+              <th
+                scope="col"
+                style={{ width: 120 }}
+                className="px-3 py-2 border-b border-default"
+              >
+                설립
+              </th>
+              <th
+                scope="col"
+                style={{ width: 80 }}
+                className="px-3 py-2 border-b border-default"
+              >
+                학과수
+              </th>
+              <th
+                scope="col"
+                style={{ width: 100 }}
+                className="px-3 py-2 border-b border-default"
+              >
+                활성화
+              </th>
+              <th
+                scope="col"
+                style={{ width: 150 }}
+                className="px-3 py-2 border-b border-default"
+              >
+                관리
+              </th>
+            </tr>
+          </thead>
+          <tbody>
             {universities.map((university) => (
-              <TableRow key={university.id} hover>
-                <TableCell>
+              <tr key={university.id}>
+                <td className="px-3 py-2 border-b border-default">
                   {university.logoUrl ? (
-                    <Avatar
+                    <img
                       src={university.logoUrl}
                       alt={university.name}
-                      sx={{ width: 40, height: 40 }}
+                      className="h-12 w-12 rounded-lg object-contain"
                     />
                   ) : (
-                    <Avatar sx={{ width: 40, height: 40, bgcolor: 'grey.300' }}>
-                      <SchoolIcon fontSize="small" />
-                    </Avatar>
+                    <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                      <SchoolIcon size={16} />
+                    </div>
                   )}
-                </TableCell>
-                <TableCell>
-                  <Box>
-                    <Box sx={{ fontWeight: 500 }}>{university.name}</Box>
+                </td>
+                <td className="px-3 py-2 border-b border-default">
+                  <div>
+                    <div style={{ fontWeight: 500 }}>{university.name}</div>
                     {university.en && (
-                      <Box sx={{ fontSize: '0.75rem', color: 'text.secondary', mt: 0.5 }}>
+                      <div
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "#52525b",
+                          marginTop: 4,
+                        }}
+                      >
                         {university.en}
-                      </Box>
+                      </div>
                     )}
-                  </Box>
-                </TableCell>
-                <TableCell>
+                  </div>
+                </td>
+                <td className="px-3 py-2 border-b border-default">
                   {university.code ? (
-                    <Chip label={university.code} size="small" variant="outlined" />
+                    <Chip size="sm">{university.code}</Chip>
                   ) : (
-                    <Box sx={{ color: 'text.secondary' }}>-</Box>
+                    <div style={{ color: "#52525b" }}>-</div>
                   )}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td className="px-3 py-2 border-b border-default">
                   {university.regionName || university.region}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={getTypeLabel(university.type)}
-                    size="small"
-                    color={getTypeColor(university.type)}
-                  />
-                </TableCell>
-                <TableCell>
-                  {university.foundation || '-'}
-                </TableCell>
-                <TableCell align="center">
-                  <Chip label={university.departmentCount || 0} size="small" />
-                </TableCell>
-                <TableCell align="center">
+                </td>
+                <td className="px-3 py-2 border-b border-default">
+                  <Chip size="sm">{getTypeLabel(university.type)}</Chip>
+                </td>
+                <td className="px-3 py-2 border-b border-default">
+                  {university.foundation || "-"}
+                </td>
+                <td className="px-3 py-2 border-b border-default">
+                  <Chip size="sm">{university.departmentCount || 0}</Chip>
+                </td>
+                <td className="px-3 py-2 border-b border-default">
                   <Switch
-                    checked={university.isActive}
-                    onChange={(e) => onToggleActive(university.id, e.target.checked)}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                    <Tooltip title="상세 보기">
-                      <IconButton
-                        size="small"
-                        onClick={() => onViewDetail(university)}
-                        color="info"
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
+                    isSelected={university.isActive}
+                    onChange={(isSelected) =>
+                      onToggleActive(university.id, isSelected)
+                    }
+                    aria-label="활성화"
+                  >
+                    <Switch.Content>
+                      <Switch.Control>
+                        <Switch.Thumb />
+                      </Switch.Control>
+                    </Switch.Content>
+                  </Switch>
+                </td>
+                <td className="px-3 py-2 border-b border-default">
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 4,
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <Button
+                          onClick={() => onViewDetail(university)}
+                          variant={"secondary"}
+                          isIconOnly
+                          aria-label="작업 실행"
+                        >
+                          <VisibilityIcon size={16} />
+                        </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>{"상세 보기"}</Tooltip.Content>
                     </Tooltip>
-                    <Tooltip title="수정">
-                      <IconButton
-                        size="small"
-                        onClick={() => onEdit(university)}
-                        color="primary"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <Button
+                          onClick={() => onEdit(university)}
+                          variant={"secondary"}
+                          isIconOnly
+                          aria-label="작업 실행"
+                        >
+                          <EditIcon size={16} />
+                        </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>{"수정"}</Tooltip.Content>
                     </Tooltip>
-                    <Tooltip title="삭제">
-                      <IconButton
-                        size="small"
-                        onClick={() => onDelete(university.id)}
-                        color="error"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                    <Tooltip>
+                      <Tooltip.Trigger>
+                        <Button
+                          onClick={() => onDelete(university.id)}
+                          variant={"secondary"}
+                          isIconOnly
+                          aria-label="작업 실행"
+                        >
+                          <DeleteIcon size={16} />
+                        </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>{"삭제"}</Tooltip.Content>
                     </Tooltip>
-                  </Box>
-                </TableCell>
-              </TableRow>
+                  </div>
+                </td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
+          </tbody>
+        </table>
+      </div>
       {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(_, value) => onPageChange(value)}
-            color="primary"
-            showFirstButton
-            showLastButton
-          />
-        </Box>
+        <div
+          style={{ display: "flex", justifyContent: "center", marginTop: 24 }}
+        >
+          <nav aria-label="페이지" className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              isDisabled={page <= 1}
+              onPress={() =>
+                ((_, value) => onPageChange(value))(null, page - 1)
+              }
+            >
+              이전
+            </Button>
+            <span>
+              {page} / {totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              isDisabled={page >= totalPages}
+              onPress={() =>
+                ((_, value) => onPageChange(value))(null, page + 1)
+              }
+            >
+              다음
+            </Button>
+          </nav>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }

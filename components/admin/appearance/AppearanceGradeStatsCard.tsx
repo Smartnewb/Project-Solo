@@ -1,21 +1,8 @@
-'use client';
+"use client";
+import { Card, Chip, ProgressBar, Separator } from "@heroui/react";
 
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  Chip,
-  Divider,
-  LinearProgress,
-  Stack,
-  alpha,
-} from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import PersonOffOutlinedIcon from '@mui/icons-material/PersonOffOutlined';
-import FiberNewOutlinedIcon from '@mui/icons-material/FiberNewOutlined';
-import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
+import { Ban, Info, Sparkles, UserX } from "lucide-react";
+
 import {
   PieChart,
   Pie,
@@ -23,31 +10,31 @@ import {
   ResponsiveContainer,
   Tooltip,
   Legend,
-} from 'recharts';
+} from "recharts";
 import {
   UserAppearanceGradeStatsResponse,
   AppearanceGrade,
-} from '@/app/admin/users/appearance/types';
+} from "@/app/admin/users/appearance/types";
 
 const GRADE_COLORS: Record<string, string> = {
-  S: '#7C3AED',
-  A: '#2563EB',
-  B: '#059669',
-  C: '#D97706',
-  UNKNOWN: '#94A3B8',
+  S: "#7C3AED",
+  A: "#2563EB",
+  B: "#059669",
+  C: "#D97706",
+  UNKNOWN: "#94A3B8",
 };
 
 const GRADE_LABELS: Record<string, string> = {
-  S: 'S',
-  A: 'A',
-  B: 'B',
-  C: 'C',
-  UNKNOWN: '미분류',
+  S: "S",
+  A: "A",
+  B: "B",
+  C: "C",
+  UNKNOWN: "미분류",
 };
 
 const UNKNOWN_BREAKDOWN_COLORS = {
-  blindApproved: '#2563EB',
-  gradeRequired: '#D97706',
+  blindApproved: "#2563EB",
+  gradeRequired: "#D97706",
 };
 
 interface AppearanceGradeStatsCardProps {
@@ -63,73 +50,74 @@ function GradeStatMiniCard({
   count: number;
   percentage: number;
 }) {
-  const color = GRADE_COLORS[grade] || '#94A3B8';
+  const color = GRADE_COLORS[grade] || "#94A3B8";
   const label = GRADE_LABELS[grade] || grade;
 
   return (
-    <Box
-      sx={{
-        p: 2,
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: alpha(color, 0.2),
-        bgcolor: alpha(color, 0.04),
-        transition: 'all 0.2s',
-        '&:hover': {
-          borderColor: alpha(color, 0.4),
-          bgcolor: alpha(color, 0.08),
-          transform: 'translateY(-1px)',
-          boxShadow: `0 4px 12px ${alpha(color, 0.15)}`,
-        },
+    <div
+      style={{
+        padding: 8,
+        borderRadius: 8,
+        border: "1px solid",
+        borderColor: `color-mix(in srgb, ${color} 20%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${color} 4%, transparent)`,
+        transition: "all 0.2s",
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box
-            sx={{
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 4,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div
+            style={{
               width: 10,
               height: 10,
-              borderRadius: '50%',
-              bgcolor: color,
+              borderRadius: "50%",
+              backgroundColor: color,
             }}
-          />
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, color }}>
+          ></div>
+          <div
+            style={{ fontWeight: 700 }}
+            className={"text-sm text-neutral-700"}
+          >
             {label}등급
-          </Typography>
-        </Box>
+          </div>
+        </div>
         <Chip
-          label={`${percentage.toFixed(1)}%`}
-          size="small"
-          sx={{
+          style={{
             height: 22,
-            fontSize: '0.75rem',
+            fontSize: "0.75rem",
             fontWeight: 600,
-            bgcolor: alpha(color, 0.12),
-            color,
-            border: 'none',
+            backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+            border: "none",
           }}
-        />
-      </Box>
-      <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+          size={"sm"}
+          variant={"soft"}
+        >{`${percentage.toFixed(1)}%`}</Chip>
+      </div>
+      <div
+        style={{ fontWeight: 700, color: "#171717", marginBottom: 2 }}
+        className={"text-lg font-semibold text-neutral-900"}
+      >
         {count.toLocaleString()}
-        <Typography component="span" variant="body2" sx={{ ml: 0.5, color: 'text.secondary', fontWeight: 400 }}>
+        <div
+          style={{ marginLeft: 2, color: "#525252", fontWeight: 400 }}
+          className={"text-sm text-neutral-700"}
+        >
           명
-        </Typography>
-      </Typography>
-      <LinearProgress
-        variant="determinate"
-        value={Math.min(percentage, 100)}
-        sx={{
-          height: 4,
-          borderRadius: 2,
-          bgcolor: alpha(color, 0.12),
-          '& .MuiLinearProgress-bar': {
-            borderRadius: 2,
-            bgcolor: color,
-          },
-        }}
-      />
-    </Box>
+        </div>
+      </div>
+      <ProgressBar value={Math.min(percentage, 100)} aria-label="진행률">
+        <ProgressBar.Track>
+          <ProgressBar.Fill />
+        </ProgressBar.Track>
+      </ProgressBar>
+    </div>
   );
 }
 
@@ -150,45 +138,53 @@ function PieChartSection({
     payload,
   }: {
     active?: boolean;
-    payload?: Array<{ payload: { name: string; value: number; percentage: number } }>;
+    payload?: Array<{
+      payload: { name: string; value: number; percentage: number };
+    }>;
   }) => {
     if (active && payload && payload.length) {
       const d = payload[0].payload;
       return (
-        <Box
-          sx={{
-            bgcolor: 'background.paper',
-            px: 2,
-            py: 1.5,
-            borderRadius: 2,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-            border: '1px solid',
-            borderColor: 'divider',
+        <div
+          style={{
+            backgroundColor: "#fff",
+            paddingLeft: 8,
+            paddingRight: 8,
+            paddingTop: 6,
+            paddingBottom: 6,
+            borderRadius: 8,
+            border: "1px solid",
           }}
         >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          <div
+            style={{ fontWeight: 600 }}
+            className={"text-sm text-neutral-700"}
+          >
             {d.name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </div>
+          <div className={"text-sm text-neutral-700"}>
             {d.value.toLocaleString()}명 ({d.percentage.toFixed(1)}%)
-          </Typography>
-        </Box>
+          </div>
+        </div>
       );
     }
     return null;
   };
 
   return (
-    <Box>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+    <div>
+      <div
+        style={{ fontWeight: 600, marginBottom: 2 }}
+        className={"text-sm text-neutral-700"}
+      >
         {title}
-      </Typography>
+      </div>
       {subtitle && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        <div style={{ marginBottom: 4 }} className={"text-sm text-neutral-700"}>
           {subtitle}
-        </Typography>
+        </div>
       )}
-      <Box sx={{ height: 220 }}>
+      <div style={{ height: 220 }}>
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -205,7 +201,7 @@ function PieChartSection({
                 {data.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={GRADE_COLORS[entry.grade] || '#CCC'}
+                    fill={GRADE_COLORS[entry.grade] || "#CCC"}
                     strokeWidth={0}
                   />
                 ))}
@@ -214,9 +210,11 @@ function PieChartSection({
               <Legend
                 iconType="circle"
                 iconSize={8}
-                wrapperStyle={{ fontSize: '12px' }}
+                wrapperStyle={{ fontSize: "12px" }}
                 formatter={(value: string) => (
-                  <span style={{ color: '#64748B', fontSize: '12px' }}>{value}</span>
+                  <span style={{ color: "#64748B", fontSize: "12px" }}>
+                    {value}
+                  </span>
                 )}
               />
               <text
@@ -224,7 +222,7 @@ function PieChartSection({
                 y="45%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                style={{ fontSize: '20px', fontWeight: 700, fill: '#1E293B' }}
+                style={{ fontSize: "20px", fontWeight: 700, fill: "#1E293B" }}
               >
                 {total.toLocaleString()}
               </text>
@@ -233,28 +231,26 @@ function PieChartSection({
                 y="56%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                style={{ fontSize: '11px', fill: '#94A3B8' }}
+                style={{ fontSize: "11px", fill: "#94A3B8" }}
               >
                 총원
               </text>
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <Box
-            sx={{
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+          <div
+            style={{
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <Typography variant="body2" color="text.secondary">
-              데이터 없음
-            </Typography>
-          </Box>
+            <div className={"text-sm text-neutral-700"}>데이터 없음</div>
+          </div>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
@@ -268,116 +264,174 @@ function UnknownBreakdownSection({
   totalUnknown: number;
 }) {
   const blindPct = totalUnknown > 0 ? (blindApproved / totalUnknown) * 100 : 0;
-  const gradeRequiredPct = totalUnknown > 0 ? (gradeRequired / totalUnknown) * 100 : 0;
+  const gradeRequiredPct =
+    totalUnknown > 0 ? (gradeRequired / totalUnknown) * 100 : 0;
 
   const items = [
     {
-      label: '블라인드 승인',
-      desc: '사진 등급 없이 블라인드 매칭 승인',
+      label: "블라인드 승인",
+      desc: "사진 등급 없이 블라인드 매칭 승인",
       count: blindApproved,
       pct: blindPct,
       color: UNKNOWN_BREAKDOWN_COLORS.blindApproved,
-      icon: <FiberNewOutlinedIcon sx={{ fontSize: 18 }} />,
+      icon: <Sparkles />,
     },
     {
-      label: '등급 정리 필요',
-      desc: '승인 사진이 있어 등급 부여 필요',
+      label: "등급 정리 필요",
+      desc: "승인 사진이 있어 등급 부여 필요",
       count: gradeRequired,
       pct: gradeRequiredPct,
       color: UNKNOWN_BREAKDOWN_COLORS.gradeRequired,
-      icon: <PersonOffOutlinedIcon sx={{ fontSize: 18 }} />,
+      icon: <UserX />,
     },
   ];
 
   return (
-    <Box
-      sx={{
-        p: 2.5,
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: alpha('#94A3B8', 0.2),
-        bgcolor: alpha('#F8FAFC', 0.8),
+    <div
+      style={{
+        padding: 10,
+        borderRadius: 8,
+        border: "1px solid",
+        borderColor: `color-mix(in srgb, ${"#94A3B8"} 20%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${"#F8FAFC"} 80%, transparent)`,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <InfoOutlinedIcon sx={{ fontSize: 18, color: '#64748B' }} />
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#334155' }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          marginBottom: 8,
+        }}
+      >
+        <Info />
+        <div
+          style={{ fontWeight: 600, color: "#334155" }}
+          className={"text-sm text-neutral-700"}
+        >
           등급 미분류 승인 흐름 ({totalUnknown.toLocaleString()}명)
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
-          <BlockOutlinedIcon sx={{ fontSize: 14, color: '#EF4444' }} />
-          <Typography variant="caption" sx={{ color: '#EF4444', fontWeight: 500 }}>
-            운영 분리
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Stacked bar */}
-      <Box sx={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', mb: 2 }}>
-        <Box sx={{ width: `${blindPct}%`, bgcolor: UNKNOWN_BREAKDOWN_COLORS.blindApproved, transition: 'width 0.3s' }} />
-        <Box sx={{ width: `${gradeRequiredPct}%`, bgcolor: UNKNOWN_BREAKDOWN_COLORS.gradeRequired, transition: 'width 0.3s' }} />
-      </Box>
-
-      <Stack spacing={1.5}>
-        {items.map((item) => (
-          <Box
-            key={item.label}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            marginLeft: "auto",
+          }}
+        >
+          <Ban />
+          <div
+            style={{ color: "#EF4444", fontWeight: 500 }}
+            className={"text-sm text-neutral-700"}
           >
-            <Box
-              sx={{
+            운영 분리
+          </div>
+        </div>
+      </div>
+      {/* Stacked bar */}
+      <div
+        style={{
+          display: "flex",
+          height: 8,
+          borderRadius: 16,
+          overflow: "hidden",
+          marginBottom: 8,
+        }}
+      >
+        <div
+          style={{
+            width: `${blindPct}%`,
+            backgroundColor: UNKNOWN_BREAKDOWN_COLORS.blindApproved,
+            transition: "width 0.3s",
+          }}
+        ></div>
+        <div
+          style={{
+            width: `${gradeRequiredPct}%`,
+            backgroundColor: UNKNOWN_BREAKDOWN_COLORS.gradeRequired,
+            transition: "width 0.3s",
+          }}
+        ></div>
+      </div>
+      <div className={"flex flex-wrap items-center gap-2"}>
+        {items.map((item) => (
+          <div
+            key={item.label}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <div
+              style={{
                 width: 28,
                 height: 28,
-                borderRadius: 1.5,
-                bgcolor: alpha(item.color, 0.15),
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                borderRadius: 6,
+                backgroundColor: `color-mix(in srgb, ${item.color} 15%, transparent)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 color: item.color,
                 flexShrink: 0,
               }}
             >
               {item.icon}
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 2 }}>
+                <div
+                  style={{ fontWeight: 600, color: "#334155" }}
+                  className={"text-sm text-neutral-700"}
+                >
                   {item.label}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                </div>
+                <div
+                  style={{ color: "#94A3B8" }}
+                  className={"text-sm text-neutral-700"}
+                >
                   {item.desc}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#1E293B' }}>
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div
+                style={{ fontWeight: 700, color: "#1E293B" }}
+                className={"text-sm text-neutral-700"}
+              >
                 {item.count.toLocaleString()}명
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+              </div>
+              <div
+                style={{ color: "#94A3B8" }}
+                className={"text-sm text-neutral-700"}
+              >
                 {item.pct.toFixed(1)}%
-              </Typography>
-            </Box>
-          </Box>
+              </div>
+            </div>
+          </div>
         ))}
-      </Stack>
-    </Box>
+      </div>
+    </div>
   );
 }
 
-export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStatsCardProps) {
+export default function AppearanceGradeStatsCard({
+  stats,
+}: AppearanceGradeStatsCardProps) {
   if (!stats) {
     return (
-      <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+      <Card style={{ borderRadius: 12 }}>
+        <Card.Content style={{ padding: 12 }}>
+          <div
+            style={{ fontWeight: 600 }}
+            className={"text-lg font-semibold text-neutral-900"}
+          >
             외모 등급 통계
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <Typography variant="body1" color="text.secondary">
+          </div>
+          <div
+            style={{ display: "flex", justifyContent: "center", padding: 16 }}
+          >
+            <div className={"text-sm text-neutral-700"}>
               통계 데이터를 불러올 수 없습니다.
-            </Typography>
-          </Box>
-        </CardContent>
+            </div>
+          </div>
+        </Card.Content>
       </Card>
     );
   }
@@ -391,118 +445,140 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
 
   if (safeStats.stats.length === 0 && safeStats.genderStats.length === 0) {
     return (
-      <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+      <Card style={{ borderRadius: 12 }}>
+        <Card.Content style={{ padding: 12 }}>
+          <div
+            style={{ fontWeight: 600 }}
+            className={"text-lg font-semibold text-neutral-900"}
+          >
             외모 등급 통계
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <Typography variant="body1" color="text.secondary">
+          </div>
+          <div
+            style={{ display: "flex", justifyContent: "center", padding: 16 }}
+          >
+            <div className={"text-sm text-neutral-700"}>
               아직 통계 데이터가 없습니다.
-            </Typography>
-          </Box>
-        </CardContent>
+            </div>
+          </div>
+        </Card.Content>
       </Card>
     );
   }
 
-  const toChartData = (items: { grade: string; count: number; percentage: number }[]) =>
+  const toChartData = (
+    items: { grade: string; count: number; percentage: number }[],
+  ) =>
     items
       .filter((item) => item && item.grade && (item.count || 0) > 0)
       .map((item) => ({
         name: `${GRADE_LABELS[item.grade as AppearanceGrade] || item.grade}등급`,
         value: item.count || 0,
-        percentage: typeof item.percentage === 'number' ? item.percentage : 0,
+        percentage: typeof item.percentage === "number" ? item.percentage : 0,
         grade: item.grade,
       }));
 
   const chartData = toChartData(safeStats.stats);
   const maleChartData = toChartData(
-    safeStats.genderStats.find((g) => g.gender === 'MALE')?.stats || [],
+    safeStats.genderStats.find((g) => g.gender === "MALE")?.stats || [],
   );
   const femaleChartData = toChartData(
-    safeStats.genderStats.find((g) => g.gender === 'FEMALE')?.stats || [],
+    safeStats.genderStats.find((g) => g.gender === "FEMALE")?.stats || [],
   );
 
-  const unknownStat = safeStats.stats.find((s) => s.grade === 'UNKNOWN');
+  const unknownStat = safeStats.stats.find((s) => s.grade === "UNKNOWN");
   const totalUnknown = unknownStat?.count || 0;
   const hasUnknownApprovalBreakdown = Boolean(
     safeStats.unknownBreakdown &&
-      ('blindApproved' in safeStats.unknownBreakdown || 'gradeRequired' in safeStats.unknownBreakdown),
+    ("blindApproved" in safeStats.unknownBreakdown ||
+      "gradeRequired" in safeStats.unknownBreakdown),
   );
   const hasBreakdown = hasUnknownApprovalBreakdown && totalUnknown > 0;
   const blindApprovedCount = safeStats.unknownBreakdown?.blindApproved ?? 0;
   const gradeRequiredCount = safeStats.unknownBreakdown?.gradeRequired ?? 0;
 
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'visible' }}>
-      <CardContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1E293B' }}>
+    <Card style={{ borderRadius: 12, overflow: "visible" }}>
+      <Card.Content style={{ padding: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 12,
+          }}
+        >
+          <div>
+            <div
+              style={{ fontWeight: 700, color: "#1E293B" }}
+              className={"text-lg font-semibold text-neutral-900"}
+            >
               외모 등급 통계
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.25 }}>
+            </div>
+            <div
+              style={{ color: "#94A3B8", marginTop: 1 }}
+              className={"text-sm text-neutral-700"}
+            >
               승인된 사용자 총 {safeStats.total.toLocaleString()}명
-            </Typography>
-          </Box>
-        </Box>
-
+            </div>
+          </div>
+        </div>
         {/* 등급 카드 그리드 */}
-        <Grid container spacing={1.5} sx={{ mb: 3 }}>
+        <div
+          style={{ marginBottom: 12 }}
+          className={"grid grid-cols-1 gap-4 md:grid-cols-2"}
+        >
           {safeStats.stats
             .filter((item) => item && item.grade)
             .sort((a, b) => {
-              const order: Record<string, number> = { S: 0, A: 1, B: 2, C: 3, UNKNOWN: 4 };
+              const order: Record<string, number> = {
+                S: 0,
+                A: 1,
+                B: 2,
+                C: 3,
+                UNKNOWN: 4,
+              };
               return (order[a.grade] ?? 99) - (order[b.grade] ?? 99);
             })
             .map((item) => (
-              <Grid item xs={6} sm={4} md key={item.grade}>
+              <div key={item.grade} className={"min-w-0"}>
                 <GradeStatMiniCard
                   grade={item.grade}
                   count={item.count || 0}
-                  percentage={typeof item.percentage === 'number' ? item.percentage : 0}
+                  percentage={
+                    typeof item.percentage === "number" ? item.percentage : 0
+                  }
                 />
-              </Grid>
+              </div>
             ))}
-        </Grid>
-
+        </div>
         {/* 미분류 상세 breakdown */}
         {hasBreakdown && (
-          <Box sx={{ mb: 3 }}>
+          <div style={{ marginBottom: 12 }}>
             <UnknownBreakdownSection
               blindApproved={blindApprovedCount}
               gradeRequired={gradeRequiredCount}
               totalUnknown={totalUnknown}
             />
-          </Box>
+          </div>
         )}
-
-        <Divider sx={{ my: 2 }} />
-
+        <Separator style={{ marginTop: 8, marginBottom: 8 }}></Separator>
         {/* 파이 차트 - 전체 / 남성 / 여성 */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
+        <div className={"grid grid-cols-1 gap-4 md:grid-cols-2"}>
+          <div className={"min-w-0"}>
             <PieChartSection
               title="전체"
               subtitle={`${safeStats.total.toLocaleString()}명`}
               data={chartData}
             />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <PieChartSection
-              title="남성"
-              data={maleChartData}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <PieChartSection
-              title="여성"
-              data={femaleChartData}
-            />
-          </Grid>
-        </Grid>
-      </CardContent>
+          </div>
+          <div className={"min-w-0"}>
+            <PieChartSection title="남성" data={maleChartData} />
+          </div>
+          <div className={"min-w-0"}>
+            <PieChartSection title="여성" data={femaleChartData} />
+          </div>
+        </div>
+      </Card.Content>
     </Card>
   );
 }

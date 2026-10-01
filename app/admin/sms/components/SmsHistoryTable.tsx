@@ -1,18 +1,15 @@
 // TITLE: - 메세지 발송 내역 테이블
 'use client';
-
 import { useState, useEffect } from 'react';
 import { SmsHistory } from '../types';
 import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters'; // 날짜&시간 포맷터(yyyy-mm-dd hh:mm) 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { smsService } from '@/app/services/sms';
-
 // MARK: - 메세지 발송 내역 props
 interface SmsHistoryTableProps {
     histories?: SmsHistory[];
     limit?: number;
 }
-
 // MARK: - 메세지 발송 내역 컴포넌트
 export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps) {
     // === 상태관리 ===
@@ -20,15 +17,10 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-
     const totalPages = Math.ceil(data.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentData = data.slice(startIndex, endIndex);
-
-
-
-
     useEffect(() => {
         const fetchHistories = async () => {
             setLoading(true);
@@ -36,36 +28,37 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                 const response = await smsService.getHistory({
                     limit: limit,
                 });
-                setData(response || []); 
-            } catch (error) {
+                setData(response || []);
+            }
+            catch (error) {
                 setData([]);
-            } finally {
+            }
+            finally {
                 setLoading(false);
             }
         };
-
         // 상위 limit(default: 50개)
         if (histories) {
             setData(histories.slice(0, limit));
-        } else {
+        }
+        else {
             fetchHistories();
         }
     }, [histories, limit]);
-
     // === 템플릿명 처리 함수 ===
     const getTemplateName = (history: SmsHistory) => {
         if (history.templateTitle) {
             return history.templateTitle;
-        } else {
+        }
+        else {
             // 템플릿명 존재하지 않으면 현재 날짜 삽입
             return formatDateTimeWithoutTimezoneConversion(history.createdAt);
         }
     };
-
     // === 상태별 스타일 변환 ===
     const getStatusStyle = (status: string) => {
         switch (status) {
-            case 'COMPLETED':  // 🔴 COMPLETE → COMPLETED로 수정(매우 주의)
+            case 'COMPLETED': // 🔴 COMPLETE → COMPLETED로 수정(매우 주의)
             case 'SUCCESS':
                 return 'text-white bg-[#885AEB]';
             case 'FAILED':
@@ -74,7 +67,6 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                 return 'text-[#1F2937] bg-[#F3F4F6] border border-[#D1D5DB] border-[0.5px]';
         }
     };
-
     // 상태 표시 텍스트를 위한 함수 추가 (getStatusStyle 함수 아래)
     const getStatusText = (status: string) => {
         const upperStatus = status?.toUpperCase();
@@ -94,8 +86,6 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                 return status; // 원본 그대로 표시
         }
     };
-
-
     // === 렌더링(JSX) ===
     return (<>
         {/* MARK: - 전체 컨테이너 */}
@@ -108,24 +98,12 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
 
             {/* MARK: - 테이블 콘텐츠 영역*/}
             <div className='pb-4'>
-                {loading ? (
-                    // 로딩 스피너
-                    <div className='flex justify-center items-center py-12'>
+                {loading ? (<div className='flex justify-center items-center py-12'>
                         <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]'></div>
-                    </div>
-                ) : data.length === 0 ? (
-                    // 발송 내역 없는 경우
-                    <div className='text-center py-12'>
+                    </div>) : data.length === 0 ? (<div className='text-center py-12'>
                         <p className='text-gray-500 text-sm'>발송 내역이 없습니다</p>
-                    </div>
-                ) : (
-                    // 발송 내역 카드 리스트
-                    <div className='space-y-3'>
-                        {currentData.map((history) => (
-                            // MARK: - 카드 컨테이너
-                            <div
-                                key={history.id}
-                                className='border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow'>
+                    </div>) : (<div className='space-y-3'>
+                        {currentData.map((history) => (<div key={history.id} className='border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow'>
                                 {/* MARK: - 카드 내용 */}
                                 <div className='flex justify-between items-center'>
                                     <div className='flex-1'>
@@ -134,8 +112,8 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                                             {getTemplateName(history)}
                                         </div>
                                         {/* MARK: - 날짜 및 정보
-                                        TODO:
-                                        - 텍스트 스타일 및 반응형으로 변경*/}
+TODO:
+- 텍스트 스타일 및 반응형으로 변경*/}
                                         <div className='text-xs sm:text-sm text-[#6B7280] font-[400]'>
                                             <span>{formatDateTimeWithoutTimezoneConversion(history.createdAt)}</span>
                                             <span>•</span>
@@ -157,19 +135,17 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                                     </div>
 
                                 </div>
-                            </div>
-                        ))}
+                            </div>))}
 
-                    </div>
-                )}
+                    </div>)}
 
             </div>
 
-            {/* MARK: - 페이지네이션 
-            NOTE:
-            - BE에서 페이지네이션을 해서 통신함
-            - 당분간 미사용
-            - notion에 코드 보관*/}
+            {/* MARK: - 페이지네이션
+NOTE:
+- BE에서 페이지네이션을 해서 통신함
+- 당분간 미사용
+- notion에 코드 보관*/}
 
 
 

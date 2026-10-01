@@ -1,22 +1,23 @@
-'use client';
+"use client";
+import { Button, Input } from "@heroui/react";
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Upload } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   PHOTO_SLOTS,
   PHOTO_SLOT_LABEL,
   type PhotoSlot,
-} from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
-import { Switch } from '@/shared/ui/switch';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
-import { MediaUploadDialog } from './media-upload-dialog';
+} from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Switch } from "@/shared/ui/switch";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
+import { MediaUploadDialog } from "./media-upload-dialog";
 
 interface Props {
   draftId: string;
@@ -32,10 +33,10 @@ export function PhotoSlotCard({ draftId, version, readOnly = false }: Props) {
   );
 
   const [selectedSlots, setSelectedSlots] = useState<PhotoSlot[]>([
-    'representative',
+    "representative",
   ]);
-  const [instruction, setInstruction] = useState('');
-  const [promptVersionId, setPromptVersionId] = useState('');
+  const [instruction, setInstruction] = useState("");
+  const [promptVersionId, setPromptVersionId] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const generateMutation = useMutation({
@@ -47,7 +48,7 @@ export function PhotoSlotCard({ draftId, version, readOnly = false }: Props) {
         promptVersionId: promptVersionId.trim() || undefined,
       }),
     onSuccess: () => {
-      toast.success('사진 생성이 요청되었습니다.');
+      toast.success("사진 생성이 요청되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -108,7 +109,7 @@ export function PhotoSlotCard({ draftId, version, readOnly = false }: Props) {
               <label className="text-xs text-slate-600">
                 프롬프트 버전 ID (선택)
               </label>
-              <input
+              <Input
                 type="text"
                 value={promptVersionId}
                 onChange={(e) => setPromptVersionId(e.target.value)}
@@ -118,19 +119,21 @@ export function PhotoSlotCard({ draftId, version, readOnly = false }: Props) {
             </div>
             <div className="flex justify-end gap-2">
               <Button
-                size="sm"
-                variant="outline"
                 onClick={() => setUploadOpen(true)}
-                disabled={generateMutation.isPending}
+                isDisabled={generateMutation.isPending}
+                variant={"outline"}
+                size={"sm"}
               >
-                <Upload className="mr-1 h-3.5 w-3.5" /> 파일 업로드
+                <Upload className="mr-1 h-3.5 w-3.5" />
+                파일 업로드
               </Button>
               <Button
-                size="sm"
                 onClick={() => generateMutation.mutate()}
-                disabled={disabled}
+                isDisabled={disabled}
+                variant={"primary"}
+                size={"sm"}
               >
-                {generateMutation.isPending ? '생성 중…' : '사진 생성'}
+                {generateMutation.isPending ? "생성 중…" : "사진 생성"}
               </Button>
             </div>
           </>

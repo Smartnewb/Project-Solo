@@ -1,16 +1,19 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { X } from 'lucide-react';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
+import { Button } from "@heroui/react";
+
+import { X } from "lucide-react";
+
+import { Input } from "@/shared/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { Textarea } from '@/shared/ui/textarea';
+} from "@/shared/ui/select";
+import { Textarea } from "@/shared/ui/textarea";
 
 interface Props {
   value: Record<string, string>;
@@ -18,10 +21,13 @@ interface Props {
   keyPlaceholder?: string;
   valuePlaceholder?: string;
   /** If provided, only these keys are allowed (select). */
+  /** If provided, only these keys are allowed (select). */
   allowedKeys?: string[];
+  /** Multi-line value textarea instead of input. */
   /** Multi-line value textarea instead of input. */
   multiline?: boolean;
   disabled?: boolean;
+  /** Optional key -> label map (select-only). */
   /** Optional key -> label map (select-only). */
   keyLabels?: Record<string, string>;
 }
@@ -65,7 +71,7 @@ export function KeyedListInput({
     if (allowedKeys) {
       const available = remainingAllowed ?? [];
       if (available.length === 0) return;
-      onChange({ ...value, [available[0]]: '' });
+      onChange({ ...value, [available[0]]: "" });
     } else {
       // Generate a unique placeholder key
       let i = 1;
@@ -74,15 +80,14 @@ export function KeyedListInput({
         i += 1;
         candidate = `key${i}`;
       }
-      onChange({ ...value, [candidate]: '' });
+      onChange({ ...value, [candidate]: "" });
     }
   };
 
   const resolveLabel = (k: string) => keyLabels?.[k] ?? k;
 
   const canAdd =
-    !disabled &&
-    (allowedKeys ? (remainingAllowed?.length ?? 0) > 0 : true);
+    !disabled && (allowedKeys ? (remainingAllowed?.length ?? 0) > 0 : true);
 
   return (
     <div className="space-y-2">
@@ -99,8 +104,11 @@ export function KeyedListInput({
                 onValueChange={(next) => handleRenameKey(key, next)}
                 disabled={disabled}
               >
+                <HeroSelectLabel className="sr-only">
+                  {keyPlaceholder ?? "키 선택"}
+                </HeroSelectLabel>
                 <SelectTrigger>
-                  <SelectValue placeholder={keyPlaceholder ?? '키 선택'} />
+                  <SelectValue placeholder={keyPlaceholder ?? "키 선택"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={key}>{resolveLabel(key)}</SelectItem>
@@ -117,7 +125,7 @@ export function KeyedListInput({
                 onChange={(event) =>
                   handleRenameKey(key, event.target.value.trim())
                 }
-                placeholder={keyPlaceholder ?? '키'}
+                placeholder={keyPlaceholder ?? "키"}
                 disabled={disabled}
               />
             )}
@@ -145,10 +153,11 @@ export function KeyedListInput({
           {disabled ? null : (
             <Button
               type="button"
-              variant="ghost"
-              size="icon"
               onClick={() => handleRemove(key)}
               aria-label={`${resolveLabel(key)} 삭제`}
+              isIconOnly
+              variant={"tertiary"}
+              size={"md"}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -157,7 +166,12 @@ export function KeyedListInput({
       ))}
 
       {canAdd ? (
-        <Button type="button" variant="outline" size="sm" onClick={handleAdd}>
+        <Button
+          type="button"
+          onClick={handleAdd}
+          variant={"outline"}
+          size={"sm"}
+        >
           항목 추가
         </Button>
       ) : null}

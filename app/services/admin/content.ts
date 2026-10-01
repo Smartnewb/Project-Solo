@@ -13,6 +13,8 @@ import type {
 	CreateCardNewsRequest,
 	CreatePresetRequest,
 	CreateSometimeArticleRequest,
+	NoticeHtmlPreviewRequest,
+	NoticeHtmlPreviewResponse,
 	PublishCardNewsRequest,
 	PublishCardNewsResponse,
 	UpdateBannerOrderRequest,
@@ -110,6 +112,30 @@ export interface CardNewsCategory {
 
 // 카드뉴스 관련 API
 export const cardNews = {
+	previewHtml: async (data: NoticeHtmlPreviewRequest): Promise<NoticeHtmlPreviewResponse> => {
+		const res = await adminPost<{ data: NoticeHtmlPreviewResponse }>(
+			'/admin/v2/content/card-news/html-preview', data,
+		);
+		return res.data;
+	},
+
+	uploadHtmlImage: async (imageFile: File): Promise<UploadImageResponse> => {
+		const formData = new FormData();
+		formData.append('image', imageFile);
+		const res = await adminRequest<{ data: UploadImageResponse }>(
+			'/admin/v2/content/card-news/html-images/upload',
+			{ method: 'POST', body: formData },
+		);
+		return res.data;
+	},
+
+	restoreHtml: async (id: string, expectedRevision: number): Promise<AdminCardNewsItem> => {
+		const res = await adminPost<{ data: AdminCardNewsItem }>(
+			`/admin/v2/content/card-news/${id}/html-restore`, { expectedRevision },
+		);
+		return res.data;
+	},
+
 	uploadSectionImage: async (imageFile: File): Promise<UploadImageResponse> => {
 		try {
 
@@ -140,7 +166,7 @@ export const cardNews = {
 
 	get: async (id: string): Promise<AdminCardNewsItem> => {
 		try {
-			const res = await adminGet<{ data: AdminCardNewsItem }>(`/admin/v2/content/card-news/${id}`);
+			const res = await adminRequest<{ data: AdminCardNewsItem }>(`/admin/v2/content/card-news/${id}`, { cache: 'no-store' });
 			return res.data;
 		} catch (error: any) {
 			throw error;

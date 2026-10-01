@@ -1,46 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  Box,
-  Paper,
-  TablePagination,
-  Button,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  CircularProgress,
-  Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  Card,
-  Typography,
-  ButtonGroup,
-  TextField,
-  InputAdornment,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import {
-  Chat as ChatIcon,
-  Person as PersonIcon,
-  Refresh as RefreshIcon,
-  Close as CloseIcon,
-  AccessTime as AccessTimeIcon,
-  Download as DownloadIcon,
-  Search as SearchIcon,
-  SmartToy as SmartToyIcon,
-  PeopleAlt as PeopleAltIcon,
-} from '@mui/icons-material';
-import Link from 'next/link';
+import { Avatar, Button, Chip, Input, Label, Link, Modal, Pagination, Select, ListBox, Spinner, TextField } from '@heroui/react';
+import { MessageSquare, X, Download, UserRound } from 'lucide-react';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import chatService, {
   ChatRoom,
@@ -51,6 +13,7 @@ import chatService, {
 import AdminService from '@/app/services/admin';
 import { ghostChat } from '@/app/services/admin/ghost-chat';
 import { UserDetail } from '@/components/admin/appearance/UserDetailModal';
+import { sanitizeUrl } from '@/shared/lib/safe-url';
 import { safeToLocaleString } from '@/app/utils/formatters';
 
 const DATE_PRESETS: { label: string; value: DatePreset }[] = [
@@ -94,8 +57,8 @@ export default function ChatManagementTab() {
   const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
   const [totalCount, setTotalCount] = useState(0);
 
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<DatePreset>('7days');
   const [appliedDateRange, setAppliedDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
 
@@ -253,9 +216,11 @@ export default function ChatManagementTab() {
   const fetchChatRooms = async ({
     preset,
     pageOverride,
+    limitOverride,
   }: {
     preset?: DatePreset;
     pageOverride?: number;
+    limitOverride?: number;
   } = {}) => {
     setLoading(true);
     setError('');
@@ -263,7 +228,7 @@ export default function ChatManagementTab() {
     try {
       const params: any = {
         page: (pageOverride ?? page) + 1,
-        limit: rowsPerPage
+        limit: limitOverride ?? rowsPerPage
       };
 
       if (searchName.trim()) {
@@ -273,8 +238,8 @@ export default function ChatManagementTab() {
       if (preset) {
         params.preset = preset;
       } else if (startDate && endDate) {
-        params.startDate = startDate.toISOString().split('T')[0];
-        params.endDate = endDate.toISOString().split('T')[0];
+        params.startDate = startDate;
+        params.endDate = endDate;
       } else {
         params.preset = selectedPreset;
       }
@@ -331,16 +296,10 @@ export default function ChatManagementTab() {
 
   const handlePresetClick = (preset: DatePreset) => {
     setSelectedPreset(preset);
-    setStartDate(null);
-    setEndDate(null);
+    setStartDate('');
+    setEndDate('');
     setPage(0);
     fetchChatRooms({ preset, pageOverride: 0 });
-  };
-
-  const handleCustomDateSearch = () => {
-    if (!startDate || !endDate) return;
-    setPage(0);
-    fetchChatRooms({ pageOverride: 0 });
   };
 
   const handleCsvExport = async () => {
@@ -350,8 +309,8 @@ export default function ChatManagementTab() {
     try {
       const params: any = {};
       if (startDate && endDate) {
-        params.startDate = startDate.toISOString().split('T')[0];
-        params.endDate = endDate.toISOString().split('T')[0];
+        params.startDate = startDate;
+        params.endDate = endDate;
       } else {
         params.preset = selectedPreset;
       }
@@ -392,7 +351,9 @@ export default function ChatManagementTab() {
   };
 
   const handleImagePreview = (imageUrl: string) => {
-    setPreviewImageUrl(imageUrl);
+    const safeUrl = sanitizeUrl(imageUrl);
+    if (!safeUrl) { setError('이미지 주소를 열 수 없습니다.'); return; }
+    setPreviewImageUrl(safeUrl);
     setImagePreviewOpen(true);
   };
 
@@ -402,766 +363,74 @@ export default function ChatManagementTab() {
   }, []);
 
   useEffect(() => {
-    if (page > 0 || rowsPerPage !== DEFAULT_ROWS_PER_PAGE) {
-      fetchChatRooms();
-    }
-  }, [page, rowsPerPage]);
-
-  useEffect(() => {
     void fetchPreviewMessagesForRooms(visibleChatRooms);
   }, [visibleChatRooms]);
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
-    setPage(newPage);
+  const reversedRange = !!startDate && !!endDate && startDate > endDate;
+  const pageCount = Math.max(1, Math.ceil(totalCount / rowsPerPage));
+  const pageItems = Array.from({ length: Math.min(5, pageCount) }, (_, i) => Math.min(Math.max(page + 1 - 2, 1), Math.max(1, pageCount - 4)) + i);
+  const handleChangePage = (nextPage: number) => {
+    setPage(nextPage); void fetchChatRooms({ pageOverride: nextPage });
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  return (
-    <Box>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
-          <TextField
-            size="small"
-            placeholder="사용자 이름 검색"
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setPage(0);
-                fetchChatRooms({ pageOverride: 0 });
-              }
-            }}
-            sx={{ minWidth: 180 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" color="action" />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              label="시작 날짜"
-              value={startDate}
-              onChange={(date) => {
-                setStartDate(date);
-                setSelectedPreset('7days');
-              }}
-              slotProps={{
-                textField: { size: 'small' }
-              }}
-            />
-            <DatePicker
-              label="종료 날짜"
-              value={endDate}
-              onChange={(date) => {
-                setEndDate(date);
-                setSelectedPreset('7days');
-              }}
-              slotProps={{
-                textField: { size: 'small' }
-              }}
-            />
-          </LocalizationProvider>
-
-          <Button
-            variant="contained"
-            onClick={handleCustomDateSearch}
-            disabled={loading || !startDate || !endDate}
-            startIcon={loading ? <CircularProgress size={20} /> : <RefreshIcon />}
-          >
-            조회
-          </Button>
-
-          <ButtonGroup variant="outlined" size="small">
-            {DATE_PRESETS.map((preset) => (
-              <Button
-                key={preset.value}
-                onClick={() => handlePresetClick(preset.value)}
-                variant={selectedPreset === preset.value && !startDate && !endDate ? 'contained' : 'outlined'}
-                disabled={loading}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </ButtonGroup>
-
-          <Button
-            variant="outlined"
-            onClick={handleCsvExport}
-            disabled={csvExporting || loading}
-            startIcon={csvExporting ? <CircularProgress size={20} /> : <DownloadIcon />}
-            color="secondary"
-          >
-            CSV 다운로드
-          </Button>
-        </Box>
-
-        {appliedDateRange.start && appliedDateRange.end && (
-          <Typography variant="caption" color="text.secondary">
-            조회 기간: {appliedDateRange.start} ~ {appliedDateRange.end}
-          </Typography>
-        )}
-      </Paper>
-
-      <Paper sx={{ overflow: 'hidden' }}>
-        <Box
-          sx={{
-            p: 2,
-            borderBottom: 1,
-            borderColor: 'divider',
-            bgcolor: 'grey.50',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 1.5 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1.2 }}>
-                채팅방 카드 리스트
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                일반 채팅과 고스트 채팅을 분리하고, 최근 메시지를 버블 카드로 확인합니다.
-              </Typography>
-            </Box>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              value={sessionFilter}
-              onChange={(_, nextValue: SessionFilter | null) => {
-                if (nextValue) setSessionFilter(nextValue);
-              }}
-              aria-label="채팅 세션 유형 필터"
-              sx={{
-                '& .MuiToggleButton-root': {
-                  px: 1.5,
-                  py: 0.75,
-                  fontWeight: 800,
-                  textTransform: 'none',
-                },
-              }}
-            >
-              <ToggleButton value="user" aria-label="유저 세션">
-                일반 채팅 {sessionStats.user}
-              </ToggleButton>
-              <ToggleButton value="ghost" aria-label="고스트 세션">
-                고스트 채팅 {sessionStats.ghost}
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-              gap: 1,
-            }}
-          >
-            <Box sx={{ p: 1.25, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <ChatIcon fontSize="small" color="primary" />
-                <Typography variant="caption" color="text.secondary">전체 채팅방</Typography>
-              </Stack>
-              <Typography variant="h6" sx={{ fontWeight: 900 }}>{sessionStats.total}</Typography>
-            </Box>
-            <Box sx={{ p: 1.25, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <SmartToyIcon fontSize="small" color="secondary" />
-                <Typography variant="caption" color="text.secondary">고스트 채팅</Typography>
-              </Stack>
-              <Typography variant="h6" sx={{ fontWeight: 900 }}>{sessionStats.ghost}</Typography>
-            </Box>
-            <Box sx={{ p: 1.25, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}>
-              <Stack direction="row" spacing={0.75} alignItems="center">
-                <PeopleAltIcon fontSize="small" color="success" />
-                <Typography variant="caption" color="text.secondary">24h 활동 / 활성</Typography>
-              </Stack>
-              <Typography variant="h6" sx={{ fontWeight: 900 }}>{sessionStats.recent} / {sessionStats.active}</Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        <Box sx={{ p: 1.5 }}>
-          {loading ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 220 }}>
-              <CircularProgress />
-            </Box>
-          ) : visibleChatRooms.length === 0 ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 220, color: 'text.secondary' }}>
-              <Typography variant="body2">표시할 {SESSION_FILTER_LABELS[sessionFilter]} 채팅방이 없습니다.</Typography>
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, minmax(0, 1fr))',
-                  lg: 'repeat(3, minmax(0, 1fr))',
-                  xl: 'repeat(6, minmax(0, 1fr))',
-                },
-                gap: 1.25,
-              }}
-            >
-              {visibleChatRooms.map((chatRoom) => {
-                const isGhost = chatRoom.sessionType === 'ghost';
-                const previewMessages = previewMessagesByRoomId[chatRoom.id] ?? [];
-                const previewLoading = previewLoadingRoomIds.has(chatRoom.id);
-                return (
-                  <Paper
-                    key={chatRoom.id}
-                    variant="outlined"
-                    sx={{
-                      p: 1.25,
-                      borderRadius: 1,
-                      minHeight: 440,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      borderTop: '4px solid',
-                      borderTopColor: isGhost ? 'secondary.main' : 'primary.main',
-                      '&:hover': { bgcolor: 'action.hover' },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 1,
-                        mb: 1.25,
-                        minWidth: 0,
-                      }}
-                    >
-                      <Box sx={{ minWidth: 0 }}>
-                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75, flexWrap: 'wrap', rowGap: 0.5 }}>
-                          <Chip
-                            icon={isGhost ? <SmartToyIcon /> : <PeopleAltIcon />}
-                            label={isGhost ? '고스트 채팅' : '일반 채팅'}
-                            color={isGhost ? 'secondary' : 'primary'}
-                            size="small"
-                            variant={isGhost ? 'filled' : 'outlined'}
-                            sx={{ fontWeight: 800 }}
-                          />
-                          <Chip
-                            label={chatRoom.isActive ? '활성' : '비활성'}
-                            color={chatRoom.isActive ? 'success' : 'default'}
-                            size="small"
-                          />
-                        </Stack>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 900 }} noWrap>
-                          {chatRoom.male.name} · {chatRoom.female.name}
-                        </Typography>
-                        {chatRoom.ghostChatSessionId && (
-                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                            고스트 응대 세션
-                          </Typography>
-                        )}
-                      </Box>
-
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr',
-                          gap: 0.75,
-                          minWidth: 0,
-                        }}
-                      >
-                        {[
-                          { label: '남성 사용자', user: chatRoom.male },
-                          { label: '여성 사용자', user: chatRoom.female },
-                        ].map(({ label, user }) => {
-                          const profileItems = getProfileSummaryItems(user);
-                          return (
-                            <Box
-                              key={label}
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: 0.85,
-                                minWidth: 0,
-                                px: 0.75,
-                                py: 0.65,
-                                borderRadius: 1,
-                                bgcolor: 'background.paper',
-                                border: 1,
-                                borderColor: 'divider',
-                              }}
-                            >
-                              <Avatar
-                                src={getRepresentativePhoto(user)}
-                                sx={{ width: 44, height: 44, flexShrink: 0, fontWeight: 800 }}
-                              >
-                                {user.name?.charAt(0)}
-                              </Avatar>
-                              <Box sx={{ minWidth: 0, flex: 1 }}>
-                                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                                  {label}
-                                </Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 800, lineHeight: 1.2 }} noWrap>
-                                  {user.name}
-                                </Typography>
-                                {profileItems.length > 0 ? (
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{
-                                      display: '-webkit-box',
-                                      WebkitLineClamp: 2,
-                                      WebkitBoxOrient: 'vertical',
-                                      overflow: 'hidden',
-                                      lineHeight: 1.3,
-                                      mt: 0.25,
-                                      wordBreak: 'keep-all',
-                                    }}
-                                  >
-                                    {profileItems.slice(0, 4).join(' · ')}
-                                  </Typography>
-                                ) : (
-                                  <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.25 }}>
-                                    프로필 정보 없음
-                                  </Typography>
-                                )}
-                              </Box>
-                            </Box>
-                          );
-                        })}
-                      </Box>
-
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr',
-                          gap: 0.75,
-                          p: 0.75,
-                          borderRadius: 1,
-                          bgcolor: 'grey.50',
-                        }}
-                      >
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                            마지막 메시지
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
-                            {chatRoom.lastMessageAt ? formatDate(chatRoom.lastMessageAt) : '메시지 없음'}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                            생성일
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
-                            {formatDate(chatRoom.createdAt)}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      <Button
-                        size="small"
-                        variant={isGhost && chatRoom.ghostChatSessionId ? 'contained' : 'outlined'}
-                        onClick={() => {
-                          if (!isGhost || !chatRoom.ghostChatSessionId) {
-                            handleChatRoomClick(chatRoom);
-                          }
-                        }}
-                        component={isGhost && chatRoom.ghostChatSessionId ? Link : 'button'}
-                        href={
-                          isGhost && chatRoom.ghostChatSessionId
-                            ? `/admin/ghost-chat?session=${encodeURIComponent(chatRoom.ghostChatSessionId)}`
-                            : undefined
-                        }
-                        startIcon={<ChatIcon />}
-                        fullWidth
-                        sx={{ whiteSpace: 'nowrap' }}
-                      >
-                        {isGhost && chatRoom.ghostChatSessionId ? '고스트 뷰 열기' : '채팅 보기'}
-                      </Button>
-                    </Box>
-
-                    <Box
-                      sx={{
-                        flex: 1,
-                        minHeight: 190,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 0.6,
-                        p: 0.75,
-                        borderRadius: 1,
-                        bgcolor: 'grey.50',
-                        border: 1,
-                        borderColor: 'divider',
-                      }}
-                    >
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800 }}>
-                        최근 채팅 6개
-                      </Typography>
-                      {previewLoading ? (
-                        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <CircularProgress size={22} />
-                        </Box>
-                      ) : previewMessages.length > 0 ? (
-                        previewMessages.slice(-6).map((message) => {
-                          const senderRole = getSenderRole(chatRoom, message.senderId);
-                          const isRight = senderRole === 'female';
-                          const isSystem = senderRole === 'system';
-
-                          if (isSystem) {
-                            return (
-                              <Box key={message.id} sx={{ display: 'flex', justifyContent: 'center' }}>
-                                <Chip
-                                  label={message.content || '시스템 메시지'}
-                                  size="small"
-                                  variant="outlined"
-                                  sx={{ maxWidth: '86%', bgcolor: 'background.paper' }}
-                                />
-                              </Box>
-                            );
-                          }
-
-                          return (
-                            <Box
-                              key={message.id}
-                              sx={{
-                                display: 'flex',
-                                justifyContent: isRight ? 'flex-end' : 'flex-start',
-                                px: 0.25,
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  maxWidth: '92%',
-                                  px: 1,
-                                  py: 0.75,
-                                  borderRadius: isRight ? '10px 10px 2px 10px' : '10px 10px 10px 2px',
-                                  border: 1,
-                                  borderColor: isRight ? 'primary.light' : 'divider',
-                                  bgcolor: isRight ? 'rgba(25, 118, 210, 0.08)' : 'background.paper',
-                                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.06)',
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  color={isRight ? 'primary.main' : 'text.secondary'}
-                                  sx={{ display: 'block', fontWeight: 800, lineHeight: 1.1, mb: 0.25 }}
-                                >
-                                  {senderRoleLabel(senderRole)} · {message.senderName}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.primary"
-                                  sx={{
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden',
-                                    lineHeight: 1.35,
-                                    wordBreak: 'break-word',
-                                  }}
-                                >
-                                  {message.content || (message.messageType === 'image' ? '이미지 메시지' : '메시지 본문 없음')}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          );
-                        })
-                      ) : (
-                        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', px: 1 }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                            최근 메시지가 없습니다.
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </Paper>
-                );
-              })}
-            </Box>
-          )}
-        </Box>
-
-        <TablePagination
-          component="div"
-          count={totalCount}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[24, DEFAULT_ROWS_PER_PAGE]}
-          labelRowsPerPage="페이지당 행 수:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
-        />
-      </Paper>
-
-      <Dialog
-        open={chatDetailOpen}
-        onClose={() => setChatDetailOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <ChatIcon />
-            <Typography variant="h6">채팅 상세</Typography>
-            {selectedChatRoom && (
-              <Chip
-                label={selectedChatRoom.isActive ? '활성' : '비활성'}
-                color={selectedChatRoom.isActive ? 'success' : 'default'}
-                size="small"
-              />
-            )}
-          </Box>
-          <IconButton onClick={() => setChatDetailOpen(false)}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 0 }}>
-          {selectedChatRoom && (
-            <>
-              <Box sx={{ p: 2, bgcolor: 'grey.50', borderBottom: 1, borderColor: 'divider' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar src={getRepresentativePhoto(selectedChatRoom.male)} />
-                    <Box>
-                      <Typography variant="subtitle2">{selectedChatRoom.male.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">남성</Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleUserClick(selectedChatRoom.male.id)}
-                      startIcon={<PersonIcon />}
-                    >
-                      프로필
-                    </Button>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar src={getRepresentativePhoto(selectedChatRoom.female)} />
-                    <Box>
-                      <Typography variant="subtitle2">{selectedChatRoom.female.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">여성</Typography>
-                    </Box>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleUserClick(selectedChatRoom.female.id)}
-                      startIcon={<PersonIcon />}
-                    >
-                      프로필
-                    </Button>
-                  </Box>
-                </Box>
-
-                <Box sx={{ mt: 2, display: 'flex', gap: 4 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    <AccessTimeIcon sx={{ fontSize: 14, mr: 0.5 }} />
-                    생성일: {formatDate(selectedChatRoom.createdAt)}
-                  </Typography>
-                  {selectedChatRoom.lastMessageAt && (
-                    <Typography variant="caption" color="text.secondary">
-                      <AccessTimeIcon sx={{ fontSize: 14, mr: 0.5 }} />
-                      마지막 메시지: {formatDate(selectedChatRoom.lastMessageAt)}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-
-              <Box
-                ref={messagesContainerRef}
-                sx={{ height: 400, overflow: 'auto', p: 1 }}
-              >
-                {messagesLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                    <CircularProgress />
-                  </Box>
-                ) : chatMessages.length === 0 ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                    <Typography color="text.secondary">메시지가 없습니다.</Typography>
-                  </Box>
-                ) : (
-                  <List sx={{ p: 0 }}>
-                    {chatMessages.map((message) => {
-                      const isSystemMessage = message.senderId === 'system';
-                      const isMaleMessage = message.senderId === selectedChatRoom.male.id;
-
-                      if (isSystemMessage) {
-                        return (
-                          <Box key={message.id} sx={{ textAlign: 'center', my: 1 }}>
-                            <Chip
-                              label={message.content}
-                              size="small"
-                              variant="outlined"
-                              sx={{ bgcolor: 'grey.100' }}
-                            />
-                          </Box>
-                        );
-                      }
-
-                      return (
-                        <ListItem
-                          key={message.id}
-                          sx={{
-                            flexDirection: isMaleMessage ? 'row' : 'row-reverse',
-                            alignItems: 'flex-start',
-                            gap: 1,
-                            py: 0.5
-                          }}
-                        >
-                          <ListItemAvatar sx={{ minWidth: 'auto' }}>
-                            <Avatar
-                              src={getRepresentativePhoto(isMaleMessage ? selectedChatRoom.male : selectedChatRoom.female)}
-                              sx={{ width: 32, height: 32, cursor: 'pointer' }}
-                              onClick={() => handleUserClick(message.senderId)}
-                            />
-                          </ListItemAvatar>
-
-                          <Box sx={{
-                            maxWidth: '70%',
-                            textAlign: isMaleMessage ? 'left' : 'right'
-                          }}>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{
-                                display: 'block',
-                                mb: 0.5,
-                                cursor: 'pointer'
-                              }}
-                              onClick={() => handleUserClick(message.senderId)}
-                            >
-                              {message.senderName}
-                            </Typography>
-
-                            <Card
-                              sx={{
-                                bgcolor: isMaleMessage ? '#1976d2' : '#424242',
-                                color: '#ffffff !important',
-                                borderRadius: 2,
-                                p: 1,
-                                '& .MuiTypography-root': {
-                                  color: '#ffffff !important'
-                                }
-                              }}
-                            >
-                              {message.messageType === 'image' && message.mediaUrl ? (
-                                <Box>
-                                  <Box
-                                    component="img"
-                                    src={message.mediaUrl}
-                                    alt="채팅 이미지"
-                                    sx={{
-                                      maxWidth: 200,
-                                      maxHeight: 200,
-                                      width: 'auto',
-                                      height: 'auto',
-                                      borderRadius: 1,
-                                      cursor: 'pointer',
-                                      '&:hover': {
-                                        opacity: 0.8
-                                      }
-                                    }}
-                                    onClick={() => handleImagePreview(message.mediaUrl!)}
-                                  />
-                                  {message.content && (
-                                    <Typography variant="body2" sx={{ mt: 1 }}>
-                                      {message.content}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              ) : (
-                                <Typography variant="body2">
-                                  {message.content}
-                                </Typography>
-                              )}
-                            </Card>
-
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: 'block', mt: 0.5 }}
-                            >
-                              {formatDate(message.createdAt)}
-                            </Typography>
-                          </Box>
-                        </ListItem>
-                      );
-                    })}
-                  </List>
-                )}
-              </Box>
-            </>
-          )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setChatDetailOpen(false)}>
-            닫기
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {userDetail && (
-        <UserDetailModal
-          open={userDetailOpen}
-          onClose={() => setUserDetailOpen(false)}
-          userId={selectedUserId}
-          userDetail={userDetail}
-          loading={loadingUserDetail}
-          error={userDetailError}
-          onRefresh={() => {
-            if (selectedUserId) {
-              handleUserClick(selectedUserId);
-            }
-          }}
-        />
-      )}
-
-      <Dialog
-        open={imagePreviewOpen}
-        onClose={() => setImagePreviewOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">이미지 미리보기</Typography>
-          <IconButton onClick={() => setImagePreviewOpen(false)}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 2, textAlign: 'center' }}>
-          {previewImageUrl && (
-            <Box
-              component="img"
-              src={previewImageUrl}
-              alt="미리보기 이미지"
-              sx={{
-                maxWidth: '100%',
-                maxHeight: '70vh',
-                width: 'auto',
-                height: 'auto',
-                borderRadius: 1
-              }}
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => globalThis.open(previewImageUrl, '_blank')}>
-            새 탭에서 열기
-          </Button>
-          <Button onClick={() => setImagePreviewOpen(false)}>
-            닫기
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
+  return <div className="space-y-4">
+    {error && <p role="alert" className="rounded-lg border border-red-200 p-3">{error}</p>}
+    <section aria-label="채팅방 조회" className="space-y-3 rounded-xl border bg-white p-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <TextField isDisabled={loading}><Label>사용자 이름 검색</Label><Input value={searchName} onChange={e => setSearchName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !loading && !reversedRange) { setPage(0); void fetchChatRooms({pageOverride:0}); } }} /></TextField>
+        <TextField isDisabled={loading}><Label>시작 날짜</Label><Input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setSelectedPreset('7days'); }} /></TextField>
+        <TextField isDisabled={loading} isInvalid={reversedRange}><Label>종료 날짜</Label><Input type="date" value={endDate} min={startDate || undefined} onChange={e => { setEndDate(e.target.value); setSelectedPreset('7days'); }} /></TextField>
+        <Button isDisabled={loading || reversedRange} onPress={() => {setPage(0); void fetchChatRooms({pageOverride:0});}}>조회</Button>
+        <div role="group" aria-label="기간 바로 선택" className="flex flex-wrap gap-1">{DATE_PRESETS.map(preset => <Button key={preset.value} size="sm" isDisabled={loading} variant={selectedPreset === preset.value && !startDate && !endDate ? 'primary' : 'secondary'} aria-pressed={selectedPreset === preset.value && !startDate && !endDate} onPress={() => handlePresetClick(preset.value)}>{preset.label}</Button>)}</div>
+        <Button variant="secondary" isDisabled={csvExporting || loading || reversedRange} onPress={() => void handleCsvExport()}>{csvExporting ? <Spinner size="sm" /> : <Download size={16} />}CSV 다운로드</Button>
+      </div>
+      {reversedRange && <p role="alert" className="text-sm text-red-700">종료 날짜는 시작 날짜 이후여야 합니다.</p>}
+      {appliedDateRange.start && appliedDateRange.end && <p className="text-sm text-gray-600">조회 기간: {appliedDateRange.start} ~ {appliedDateRange.end}</p>}
+    </section>
+    <section className="space-y-4 rounded-xl border bg-white p-4">
+      <header className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">채팅방 카드 리스트</h2><p className="text-sm text-gray-600">일반 채팅과 고스트 채팅의 최근 메시지를 확인합니다.</p></div><div role="group" aria-label="채팅 세션 유형 필터" className="flex gap-2">{(['user','ghost'] as const).map(filter => <Button key={filter} size="sm" variant={sessionFilter === filter ? 'primary' : 'secondary'} aria-pressed={sessionFilter === filter} onPress={() => setSessionFilter(filter)}>{SESSION_FILTER_LABELS[filter]} {sessionStats[filter]}</Button>)}</div></header>
+      <dl className="grid gap-3 sm:grid-cols-3">{[['현재 페이지 채팅방',sessionStats.total],['현재 페이지 고스트 채팅',sessionStats.ghost],['24h 활동 / 활성',`${sessionStats.recent} / ${sessionStats.active}`]].map(([title,value]) => <div key={title} className="rounded-lg border p-3"><dt className="text-sm text-gray-600">{title}</dt><dd className="text-xl font-bold">{value}</dd></div>)}</dl>
+      {loading ? <div role="status" aria-label="채팅방 조회 중" className="flex justify-center py-12"><Spinner /></div> : !visibleChatRooms.length ? <p className="py-12 text-center text-gray-600">표시할 {SESSION_FILTER_LABELS[sessionFilter]} 채팅방이 없습니다.</p> : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        {visibleChatRooms.map(room => <article key={room.id} className="flex min-w-0 flex-col gap-3 rounded-lg border border-t-4 border-t-[var(--accent)] p-3">
+          <header className="space-y-2"><div className="flex flex-wrap gap-2"><Chip size="sm" variant="soft">{SESSION_FILTER_LABELS[room.sessionType]}</Chip><Chip size="sm" variant="soft" color={room.isActive ? 'success' : 'default'}>{room.isActive ? '활성' : '비활성'}</Chip></div><h3 className="font-semibold">{room.male.name} · {room.female.name}</h3>{room.ghostChatSessionId && <p className="text-xs text-gray-600">고스트 응대 세션</p>}</header>
+          {[{label:'남성 사용자',user:room.male},{label:'여성 사용자',user:room.female}].map(({label,user}) => <div key={label} className="flex items-start gap-2 rounded-lg border p-2"><Avatar><Avatar.Image src={getRepresentativePhoto(user)} alt="" /><Avatar.Fallback>{user.name?.charAt(0)}</Avatar.Fallback></Avatar><div className="min-w-0"><p className="text-xs text-gray-600">{label}</p><p className="font-semibold">{user.name}</p><p className="line-clamp-2 text-xs text-gray-600">{getProfileSummaryItems(user).slice(0,4).join(' · ') || '프로필 정보 없음'}</p></div></div>)}
+          <dl className="grid grid-cols-2 gap-2 rounded-lg bg-gray-50 p-2 text-xs"><div><dt className="text-gray-600">마지막 메시지</dt><dd>{room.lastMessageAt ? formatDate(room.lastMessageAt) : '메시지 없음'}</dd></div><div><dt className="text-gray-600">생성일</dt><dd>{formatDate(room.createdAt)}</dd></div></dl>
+          {room.sessionType === 'ghost' && room.ghostChatSessionId ? <Link className="button button--secondary button--sm w-full" href={`/admin/ghost-chat?session=${encodeURIComponent(room.ghostChatSessionId)}`}>고스트 뷰 열기</Link> : <Button size="sm" variant="secondary" aria-label={`${room.male.name} · ${room.female.name} 채팅 보기`} onPress={() => void handleChatRoomClick(room)}><MessageSquare size={16} />채팅 보기</Button>}
+          <section className="flex min-h-48 flex-1 flex-col gap-2 rounded-lg border bg-gray-50 p-2" aria-label={`${room.male.name} · ${room.female.name} 최근 채팅`}><h4 className="text-xs font-semibold text-gray-600">최근 채팅 6개</h4>
+            {previewLoadingRoomIds.has(room.id) ? <Spinner size="sm" /> : !(previewMessagesByRoomId[room.id]?.length) ? <p className="m-auto text-xs text-gray-600">최근 메시지가 없습니다.</p> : previewMessagesByRoomId[room.id].slice(-6).map(message => {
+              const role = getSenderRole(room,message.senderId);
+              return <div key={message.id} className={`max-w-[92%] rounded-lg border bg-white p-2 text-xs ${role === 'female' ? 'self-end' : role === 'system' ? 'self-center' : 'self-start'}`}>
+                {role !== 'system' && <p className="mb-1 font-semibold text-gray-600">{senderRoleLabel(role)} · {message.senderName}</p>}<p className="line-clamp-2 break-words">{message.content || (message.messageType === 'image' ? '이미지 메시지' : '메시지 본문 없음')}</p>
+              </div>;
+            })}
+          </section>
+        </article>)}
+      </div>}
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+        <Select className="w-44" selectedKey={String(rowsPerPage)} isDisabled={loading} onSelectionChange={key => {if (key == null) return; const limit=Number(key); setRowsPerPage(limit); setPage(0); void fetchChatRooms({pageOverride:0,limitOverride:limit});}}><Label>페이지당 행 수</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox>{[24,48].map(limit => <ListBox.Item key={limit} id={String(limit)} textValue={`${limit}개`}>{limit}개<ListBox.ItemIndicator /></ListBox.Item>)}</ListBox></Select.Popover></Select>
+        <p className="text-sm text-gray-600">{totalCount ? page * rowsPerPage + 1 : 0}–{Math.min((page + 1) * rowsPerPage,totalCount)} / {totalCount}</p>
+        <Pagination><Pagination.Content><Pagination.Item><Pagination.Previous isDisabled={loading || page === 0} onPress={() => handleChangePage(page - 1)} aria-label="이전 페이지">이전</Pagination.Previous></Pagination.Item>{pageItems.map(number => <Pagination.Item key={number}><Pagination.Link isActive={number === page + 1} isDisabled={loading} aria-label={`${number}페이지`} onPress={() => handleChangePage(number - 1)}>{number}</Pagination.Link></Pagination.Item>)}<Pagination.Item><Pagination.Next isDisabled={loading || page + 1 >= pageCount} onPress={() => handleChangePage(page + 1)} aria-label="다음 페이지">다음</Pagination.Next></Pagination.Item></Pagination.Content></Pagination>
+      </footer>
+    </section>
+    <Modal.Backdrop isOpen={chatDetailOpen} onOpenChange={setChatDetailOpen}><Modal.Container size="lg"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>채팅 상세</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="채팅 상세 닫기" onPress={() => setChatDetailOpen(false)}><X size={18} /></Button></Modal.Header>
+      <Modal.Body className="space-y-3">{selectedChatRoom && <>
+        <div className="flex flex-wrap justify-between gap-3 rounded-lg bg-gray-50 p-3">{[selectedChatRoom.male,selectedChatRoom.female].map(user => <div key={user.id} className="flex items-center gap-2"><Avatar><Avatar.Image src={getRepresentativePhoto(user)} alt="" /><Avatar.Fallback>{user.name?.charAt(0)}</Avatar.Fallback></Avatar><p className="text-sm font-semibold">{user.name}</p><Button variant="secondary" size="sm" aria-label={`${user.name} 프로필`} onPress={() => void handleUserClick(user.id)}><UserRound size={16} />프로필</Button></div>)}<Chip size="sm" variant="soft">{selectedChatRoom.isActive ? '활성' : '비활성'}</Chip></div>
+        <p className="text-xs text-gray-600">생성일: {formatDate(selectedChatRoom.createdAt)}{selectedChatRoom.lastMessageAt && ` · 마지막 메시지: ${formatDate(selectedChatRoom.lastMessageAt)}`}</p>
+        <div ref={messagesContainerRef} className="h-96 overflow-auto p-1">{messagesLoading ? <div role="status" aria-label="메시지 불러오는 중" className="flex h-full items-center justify-center"><Spinner /></div> : !chatMessages.length ? <p className="py-12 text-center text-gray-600">메시지가 없습니다.</p> : <ul className="space-y-3">{chatMessages.map(message => {
+          if (message.senderId === 'system') return <li key={message.id} className="text-center"><Chip size="sm" variant="soft">{message.content}</Chip></li>;
+          const male=message.senderId === selectedChatRoom.male.id;
+          const sender=male ? selectedChatRoom.male : selectedChatRoom.female;
+          return <li key={message.id} className={`flex items-start gap-2 ${male ? '' : 'flex-row-reverse'}`}>
+            <Button isIconOnly variant="tertiary" aria-label={`${message.senderName} 프로필 사진`} onPress={() => void handleUserClick(message.senderId)}><Avatar size="sm"><Avatar.Image src={getRepresentativePhoto(sender)} alt="" /><Avatar.Fallback>{sender.name?.charAt(0)}</Avatar.Fallback></Avatar></Button>
+            <div className={`max-w-[75%] space-y-1 ${male ? 'text-left' : 'text-right'}`}><Button size="sm" variant="tertiary" onPress={() => void handleUserClick(message.senderId)}>{message.senderName}</Button><div className="space-y-2 rounded-lg border bg-gray-50 p-3 text-sm">
+              {message.messageType === 'image' && message.mediaUrl ? <><Button variant="tertiary" className="h-auto p-0" aria-label={`${message.senderName} 채팅 이미지 확대`} onPress={() => handleImagePreview(message.mediaUrl!)}><img src={message.mediaUrl} alt="채팅 이미지" className="max-h-48 max-w-48 rounded-lg" /></Button>{message.content && <p className="whitespace-pre-wrap break-words">{message.content}</p>}</> : <p className="whitespace-pre-wrap break-words">{message.content}</p>}
+            </div><p className="text-xs text-gray-600">{formatDate(message.createdAt)}</p></div>
+          </li>;
+        })}</ul>}</div>
+      </>}</Modal.Body><Modal.Footer><Button variant="secondary" onPress={() => setChatDetailOpen(false)}>닫기</Button></Modal.Footer>
+    </Modal.Dialog></Modal.Container></Modal.Backdrop>
+    {userDetailOpen && userDetail && <UserDetailModal open={userDetailOpen} onClose={() => setUserDetailOpen(false)} userId={selectedUserId} userDetail={userDetail} loading={loadingUserDetail} error={userDetailError} onRefresh={() => {if(selectedUserId) void handleUserClick(selectedUserId);}} />}
+    <Modal.Backdrop isOpen={userDetailOpen && !userDetail} onOpenChange={setUserDetailOpen}><Modal.Container size="md"><Modal.Dialog><Modal.Header><Modal.Heading>사용자 프로필</Modal.Heading></Modal.Header><Modal.Body>{loadingUserDetail ? <p role="status" className="flex items-center gap-2"><Spinner size="sm" />프로필 조회 중</p> : <p role="alert">{userDetailError || '프로필 정보가 없습니다.'}</p>}</Modal.Body><Modal.Footer>{userDetailError && <Button variant="secondary" onPress={() => void handleUserClick(selectedUserId)}>재시도</Button>}<Button variant="secondary" onPress={() => setUserDetailOpen(false)}>닫기</Button></Modal.Footer></Modal.Dialog></Modal.Container></Modal.Backdrop>
+    <Modal.Backdrop isOpen={imagePreviewOpen} onOpenChange={setImagePreviewOpen}><Modal.Container size="lg"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>이미지 미리보기</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="이미지 미리보기 닫기" onPress={() => setImagePreviewOpen(false)}><X size={18} /></Button></Modal.Header><Modal.Body>{previewImageUrl && <img src={previewImageUrl} alt="미리보기 이미지" className="mx-auto max-h-[70vh] max-w-full rounded-lg" />}</Modal.Body><Modal.Footer><Link className="button button--secondary" href={previewImageUrl} target="_blank" rel="noopener noreferrer">새 탭에서 열기</Link><Button variant="secondary" onPress={() => setImagePreviewOpen(false)}>닫기</Button></Modal.Footer></Modal.Dialog></Modal.Container></Modal.Backdrop>
+  </div>;
 }

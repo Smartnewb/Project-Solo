@@ -1,39 +1,32 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+"use client";
 import {
-	Box,
-	Paper,
-	Typography,
-	CircularProgress,
 	Alert,
-	Chip,
-	LinearProgress,
-	Collapse,
-	IconButton,
-	Tooltip,
-	Grid,
+	Button,
 	Card,
-	CardContent,
-} from '@mui/material';
+	Chip,
+	ProgressBar,
+	Spinner,
+	Tooltip,
+} from "@heroui/react";
 import {
-	Warning as WarningIcon,
-	Error as ErrorIcon,
-	Info as InfoIcon,
-	ExpandMore as ExpandMoreIcon,
-	ExpandLess as ExpandLessIcon,
-	TrendingDown as TrendingDownIcon,
-	TrendingUp as TrendingUpIcon,
-	Speed as SpeedIcon,
-	People as PeopleIcon,
-	AttachMoney as MoneyIcon,
-	Favorite as HeartIcon,
-	SentimentSatisfied as SatisfactionIcon,
-	Lightbulb as LightbulbIcon,
-} from '@mui/icons-material';
-import { dashboardService } from '@/app/services/dashboard';
-import { sanitizeUrl } from '@/shared/lib/safe-url';
+	ChevronDown,
+	ChevronUp,
+	CircleAlert,
+	DollarSign,
+	Gauge,
+	Heart,
+	Info,
+	Lightbulb,
+	Smile,
+	TrendingDown,
+	TrendingUp,
+	TriangleAlert,
+	Users,
+} from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { dashboardService } from "@/app/services/dashboard";
+import { sanitizeUrl } from "@/shared/lib/safe-url";
 import {
 	ActionableInsightsResponse,
 	InsightSeverity,
@@ -43,451 +36,633 @@ import {
 	UrgentAction,
 	HealthScore,
 	INSIGHT_CATEGORY_LABELS,
-} from '../types';
-
-const SEVERITY_CONFIG: Record<InsightSeverity, { color: string; bgColor: string; icon: React.ReactNode }> = {
-	critical: { color: '#dc2626', bgColor: '#fef2f2', icon: <ErrorIcon fontSize="small" /> },
-	warning: { color: '#f59e0b', bgColor: '#fffbeb', icon: <WarningIcon fontSize="small" /> },
-	info: { color: '#3b82f6', bgColor: '#eff6ff', icon: <InfoIcon fontSize="small" /> },
+} from "../types";
+const SEVERITY_CONFIG: Record<
+	InsightSeverity,
+	{
+		color: string;
+		bgColor: string;
+		icon: React.ReactNode;
+	}
+> = {
+	critical: {
+		color: "#dc2626",
+		bgColor: "#fef2f2",
+		icon: <CircleAlert size={18} />,
+	},
+	warning: {
+		color: "#f59e0b",
+		bgColor: "#fffbeb",
+		icon: <TriangleAlert size={18} />,
+	},
+	info: {
+		color: "#3b82f6",
+		bgColor: "#eff6ff",
+		icon: <Info size={18} />,
+	},
 };
-
 function normalizeActionUrl(actionUrl: string): string {
 	switch (actionUrl) {
-		case '/admin/approvals':
-		case '/admin/images':
-			return '/admin/profile-review';
+		case "/admin/approvals":
+		case "/admin/images":
+			return "/admin/profile-review";
 		default:
 			return actionUrl;
 	}
 }
-
 interface HealthScoreGaugeProps {
 	healthScore: HealthScore;
 }
-
 function HealthScoreGauge({ healthScore }: HealthScoreGaugeProps) {
 	const getScoreColor = (score: number) => {
-		if (score >= 70) return '#22c55e';
-		if (score >= 50) return '#f59e0b';
-		return '#dc2626';
+		if (score >= 70) return "#22c55e";
+		if (score >= 50) return "#f59e0b";
+		return "#dc2626";
 	};
-
 	const metrics = [
-		{ label: '유저 성장', value: healthScore.userGrowth, icon: <PeopleIcon fontSize="small" /> },
-		{ label: '리텐션', value: healthScore.retention, icon: <TrendingUpIcon fontSize="small" /> },
-		{ label: '매출', value: healthScore.revenue, icon: <MoneyIcon fontSize="small" /> },
-		{ label: '매칭 품질', value: healthScore.matchingQuality, icon: <HeartIcon fontSize="small" /> },
-		{ label: '만족도', value: healthScore.userSatisfaction, icon: <SatisfactionIcon fontSize="small" /> },
+		{
+			label: "유저 성장",
+			value: healthScore.userGrowth,
+			icon: <Users size={18} />,
+		},
+		{
+			label: "리텐션",
+			value: healthScore.retention,
+			icon: <TrendingUp size={18} />,
+		},
+		{
+			label: "매출",
+			value: healthScore.revenue,
+			icon: <DollarSign size={18} />,
+		},
+		{
+			label: "매칭 품질",
+			value: healthScore.matchingQuality,
+			icon: <Heart size={18} />,
+		},
+		{
+			label: "만족도",
+			value: healthScore.userSatisfaction,
+			icon: <Smile size={18} />,
+		},
 	];
-
 	return (
-		<Paper sx={{ p: 3 }}>
-			<Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-				<SpeedIcon sx={{ color: getScoreColor(healthScore.overall), fontSize: 32 }} />
-				<Box>
-					<Typography variant="h6" fontWeight="bold">
+		<section style={{ padding: 24 }}>
+			<div
+				style={{
+					display: "flex",
+					alignItems: "center",
+					gap: 16,
+					marginBottom: 24,
+				}}
+			>
+				<Gauge
+					style={{ color: getScoreColor(healthScore.overall), fontSize: 32 }}
+					size={18}
+				/>
+				<div>
+					<h2 className={"text-lg font-semibold text-neutral-900"}>
 						서비스 건강 점수
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
+					</h2>
+					<span className={"text-sm text-neutral-700"}>
 						주요 지표 기반 종합 점수
-					</Typography>
-				</Box>
-				<Box sx={{ ml: 'auto', textAlign: 'right' }}>
-					<Typography
-						variant="h3"
-						fontWeight="bold"
-						sx={{ color: getScoreColor(healthScore.overall) }}
+					</span>
+				</div>
+				<div style={{ marginLeft: "auto", textAlign: "right" }}>
+					<h3
+						style={{ color: getScoreColor(healthScore.overall) }}
+						className={"text-lg font-semibold text-neutral-900"}
 					>
 						{healthScore.overall}
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						/ 100
-					</Typography>
-				</Box>
-			</Box>
-
-			<Grid container spacing={2}>
+					</h3>
+					<span className={"text-sm text-neutral-700"}>/ 100</span>
+				</div>
+			</div>
+			<div className={"grid grid-cols-12 gap-4"}>
 				{metrics.map((metric) => (
-					<Grid item xs={6} sm={4} md={2.4} key={metric.label}>
-						<Box sx={{ textAlign: 'center' }}>
-							<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
-								<Box sx={{ color: getScoreColor(metric.value), mr: 0.5 }}>{metric.icon}</Box>
-								<Typography variant="caption" color="text.secondary">
-									{metric.label}
-								</Typography>
-							</Box>
-							<Typography variant="h6" fontWeight="bold" sx={{ color: getScoreColor(metric.value) }}>
-								{metric.value}
-							</Typography>
-							<LinearProgress
-								variant="determinate"
-								value={metric.value}
-								sx={{
-									height: 4,
-									borderRadius: 2,
-									bgcolor: 'grey.200',
-									'& .MuiLinearProgress-bar': {
-										bgcolor: getScoreColor(metric.value),
-										borderRadius: 2,
-									},
+					<div
+						key={metric.label}
+						className={
+							"min-w-0 col-span-6 sm:col-span-4 md:col-span-4 lg:col-span-2"
+						}
+					>
+						<div style={{ textAlign: "center" }}>
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									marginBottom: 4,
 								}}
-							/>
-						</Box>
-					</Grid>
+							>
+								<div
+									style={{ color: getScoreColor(metric.value), marginRight: 4 }}
+								>
+									{metric.icon}
+								</div>
+								<span className={"text-sm text-neutral-700"}>
+									{metric.label}
+								</span>
+							</div>
+							<h2
+								style={{ color: getScoreColor(metric.value) }}
+								className={"text-lg font-semibold text-neutral-900"}
+							>
+								{metric.value}
+							</h2>
+							<ProgressBar value={metric.value} aria-label="진행률">
+								<ProgressBar.Track>
+									<ProgressBar.Fill />
+								</ProgressBar.Track>
+							</ProgressBar>
+						</div>
+					</div>
 				))}
-			</Grid>
-		</Paper>
+			</div>
+		</section>
 	);
 }
-
 interface UrgentActionsProps {
 	actions: UrgentAction[];
 }
-
 function UrgentActions({ actions }: UrgentActionsProps) {
 	if (actions.length === 0) return null;
-
 	return (
-		<Paper sx={{ p: 3, border: '2px solid #dc2626', bgcolor: '#fef2f2' }}>
-			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-				<ErrorIcon sx={{ color: '#dc2626' }} />
-				<Typography variant="h6" fontWeight="bold" color="#dc2626">
+		<section
+			style={{
+				padding: 24,
+				border: "2px solid #dc2626",
+				backgroundColor: "#fef2f2",
+			}}
+		>
+			<div
+				style={{
+					display: "flex",
+					alignItems: "center",
+					gap: 8,
+					marginBottom: 16,
+				}}
+			>
+				<CircleAlert style={{ color: "#dc2626" }} size={18} />
+				<h2 className={"text-lg font-semibold text-neutral-900"}>
 					긴급 조치 필요
-				</Typography>
+				</h2>
 				<Chip
-					label={`${actions.length}건`}
-					size="small"
-					sx={{ bgcolor: '#dc2626', color: 'white', fontWeight: 600 }}
-				/>
-			</Box>
-
-			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+					style={{
+						backgroundColor: "#dc2626",
+						color: "white",
+						fontWeight: 600,
+					}}
+					size={"sm"}
+					variant={"soft"}
+				>
+					<Chip.Label>{`${actions.length}건`}</Chip.Label>
+				</Chip>
+			</div>
+			<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 				{actions.map((action, index) => (
-					<Link href={sanitizeUrl(normalizeActionUrl(action.actionUrl)) ?? '/admin/dashboard'} key={index}>
-						<Card
-							sx={{
-								cursor: 'pointer',
-								transition: 'all 0.2s',
-								'&:hover': { transform: 'translateY(-2px)', boxShadow: 2 },
-							}}
-						>
-							<CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-								<Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-									<Box>
-										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+					<Link
+						href={
+							sanitizeUrl(normalizeActionUrl(action.actionUrl)) ??
+							"/admin/dashboard"
+						}
+						key={index}
+					>
+						<Card style={{ cursor: "pointer", transition: "all 0.2s" }}>
+							<Card.Content style={{ padding: 16 }}>
+								<div
+									style={{
+										display: "flex",
+										alignItems: "flex-start",
+										justifyContent: "space-between",
+									}}
+								>
+									<div>
+										<div
+											style={{
+												display: "flex",
+												alignItems: "center",
+												gap: 8,
+												marginBottom: 4,
+											}}
+										>
 											<Chip
-												label={action.urgency === 'critical' ? '긴급' : '주의'}
-												size="small"
-												sx={{
-													bgcolor: action.urgency === 'critical' ? '#dc2626' : '#f59e0b',
-													color: 'white',
+												style={{
+													backgroundColor:
+														action.urgency === "critical"
+															? "#dc2626"
+															: "#f59e0b",
+													color: "white",
 													fontWeight: 600,
-													fontSize: '0.7rem',
+													fontSize: "0.7rem",
 												}}
-											/>
-											<Typography variant="subtitle2" fontWeight="bold">
+												size={"sm"}
+												variant={"soft"}
+											>
+												<Chip.Label>
+													{action.urgency === "critical" ? "긴급" : "주의"}
+												</Chip.Label>
+											</Chip>
+											<p className={"text-sm text-neutral-700"}>
 												{action.title}
-											</Typography>
-										</Box>
-										<Typography variant="body2" color="text.secondary">
+											</p>
+										</div>
+										<p className={"text-sm text-neutral-700"}>
 											{action.description}
-										</Typography>
+										</p>
 										{action.deadlineHours && (
-											<Typography variant="caption" color="error">
+											<span className={"text-sm text-neutral-700"}>
 												⏰ {action.deadlineHours}시간 내 처리 필요
-											</Typography>
+											</span>
 										)}
-									</Box>
-									<Typography variant="h5" fontWeight="bold" color="error">
+									</div>
+									<h2 className={"text-lg font-semibold text-neutral-900"}>
 										{action.count}
-									</Typography>
-								</Box>
-							</CardContent>
+									</h2>
+								</div>
+							</Card.Content>
 						</Card>
 					</Link>
 				))}
-			</Box>
-		</Paper>
+			</div>
+		</section>
 	);
 }
-
 interface InsightsListProps {
 	insights: ActionableInsight[];
 }
-
 function InsightsList({ insights }: InsightsListProps) {
 	const [expanded, setExpanded] = useState<string | null>(null);
-
 	if (insights.length === 0) {
 		return (
-			<Paper sx={{ p: 3 }}>
-				<Typography variant="body1" color="text.secondary" textAlign="center">
+			<section style={{ padding: 24 }}>
+				<p className={"text-sm text-neutral-700"}>
 					현재 주요 인사이트가 없습니다. 서비스가 안정적으로 운영되고 있습니다.
-				</Typography>
-			</Paper>
+				</p>
+			</section>
 		);
 	}
-
 	return (
-		<Paper sx={{ p: 3 }}>
-			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-				<LightbulbIcon sx={{ color: '#f59e0b' }} />
-				<Typography variant="h6" fontWeight="bold">
+		<section style={{ padding: 24 }}>
+			<div
+				style={{
+					display: "flex",
+					alignItems: "center",
+					gap: 8,
+					marginBottom: 16,
+				}}
+			>
+				<Lightbulb style={{ color: "#f59e0b" }} size={18} />
+				<h2 className={"text-lg font-semibold text-neutral-900"}>
 					주요 인사이트
-				</Typography>
-			</Box>
-
-			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+				</h2>
+			</div>
+			<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 				{insights.map((insight) => {
 					const config = SEVERITY_CONFIG[insight.severity];
 					const isExpanded = expanded === insight.id;
-
 					return (
-						<Card key={insight.id} sx={{ border: `1px solid ${config.color}20` }}>
-							<CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-								<Box
-									sx={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}
-									onClick={() => setExpanded(isExpanded ? null : insight.id)}
+						<Card
+							key={insight.id}
+							style={{ border: `1px solid ${config.color}20` }}
+						>
+							<Card.Content style={{ padding: 16 }}>
+								<Button
+									style={{
+										display: "flex",
+										alignItems: "flex-start",
+										cursor: "pointer",
+									}}
+									onPress={() => setExpanded(isExpanded ? null : insight.id)}
+									variant="tertiary"
+									fullWidth
+									className="h-auto justify-start whitespace-normal text-left"
+									aria-expanded={isExpanded}
 								>
-									<Box sx={{ p: 1, borderRadius: 1, bgcolor: config.bgColor, color: config.color, mr: 2 }}>
+									<div
+										style={{
+											padding: 8,
+											borderRadius: 8,
+											backgroundColor: config.bgColor,
+											color: config.color,
+											marginRight: 16,
+										}}
+									>
 										{config.icon}
-									</Box>
-									<Box sx={{ flex: 1 }}>
-										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-											<Typography variant="subtitle2" fontWeight="bold">
+									</div>
+									<div style={{ flex: 1 }}>
+										<div
+											style={{
+												display: "flex",
+												alignItems: "center",
+												gap: 8,
+												marginBottom: 4,
+											}}
+										>
+											<p className={"text-sm text-neutral-700"}>
 												{insight.title}
-											</Typography>
+											</p>
 											<Chip
-												label={INSIGHT_CATEGORY_LABELS[insight.category]}
-												size="small"
-												variant="outlined"
-												sx={{ fontSize: '0.65rem', height: 20 }}
-											/>
-										</Box>
-										<Typography variant="body2" color="text.secondary">
+												style={{ fontSize: "0.65rem", height: 20 }}
+												size={"sm"}
+												variant={"soft"}
+											>
+												<Chip.Label>
+													{INSIGHT_CATEGORY_LABELS[insight.category]}
+												</Chip.Label>
+											</Chip>
+										</div>
+										<p className={"text-sm text-neutral-700"}>
 											{insight.description}
-										</Typography>
+										</p>
 										{insight.changeRate !== undefined && (
-											<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+											<div
+												style={{
+													display: "flex",
+													alignItems: "center",
+													gap: 4,
+													marginTop: 4,
+												}}
+											>
 												{insight.changeRate >= 0 ? (
-													<TrendingUpIcon fontSize="small" color="success" />
+													<TrendingUp size={18} />
 												) : (
-													<TrendingDownIcon fontSize="small" color="error" />
+													<TrendingDown size={18} />
 												)}
-												<Typography
-													variant="caption"
-													color={insight.changeRate >= 0 ? 'success.main' : 'error.main'}
-													fontWeight="bold"
-												>
-													{insight.changeRate > 0 ? '+' : ''}{insight.changeRate}%
-												</Typography>
-											</Box>
+												<span className={"text-sm text-neutral-700"}>
+													{insight.changeRate > 0 ? "+" : ""}
+													{insight.changeRate}%
+												</span>
+											</div>
 										)}
-									</Box>
-									<IconButton size="small">
-										{isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-									</IconButton>
-								</Box>
-
-								<Collapse in={isExpanded}>
-									<Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-										<Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+									</div>
+									<span>
+										{isExpanded ? (
+											<ChevronUp size={18} />
+										) : (
+											<ChevronDown size={18} />
+										)}
+									</span>
+								</Button>
+								<div hidden={!isExpanded}>
+									<div
+										style={{
+											marginTop: 16,
+											paddingTop: 16,
+											borderTop: "1px solid",
+											borderColor: "#e5e5e5",
+										}}
+									>
+										<p
+											style={{ marginBottom: 8 }}
+											className={"text-sm text-neutral-700"}
+										>
 											권장 조치
-										</Typography>
-										<Box sx={{ pl: 2 }}>
+										</p>
+										<div style={{ paddingLeft: 16 }}>
 											{insight.recommendations.map((rec, i) => (
-												<Typography key={i} variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+												<p
+													key={i}
+													style={{ marginBottom: 4 }}
+													className={"text-sm text-neutral-700"}
+												>
 													• {rec}
-												</Typography>
+												</p>
 											))}
-										</Box>
+										</div>
 										{insight.affectedUsers > 0 && (
-											<Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-												영향 받는 유저: {(insight.affectedUsers ?? 0).toLocaleString()}명
-											</Typography>
+											<span
+												style={{ marginTop: 8, display: "block" }}
+												className={"text-sm text-neutral-700"}
+											>
+												영향 받는 유저:{" "}
+												{(insight.affectedUsers ?? 0).toLocaleString()}명
+											</span>
 										)}
 										{insight.potentialRevenueImpact && (
-											<Typography variant="caption" color="error" sx={{ display: 'block' }}>
-												예상 매출 영향: ₩{(insight.potentialRevenueImpact ?? 0).toLocaleString()}
-											</Typography>
+											<span
+												style={{ display: "block" }}
+												className={"text-sm text-neutral-700"}
+											>
+												예상 매출 영향: ₩
+												{(insight.potentialRevenueImpact ?? 0).toLocaleString()}
+											</span>
 										)}
 										{insight.relatedDashboard && (
 											<Link href={insight.relatedDashboard}>
-												<Typography
-													variant="caption"
-													sx={{ color: 'primary.main', textDecoration: 'underline', cursor: 'pointer' }}
+												<span
+													style={{
+														color: "#7A4AE2",
+														textDecoration: "underline",
+														cursor: "pointer",
+													}}
+													className={"text-sm text-neutral-700"}
 												>
 													관련 대시보드 보기 →
-												</Typography>
+												</span>
 											</Link>
 										)}
-									</Box>
-								</Collapse>
-							</CardContent>
+									</div>
+								</div>
+							</Card.Content>
 						</Card>
 					);
 				})}
-			</Box>
-		</Paper>
+			</div>
+		</section>
 	);
 }
-
 interface BottlenecksListProps {
 	bottlenecks: FunnelBottleneck[];
 }
-
 function BottlenecksList({ bottlenecks }: BottlenecksListProps) {
 	if (bottlenecks.length === 0) return null;
-
 	return (
-		<Paper sx={{ p: 3 }}>
-			<Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+		<section style={{ padding: 24 }}>
+			<h2
+				style={{ marginBottom: 16 }}
+				className={"text-lg font-semibold text-neutral-900"}
+			>
 				퍼널 병목 지점
-			</Typography>
-
-			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+			</h2>
+			<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 				{bottlenecks.map((bottleneck, index) => {
 					const gap = bottleneck.benchmarkRate - bottleneck.conversionRate;
-					const severity = gap > 20 ? 'critical' : gap > 10 ? 'warning' : 'info';
+					const severity =
+						gap > 20 ? "critical" : gap > 10 ? "warning" : "info";
 					const config = SEVERITY_CONFIG[severity];
-
 					return (
-						<Box
+						<div
 							key={index}
-							sx={{ p: 2, borderRadius: 1, bgcolor: config.bgColor, border: `1px solid ${config.color}40` }}
+							style={{
+								padding: 16,
+								borderRadius: 8,
+								backgroundColor: config.bgColor,
+								border: `1px solid ${config.color}40`,
+							}}
 						>
-							<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-								<Typography variant="subtitle2" fontWeight="bold">
-									{bottleneck.stage}
-								</Typography>
-								<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-									<Tooltip title="현재 전환율">
-										<Typography variant="h6" fontWeight="bold" sx={{ color: config.color }}>
-											{bottleneck.conversionRate}%
-										</Typography>
-									</Tooltip>
-									<Typography variant="body2" color="text.secondary">
-										/ 기준 {bottleneck.benchmarkRate}%
-									</Typography>
-								</Box>
-							</Box>
-
-							<LinearProgress
-								variant="determinate"
-								value={(bottleneck.conversionRate / bottleneck.benchmarkRate) * 100}
-								sx={{
-									height: 8,
-									borderRadius: 4,
-									bgcolor: 'white',
-									mb: 1,
-									'& .MuiLinearProgress-bar': { bgcolor: config.color, borderRadius: 4 },
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "space-between",
+									marginBottom: 8,
 								}}
-							/>
-
-							<Typography variant="caption" color="text.secondary">
+							>
+								<p className={"text-sm text-neutral-700"}>{bottleneck.stage}</p>
+								<div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+									<Tooltip>
+										<Tooltip.Trigger tabIndex={0}>
+											<h2
+												style={{ color: config.color }}
+												className={"text-lg font-semibold text-neutral-900"}
+											>
+												{bottleneck.conversionRate}%
+											</h2>
+										</Tooltip.Trigger>
+										<Tooltip.Content>{"현재 전환율"}</Tooltip.Content>
+									</Tooltip>
+									<p className={"text-sm text-neutral-700"}>
+										/ 기준 {bottleneck.benchmarkRate}%
+									</p>
+								</div>
+							</div>
+							<ProgressBar
+								value={
+									(bottleneck.conversionRate / bottleneck.benchmarkRate) * 100
+								}
+								aria-label="진행률"
+							>
+								<ProgressBar.Track>
+									<ProgressBar.Fill />
+								</ProgressBar.Track>
+							</ProgressBar>
+							<span className={"text-sm text-neutral-700"}>
 								이탈 유저: {(bottleneck.droppedUsers ?? 0).toLocaleString()}명
-							</Typography>
-
-							<Box sx={{ mt: 1 }}>
-								<Typography variant="caption" fontWeight="bold">
-									예상 원인:
-								</Typography>
-								<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+							</span>
+							<div style={{ marginTop: 8 }}>
+								<span className={"text-sm text-neutral-700"}>예상 원인:</span>
+								<div
+									style={{
+										display: "flex",
+										flexWrap: "wrap",
+										gap: 4,
+										marginTop: 4,
+									}}
+								>
 									{bottleneck.possibleCauses.map((cause, i) => (
-										<Chip key={i} label={cause} size="small" variant="outlined" sx={{ fontSize: '0.65rem' }} />
+										<Chip
+											key={i}
+											style={{ fontSize: "0.65rem" }}
+											size={"sm"}
+											variant={"soft"}
+										>
+											<Chip.Label>{cause}</Chip.Label>
+										</Chip>
 									))}
-								</Box>
-							</Box>
-						</Box>
+								</div>
+							</div>
+						</div>
 					);
 				})}
-			</Box>
-		</Paper>
+			</div>
+		</section>
 	);
 }
-
 interface PainPointsListProps {
 	painPoints: UserPainPoint[];
 }
-
 function PainPointsList({ painPoints }: PainPointsListProps) {
 	if (painPoints.length === 0) return null;
-
 	return (
-		<Paper sx={{ p: 3 }}>
-			<Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+		<section style={{ padding: 24 }}>
+			<h2
+				style={{ marginBottom: 16 }}
+				className={"text-lg font-semibold text-neutral-900"}
+			>
 				유저 페인포인트
-			</Typography>
-
-			<Grid container spacing={2}>
+			</h2>
+			<div className={"grid grid-cols-12 gap-4"}>
 				{painPoints.map((point) => (
-					<Grid item xs={12} md={4} key={point.id}>
-						<Card sx={{ height: '100%', border: '1px solid', borderColor: 'divider' }}>
-							<CardContent>
-								<Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+					<div key={point.id} className={"min-w-0 col-span-12 md:col-span-4"}>
+						<Card
+							style={{
+								height: "100%",
+								border: "1px solid",
+								borderColor: "#e5e5e5",
+							}}
+						>
+							<Card.Content>
+								<p
+									style={{ marginBottom: 8 }}
+									className={"text-sm text-neutral-700"}
+								>
 									{point.description}
-								</Typography>
-
-								<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 2 }}>
-									<Typography variant="h4" fontWeight="bold" color="error">
+								</p>
+								<div
+									style={{
+										display: "flex",
+										alignItems: "baseline",
+										gap: 8,
+										marginBottom: 16,
+									}}
+								>
+									<h4 className={"text-lg font-semibold text-neutral-900"}>
 										{(point.affectedUsers ?? 0).toLocaleString()}
-									</Typography>
-									<Typography variant="body2" color="text.secondary">
+									</h4>
+									<p className={"text-sm text-neutral-700"}>
 										명 ({point.percentage}%)
-									</Typography>
-								</Box>
-
+									</p>
+								</div>
 								{point.avgWaitDays !== undefined && (
-									<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+									<span
+										style={{ display: "block", marginBottom: 8 }}
+										className={"text-sm text-neutral-700"}
+									>
 										평균 대기 기간: {point.avgWaitDays}일
-									</Typography>
+									</span>
 								)}
-
-								<Box sx={{ mb: 2 }}>
-									<Typography variant="caption" color="text.secondary">
+								<div style={{ marginBottom: 16 }}>
+									<span className={"text-sm text-neutral-700"}>
 										이탈 위험도
-									</Typography>
-									<LinearProgress
-										variant="determinate"
-										value={point.churnRisk}
-										sx={{
-											height: 6,
-											borderRadius: 3,
-											bgcolor: 'grey.200',
-											'& .MuiLinearProgress-bar': {
-												bgcolor: point.churnRisk >= 70 ? '#dc2626' : point.churnRisk >= 50 ? '#f59e0b' : '#22c55e',
-												borderRadius: 3,
-											},
-										}}
-									/>
-									<Typography variant="caption" fontWeight="bold" color={point.churnRisk >= 70 ? 'error' : 'text.secondary'}>
+									</span>
+									<ProgressBar value={point.churnRisk} aria-label="진행률">
+										<ProgressBar.Track>
+											<ProgressBar.Fill />
+										</ProgressBar.Track>
+									</ProgressBar>
+									<span className={"text-sm text-neutral-700"}>
 										{point.churnRisk}%
-									</Typography>
-								</Box>
-
-								<Typography variant="caption" fontWeight="bold" sx={{ display: 'block', mb: 0.5 }}>
+									</span>
+								</div>
+								<span
+									style={{ display: "block", marginBottom: 4 }}
+									className={"text-sm text-neutral-700"}
+								>
 									개선 방안:
-								</Typography>
+								</span>
 								{point.solutions.slice(0, 2).map((solution, i) => (
-									<Typography key={i} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+									<span
+										key={i}
+										style={{ display: "block" }}
+										className={"text-sm text-neutral-700"}
+									>
 										• {solution}
-									</Typography>
+									</span>
 								))}
-							</CardContent>
+							</Card.Content>
 						</Card>
-					</Grid>
+					</div>
 				))}
-			</Grid>
-		</Paper>
+			</div>
+		</section>
 	);
 }
-
 export default function ActionableInsights() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [data, setData] = useState<ActionableInsightsResponse | null>(null);
 	const [showDetails, setShowDetails] = useState(true);
-
 	const fetchData = useCallback(async () => {
 		try {
 			setLoading(true);
@@ -495,71 +670,92 @@ export default function ActionableInsights() {
 			const response = await dashboardService.getActionableInsights();
 			setData(response);
 		} catch (err) {
-			setError('인사이트 데이터를 불러오는데 실패했습니다.');
+			setError("인사이트 데이터를 불러오는데 실패했습니다.");
 		} finally {
 			setLoading(false);
 		}
 	}, []);
-
 	useEffect(() => {
 		fetchData();
 	}, [fetchData]);
-
 	if (loading) {
 		return (
-			<Paper sx={{ p: 3 }}>
-				<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
-					<CircularProgress size={24} />
-					<Typography variant="body2" sx={{ ml: 2 }}>
+			<section style={{ padding: 24 }}>
+				<div
+					style={{
+						display: "flex",
+						justifyContent: "center",
+						alignItems: "center",
+						paddingTop: 32,
+						paddingBottom: 32,
+					}}
+				>
+					<Spinner aria-label="불러오는 중" size="sm" />
+					<p style={{ marginLeft: 16 }} className={"text-sm text-neutral-700"}>
 						인사이트 분석 중...
-					</Typography>
-				</Box>
-			</Paper>
+					</p>
+				</div>
+			</section>
 		);
 	}
-
 	if (error) {
 		return (
-			<Alert severity="error" sx={{ mb: 2 }}>
-				{error}
+			<Alert style={{ marginBottom: 16 }} status={"danger"}>
+				<Alert.Content>{error}</Alert.Content>
 			</Alert>
 		);
 	}
-
 	if (!data) return null;
-
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-				<Box>
-					<Typography variant="h5" fontWeight="bold">
+		<div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+			<div
+				style={{
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "space-between",
+				}}
+			>
+				<div>
+					<h2 className={"text-lg font-semibold text-neutral-900"}>
 						실행 가능한 인사이트
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						{data.period.startDate} ~ {data.period.endDate} 기준
-					</Typography>
-				</Box>
-				<IconButton onClick={() => setShowDetails(!showDetails)}>
-					{showDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-				</IconButton>
-			</Box>
-
-			<Paper sx={{ p: 2, bgcolor: data.healthScore.overall >= 70 ? '#f0fdf4' : data.healthScore.overall >= 50 ? '#fffbeb' : '#fef2f2' }}>
-				<Typography variant="body2" fontWeight="medium">
-					{data.summary}
-				</Typography>
-			</Paper>
-
+					</h2>
+					<span className={"text-sm text-neutral-700"}>
+						{data.period.startDate}~ {data.period.endDate}기준
+					</span>
+				</div>
+				<Button
+					onClick={() => setShowDetails(!showDetails)}
+					variant={"tertiary"}
+					isIconOnly={true}
+					aria-label="인사이트 세부 내용"
+					aria-expanded={showDetails}
+					size={"md"}
+				>
+					{showDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+				</Button>
+			</div>
+			<section
+				style={{
+					padding: 16,
+					backgroundColor:
+						data.healthScore.overall >= 70
+							? "#f0fdf4"
+							: data.healthScore.overall >= 50
+								? "#fffbeb"
+								: "#fef2f2",
+				}}
+			>
+				<p className={"text-sm text-neutral-700"}>{data.summary}</p>
+			</section>
 			<HealthScoreGauge healthScore={data.healthScore} />
-
-			<Collapse in={showDetails}>
-				<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+			<div hidden={!showDetails}>
+				<div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 					<UrgentActions actions={data.urgentActions} />
 					<InsightsList insights={data.insights} />
 					<BottlenecksList bottlenecks={data.funnelBottlenecks} />
 					<PainPointsList painPoints={data.userPainPoints} />
-				</Box>
-			</Collapse>
-		</Box>
+				</div>
+			</div>
+		</div>
 	);
 }

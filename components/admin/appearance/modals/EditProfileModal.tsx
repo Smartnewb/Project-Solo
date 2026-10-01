@@ -1,19 +1,17 @@
-import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  CircularProgress,
   Alert,
-  Grid
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import AdminService from '@/app/services/admin';
-import { UserDetail } from '../UserDetailModal';
+  Button,
+  Input,
+  Label,
+  Modal,
+  Spinner,
+  TextField,
+} from "@heroui/react";
+import { Edit } from "lucide-react";
+import React, { useState, useEffect } from "react";
+
+import AdminService from "@/app/services/admin";
+import { UserDetail } from "../UserDetailModal";
 
 interface EditProfileModalProps {
   open: boolean;
@@ -28,14 +26,14 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onClose,
   userId,
   userDetail,
-  onSuccess
+  onSuccess,
 }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phoneNumber: '',
-    instagramId: '',
-    mbti: ''
+    name: "",
+    email: "",
+    phoneNumber: "",
+    instagramId: "",
+    mbti: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -46,24 +44,26 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
   useEffect(() => {
     if (userDetail) {
       // DB 데이터 로깅
-      console.log('사용자 상세 정보 로드:', userDetail);
+      console.log("사용자 상세 정보 로드:", userDetail);
 
       setFormData({
-        name: userDetail.name || '',
-        email: userDetail.email || '',
-        phoneNumber: userDetail.phoneNumber || '',
-        instagramId: userDetail.instagramId || '',
-        mbti: userDetail.mbti || ''
+        name: userDetail.name || "",
+        email: userDetail.email || "",
+        phoneNumber: userDetail.phoneNumber || "",
+        instagramId: userDetail.instagramId || "",
+        mbti: userDetail.mbti || "",
       });
     }
   }, [userDetail]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>,
+  ) => {
     const { name, value } = e.target;
     if (name) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
@@ -82,15 +82,18 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         name: formData.name,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
-        instagramId: formData.instagramId || '',
-        mbti: formData.mbti || ''
+        instagramId: formData.instagramId || "",
+        mbti: formData.mbti || "",
       };
 
-      console.log('프로필 업데이트 요청 데이터:', profileData);
+      console.log("프로필 업데이트 요청 데이터:", profileData);
 
       // 실제 API 호출
-      const response = await AdminService.userAppearance.updateUserProfile(userId, profileData);
-      console.log('프로필 업데이트 응답:', response);
+      const response = await AdminService.userAppearance.updateUserProfile(
+        userId,
+        profileData,
+      );
+      console.log("프로필 업데이트 응답:", response);
 
       setSuccess(true);
       if (onSuccess) onSuccess();
@@ -100,8 +103,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         handleClose();
       }, 1000);
     } catch (error: any) {
-      console.error('프로필 수정 오류:', error);
-      setError(error.message || '프로필 수정 중 오류가 발생했습니다.');
+      console.error("프로필 수정 오류:", error);
+      setError(error.message || "프로필 수정 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -116,115 +119,155 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
+    <Modal.Backdrop
+      isOpen={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleClose?.();
+      }}
+      isDismissable={handleClose !== undefined}
     >
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <EditIcon color="primary" sx={{ mr: 1 }} />
-          프로필 직접 수정
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {success ? (
-          <Alert severity="success" sx={{ mt: 2 }}>
-            프로필이 성공적으로 수정되었습니다.
-          </Alert>
-        ) : (
-          <Box sx={{ pt: 2 }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
+      <Modal.Container size="md" scroll="inside">
+        <Modal.Dialog>
+          <Modal.Header>
+            <Modal.Heading>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <Edit />
+                프로필 직접 수정
+              </div>
+            </Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            {success ? (
+              <Alert style={{ marginTop: 8 }} status={"success"} role="alert">
+                <Alert.Content>
+                  프로필이 성공적으로 수정되었습니다.
+                </Alert.Content>
               </Alert>
+            ) : (
+              <div style={{ paddingTop: 8 }}>
+                {error && (
+                  <Alert
+                    style={{ marginBottom: 8 }}
+                    status="danger"
+                    role="alert"
+                  >
+                    <Alert.Content>{error}</Alert.Content>
+                  </Alert>
+                )}
+                <div className={"grid grid-cols-1 gap-4 md:grid-cols-2"}>
+                  {/* 이름 */}
+                  <div className={"min-w-0"}>
+                    <TextField
+                      className="w-full"
+                      isDisabled={loading}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"이름"}</Label>
+                      <Input
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        aria-label={"이름"}
+                      />
+                    </TextField>
+                  </div>
+                  {/* 이메일 */}
+                  <div className={"min-w-0"}>
+                    <TextField
+                      className="w-full"
+                      isDisabled={loading}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"이메일"}</Label>
+                      <Input
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        type="email"
+                        aria-label={"이메일"}
+                      />
+                    </TextField>
+                  </div>
+                  {/* 전화번호 */}
+                  <div className={"min-w-0"}>
+                    <TextField
+                      className="w-full"
+                      isDisabled={loading}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"전화번호"}</Label>
+                      <Input
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={handleChange}
+                        placeholder="010-1234-5678"
+                        aria-label={"전화번호"}
+                      />
+                    </TextField>
+                  </div>
+                  {/* 인스타그램 ID */}
+                  <div className={"min-w-0"}>
+                    <TextField
+                      className="w-full"
+                      isDisabled={loading}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"인스타그램 ID"}</Label>
+                      <Input
+                        name="instagramId"
+                        value={formData.instagramId}
+                        onChange={handleChange}
+                        placeholder="@instagram_id"
+                        aria-label={"인스타그램 ID"}
+                      />
+                    </TextField>
+                  </div>
+                  {/* MBTI */}
+                  <div className={"min-w-0"}>
+                    <TextField
+                      className="w-full"
+                      isDisabled={loading}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"MBTI"}</Label>
+                      <Input
+                        name="mbti"
+                        value={formData.mbti}
+                        onChange={handleChange}
+                        placeholder="ENFP"
+                        aria-label={"MBTI"}
+                      />
+                    </TextField>
+                  </div>
+                </div>
+              </div>
             )}
-
-            <Grid container spacing={2}>
-              {/* 이름 */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="이름"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                />
-              </Grid>
-
-              {/* 이메일 */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="이메일"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={loading}
-                  type="email"
-                />
-              </Grid>
-
-              {/* 전화번호 */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="전화번호"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleChange}
-                  disabled={loading}
-                  placeholder="010-1234-5678"
-                />
-              </Grid>
-
-              {/* 인스타그램 ID */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="인스타그램 ID"
-                  name="instagramId"
-                  value={formData.instagramId}
-                  onChange={handleChange}
-                  disabled={loading}
-                  placeholder="@instagram_id"
-                />
-              </Grid>
-
-              {/* MBTI */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="MBTI"
-                  name="mbti"
-                  value={formData.mbti}
-                  onChange={handleChange}
-                  disabled={loading}
-                  placeholder="ENFP"
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={loading}>
-          취소
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          color="primary"
-          disabled={loading || success || !formData.name}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
-        >
-          {loading ? '저장 중...' : '저장하기'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              onClick={handleClose}
+              variant={"ghost"}
+              isDisabled={loading}
+              size={"md"}
+              className="rounded-xl"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              variant={"primary"}
+              isDisabled={loading || success || !formData.name}
+              size={"md"}
+              className="rounded-xl"
+            >
+              {loading ? <Spinner aria-label="불러오는 중" size="sm" /> : null}
+              {loading ? "저장 중..." : "저장하기"}
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 };
 

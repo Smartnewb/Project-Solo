@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState, useEffect, useMemo } from "react";
 import { salesService } from "@/app/services/sales";
@@ -55,7 +56,7 @@ const formatPercent = (value: number | null): string => {
 
 const getGrowthColor = (value: number | null): string => {
   if (value === null) return "text-gray-400";
-  if (value > 0) return "text-[#ff385c]";
+  if (value > 0) return "text-[#7A4AE2]";
   if (value < 0) return "text-red-600";
   return "text-gray-600";
 };
@@ -203,7 +204,7 @@ export function SalesGrowthAnalysis({
       return (
         <div className="bg-white p-4 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-900 mb-2">{label}</p>
-          <p className="text-[#ff385c]">매출: {formatCurrency(data.amount)}</p>
+          <p className="text-[#7A4AE2]">매출: {formatCurrency(data.amount)}</p>
           <p className={getGrowthColor(data.momGrowthRate)}>
             MoM: {formatPercent(data.momGrowthRate)}
           </p>
@@ -213,7 +214,7 @@ export function SalesGrowthAnalysis({
             </p>
           )}
           {data.movingAvg3M && (
-            <p className="text-[#ff385c] text-sm mt-1">
+            <p className="text-[#7A4AE2] text-sm mt-1">
               3개월 이평: {formatCurrency(data.movingAvg3M)}
             </p>
           )}
@@ -227,7 +228,7 @@ export function SalesGrowthAnalysis({
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-[#ff385c] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-[#7A4AE2] border-t-transparent rounded-full animate-spin"></div>
           <span className="ml-3 text-gray-500">매출 성장 분석 로딩중...</span>
         </div>
       </div>
@@ -239,12 +240,14 @@ export function SalesGrowthAnalysis({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="text-center py-8">
           <p className="text-red-500">{error}</p>
-          <button
+          <Button
             onClick={fetchMonthlyTrend}
-            className="mt-4 px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41]"
+            className="mt-4 px-4 py-2 bg-[#7A4AE2] text-white rounded-lg hover:bg-[#7A4AE2]"
+            variant={"secondary"}
+            size={"md"}
           >
             다시 시도
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -307,7 +310,7 @@ export function SalesGrowthAnalysis({
             <p className="text-xs text-gray-500 uppercase tracking-wide">
               누적 매출
             </p>
-            <p className="text-2xl font-bold mt-1 text-[#e00b41]">
+            <p className="text-2xl font-bold mt-1 text-[#7A4AE2]">
               {formatCurrency(summary.totalRevenue)}
             </p>
             <p className="text-xs text-gray-400 mt-1">
@@ -329,7 +332,7 @@ export function SalesGrowthAnalysis({
             <p className="text-lg font-bold text-green-700 mt-2">
               {summary.bestMonth.label}
             </p>
-            <p className="text-sm text-[#ff385c]">
+            <p className="text-sm text-[#7A4AE2]">
               {formatCurrency(summary.bestMonth.amount)}
             </p>
           </div>
@@ -352,26 +355,30 @@ export function SalesGrowthAnalysis({
 
       <div className="flex justify-end">
         <div className="flex bg-gray-100 rounded-lg p-1">
-          <button
+          <Button
             onClick={() => setSelectedView("chart")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
               selectedView === "chart"
-                ? "bg-white text-[#e00b41] shadow-sm"
+                ? "bg-white text-[#7A4AE2] shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
+            variant={"secondary"}
+            size={"md"}
           >
             차트
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setSelectedView("table")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
               selectedView === "table"
-                ? "bg-white text-[#e00b41] shadow-sm"
+                ? "bg-white text-[#7A4AE2] shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
+            variant={"secondary"}
+            size={"md"}
           >
             테이블
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -399,9 +406,9 @@ export function SalesGrowthAnalysis({
                   type="monotone"
                   dataKey="amount"
                   name="매출"
-                  stroke="#ff385c"
+                  stroke="#7A4AE2"
                   strokeWidth={2}
-                  dot={{ fill: "#ff385c", strokeWidth: 2 }}
+                  dot={{ fill: "#7A4AE2", strokeWidth: 2 }}
                 />
                 <Line
                   type="monotone"
@@ -490,7 +497,7 @@ export function SalesGrowthAnalysis({
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
                         {item.label}
                         {index === 0 && (
-                          <span className="ml-2 text-xs text-[#ff385c] font-normal">
+                          <span className="ml-2 text-xs text-[#7A4AE2] font-normal">
                             (최신)
                           </span>
                         )}
@@ -511,7 +518,7 @@ export function SalesGrowthAnalysis({
                       >
                         {formatPercent(item.yoyGrowthRate)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-[#ff385c]">
+                      <td className="px-4 py-3 text-sm text-right text-[#7A4AE2]">
                         {item.movingAvg3M
                           ? formatCurrency(item.movingAvg3M)
                           : "-"}

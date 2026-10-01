@@ -1,3 +1,6 @@
+const originalGetAnimations = Object.getOwnPropertyDescriptor(Element.prototype,'getAnimations');
+beforeAll(()=>Object.defineProperty(Element.prototype,'getAnimations',{configurable:true,value:()=>[]}));
+afterAll(()=>{if(originalGetAnimations) Object.defineProperty(Element.prototype,'getAnimations',originalGetAnimations);else delete (Element.prototype as unknown as Record<string,unknown>).getAnimations;});
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';

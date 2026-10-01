@@ -1,18 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@700&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "@heroui/styles";
+@config "../tailwind.config.js";
+
 
 :root {
-  /* Airbnb-inspired DESIGN.md tokens */
-  --color-primary: #ff385c;      /* Rausch */
-  --color-primary-active: #e00b41;
-  --color-primary-disabled: #ffd1da;
-  --color-primary-light: #ffd1da;
+  /* Admin brand tokens; HeroUI uses the same purple accent. */
+  --color-primary: #7A4AE2;      /* Rausch */
+  --color-primary-active: #6334C4;
+  --color-primary-disabled: #E6DCF8;
+  --color-primary-light: #E6DCF8;
   --color-secondary: #f7f7f7;
-  --color-accent: #ff385c;
-  --color-accent-pink: #ff385c;
+  --color-accent: #7A4AE2;
+  --color-accent-pink: #7A4AE2;
   --color-background: #ffffff;
   --color-canvas: #ffffff;
   --color-surface-soft: #f7f7f7;
@@ -59,8 +59,8 @@
     @apply text-[#3f3f3f] leading-relaxed;
   }
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --legacy-background: 0 0% 100%;
+    --legacy-foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
@@ -69,13 +69,13 @@
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
+    --legacy-muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --legacy-accent: 0 0% 96.1%;
+    --legacy-accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
+    --legacy-border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 0 0% 13.3%;
     --chart-1: 12 76% 61%;
@@ -86,8 +86,8 @@
     --radius: 0.5rem;
   }
   .dark {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 13.3%;
+    --legacy-background: 0 0% 100%;
+    --legacy-foreground: 0 0% 13.3%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 13.3%;
     --popover: 0 0% 100%;
@@ -96,13 +96,13 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 96.9%;
     --secondary-foreground: 0 0% 13.3%;
-    --muted: 0 0% 96.9%;
+    --legacy-muted: 0 0% 96.9%;
     --muted-foreground: 0 0% 41.6%;
-    --accent: 347 100% 61%;
-    --accent-foreground: 0 0% 100%;
+    --legacy-accent: 347 100% 61%;
+    --legacy-accent-foreground: 0 0% 100%;
     --destructive: 12 81% 42%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 86.7%;
+    --legacy-border: 0 0% 86.7%;
     --input: 0 0% 86.7%;
     --ring: 0 0% 13.3%;
     --chart-1: 220 70% 50%;
@@ -114,102 +114,12 @@
 }
 
 @layer components {
-  .admin-airbnb-screen {
-    color: #222222;
-    background: #ffffff;
-  }
-
-  .admin-airbnb-screen .bg-gray-50,
-  .admin-airbnb-screen .bg-slate-50,
-  .admin-airbnb-screen .bg-gray-100,
-  .admin-airbnb-screen .bg-slate-100,
-  .admin-airbnb-screen .bg-purple-50 {
-    background-color: #f7f7f7 !important;
-  }
-
-  .admin-airbnb-screen .bg-white,
-  .admin-airbnb-screen .bg-white\/95 {
-    background-color: #ffffff !important;
-  }
-
-  .admin-airbnb-screen .text-gray-900,
-  .admin-airbnb-screen .text-slate-900,
-  .admin-airbnb-screen .text-gray-800,
-  .admin-airbnb-screen .text-slate-800,
-  .admin-airbnb-screen .text-purple-700 {
-    color: #222222 !important;
-  }
-
-  .admin-airbnb-screen .text-gray-700,
-  .admin-airbnb-screen .text-slate-700,
-  .admin-airbnb-screen .text-gray-600,
-  .admin-airbnb-screen .text-slate-600 {
-    color: #3f3f3f !important;
-  }
-
-  .admin-airbnb-screen .text-gray-500,
-  .admin-airbnb-screen .text-slate-500,
-  .admin-airbnb-screen .text-gray-400,
-  .admin-airbnb-screen .text-slate-400 {
-    color: #6a6a6a !important;
-  }
-
-  .admin-airbnb-screen .border-gray-100,
-  .admin-airbnb-screen .border-gray-200,
-  .admin-airbnb-screen .border-gray-300,
-  .admin-airbnb-screen .border-slate-100,
-  .admin-airbnb-screen .border-slate-200,
-  .admin-airbnb-screen .border-purple-100,
-  .admin-airbnb-screen .border-purple-200 {
-    border-color: #dddddd !important;
-  }
-
-  .admin-airbnb-screen .shadow,
-  .admin-airbnb-screen .shadow-sm,
-  .admin-airbnb-screen .shadow-md,
-  .admin-airbnb-screen .shadow-lg {
-    box-shadow: var(--box-shadow) !important;
-  }
-
-  .admin-airbnb-screen .rounded-xl,
-  .admin-airbnb-screen .rounded-2xl {
-    border-radius: 14px !important;
-  }
-
-  .admin-airbnb-screen .bg-blue-500,
-  .admin-airbnb-screen .bg-blue-600,
-  .admin-airbnb-screen .bg-purple-600,
-  .admin-airbnb-screen .bg-purple-700,
-  .admin-airbnb-screen .bg-green-500,
-  .admin-airbnb-screen .bg-green-600 {
-    background-color: #ff385c !important;
-  }
-
-  .admin-airbnb-screen .hover\:bg-blue-600:hover,
-  .admin-airbnb-screen .hover\:bg-blue-700:hover,
-  .admin-airbnb-screen .hover\:bg-purple-700:hover,
-  .admin-airbnb-screen .hover\:bg-green-600:hover {
-    background-color: #e00b41 !important;
-  }
-
-  .admin-airbnb-screen .text-blue-600,
-  .admin-airbnb-screen .text-purple-600,
-  .admin-airbnb-screen .text-purple-700,
-  .admin-airbnb-screen .text-\[\#7D4EE4\] {
-    color: #ff385c !important;
-  }
-
-  .admin-airbnb-screen .focus\:ring-blue-500:focus,
-  .admin-airbnb-screen .focus\:ring-\[\#7D4EE4\]:focus {
-    --tw-ring-color: #222222 !important;
-  }
-
   /* 버튼 스타일 */
   .btn-primary {
-    @apply bg-[#ff385c] text-white font-medium py-[14px] px-6 rounded-lg min-h-12;
-    @apply hover:bg-[#e00b41];
+    @apply bg-[#7A4AE2] text-white font-medium py-[14px] px-6 rounded-lg min-h-12;
+    @apply hover:bg-[#6334C4];
     @apply transition-colors duration-200 ease-in-out;
-    @apply disabled:bg-[#ffd1da] disabled:text-white disabled:cursor-not-allowed;
+    @apply disabled:bg-[#E6DCF8] disabled:text-white disabled:cursor-not-allowed;
   }
 
   /* 선택 버튼 스타일 */
@@ -220,9 +130,9 @@
   }
 
   .btn-selected {
-    @apply bg-[#ff385c] text-white border-[#ff385c];
+    @apply bg-[#7A4AE2] text-white border-[#7A4AE2];
     @apply font-medium text-base;
-    @apply hover:bg-[#e00b41] hover:border-[#e00b41] hover:text-white;
+    @apply hover:bg-[#6334C4] hover:border-[#6334C4] hover:text-white;
   }
 
   /* 카드 스타일 */
@@ -247,13 +157,13 @@
   .count-animation.active::after {
     content: "+1";
     @apply absolute -top-4 left-1/2 transform -translate-x-1/2;
-    @apply text-[#ff385c] opacity-0 transition-all duration-500;
+    @apply text-[#7A4AE2] opacity-0 transition-all duration-500;
     animation: float-up 0.5s ease-out;
   }
 
   /* 그라데이션 배경 */
   .gradient-bg {
-    @apply bg-[#ff385c];
+    @apply bg-[#7A4AE2];
   }
 
   /* 타이포그래피 */
@@ -291,11 +201,11 @@
   }
 
   .slick-dots li button:before {
-    color: #ff385c;
+    color: #7A4AE2;
   }
 
   .slick-dots li.slick-active button:before {
-    color: #ff385c;
+    color: #7A4AE2;
   }
 
   /* 게시물 하이라이트 효과 */
@@ -336,7 +246,7 @@
   }
 
   .flip-number {
-    background: #ff385c;
+    background: #7A4AE2;
     border-radius: 8px;
     padding: 10px 15px;
     font-size: 2.5rem;
@@ -370,7 +280,7 @@
   .flip-divider {
     font-size: 2.5rem;
     font-weight: 700;
-    color: #ff385c;
+    color: #7A4AE2;
     margin: 0 -5px;
     align-self: flex-start;
     margin-top: 10px;
@@ -456,7 +366,7 @@
 }
 
 .registration-count .highlight-text {
-  background: linear-gradient(120deg, #ff385c, #e00b41);
+  background: linear-gradient(120deg, #7A4AE2, #6334C4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 800;
@@ -467,7 +377,7 @@
   left: calc(50% + 2.5em);
   top: 0;
   transform: translateX(-50%);
-  color: #ff385c;
+  color: #7A4AE2;
   font-weight: bold;
   pointer-events: none;
   animation: floatAndFade 1s ease-out forwards;
@@ -503,4 +413,21 @@
   body {
     @apply bg-background;
   }
+}
+
+/* HeroUI tokens must remain CSS colors, independent of legacy HSL helpers. */
+:root {
+  --accent: #7A4AE2;
+  --accent-foreground: #ffffff;
+  --focus: #7A4AE2;
+  --radius: 0.75rem;
+  --field-radius: 0.75rem;
+  --field-border-width: 1px;
+  --field-border: #dddddd;
+}
+
+/* Admin action geometry and secondary text follow DESIGN.md. */
+@layer components {
+  .button { border-radius: 0.75rem; }
+  .button--secondary { --button-fg: #222222; }
 }

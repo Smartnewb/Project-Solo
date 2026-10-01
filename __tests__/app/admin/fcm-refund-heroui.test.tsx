@@ -1,0 +1,65 @@
+import React from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import FcmTokensV2 from '@/app/admin/fcm-tokens/fcm-tokens-v2';
+import IOSRefundPageV2 from '@/app/admin/ios-refund/ios-refund-v2';
+import AdminService from '@/app/services/admin';
+const toast={success:jest.fn(),error:jest.fn(),warning:jest.fn()};
+jest.mock('@/shared/ui/admin/toast/toast-context',()=>({useToast:()=>toast}));
+jest.mock('@/app/services/admin',()=>({__esModule:true,default:{fcmTokens:{getTokens:jest.fn()},appleRefund:{getList:jest.fn(),syncRefundStatus:jest.fn()}}}));
+beforeEach(()=>{
+ jest.clearAllMocks();
+ (AdminService.fcmTokens.getTokens as jest.Mock).mockImplementation((page:number)=>Promise.resolve({summary:{totalUsers:41,withToken:30,withoutToken:11,iosCount:20,androidCount:10,activeUserTokenRate:75},items:[{userId:'u1',name:'토큰 사용자',email:null,phoneNumber:'010',lastLoginAt:null,profile:null,tokens:[{platform:'ios',isActive:false}]}],meta:{currentPage:page,itemsPerPage:20,totalItems:41}}));
+ (AdminService.appleRefund.getList as jest.Mock).mockResolvedValue({items:[{id:'payment',userName:'결제 사용자',userId:'u1',transactionId:'tx',originalTransactionId:'original',productId:'sku',amount:1000,currency:'KRW',purchaseDate:'2026-10-01',refundDate:null,refundStatus:'NONE'}],meta:{totalPages:3,totalCount:41}});
+ (AdminService.appleRefund.syncRefundStatus as jest.Mock).mockResolvedValue({});
+});
+it('uses actual HeroUI token filter and preserves boolean and 1-based page requests',async()=>{
+ const user=userEvent.setup();render(<FcmTokensV2/>);
+ await screen.findByText('토큰 사용자');
+ expect(screen.getByText('iOS · 비활성')).toBeTruthy();
+ expect(AdminService.fcmTokens.getTokens).toHaveBeenCalledWith(1,20,undefined);
+ await user.click(screen.getByRole('button',{name:'다음'}));
+ await waitFor(()=>expect(AdminService.fcmTokens.getTokens).toHaveBeenLastCalledWith(2,20,undefined));
+ await user.click(screen.getByRole('button',{name:/토큰 보유 여부/}));
+ await user.click(screen.getByRole('option',{name:'토큰 없음'}));
+ await waitFor(()=>expect(AdminService.fcmTokens.getTokens).toHaveBeenLastCalledWith(1,20,false));
+});
+it('shows a failed token query and retries instead of presenting silent empty success',async()=>{
+ (AdminService.fcmTokens.getTokens as jest.Mock).mockRejectedValueOnce(new Error('network'));
+ const user=userEvent.setup();render(<FcmTokensV2/>);
+ await user.click(await screen.findByRole('button',{name:'재시도'}));
+ await screen.findByText('토큰 사용자');
+ expect(AdminService.fcmTokens.getTokens).toHaveBeenCalledTimes(2);
+});
+it('applies refund filters only on search, resets to page one and preserves calendar dates',async()=>{
+ const user=userEvent.setup();render(<IOSRefundPageV2/>);
+ await screen.findByText('결제 사용자');
+ await user.click(screen.getByRole('button',{name:'다음'}));
+ await waitFor(()=>expect(AdminService.appleRefund.getList).toHaveBeenLastCalledWith({page:2,limit:20}));
+ await user.type(screen.getByRole('textbox',{name:'사용자 검색'}),'대상');
+ expect(AdminService.appleRefund.getList).toHaveBeenCalledTimes(2);
+ fireEvent.change(screen.getByLabelText('시작일'),{target:{value:'2026-10-02'}});
+ fireEvent.change(screen.getByLabelText('종료일'),{target:{value:'2026-10-01'}});
+ expect((screen.getByRole('button',{name:'검색',exact:true}) as HTMLButtonElement).disabled).toBe(true);
+ fireEvent.change(screen.getByLabelText('종료일'),{target:{value:'2026-10-03'}});
+ await user.click(screen.getByRole('button',{name:/환불 상태$/}));
+ await user.click(screen.getByRole('option',{name:'환불 완료'}));
+ await user.click(screen.getByRole('button',{name:'검색',exact:true}));
+ await waitFor(()=>expect(AdminService.appleRefund.getList).toHaveBeenLastCalledWith({page:1,limit:20,status:'REFUNDED',searchTerm:'대상',startDate:'2026-10-02',endDate:'2026-10-03'}));
+ await user.click(screen.getByRole('button',{name:'초기화'}));
+ await waitFor(()=>expect(AdminService.appleRefund.getList).toHaveBeenLastCalledWith({page:1,limit:20}));
+});
+it('preserves explicit sync action and shows failure separately from a failed list refresh',async()=>{
+ const user=userEvent.setup();render(<IOSRefundPageV2/>);await screen.findByText('결제 사용자');
+ expect(AdminService.appleRefund.syncRefundStatus).not.toHaveBeenCalled();
+ (AdminService.appleRefund.getList as jest.Mock).mockRejectedValueOnce(new Error('refresh'));
+ await user.click(screen.getByRole('button',{name:'환불 상태 동기화'}));
+ await waitFor(()=>expect(toast.warning).toHaveBeenCalledWith('동기화는 완료되었지만 내역 조회에 실패했습니다. 다시 조회해주세요.'));
+ expect(toast.success).not.toHaveBeenCalled();
+ expect(AdminService.appleRefund.syncRefundStatus).toHaveBeenCalledWith();
+ await user.click(screen.getByRole('button',{name:'재시도'}));
+ await waitFor(()=>expect(screen.queryByRole('alert')).toBeNull());
+ (AdminService.appleRefund.syncRefundStatus as jest.Mock).mockRejectedValueOnce(new Error('sync'));
+ await user.click(screen.getByRole('button',{name:'환불 상태 동기화'}));
+ await waitFor(()=>expect(toast.error).toHaveBeenCalledWith('동기화에 실패했습니다.'));
+});

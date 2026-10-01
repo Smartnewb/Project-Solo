@@ -1,5 +1,4 @@
 import StyleReferenceV2 from './style-reference-v2';
-
 export default function StyleReferencePage() {
-  return <StyleReferenceV2 />;
+    return <StyleReferenceV2></StyleReferenceV2>;
 }

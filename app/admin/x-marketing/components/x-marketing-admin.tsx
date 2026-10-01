@@ -1,25 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import {
-	Alert,
-	Box,
-	Button,
-	Card,
-	CardContent,
-	Chip,
-	Divider,
-	FormControlLabel,
-	Grid,
-	IconButton,
-	Stack,
-	Switch,
-	Tab,
-	Tabs,
-	TextField,
-	Typography,
-} from '@mui/material';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Card, Chip, Input, Label, Link, Spinner, Switch, TextField } from '@heroui/react';
 import { Plus, Trash2 } from 'lucide-react';
 import {
 	XMarketingAction,
@@ -157,6 +139,8 @@ export default function XMarketingAdmin({ initialView }: Props) {
 	const [query, setQuery] = useState('');
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [actionPending, setActionPending] = useState(false);
+	const actionLock = useRef(false);
 
 	useEffect(() => setView(initialView), [initialView]);
 
@@ -257,410 +241,56 @@ export default function XMarketingAdmin({ initialView }: Props) {
 		[dashboard],
 	);
 
-	const handleCollect = async () => {
-		setError(null);
-		try {
-			await XMarketingAdminService.collect({
-				query: query || undefined,
-				priority: 100,
-			});
-			await load();
-		} catch (err) {
-			setError(getAdminErrorMessage(err, '수동 수집 요청에 실패했습니다.'));
-		}
-	};
+	const runAction = async (action: () => Promise<unknown>, failure: string) => {
+        if (actionLock.current) return;
+        actionLock.current = true;
+        setActionPending(true);
+        setError(null);
+        try { await action(); await load(); }
+        catch (err) { setError(getAdminErrorMessage(err, failure)); }
+        finally { actionLock.current = false; setActionPending(false); }
+    };
+    const handleCollect = () => runAction(() => XMarketingAdminService.collect({query: query || undefined, priority: 100}), '수동 수집 요청에 실패했습니다.');
+    const handleGenerate = (id: string) => runAction(() => XMarketingAdminService.generateReplyCandidate(id), '답변 후보 생성에 실패했습니다.');
+    const handleApprove = (id: string) => runAction(() => XMarketingAdminService.approveReplyCandidate(id), '답변 후보 승인에 실패했습니다.');
+    const handleReject = (id: string) => runAction(() => XMarketingAdminService.rejectReplyCandidate(id, '운영자 거절'), '답변 후보 거절에 실패했습니다.');
 
-	const handleGenerate = async (postId: string) => {
-		await XMarketingAdminService.generateReplyCandidate(postId);
-		await load();
-	};
-
-	const handleApprove = async (candidateId: string) => {
-		await XMarketingAdminService.approveReplyCandidate(candidateId);
-		await load();
-	};
-
-	const handleReject = async (candidateId: string) => {
-		await XMarketingAdminService.rejectReplyCandidate(
-			candidateId,
-			'운영자 거절',
-		);
-		await load();
-	};
-
-	return (
-		<Box>
-			<Stack
-				direction={{ xs: 'column', md: 'row' }}
-				justifyContent="space-between"
-				gap={2}
-				sx={{ mb: 3 }}
-			>
-				<Box>
-					<Typography variant="h5" fontWeight={700}>
-						X 마케팅 관리
-					</Typography>
-					<Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-						수집, 답변 후보, 승인 이력, API window 리밋, UTM 성과를 한 화면에서
-						검수합니다.
-					</Typography>
-				</Box>
-				<Stack direction="row" gap={1} flexWrap="wrap">
-					<Chip size="small" label="마케팅 > X 마케팅 관리" />
-					<Chip size="small" color="warning" label="Human-in-the-loop" />
-				</Stack>
-			</Stack>
-
-			<Tabs
-				value={view}
-				sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
-			>
-				{tabs.map((tab) => (
-					<Tab
-						key={tab.value}
-						value={tab.value}
-						label={tab.label}
-						component={Link}
-						href={tab.href}
-					/>
-				))}
-			</Tabs>
-
-			<Stack direction={{ xs: 'column', md: 'row' }} gap={1.5} sx={{ mb: 3 }}>
-				<TextField
-					size="small"
-					label="검색/수집 쿼리"
-					value={query}
-					onChange={(event) => setQuery(event.target.value)}
-					sx={{ minWidth: { xs: '100%', md: 360 } }}
-				/>
-				<Button
-					variant="outlined"
-					onClick={() => void load()}
-					disabled={loading}
-				>
-					새로고침
-				</Button>
-				<Button
-					variant="contained"
-					onClick={() => void handleCollect()}
-					disabled={loading}
-				>
-					수동 수집 실행
-				</Button>
-			</Stack>
-
-			{error && (
-				<Alert severity="error" sx={{ mb: 3 }}>
-					{error}
-				</Alert>
-			)}
-
-			{(view === 'dashboard' ||
-				view === 'collected-posts' ||
-				view === 'reply-candidates') && (
-				<Grid container spacing={2} sx={{ mb: 3 }}>
-					{metrics.map((metric) => (
-						<Grid item xs={6} md={3} lg={1.7} key={metric.label}>
-							<Card variant="outlined">
-								<CardContent>
-									<Typography variant="caption" color="text.secondary">
-										{metric.label}
-									</Typography>
-									<Typography variant="h5" fontWeight={700}>
-										{metric.value.toLocaleString()}
-									</Typography>
-								</CardContent>
-							</Card>
-						</Grid>
-					))}
-				</Grid>
-			)}
-
-			{view === 'dashboard' && (
-				<Grid container spacing={2}>
-					<Grid item xs={12} lg={7}>
-						<CollectedPostsCard
-							posts={collectedPosts.slice(0, 5)}
-							onGenerate={handleGenerate}
-						/>
-					</Grid>
-					<Grid item xs={12} lg={5}>
-						<RateLimitCard rateLimits={rateLimits} />
-					</Grid>
-				</Grid>
-			)}
-
-			{view === 'collected-posts' && (
-				<CollectedPostsCard
-					posts={collectedPosts}
-					onGenerate={handleGenerate}
-				/>
-			)}
-			{view === 'reply-candidates' && (
-				<ReplyCandidatesCard
-					candidates={replyCandidates}
-					onApprove={handleApprove}
-					onReject={handleReject}
-				/>
-			)}
-			{view === 'own-posts' && <PostsCard posts={ownPosts} />}
-			{view === 'actions' && <ActionsCard actions={actions} />}
-			{view === 'settings' && (
-				<SettingsCard
-					settings={settings}
-					rateLimits={rateLimits}
-					onSaved={load}
-				/>
-			)}
-		</Box>
-	);
+    const busy = loading || actionPending;
+    return <main className="space-y-6">
+        <header className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold">X 마케팅 관리</h1><p className="mt-1 text-sm text-gray-600">수집, 답변 후보, 승인 이력, API window 리밋, UTM 성과를 한 화면에서 검수합니다.</p></div><div className="flex flex-wrap gap-2"><Chip>마케팅 &gt; X 마케팅 관리</Chip><Chip color="warning">Human-in-the-loop</Chip></div></header>
+        <nav aria-label="X 마케팅 메뉴" className="flex flex-wrap gap-x-5 gap-y-2 border-b">{tabs.map(tab => <Link key={tab.value} href={tab.href} aria-current={view === tab.value ? 'page' : undefined} className={`rounded-none py-3 text-sm text-gray-800 ${view === tab.value ? 'border-b-2 border-[#7A4AE2] font-bold' : ''}`}>{tab.label}</Link>)}</nav>
+        <div className="flex flex-wrap items-end gap-3"><TextField className="w-full md:w-96" isDisabled={actionPending}><Label>검색/수집 쿼리</Label><Input value={query} onChange={event => setQuery(event.target.value)}/></TextField><Button variant="secondary" onPress={() => void load()} isDisabled={busy}>새로고침</Button><Button onPress={() => void handleCollect()} isDisabled={busy}>수동 수집 실행</Button>{busy && <Spinner aria-label="X 마케팅 처리 중" size="sm"/>}</div>
+        {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {['dashboard','collected-posts','reply-candidates'].includes(view) && <dl className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">{metrics.map(metric => <div key={metric.label} className="rounded-xl border bg-white p-4"><dt className="text-sm text-gray-600">{metric.label}</dt><dd className="mt-1 text-2xl font-bold tabular-nums">{metric.value.toLocaleString()}</dd></div>)}</dl>}
+        {view === 'dashboard' && <div className="grid items-start gap-4 lg:grid-cols-[7fr_5fr]"><CollectedPostsCard posts={collectedPosts.slice(0,5)} onGenerate={handleGenerate} busy={busy}/><RateLimitCard rateLimits={rateLimits}/></div>}
+        {view === 'collected-posts' && <CollectedPostsCard posts={collectedPosts} onGenerate={handleGenerate} busy={busy}/>}
+        {view === 'reply-candidates' && <ReplyCandidatesCard candidates={replyCandidates} onApprove={handleApprove} onReject={handleReject} busy={busy}/>}
+        {view === 'own-posts' && <PostsCard posts={ownPosts}/>}
+        {view === 'actions' && <ActionsCard actions={actions}/>}
+        {view === 'settings' && <SettingsCard settings={settings} rateLimits={rateLimits} onSaved={load}/>}
+    </main>;
 }
 
-function CollectedPostsCard({
-	posts,
-	onGenerate,
-}: {
-	posts: XMarketingCollectedPost[];
-	onGenerate: (id: string) => Promise<void>;
-}) {
-	return (
-		<Card variant="outlined">
-			<CardContent>
-				<Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-					수집 게시글 검토
-				</Typography>
-				<Stack divider={<Divider flexItem />} spacing={2}>
-					{posts.map((post) => (
-						<Box key={post.id}>
-							<Stack direction="row" justifyContent="space-between" gap={2}>
-								<Box>
-									<Typography variant="body2" fontWeight={700}>
-										@{post.username ?? 'unknown'}
-									</Typography>
-									<Typography
-										variant="body2"
-										sx={{ whiteSpace: 'pre-wrap', mt: 0.75 }}
-									>
-										{postText(post)}
-									</Typography>
-									{postKo(post) && (
-										<Typography variant="caption" color="text.secondary">
-											{postKo(post)}
-										</Typography>
-									)}
-								</Box>
-								<Stack alignItems="flex-end" gap={1}>
-									<Chip size="small" label={post.status ?? 'collected'} />
-									<Button
-										size="small"
-										variant="outlined"
-										onClick={() => void onGenerate(post.id)}
-									>
-										후보 생성
-									</Button>
-									{post.url && sanitizeUrl(post.url, { allowRelative: false }) && (
-										<Button size="small" href={sanitizeUrl(post.url, { allowRelative: false }) ?? ''} target="_blank">
-											X 열기
-										</Button>
-									)}
-								</Stack>
-							</Stack>
-						</Box>
-					))}
-					{posts.length === 0 && (
-						<Typography color="text.secondary">
-							수집된 게시글이 없습니다.
-						</Typography>
-					)}
-				</Stack>
-			</CardContent>
-		</Card>
-	);
+function CollectedPostsCard({posts,onGenerate,busy}: {posts:XMarketingCollectedPost[];onGenerate:(id:string)=>Promise<void>;busy:boolean}) {
+    return <Card className="border bg-white"><Card.Content className="space-y-4"><h2 className="text-base font-bold">수집 게시글 검토</h2><div className="divide-y">{posts.map(post => {
+        const url = sanitizeUrl(post.url, {allowRelative:false});
+        return <article key={post.id} className="flex flex-wrap justify-between gap-3 py-4 first:pt-0"><div className="min-w-0 flex-1"><h3 className="text-sm font-bold">@{post.username ?? 'unknown'}</h3><p className="mt-1 whitespace-pre-wrap break-words text-sm">{postText(post)}</p>{postKo(post) && <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{postKo(post)}</p>}</div><div className="flex flex-wrap items-start gap-2"><Chip size="sm">{post.status ?? 'collected'}</Chip><Button size="sm" variant="secondary" isDisabled={busy} onPress={() => void onGenerate(post.id)}>후보 생성</Button>{url && <Link href={url} target="_blank" rel="noopener noreferrer">X 열기</Link>}</div></article>;
+    })}</div>{!posts.length && <p className="text-sm text-gray-600">수집된 게시글이 없습니다.</p>}</Card.Content></Card>;
 }
-
-function ReplyCandidatesCard({
-	candidates,
-	onApprove,
-	onReject,
-}: {
-	candidates: XMarketingReplyCandidate[];
-	onApprove: (id: string) => Promise<void>;
-	onReject: (id: string) => Promise<void>;
-}) {
-	return (
-		<Card variant="outlined">
-			<CardContent>
-				<Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-					AI 답변 후보 검수
-				</Typography>
-				<Stack divider={<Divider flexItem />} spacing={2}>
-					{candidates.map((candidate) => (
-						<Box key={candidate.id}>
-							<Typography variant="caption" color="text.secondary">
-								대상 @{candidate.target_username ?? 'unknown'} ·{' '}
-								{candidate.tone} · risk {candidate.risk}
-							</Typography>
-							<Typography
-								variant="body2"
-								color="text.secondary"
-								sx={{ mt: 0.5 }}
-							>
-								{candidate.target_text_original}
-							</Typography>
-							<Typography variant="body1" fontWeight={700} sx={{ mt: 1 }}>
-								{candidate.edited_ja_text ?? candidate.ja_text}
-							</Typography>
-							<Typography variant="body2" sx={{ mt: 0.5 }}>
-								{candidate.edited_ko_meaning ?? candidate.ko_meaning}
-							</Typography>
-							<Stack direction="row" gap={1} sx={{ mt: 1.5 }}>
-								<Chip
-									size="small"
-									label={candidate.status ?? 'candidate_generated'}
-								/>
-								<Button
-									size="small"
-									variant="contained"
-									onClick={() => void onApprove(candidate.id)}
-								>
-									승인
-								</Button>
-								<Button
-									size="small"
-									color="inherit"
-									onClick={() => void onReject(candidate.id)}
-								>
-									거절
-								</Button>
-								{candidate.target_url && sanitizeUrl(candidate.target_url, { allowRelative: false }) && (
-									<Button
-										size="small"
-										href={sanitizeUrl(candidate.target_url, { allowRelative: false }) ?? ''}
-										target="_blank"
-									>
-										X 열기
-									</Button>
-								)}
-							</Stack>
-						</Box>
-					))}
-					{candidates.length === 0 && (
-						<Typography color="text.secondary">
-							답변 후보가 없습니다.
-						</Typography>
-					)}
-				</Stack>
-			</CardContent>
-		</Card>
-	);
+function ReplyCandidatesCard({candidates,onApprove,onReject,busy}: {candidates:XMarketingReplyCandidate[];onApprove:(id:string)=>Promise<void>;onReject:(id:string)=>Promise<void>;busy:boolean}) {
+    return <Card className="border bg-white"><Card.Content className="space-y-4"><h2 className="text-base font-bold">AI 답변 후보 검수</h2><div className="divide-y">{candidates.map(candidate => {
+        const url = sanitizeUrl(candidate.target_url,{allowRelative:false});
+        return <article key={candidate.id} className="space-y-2 py-4 first:pt-0"><p className="text-sm text-gray-600">대상 @{candidate.target_username ?? 'unknown'} · {candidate.tone} · risk {candidate.risk}</p><p className="whitespace-pre-wrap text-sm text-gray-600">{candidate.target_text_original}</p><p className="whitespace-pre-wrap font-bold">{candidate.edited_ja_text ?? candidate.ja_text}</p><p className="whitespace-pre-wrap text-sm">{candidate.edited_ko_meaning ?? candidate.ko_meaning}</p><div className="flex flex-wrap items-center gap-2"><Chip size="sm">{candidate.status ?? 'candidate_generated'}</Chip><Button size="sm" isDisabled={busy} onPress={() => void onApprove(candidate.id)}>승인</Button><Button size="sm" variant="secondary" isDisabled={busy} onPress={() => void onReject(candidate.id)}>거절</Button>{url && <Link href={url} target="_blank" rel="noopener noreferrer">X 열기</Link>}</div></article>;
+    })}</div>{!candidates.length && <p className="text-sm text-gray-600">답변 후보가 없습니다.</p>}</Card.Content></Card>;
 }
-
-function RateLimitCard({ rateLimits }: { rateLimits: XMarketingRateLimit[] }) {
-	return (
-		<Card variant="outlined">
-			<CardContent>
-				<Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-					X API 현재 window 리밋
-				</Typography>
-				<Stack divider={<Divider flexItem />} spacing={1.5}>
-					{rateLimits.map((limit) => (
-						<Box key={limit.id}>
-							<Stack direction="row" justifyContent="space-between" gap={2}>
-								<Typography variant="body2" fontWeight={700}>
-									{limit.endpoint}
-								</Typography>
-								<Typography variant="body2">
-									{limit.remaining_count ?? '-'} / {limit.limit_count ?? '-'}
-								</Typography>
-							</Stack>
-							<Typography variant="caption" color="text.secondary">
-								reset {limit.reset_at ?? '-'} · {limit.seconds_to_reset ?? '-'}
-								초
-							</Typography>
-							{limit.last_failure_reason && (
-								<Typography variant="caption" color="error.main">
-									{limit.last_failure_reason}
-								</Typography>
-							)}
-						</Box>
-					))}
-					{rateLimits.length === 0 && (
-						<Typography color="text.secondary">
-							저장된 리밋 스냅샷이 없습니다.
-						</Typography>
-					)}
-				</Stack>
-			</CardContent>
-		</Card>
-	);
+function RateLimitCard({rateLimits}:{rateLimits:XMarketingRateLimit[]}) {
+    return <Card className="border bg-white"><Card.Content className="space-y-4"><h2 className="text-base font-bold">X API 현재 window 리밋</h2><div className="divide-y">{rateLimits.map(limit => <article key={limit.id} className="py-3 first:pt-0"><div className="flex flex-wrap justify-between gap-2 text-sm"><h3 className="break-all font-bold">{limit.endpoint}</h3><p className="tabular-nums">{limit.remaining_count ?? '-'} / {limit.limit_count ?? '-'}</p></div><p className="text-sm text-gray-600">reset {limit.reset_at ?? '-'} · {limit.seconds_to_reset ?? '-'}초</p>{limit.last_failure_reason && <p className="text-sm text-red-700">{limit.last_failure_reason}</p>}</article>)}</div>{!rateLimits.length && <p className="text-sm text-gray-600">저장된 리밋 스냅샷이 없습니다.</p>}</Card.Content></Card>;
 }
-
-function PostsCard({ posts }: { posts: XMarketingCollectedPost[] }) {
-	return (
-		<Card variant="outlined">
-			<CardContent>
-				<Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-					작성한 독립 게시글
-				</Typography>
-				<Stack divider={<Divider flexItem />} spacing={2}>
-					{posts.map((post) => (
-						<Box key={post.id}>
-							<Typography variant="body2" fontWeight={700}>
-								{post.tweet_id ?? post.tweetId ?? 'draft'}
-							</Typography>
-							<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-								{postText(post)}
-							</Typography>
-							<Chip
-								size="small"
-								label={post.status ?? 'approved'}
-								sx={{ mt: 1 }}
-							/>
-						</Box>
-					))}
-					{posts.length === 0 && (
-						<Typography color="text.secondary">
-							작성한 게시글 기록이 없습니다.
-						</Typography>
-					)}
-				</Stack>
-			</CardContent>
-		</Card>
-	);
+function PostsCard({posts}:{posts:XMarketingCollectedPost[]}) {
+    return <Card className="border bg-white"><Card.Content className="space-y-4"><h2 className="text-base font-bold">작성한 독립 게시글</h2><div className="divide-y">{posts.map(post => <article key={post.id} className="space-y-2 py-4 first:pt-0"><h3 className="text-sm font-bold">{post.tweet_id ?? post.tweetId ?? 'draft'}</h3><p className="whitespace-pre-wrap break-words text-sm">{postText(post)}</p><Chip size="sm">{post.status ?? 'approved'}</Chip></article>)}</div>{!posts.length && <p className="text-sm text-gray-600">작성한 게시글 기록이 없습니다.</p>}</Card.Content></Card>;
 }
-
-function ActionsCard({ actions }: { actions: XMarketingAction[] }) {
-	return (
-		<Card variant="outlined">
-			<CardContent>
-				<Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-					운영 액션 이력
-				</Typography>
-				<Stack divider={<Divider flexItem />} spacing={1.5}>
-					{actions.map((action) => (
-						<Box key={action.id}>
-							<Stack direction="row" justifyContent="space-between" gap={2}>
-								<Typography variant="body2" fontWeight={700}>
-									{action.action_type}
-								</Typography>
-								<Chip size="small" label={action.status ?? 'recorded'} />
-							</Stack>
-							<Typography variant="caption" color="text.secondary">
-								{action.target_type} · {action.tweet_id ?? action.id} ·{' '}
-								{action.created_at}
-							</Typography>
-						</Box>
-					))}
-					{actions.length === 0 && (
-						<Typography color="text.secondary">
-							액션 이력이 없습니다.
-						</Typography>
-					)}
-				</Stack>
-			</CardContent>
-		</Card>
-	);
+function ActionsCard({actions}:{actions:XMarketingAction[]}) {
+    return <Card className="border bg-white"><Card.Content className="space-y-4"><h2 className="text-base font-bold">운영 액션 이력</h2><div className="divide-y">{actions.map(action => <article key={action.id} className="space-y-1 py-3 first:pt-0"><div className="flex flex-wrap justify-between gap-2"><h3 className="text-sm font-bold">{action.action_type}</h3><Chip size="sm">{action.status ?? 'recorded'}</Chip></div><p className="break-words text-sm text-gray-600">{action.target_type} · {action.tweet_id ?? action.id} · {action.created_at}</p></article>)}</div>{!actions.length && <p className="text-sm text-gray-600">액션 이력이 없습니다.</p>}</Card.Content></Card>;
 }
 
 function SettingsCard({
@@ -733,112 +363,5 @@ function SettingsCard({
 		}
 	};
 
-	return (
-		<Grid container spacing={2}>
-			<Grid item xs={12} lg={7}>
-				<Card variant="outlined">
-					<CardContent>
-						<Stack
-							direction={{ xs: 'column', md: 'row' }}
-							justifyContent="space-between"
-							gap={1.5}
-							sx={{ mb: 2 }}
-						>
-							<Box>
-								<Typography variant="subtitle1" fontWeight={700}>
-									수집 쿼리
-								</Typography>
-								<Typography
-									variant="body2"
-									color="text.secondary"
-									sx={{ mt: 0.5 }}
-								>
-									우선순위가 낮은 숫자일수록 먼저 수집합니다.
-								</Typography>
-							</Box>
-							<Stack direction="row" gap={1}>
-								<Button
-									variant="outlined"
-									startIcon={<Plus size={16} />}
-									onClick={addQuery}
-								>
-									쿼리 추가
-								</Button>
-								<Button
-									variant="contained"
-									onClick={() => void saveQueries()}
-									disabled={saving}
-								>
-									저장
-								</Button>
-							</Stack>
-						</Stack>
-						<Alert severity="warning" sx={{ mb: 2 }}>
-							자동 답글/자동 좋아요는 kill switch와 2차 확인 없이 켜지지 않아야
-							합니다.
-						</Alert>
-						{saveError && (
-							<Alert severity="error" sx={{ mb: 2 }}>
-								{saveError}
-							</Alert>
-						)}
-						<Stack divider={<Divider flexItem />} spacing={1.5}>
-							{collectionQueries.map((item, index) => (
-								<Stack
-									key={`${item.query}-${index}`}
-									direction={{ xs: 'column', md: 'row' }}
-									alignItems={{ xs: 'stretch', md: 'center' }}
-									gap={1.5}
-								>
-									<FormControlLabel
-										control={
-											<Switch
-												checked={item.enabled}
-												onChange={(event) =>
-													updateQuery(index, { enabled: event.target.checked })
-												}
-											/>
-										}
-										label={item.enabled ? 'ON' : 'OFF'}
-										sx={{ minWidth: 92 }}
-									/>
-									<TextField
-										size="small"
-										label="수집 쿼리"
-										value={item.query}
-										onChange={(event) =>
-											updateQuery(index, { query: event.target.value })
-										}
-										fullWidth
-									/>
-									<TextField
-										size="small"
-										label="우선순위"
-										type="number"
-										value={item.priority}
-										onChange={(event) =>
-											updateQuery(index, {
-												priority: Number(event.target.value),
-											})
-										}
-										sx={{ width: { xs: '100%', md: 120 } }}
-									/>
-									<IconButton
-										aria-label="쿼리 삭제"
-										onClick={() => removeQuery(index)}
-										color="error"
-									>
-										<Trash2 size={18} />
-									</IconButton>
-								</Stack>
-							))}
-						</Stack>
-					</CardContent>
-				</Card>
-			</Grid>
-			<Grid item xs={12} lg={5}>
-				<RateLimitCard rateLimits={rateLimits} />
-			</Grid>
-		</Grid>
-	);
+    return <div className="grid items-start gap-4 lg:grid-cols-[7fr_5fr]"><Card className="border bg-white"><Card.Content className="space-y-4"><header className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-bold">수집 쿼리</h2><p className="mt-1 text-sm text-gray-600">우선순위가 낮은 숫자일수록 먼저 수집합니다.</p></div><div className="flex gap-2"><Button variant="secondary" onPress={addQuery} isDisabled={saving}><Plus size={16} aria-hidden/>쿼리 추가</Button><Button onPress={() => void saveQueries()} isDisabled={saving}>{saving && <Spinner size="sm" aria-hidden/>}저장</Button></div></header><p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">자동 답글/자동 좋아요는 kill switch와 2차 확인 없이 켜지지 않아야 합니다.</p>{saveError && <p role="alert" className="text-sm text-red-700">{saveError}</p>}<div className="divide-y">{collectionQueries.map((item,index) => <div key={index} className="flex flex-wrap items-end gap-3 py-3 first:pt-0"><Switch aria-label={`쿼리 ${index+1} 활성`} isSelected={item.enabled} isDisabled={saving} onChange={enabled => updateQuery(index,{enabled})}><Switch.Content><Switch.Control><Switch.Thumb/></Switch.Control><Label>{item.enabled ? 'ON':'OFF'}</Label></Switch.Content></Switch><TextField className="min-w-40 flex-1" isDisabled={saving}><Label>수집 쿼리 {index+1}</Label><Input value={item.query} onChange={event => updateQuery(index,{query:event.target.value})}/></TextField><TextField className="w-28" isDisabled={saving}><Label>우선순위 {index+1}</Label><Input type="number" value={String(item.priority)} onChange={event => updateQuery(index,{priority:Number(event.target.value)})}/></TextField><Button isIconOnly variant="secondary" aria-label={`쿼리 ${index+1} 삭제`} isDisabled={saving} onPress={() => removeQuery(index)}><Trash2 size={18}/></Button></div>)}</div></Card.Content></Card><RateLimitCard rateLimits={rateLimits}/></div>;
 }

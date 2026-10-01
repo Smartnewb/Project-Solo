@@ -1,37 +1,36 @@
-'use client';
-
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from '@mui/material';
-import { useConfirmDialogState } from './confirm-dialog-context';
-
+"use client";
+import { Button, Modal } from "@heroui/react";
+import { useConfirmDialogState } from "./confirm-dialog-context";
 export function ConfirmDialog() {
-  const { state, handleConfirm, handleCancel } = useConfirmDialogState();
-
-  return (
-    <Dialog open={state.open} onClose={handleCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>{state.title ?? '확인'}</DialogTitle>
-      <DialogContent>
-        <DialogContentText>{state.message}</DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleCancel} color="inherit">
-          {state.cancelText ?? '취소'}
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          color={state.severity === 'error' ? 'error' : 'primary'}
-          variant="contained"
-          autoFocus
-        >
-          {state.confirmText ?? '확인'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+	const { state, handleConfirm, handleCancel } = useConfirmDialogState();
+	return (
+		<Modal.Backdrop
+			isOpen={state.open}
+			onOpenChange={(open) => {
+				if (!open) handleCancel();
+			}}
+		>
+			<Modal.Container size="sm">
+				<Modal.Dialog>
+					<Modal.Header>
+						<Modal.Heading>{state.title ?? "확인"}</Modal.Heading>
+					</Modal.Header>
+					<Modal.Body>
+						<p className="text-muted">{state.message}</p>
+					</Modal.Body>
+					<Modal.Footer>
+						<Button variant="secondary" onPress={handleCancel}>
+							{state.cancelText ?? "취소"}
+						</Button>
+						<Button
+							variant={state.severity === "error" ? "danger" : "primary"}
+							onPress={handleConfirm}
+						>
+							{state.confirmText ?? "확인"}
+						</Button>
+					</Modal.Footer>
+				</Modal.Dialog>
+			</Modal.Container>
+		</Modal.Backdrop>
+	);
 }

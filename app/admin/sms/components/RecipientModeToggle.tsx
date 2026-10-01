@@ -1,22 +1,16 @@
 'use client';
-
-import { Tabs, Tab, Box } from '@mui/material';
-
+import { Tabs } from '@heroui/react';
 export type RecipientMode = 'filter' | 'userIds';
-
 interface Props {
-  mode: RecipientMode;
-  onChange: (next: RecipientMode) => void;
-  disabled?: boolean;
+    mode: RecipientMode;
+    onChange: (next: RecipientMode) => void;
+    disabled?: boolean;
 }
-
 export function RecipientModeToggle({ mode, onChange, disabled }: Props) {
-  return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-      <Tabs value={mode} onChange={(_, v) => onChange(v as RecipientMode)}>
-        <Tab value="filter" label="조건 필터" disabled={disabled} />
-        <Tab value="userIds" label="사용자 직접 검색" disabled={disabled} />
-      </Tabs>
-    </Box>
-  );
+    return (<div style={{ marginBottom: 16 }}>
+      <Tabs selectedKey={mode} onSelectionChange={v => onChange(v as RecipientMode)}><Tabs.List aria-label="관리 항목">
+        <Tabs.Tab isDisabled={disabled} id={"filter"}>{"조건 필터"}<Tabs.Indicator></Tabs.Indicator></Tabs.Tab>
+        <Tabs.Tab isDisabled={disabled} id={"userIds"}>{"사용자 직접 검색"}<Tabs.Indicator></Tabs.Indicator></Tabs.Tab>
+      </Tabs.List></Tabs>
+    </div>);
 }

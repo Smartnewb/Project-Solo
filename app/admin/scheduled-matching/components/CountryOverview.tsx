@@ -1,765 +1,551 @@
 'use client';
-
+import { Button, Spinner, Chip, Modal, TextField, Label, Input } from '@heroui/react';
+import { RefreshCw as RefreshIcon, Play as PlayArrowIcon, Square as StopIcon, Map as MapIcon, Rocket as RocketLaunchIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Grid,
-  Chip,
-  LinearProgress,
-  Alert,
-  CircularProgress,
-  IconButton,
-  Tooltip,
-  ToggleButtonGroup,
-  ToggleButton,
-  TextField,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import StopIcon from '@mui/icons-material/Stop';
-import MapIcon from '@mui/icons-material/Map';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import { Button } from '@/shared/ui';
 import { scheduledMatchingService } from '../service';
 import type { Country, ScheduledMatchingConfig, JobStatus, BatchHistory, ScheduleMatchingResponse } from '../types';
 import type { MatchingPoolStatsResponse, MatchingPoolCountry, MatchTypeStats } from '@/types/admin';
-
 type MatchingType = 'scheduled' | 'rematching';
-
 const formatDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 };
-
 const getDefaultDateRange = () => {
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 6);
-  return {
-    startDate: formatDate(startDate),
-    endDate: formatDate(endDate),
-  };
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 6);
+    return {
+        startDate: formatDate(startDate),
+        endDate: formatDate(endDate),
+    };
 };
 import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 import { parseCronToHumanReadable, formatNextExecution, getTimeDiff } from '../utils';
 import RegionMapView from './RegionMapView';
-
 interface CountryCardProps {
-  country: Country;
-  config: ScheduledMatchingConfig | null;
-  jobStatus: JobStatus | null;
-  lastBatch: BatchHistory | null;
-  onTrigger: (country: Country) => void;
-  triggering: boolean;
+    country: Country;
+    config: ScheduledMatchingConfig | null;
+    jobStatus: JobStatus | null;
+    lastBatch: BatchHistory | null;
+    onTrigger: (country: Country) => void;
+    triggering: boolean;
 }
-
-function CountryCard({
-  country,
-  config,
-  jobStatus,
-  lastBatch,
-  onTrigger,
-  triggering,
-}: CountryCardProps) {
-  const countryInfo = {
-    KR: { flag: '🇰🇷', name: '한국', timezone: 'KST' },
-    JP: { flag: '🇯🇵', name: '일본', timezone: 'JST' },
-  };
-
-  const info = countryInfo[country];
-  const isEnabled = config?.isEnabled ?? false;
-  const successRate = lastBatch
-    ? lastBatch.totalUsers > 0
-      ? ((lastBatch.successCount / lastBatch.totalUsers) * 100).toFixed(1)
-      : '0.0'
-    : null;
-
-  return (
-    <Paper sx={{ p: 3, height: '100%' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6">
+function CountryCard({ country, config, jobStatus, lastBatch, onTrigger, triggering, }: CountryCardProps) {
+    const countryInfo = {
+        KR: { flag: '🇰🇷', name: '한국', timezone: 'KST' },
+        JP: { flag: '🇯🇵', name: '일본', timezone: 'JST' },
+    };
+    const info = countryInfo[country];
+    const isEnabled = config?.isEnabled ?? false;
+    const successRate = lastBatch
+        ? lastBatch.totalUsers > 0
+            ? ((lastBatch.successCount / lastBatch.totalUsers) * 100).toFixed(1)
+            : '0.0'
+        : null;
+    return (<section style={{ padding: 24, height: '100%' }} className="rounded-xl border bg-white p-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 className="text-lg font-semibold">
           {info.flag} {info.name}
-        </Typography>
-        <Chip
-          label={isEnabled ? '활성화' : '비활성화'}
-          color={isEnabled ? 'success' : 'default'}
-          size="small"
-        />
-      </Box>
+        </h2>
+        <Chip size="sm">{isEnabled ? '활성화' : '비활성화'}</Chip>
+      </div>
 
-      {!config ? (
-        <Typography color="text.secondary">설정 없음</Typography>
-      ) : (
-        <>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+      {!config ? (<p>설정 없음</p>) : (<>
+          <div style={{ marginBottom: 16 }}>
+            <p>
               스케줄
-            </Typography>
-            <Typography variant="body1">
+            </p>
+            <p>
               {parseCronToHumanReadable(config.cronExpression)} ({info.timezone})
-            </Typography>
-          </Box>
+            </p>
+          </div>
 
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          <div style={{ marginBottom: 16 }}>
+            <p>
               다음 실행
-            </Typography>
-            {jobStatus?.nextExecution ? (
-              <Box>
-                <Typography variant="body1">
+            </p>
+            {jobStatus?.nextExecution ? (<div>
+                <p>
                   {formatNextExecution(jobStatus.nextExecution)}
-                </Typography>
-                <Typography variant="caption" color="primary">
+                </p>
+                <p>
                   {getTimeDiff(jobStatus.nextExecution)}
-                </Typography>
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
+                </p>
+              </div>) : (<p>
                 예정 없음
-              </Typography>
-            )}
-          </Box>
+              </p>)}
+          </div>
 
-          {lastBatch && (
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          {lastBatch && (<div style={{ marginBottom: 16 }}>
+              <p>
                 최근 실행 ({safeToLocaleDateString(lastBatch.startedAt)})
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={parseFloat(successRate || '0')}
-                  sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
-                  color={parseFloat(successRate || '0') >= 90 ? 'success' : 'warning'}
-                />
-                <Typography variant="body2" fontWeight="medium">
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <progress value={parseFloat(successRate || '0')} style={{ height: 8, borderRadius: 4 }} aria-label="처리 중"></progress>
+                <p>
                   {successRate}%
-                </Typography>
-              </Box>
-              <Typography variant="caption" color="text.secondary">
+                </p>
+              </div>
+              <p>
                 {lastBatch.totalUsers}명 중 {lastBatch.successCount}명 성공
-              </Typography>
-            </Box>
-          )}
+              </p>
+            </div>)}
 
-          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onTrigger(country)}
-              disabled={triggering}
-            >
-              {triggering ? (
-                <CircularProgress size={16} sx={{ mr: 1 }} />
-              ) : (
-                <PlayArrowIcon sx={{ fontSize: 16, mr: 0.5 }} />
-              )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <Button onPress={() => onTrigger(country)} isDisabled={triggering} variant="tertiary">
+              {triggering ? (<Spinner size="sm" style={{ marginRight: 8 }}></Spinner>) : (<PlayArrowIcon style={{ fontSize: 16, marginRight: 4 }}></PlayArrowIcon>)}
               수동 실행
             </Button>
-          </Box>
-        </>
-      )}
-    </Paper>
-  );
+          </div>
+        </>)}
+    </section>);
 }
-
 interface RunningBatchAlertProps {
-  batch: BatchHistory;
-  onCancel: (batchId: string) => void;
-  cancelling: boolean;
+    batch: BatchHistory;
+    onCancel: (batchId: string) => void;
+    cancelling: boolean;
 }
-
 function RunningBatchAlert({ batch, onCancel, cancelling }: RunningBatchAlertProps) {
-  const progress = batch.totalUsers > 0
-    ? Math.round((batch.processedUsers / batch.totalUsers) * 100)
-    : 0;
-
-  const countryFlag = batch.country === 'KR' ? '🇰🇷' : '🇯🇵';
-
-  return (
-    <Alert
-      severity="info"
-      sx={{ mb: 2 }}
-      action={
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onCancel(batch.id)}
-          disabled={cancelling}
-        >
-          {cancelling ? <CircularProgress size={14} /> : <StopIcon sx={{ fontSize: 14 }} />}
-          취소
-        </Button>
-      }
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-        <Typography>
+    const progress = batch.totalUsers > 0
+        ? Math.round((batch.processedUsers / batch.totalUsers) * 100)
+        : 0;
+    const countryFlag = batch.country === 'KR' ? '🇰🇷' : '🇯🇵';
+    return (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: '100%' }}>
+        <p>
           {countryFlag} {batch.country} 배치 실행 중
-        </Typography>
-        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
-          />
-          <Typography variant="body2">
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <progress value={progress} style={{ height: 6, borderRadius: 3 }} aria-label="처리 중"></progress>
+          <p>
             {batch.processedUsers}/{batch.totalUsers}명 ({progress}%)
-          </Typography>
-        </Box>
-      </Box>
-    </Alert>
-  );
+          </p>
+        </div>
+      </div>
+    </aside>);
 }
-
 export default function CountryOverview() {
-  const [configs, setConfigs] = useState<ScheduledMatchingConfig[]>([]);
-  const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([]);
-  const [runningBatches, setRunningBatches] = useState<BatchHistory[]>([]);
-  const [lastBatches, setLastBatches] = useState<Record<Country, BatchHistory | null>>({
-    KR: null,
-    JP: null,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [triggering, setTriggering] = useState<Country | null>(null);
-  const [cancelling, setCancelling] = useState<string | null>(null);
-
-  const [mapCountry, setMapCountry] = useState<MatchingPoolCountry>('KR');
-  const [mapStats, setMapStats] = useState<MatchingPoolStatsResponse | null>(null);
-  const [mapLoading, setMapLoading] = useState(false);
-  const [mapError, setMapError] = useState<string | null>(null);
-  const [matchingType, setMatchingType] = useState<MatchingType>('scheduled');
-  const [dateRange, setDateRange] = useState(getDefaultDateRange);
-
-  // Schedule matching state
-  const [scheduleCountry, setScheduleCountry] = useState<Country>('KR');
-  const [scheduleExecuting, setScheduleExecuting] = useState(false);
-  const [scheduleResult, setScheduleResult] = useState<ScheduleMatchingResponse | null>(null);
-  const [scheduleError, setScheduleError] = useState<string | null>(null);
-  const [scheduleConfirmOpen, setScheduleConfirmOpen] = useState(false);
-
-  const fetchData = useCallback(async () => {
-    try {
-      setError(null);
-      const [configsRes, jobStatusRes, runningRes] = await Promise.all([
-        scheduledMatchingService.getAllConfigs(),
-        scheduledMatchingService.getAllJobStatus(),
-        scheduledMatchingService.getRunningBatches(),
-      ]);
-
-      setConfigs(configsRes);
-      setJobStatuses(jobStatusRes);
-      setRunningBatches(runningRes);
-
-      const batchPromises = (['KR', 'JP'] as Country[]).map(async (country) => {
+    const [configs, setConfigs] = useState<ScheduledMatchingConfig[]>([]);
+    const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([]);
+    const [runningBatches, setRunningBatches] = useState<BatchHistory[]>([]);
+    const [lastBatches, setLastBatches] = useState<Record<Country, BatchHistory | null>>({
+        KR: null,
+        JP: null,
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [triggering, setTriggering] = useState<Country | null>(null);
+    const [cancelling, setCancelling] = useState<string | null>(null);
+    const [mapCountry, setMapCountry] = useState<MatchingPoolCountry>('KR');
+    const [mapStats, setMapStats] = useState<MatchingPoolStatsResponse | null>(null);
+    const [mapLoading, setMapLoading] = useState(false);
+    const [mapError, setMapError] = useState<string | null>(null);
+    const [matchingType, setMatchingType] = useState<MatchingType>('scheduled');
+    const [dateRange, setDateRange] = useState(getDefaultDateRange);
+    // Schedule matching state
+    const [scheduleCountry, setScheduleCountry] = useState<Country>('KR');
+    const [scheduleExecuting, setScheduleExecuting] = useState(false);
+    const [scheduleResult, setScheduleResult] = useState<ScheduleMatchingResponse | null>(null);
+    const [scheduleError, setScheduleError] = useState<string | null>(null);
+    const [scheduleConfirmOpen, setScheduleConfirmOpen] = useState(false);
+    const fetchData = useCallback(async () => {
         try {
-          const batches = await scheduledMatchingService.getBatchesByCountry(country, 1, 0);
-          return { country, batch: batches[0] || null };
-        } catch {
-          return { country, batch: null };
+            setError(null);
+            const [configsRes, jobStatusRes, runningRes] = await Promise.all([
+                scheduledMatchingService.getAllConfigs(),
+                scheduledMatchingService.getAllJobStatus(),
+                scheduledMatchingService.getRunningBatches(),
+            ]);
+            setConfigs(configsRes);
+            setJobStatuses(jobStatusRes);
+            setRunningBatches(runningRes);
+            const batchPromises = (['KR', 'JP'] as Country[]).map(async (country) => {
+                try {
+                    const batches = await scheduledMatchingService.getBatchesByCountry(country, 1, 0);
+                    return { country, batch: batches[0] || null };
+                }
+                catch {
+                    return { country, batch: null };
+                }
+            });
+            const batchResults = await Promise.all(batchPromises);
+            const newLastBatches: Record<Country, BatchHistory | null> = { KR: null, JP: null };
+            batchResults.forEach(({ country, batch }) => {
+                newLastBatches[country] = batch;
+            });
+            setLastBatches(newLastBatches);
         }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      const newLastBatches: Record<Country, BatchHistory | null> = { KR: null, JP: null };
-      batchResults.forEach(({ country, batch }) => {
-        newLastBatches[country] = batch;
-      });
-      setLastBatches(newLastBatches);
-    } catch {
-      setError('데이터를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
-
-  const fetchMapStats = useCallback(async (
-    country: MatchingPoolCountry,
-    startDate: string,
-    endDate: string
-  ) => {
-    try {
-      setMapLoading(true);
-      setMapError(null);
-      const stats = await scheduledMatchingService.getMatchingPoolStats(country, startDate, endDate);
-      setMapStats(stats);
-    } catch {
-      setMapError('지도 데이터를 불러오는데 실패했습니다.');
-      setMapStats(null);
-    } finally {
-      setMapLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchMapStats(mapCountry, dateRange.startDate, dateRange.endDate);
-  }, [mapCountry, dateRange, fetchMapStats]);
-
-  const handleMapCountryChange = (_: React.MouseEvent<HTMLElement>, newCountry: MatchingPoolCountry | null) => {
-    if (newCountry) {
-      setMapCountry(newCountry);
-    }
-  };
-
-  const handleMatchingTypeChange = (_: React.MouseEvent<HTMLElement>, newType: MatchingType | null) => {
-    if (newType) {
-      setMatchingType(newType);
-    }
-  };
-
-  const handleDateChange = (field: 'startDate' | 'endDate') => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateRange(prev => ({ ...prev, [field]: e.target.value }));
-  };
-
-  const currentStats: MatchTypeStats | null = mapStats ? mapStats[matchingType] : null;
-
-  const handleTrigger = async (country: Country) => {
-    try {
-      setTriggering(country);
-      await scheduledMatchingService.triggerManualExecution(country);
-      fetchData();
-    } catch {
-      setError('수동 실행에 실패했습니다.');
-    } finally {
-      setTriggering(null);
-    }
-  };
-
-  const handleCancelBatch = async (batchId: string) => {
-    try {
-      setCancelling(batchId);
-      await scheduledMatchingService.cancelBatch(batchId);
-      fetchData();
-    } catch {
-      setError('배치 취소에 실패했습니다.');
-    } finally {
-      setCancelling(null);
-    }
-  };
-
-  const handleScheduleMatching = async () => {
-    try {
-      setScheduleConfirmOpen(false);
-      setScheduleExecuting(true);
-      setScheduleError(null);
-      setScheduleResult(null);
-
-      const today = formatDate(new Date());
-      const result = await scheduledMatchingService.executeScheduleMatching({
-        targetDate: today,
-      });
-
-      setScheduleResult(result);
-      fetchData();
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '스케줄 매칭 실행에 실패했습니다.';
-      setScheduleError(errorMessage);
-    } finally {
-      setScheduleExecuting(false);
-    }
-  };
-
-  const getConfigForCountry = (country: Country) =>
-    configs.find((c) => c.country === country) || null;
-
-  const getJobStatusForCountry = (country: Country) =>
-    jobStatuses.find((s) => s.country === country) || null;
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5, py: 4 }}>
-        <CircularProgress />
-        <Typography variant="body2" color="text.secondary">
+        catch {
+            setError('데이터를 불러오는데 실패했습니다.');
+        }
+        finally {
+            setLoading(false);
+        }
+    }, []);
+    useEffect(() => {
+        fetchData();
+        const interval = setInterval(fetchData, 30000);
+        return () => clearInterval(interval);
+    }, [fetchData]);
+    const fetchMapStats = useCallback(async (country: MatchingPoolCountry, startDate: string, endDate: string) => {
+        try {
+            setMapLoading(true);
+            setMapError(null);
+            const stats = await scheduledMatchingService.getMatchingPoolStats(country, startDate, endDate);
+            setMapStats(stats);
+        }
+        catch {
+            setMapError('지도 데이터를 불러오는데 실패했습니다.');
+            setMapStats(null);
+        }
+        finally {
+            setMapLoading(false);
+        }
+    }, []);
+    useEffect(() => {
+        fetchMapStats(mapCountry, dateRange.startDate, dateRange.endDate);
+    }, [mapCountry, dateRange, fetchMapStats]);
+    const handleMapCountryChange = (_: React.MouseEvent<HTMLElement>, newCountry: MatchingPoolCountry | null) => {
+        if (newCountry) {
+            setMapCountry(newCountry);
+        }
+    };
+    const handleMatchingTypeChange = (_: React.MouseEvent<HTMLElement>, newType: MatchingType | null) => {
+        if (newType) {
+            setMatchingType(newType);
+        }
+    };
+    const handleDateChange = (field: 'startDate' | 'endDate') => (e: React.ChangeEvent<HTMLInputElement>) => {
+        setDateRange(prev => ({ ...prev, [field]: e.target.value }));
+    };
+    const currentStats: MatchTypeStats | null = mapStats ? mapStats[matchingType] : null;
+    const handleTrigger = async (country: Country) => {
+        try {
+            setTriggering(country);
+            await scheduledMatchingService.triggerManualExecution(country);
+            fetchData();
+        }
+        catch {
+            setError('수동 실행에 실패했습니다.');
+        }
+        finally {
+            setTriggering(null);
+        }
+    };
+    const handleCancelBatch = async (batchId: string) => {
+        try {
+            setCancelling(batchId);
+            await scheduledMatchingService.cancelBatch(batchId);
+            fetchData();
+        }
+        catch {
+            setError('배치 취소에 실패했습니다.');
+        }
+        finally {
+            setCancelling(null);
+        }
+    };
+    const handleScheduleMatching = async () => {
+        try {
+            setScheduleConfirmOpen(false);
+            setScheduleExecuting(true);
+            setScheduleError(null);
+            setScheduleResult(null);
+            const today = formatDate(new Date());
+            const result = await scheduledMatchingService.executeScheduleMatching({
+                targetDate: today,
+            });
+            setScheduleResult(result);
+            fetchData();
+        }
+        catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : '스케줄 매칭 실행에 실패했습니다.';
+            setScheduleError(errorMessage);
+        }
+        finally {
+            setScheduleExecuting(false);
+        }
+    };
+    const getConfigForCountry = (country: Country) => configs.find((c) => c.country === country) || null;
+    const getJobStatusForCountry = (country: Country) => jobStatuses.find((s) => s.country === country) || null;
+    if (loading) {
+        return (<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, paddingBlock: 32 }}>
+        <Spinner size="sm"></Spinner>
+        <p>
           정기 매칭 현황을 불러오는 중입니다.
-        </Typography>
-      </Box>
-    );
-  }
+        </p>
+      </div>);
+    }
+    return (<div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h2 className="text-lg font-semibold">국가별 현황</h2>
+        <span title={"새로고침"}>
+          <Button onPress={fetchData} aria-label="국가별 정기 매칭 현황 새로고침" variant="tertiary" isIconOnly={true}>
+            <RefreshIcon></RefreshIcon>
+          </Button>
+        </span>
+      </div>
 
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6">국가별 현황</Typography>
-        <Tooltip title="새로고침">
-          <IconButton onClick={fetchData} size="small" aria-label="국가별 정기 매칭 현황 새로고침">
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+      {error && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
           {error}
-        </Alert>
-      )}
+        </aside>)}
 
-      {runningBatches.map((batch) => (
-        <RunningBatchAlert
-          key={batch.id}
-          batch={batch}
-          onCancel={handleCancelBatch}
-          cancelling={cancelling === batch.id}
-        />
-      ))}
+      {runningBatches.map((batch) => (<RunningBatchAlert key={batch.id} batch={batch} onCancel={handleCancelBatch} cancelling={cancelling === batch.id}></RunningBatchAlert>))}
 
-      <Grid container spacing={3}>
-        {(['KR', 'JP'] as Country[]).map((country) => (
-          <Grid item xs={12} md={6} key={country}>
-            <CountryCard
-              country={country}
-              config={getConfigForCountry(country)}
-              jobStatus={getJobStatusForCountry(country)}
-              lastBatch={lastBatches[country]}
-              onTrigger={handleTrigger}
-              triggering={triggering === country}
-            />
-          </Grid>
-        ))}
-      </Grid>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {(['KR', 'JP'] as Country[]).map((country) => (<div key={country} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <CountryCard country={country} config={getConfigForCountry(country)} jobStatus={getJobStatusForCountry(country)} lastBatch={lastBatches[country]} onTrigger={handleTrigger} triggering={triggering === country}></CountryCard>
+          </div>))}
+      </div>
 
       {/* 수동 스케줄 매칭 실행 */}
-      <Paper sx={{ mt: 4, p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <RocketLaunchIcon color="primary" />
-          <Typography variant="h6">수동 스케줄 매칭 실행</Typography>
-        </Box>
+      <section style={{ marginTop: 32, padding: 24 }} className="rounded-xl border bg-white p-4">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <RocketLaunchIcon></RocketLaunchIcon>
+          <h2 className="text-lg font-semibold">수동 스케줄 매칭 실행</h2>
+        </div>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <p style={{ marginBottom: 16 }}>
           오늘 날짜 기준으로 적격 유저들의 스케줄 매칭을 수동으로 실행합니다.
           매칭은 Queue를 통해 순차 처리됩니다.
-        </Typography>
+        </p>
 
-        {scheduleError && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setScheduleError(null)}>
+        {scheduleError && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
             {scheduleError}
-          </Alert>
-        )}
+          </aside>)}
 
-        {scheduleResult && (
-          <Alert severity="success" sx={{ mb: 2 }} onClose={() => setScheduleResult(null)}>
+        {scheduleResult && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
             {scheduleResult.message}
-            <br />
-            <Typography variant="caption">
+            <br></br>
+            <p>
               대상 유저: {scheduleResult.eligibleUsersCount}명 | 배치 ID: {scheduleResult.batchId}
-            </Typography>
-          </Alert>
-        )}
+            </p>
+          </aside>)}
 
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 3 }}>
-          <ToggleButtonGroup
-            value={scheduleCountry}
-            exclusive
-            onChange={(_, value) => value && setScheduleCountry(value)}
-            size="small"
-            aria-label="수동 스케줄 매칭 국가 선택"
-          >
-            <ToggleButton value="KR" aria-label="한국 기준으로 수동 스케줄 매칭 실행">🇰🇷 한국</ToggleButton>
-            <ToggleButton value="JP" aria-label="일본 기준으로 수동 스케줄 매칭 실행">🇯🇵 일본</ToggleButton>
-          </ToggleButtonGroup>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 24 }}>
+          <div className="flex gap-2" aria-label="수동 스케줄 매칭 국가 선택">{(['KR', 'JP'] as const).map(country => <Button key={country} variant={scheduleCountry === country ? 'primary' : 'secondary'} aria-pressed={scheduleCountry === country} onPress={() => setScheduleCountry(country)}>{country === 'KR' ? '한국' : '일본'}</Button>)}</div>
 
-          <Typography variant="body2" color="text.secondary">
+          <p>
             대상일: {formatDate(new Date())}
-          </Typography>
+          </p>
 
-          <Button
-            onClick={() => setScheduleConfirmOpen(true)}
-            disabled={scheduleExecuting}
-          >
-            {scheduleExecuting ? (
-              <CircularProgress size={16} sx={{ mr: 1 }} />
-            ) : (
-              <PlayArrowIcon sx={{ fontSize: 18, mr: 0.5 }} />
-            )}
+          <Button onPress={() => setScheduleConfirmOpen(true)} isDisabled={scheduleExecuting} variant="tertiary">
+            {scheduleExecuting ? (<Spinner size="sm" style={{ marginRight: 8 }}></Spinner>) : (<PlayArrowIcon style={{ fontSize: 18, marginRight: 4 }}></PlayArrowIcon>)}
             스케줄 매칭 실행
           </Button>
-        </Box>
+        </div>
 
-        <Divider sx={{ my: 2 }} />
+        <hr style={{ marginBlock: 16 }}></hr>
 
         {/* 현재 매칭 필터 설정 표시 */}
         {(() => {
-          const currentConfig = getConfigForCountry(scheduleCountry);
-          if (!currentConfig) {
-            return (
-              <Alert severity="warning" sx={{ mt: 2 }}>
+            const currentConfig = getConfigForCountry(scheduleCountry);
+            if (!currentConfig) {
+                return (<aside role="alert" className="rounded-lg border p-3" style={{ marginTop: 16 }}>
                 {scheduleCountry === 'KR' ? '한국' : '일본'} 설정이 없습니다. 스케줄 설정 탭에서 먼저 설정을 생성해주세요.
-              </Alert>
-            );
-          }
-          return (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              </aside>);
+            }
+            return (<div>
+              <p>
                 현재 매칭 필터 설정 ({scheduleCountry === 'KR' ? '한국' : '일본'})
-              </Typography>
-              <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="caption" color="text.secondary">
+              </p>
+              <div style={{ marginTop: 8 }} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="min-w-0">
+                  <div style={{ padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <p>
                       로그인 기준일
-                    </Typography>
-                    <Typography variant="h6">
+                    </p>
+                    <h2 className="text-lg font-semibold">
                       {currentConfig.loginWindowDays ?? 60}일
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </h2>
+                    <p>
                       최근 {currentConfig.loginWindowDays ?? 60}일 이내 로그인한 유저만 대상
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="caption" color="text.secondary">
+                    </p>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div style={{ padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <p>
                       등급 미분류 포함
-                    </Typography>
-                    <Typography variant="h6">
-                      <Chip
-                        label={currentConfig.includeUnknownRank ? 'ON' : 'OFF'}
-                        color={currentConfig.includeUnknownRank ? 'success' : 'default'}
-                        size="small"
-                      />
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </p>
+                    <h2 className="text-lg font-semibold">
+                      <Chip size="sm">{currentConfig.includeUnknownRank ? 'ON' : 'OFF'}</Chip>
+                    </h2>
+                    <p>
                       {currentConfig.includeUnknownRank
-                        ? '등급이 아직 정리되지 않은 유저 포함'
-                        : '등급이 아직 정리되지 않은 유저 제외'}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="caption" color="text.secondary">
+                    ? '등급이 아직 정리되지 않은 유저 포함'
+                    : '등급이 아직 정리되지 않은 유저 제외'}
+                    </p>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div style={{ padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <p>
                       스케줄 상태
-                    </Typography>
-                    <Typography variant="h6">
-                      <Chip
-                        label={currentConfig.isEnabled ? '활성화' : '비활성화'}
-                        color={currentConfig.isEnabled ? 'success' : 'default'}
-                        size="small"
-                      />
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </p>
+                    <h2 className="text-lg font-semibold">
+                      <Chip size="sm">{currentConfig.isEnabled ? '활성화' : '비활성화'}</Chip>
+                    </h2>
+                    <p>
                       {currentConfig.cronExpression}
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-              <Alert severity="info" sx={{ mt: 2 }}>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <aside role="alert" className="rounded-lg border p-3" style={{ marginTop: 16 }}>
                 매칭 필터 설정을 변경하려면 <strong>스케줄 설정</strong> 탭에서 수정해주세요.
-              </Alert>
-            </Box>
-          );
+              </aside>
+            </div>);
         })()}
-      </Paper>
+      </section>
 
-      <Dialog
-        open={scheduleConfirmOpen}
-        onClose={() => setScheduleConfirmOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>스케줄 매칭 실행</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
+      <Modal.Backdrop isOpen={scheduleConfirmOpen} onOpenChange={next => {
+            if (!next)
+                (() => setScheduleConfirmOpen(false))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+        <Modal.Heading>스케줄 매칭 실행</Modal.Heading>
+        <Modal.Body>
+          <p>
             {scheduleCountry === 'KR' ? '한국' : '일본'} 오늘자 스케줄 매칭을 실행합니다. 매칭은 Queue를 통해 순차 처리됩니다.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="outline" onClick={() => setScheduleConfirmOpen(false)}>
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onPress={() => setScheduleConfirmOpen(false)} variant="tertiary">
             닫기
           </Button>
-          <Button onClick={handleScheduleMatching} disabled={scheduleExecuting}>
+          <Button onPress={handleScheduleMatching} isDisabled={scheduleExecuting} variant="tertiary">
             실행
           </Button>
-        </DialogActions>
-      </Dialog>
+        </Modal.Footer>
+      </Modal.Dialog></Modal.Container></Modal.Backdrop>
 
-      <Paper sx={{ mt: 4, p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <MapIcon color="primary" />
-            <Typography variant="h6">매칭풀 지역별 현황</Typography>
-          </Box>
-          <Tooltip title="지도 새로고침">
-            <IconButton
-              onClick={() => fetchMapStats(mapCountry, dateRange.startDate, dateRange.endDate)}
-              size="small"
-              disabled={mapLoading}
-              aria-label="매칭풀 지역별 현황 새로고침"
-            >
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
+      <section style={{ marginTop: 32, padding: 24 }} className="rounded-xl border bg-white p-4">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MapIcon></MapIcon>
+            <h2 className="text-lg font-semibold">매칭풀 지역별 현황</h2>
+          </div>
+          <span title={"지도 새로고침"}>
+            <Button onPress={() => fetchMapStats(mapCountry, dateRange.startDate, dateRange.endDate)} isDisabled={mapLoading} aria-label="매칭풀 지역별 현황 새로고침" variant="tertiary" isIconOnly={true}>
+              <RefreshIcon></RefreshIcon>
+            </Button>
+          </span>
+        </div>
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center' }}>
-          <TextField
-            type="date"
-            label="시작일"
-            value={dateRange.startDate}
-            onChange={handleDateChange('startDate')}
-            size="small"
-            InputLabelProps={{ shrink: true }}
-            sx={{ width: 160 }}
-          />
-          <TextField
-            type="date"
-            label="종료일"
-            value={dateRange.endDate}
-            onChange={handleDateChange('endDate')}
-            size="small"
-            InputLabelProps={{ shrink: true }}
-            sx={{ width: 160 }}
-          />
-          <ToggleButtonGroup
-            value={mapCountry}
-            exclusive
-            onChange={handleMapCountryChange}
-            size="small"
-            aria-label="매칭풀 지역별 현황 국가 필터"
-          >
-            <ToggleButton value="KR" aria-label="한국 매칭풀 지역별 현황 보기">🇰🇷 한국</ToggleButton>
-            <ToggleButton value="JP" aria-label="일본 매칭풀 지역별 현황 보기">🇯🇵 일본</ToggleButton>
-          </ToggleButtonGroup>
-          <ToggleButtonGroup
-            value={matchingType}
-            exclusive
-            onChange={handleMatchingTypeChange}
-            size="small"
-            aria-label="매칭풀 지역별 현황 매칭 유형 필터"
-          >
-            <ToggleButton value="scheduled" aria-label="스케줄 매칭 기준 지역별 현황 보기">스케줄 매칭</ToggleButton>
-            <ToggleButton value="rematching" aria-label="재매칭 기준 지역별 현황 보기">재매칭</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 24, alignItems: 'center' }}>
+          <TextField className="mb-4"><Label>{"시작일"}</Label><Input type="date" value={dateRange.startDate} onChange={handleDateChange('startDate')}></Input></TextField>
+          <TextField className="mb-4"><Label>{"종료일"}</Label><Input type="date" value={dateRange.endDate} onChange={handleDateChange('endDate')}></Input></TextField>
+          <div className="flex gap-2" aria-label="매칭풀 지역별 현황 국가 필터">{(['KR', 'JP'] as const).map(country => <Button key={country} variant={mapCountry === country ? 'primary' : 'secondary'} aria-pressed={mapCountry === country} onPress={() => handleMapCountryChange({} as never, country)}>{country === 'KR' ? '한국' : '일본'}</Button>)}</div>
+          <div className="flex gap-2" aria-label="매칭풀 지역별 현황 유형 필터">{(['scheduled', 'rematching'] as const).map(type => <Button key={type} variant={matchingType === type ? 'primary' : 'secondary'} aria-pressed={matchingType === type} onPress={() => handleMatchingTypeChange({} as never, type)}>{type === 'scheduled' ? '스케줄 매칭' : '재매칭'}</Button>)}</div>
+        </div>
 
-        {mapError && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setMapError(null)}>
+        {mapError && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
             {mapError}
-          </Alert>
-        )}
+          </aside>)}
 
-        {mapLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 1000 }}>
-            <CircularProgress />
-          </Box>
-        ) : currentStats ? (
-          <>
-            <Box sx={{ mb: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={6} sm={4} md={2}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="h5" fontWeight="bold">
+        {mapLoading ? (<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 1000 }}>
+            <Spinner size="sm"></Spinner>
+          </div>) : currentStats ? (<>
+            <div style={{ marginBottom: 16 }}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="min-w-0">
+                  <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <h1 className="text-2xl font-bold">
                       {currentStats.summary.totalUsers.toLocaleString()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </h1>
+                    <p>
                       총 유저
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={4} md={2}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="h5" fontWeight="bold" color="primary">
+                    </p>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <h1 className="text-2xl font-bold">
                       {currentStats.summary.genderRatio !== null
-                        ? `${currentStats.summary.genderRatio.toFixed(2)}:1`
-                        : 'N/A'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                ? `${currentStats.summary.genderRatio.toFixed(2)}:1`
+                : 'N/A'}
+                    </h1>
+                    <p>
                       성비 (남/여)
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={4} md={2}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="h5" fontWeight="bold">
+                    </p>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <h1 className="text-2xl font-bold">
                       {currentStats.summary.avgAge.toFixed(1)}세
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </h1>
+                    <p>
                       평균 나이
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={4} md={2}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="h5" fontWeight="bold" color="warning.main">
+                    </p>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <h1 className="text-2xl font-bold">
                       {(currentStats.summary.overallMutualLikeRate * 100).toFixed(1)}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </h1>
+                    <p>
                       상호 좋아요율
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={4} md={2}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="h5" fontWeight="bold" color="info.main">
+                    </p>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <h1 className="text-2xl font-bold">
                       {(currentStats.summary.overallLikeConversionRate * 100).toFixed(1)}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </h1>
+                    <p>
                       좋아요 전환율
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={4} md={2}>
-                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                    <Typography variant="h5" fontWeight="bold" color="success.main">
+                    </p>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f9fafb', borderRadius: 1 }}>
+                    <h1 className="text-2xl font-bold">
                       {(currentStats.summary.overallMatchToChatRate * 100).toFixed(1)}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </h1>
+                    <p>
                       채팅 전환율
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            <RegionMapView data={{ country: mapCountry, regions: currentStats.regions }} />
+            <RegionMapView data={{ country: mapCountry, regions: currentStats.regions }}></RegionMapView>
 
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#3B82F6' }} />
-                  <Typography variant="caption">남초</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#8B5CF6' }} />
-                  <Typography variant="caption">균형</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#EC4899' }} />
-                  <Typography variant="caption">여초</Typography>
-                </Box>
-              </Box>
-              <Typography variant="caption" color="text.secondary">
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#3B82F6' }}></div>
+                  <p>남초</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#8B5CF6' }}></div>
+                  <p>균형</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#EC4899' }}></div>
+                  <p>여초</p>
+                </div>
+              </div>
+              <p>
                 업데이트: {mapStats && safeToLocaleString(mapStats.cachedAt)}
-              </Typography>
-            </Box>
-          </>
-        ) : (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 1000 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="subtitle1" fontWeight={700}>
+              </p>
+            </div>
+          </>) : (<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 1000 }}>
+            <div style={{ textAlign: 'center' }}>
+              <p>
                 지역별 매칭풀 데이터가 없습니다.
-              </Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+              </p>
+              <p style={{ marginTop: 4 }}>
                 날짜 범위와 국가, 매칭 유형을 변경한 뒤 다시 확인하세요.
-              </Typography>
-            </Box>
-          </Box>
-        )}
-      </Paper>
-    </Box>
-  );
+              </p>
+            </div>
+          </div>)}
+      </section>
+    </div>);
 }

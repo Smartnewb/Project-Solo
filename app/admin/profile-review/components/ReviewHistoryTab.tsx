@@ -1,125 +1,67 @@
 "use client";
-
+import { Button, Spinner, Chip, Modal, TextField, Label, Input, Select, ListBox } from '@heroui/react';
+import { X as CloseIcon, Search as SearchIcon, ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'lucide-react';
 import { useState, useEffect, useCallback, Fragment } from "react";
-import {
-  Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TablePagination,
-  Avatar,
-  Chip,
-  Tooltip,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Dialog,
-  IconButton,
-  CircularProgress,
-  Alert,
-  Collapse,
-  LinearProgress,
-} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import SearchIcon from "@mui/icons-material/Search";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { safeToLocaleString } from '@/app/utils/formatters';
-import AdminService, {
-  ReviewHistoryFilter,
-  ReviewHistoryItem,
-  ReviewHistoryResponse,
-  ImageValidationResponse,
-} from "@/app/services/admin";
-
-const LIKELIHOOD_CONFIG: Record<string, { label: string; color: "success" | "warning" | "error" | "default" }> = {
-  VERY_UNLIKELY: { label: "매우 낮음", color: "success" },
-  UNLIKELY: { label: "낮음", color: "success" },
-  POSSIBLE: { label: "가능", color: "warning" },
-  LIKELY: { label: "높음", color: "warning" },
-  VERY_LIKELY: { label: "매우 높음", color: "error" },
-  UNKNOWN: { label: "알 수 없음", color: "default" },
+import AdminService, { ReviewHistoryFilter, ReviewHistoryItem, ReviewHistoryResponse, ImageValidationResponse, } from "@/app/services/admin";
+const LIKELIHOOD_CONFIG: Record<string, {
+    label: string;
+    color: "success" | "warning" | "error" | "default";
+}> = {
+    VERY_UNLIKELY: { label: "매우 낮음", color: "success" },
+    UNLIKELY: { label: "낮음", color: "success" },
+    POSSIBLE: { label: "가능", color: "warning" },
+    LIKELY: { label: "높음", color: "warning" },
+    VERY_LIKELY: { label: "매우 높음", color: "error" },
+    UNKNOWN: { label: "알 수 없음", color: "default" },
 };
-
 function getLikelihoodChip(value: string, label: string) {
-  const config = LIKELIHOOD_CONFIG[value] || LIKELIHOOD_CONFIG.UNKNOWN;
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 40 }}>
+    const config = LIKELIHOOD_CONFIG[value] || LIKELIHOOD_CONFIG.UNKNOWN;
+    return (<div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <p style={{ minWidth: 40 }}>
         {label}
-      </Typography>
-      <Chip label={config.label} size="small" color={config.color} variant="outlined" />
-    </Box>
-  );
+      </p>
+      <Chip size="sm">{config.label}</Chip>
+    </div>);
 }
-
-function VisionDataCard({ data }: { data: ImageValidationResponse }) {
-  const face = data.visionResponse?.[0];
-
-  if (!face) {
-    return (
-      <Alert severity="info" sx={{ m: 1 }}>
+function VisionDataCard({ data }: {
+    data: ImageValidationResponse;
+}) {
+    const face = data.visionResponse?.[0];
+    if (!face) {
+        return (<aside role="alert" className="rounded-lg border p-3" style={{ margin: 8 }}>
         Vision 응답에 얼굴 데이터가 없습니다.
-      </Alert>
-    );
-  }
-
-  return (
-    <Box
-      sx={{
-        p: 2,
-        mx: 1,
-        mb: 1,
-        backgroundColor: "#fafafa",
-        borderRadius: 1,
-        border: "1px solid #e0e0e0",
-      }}
-    >
+      </aside>);
+    }
+    return (<div style={{ padding: 16, marginInline: 8, marginBottom: 8, backgroundColor: "#fafafa", borderRadius: 1, border: "1px solid #e0e0e0" }}>
       {/* 신뢰도 프로그레스바 */}
-      <Box sx={{ display: "flex", gap: 4, mb: 2 }}>
-        <Box sx={{ flex: 1, maxWidth: 240 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-            <Typography variant="caption" color="text.secondary">
+      <div style={{ display: "flex", gap: 32, marginBottom: 16 }}>
+        <div style={{ flex: 1, maxWidth: 240 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <p>
               얼굴 검출
-            </Typography>
-            <Typography variant="caption" fontWeight={600}>
+            </p>
+            <p>
               {(face.detectionConfidence * 100).toFixed(0)}%
-            </Typography>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={face.detectionConfidence * 100}
-            sx={{ height: 6, borderRadius: 3 }}
-          />
-        </Box>
-        <Box sx={{ flex: 1, maxWidth: 240 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-            <Typography variant="caption" color="text.secondary">
+            </p>
+          </div>
+          <progress value={face.detectionConfidence * 100} style={{ height: 6, borderRadius: 3 }} aria-label="처리 중"></progress>
+        </div>
+        <div style={{ flex: 1, maxWidth: 240 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <p>
               랜드마크
-            </Typography>
-            <Typography variant="caption" fontWeight={600}>
+            </p>
+            <p>
               {(face.landmarkingConfidence * 100).toFixed(0)}%
-            </Typography>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={face.landmarkingConfidence * 100}
-            color="secondary"
-            sx={{ height: 6, borderRadius: 3 }}
-          />
-        </Box>
-      </Box>
+            </p>
+          </div>
+          <progress value={face.landmarkingConfidence * 100} style={{ height: 6, borderRadius: 3 }} aria-label="처리 중"></progress>
+        </div>
+      </div>
 
       {/* Likelihood Chips */}
-      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
         {getLikelihoodChip(face.joyLikelihood, "기쁨")}
         {getLikelihoodChip(face.sorrowLikelihood, "슬픔")}
         {getLikelihoodChip(face.angerLikelihood, "분노")}
@@ -127,500 +69,335 @@ function VisionDataCard({ data }: { data: ImageValidationResponse }) {
         {getLikelihoodChip(face.blurredLikelihood, "흐림")}
         {getLikelihoodChip(face.underExposedLikelihood, "저노출")}
         {getLikelihoodChip(face.headwearLikelihood, "모자")}
-      </Box>
+      </div>
 
       {/* 판정 + 각도 */}
-      <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <Typography variant="caption" color="text.secondary">판정:</Typography>
-          <Chip
-            label={data.autoDecision}
-            size="small"
-            color={data.autoDecision === "approved" ? "success" : data.autoDecision === "rejected" ? "error" : "default"}
-          />
-        </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <Typography variant="caption" color="text.secondary">점수:</Typography>
-          <Typography variant="body2" fontWeight={600}>{data.totalScore}</Typography>
-        </Box>
-        <Typography variant="caption" color="text.secondary">
+      <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <p>판정:</p>
+          <Chip size="sm">{data.autoDecision}</Chip>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <p>점수:</p>
+          <p>{data.totalScore}</p>
+        </div>
+        <p>
           각도: R {face.rollAngle.toFixed(1)}° / P {face.panAngle.toFixed(1)}° / T {face.tiltAngle.toFixed(1)}°
-        </Typography>
-        {data.decisionReason && (
-          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
+        </p>
+        {data.decisionReason && (<p>
             {data.decisionReason}
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  );
+          </p>)}
+      </div>
+    </div>);
 }
-
 export default function ReviewHistoryTab() {
-  const [items, setItems] = useState<ReviewHistoryItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    hasMore: false,
-  });
-
-  // 필터 상태
-  const [reviewType, setReviewType] = useState<string>("");
-  const [reviewStatus, setReviewStatus] = useState<string>("");
-  const [gender, setGender] = useState<string>("");
-  const [from, setFrom] = useState<string>("");
-  const [to, setTo] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [searchInput, setSearchInput] = useState<string>("");
-
-  // 이미지 미리보기
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  // Vision 데이터 확장
-  const [expandedImageId, setExpandedImageId] = useState<string | null>(null);
-  const [visionDataCache, setVisionDataCache] = useState<Record<string, ImageValidationResponse | null>>({});
-  const [visionLoading, setVisionLoading] = useState<string | null>(null);
-
-  const fetchHistory = useCallback(
-    async (page: number = 1, limit: number = pagination.limit) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const filters: ReviewHistoryFilter = { page, limit };
-        if (reviewType) filters.reviewType = reviewType as "admin" | "auto";
-        if (reviewStatus)
-          filters.reviewStatus = reviewStatus as "approved" | "rejected";
-        if (gender) filters.gender = gender as "MALE" | "FEMALE";
-        if (from) filters.from = from;
-        if (to) filters.to = to;
-        if (searchTerm) filters.searchTerm = searchTerm;
-
-        const response: ReviewHistoryResponse =
-          await AdminService.userReview.getReviewHistory(filters);
-
-        setItems(response.items);
-        setPagination(response.pagination);
-        setExpandedImageId(null);
-      } catch (err: any) {
-        setError(
-          err.response?.data?.message ||
-            "심사 이력을 불러오는 중 오류가 발생했습니다.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    [reviewType, reviewStatus, gender, from, to, searchTerm, pagination.limit],
-  );
-
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
-
-  const handleToggleVision = async (imageId: string) => {
-    if (expandedImageId === imageId) {
-      setExpandedImageId(null);
-      return;
-    }
-
-    setExpandedImageId(imageId);
-
-    if (visionDataCache[imageId] !== undefined) return;
-
-    try {
-      setVisionLoading(imageId);
-      const data = await AdminService.userReview.getImageValidation(imageId);
-      setVisionDataCache((prev) => ({ ...prev, [imageId]: data }));
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        setVisionDataCache((prev) => ({ ...prev, [imageId]: null }));
-      } else {
-        setVisionDataCache((prev) => ({ ...prev, [imageId]: null }));
-      }
-    } finally {
-      setVisionLoading(null);
-    }
-  };
-
-  const handleSearch = () => {
-    setSearchTerm(searchInput);
-  };
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
-  const handleClearFilters = () => {
-    setReviewType("");
-    setReviewStatus("");
-    setGender("");
-    setFrom("");
-    setTo("");
-    setSearchTerm("");
-    setSearchInput("");
-  };
-
-  const handleChangePage = (_: unknown, newPage: number) => {
-    fetchHistory(newPage + 1, pagination.limit);
-  };
-
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const newLimit = parseInt(event.target.value, 10);
-    fetchHistory(1, newLimit);
-  };
-
-  const getResultChip = (status: string) => {
-    if (status === "approved") {
-      return <Chip label="승인" size="small" color="success" />;
-    }
-    return <Chip label="반려" size="small" color="error" />;
-  };
-
-  const getReviewTypeChip = (type: string | null) => {
-    if (type === "admin") {
-      return (
-        <Chip label="수동" size="small" variant="outlined" color="primary" />
-      );
-    }
-    if (type === "auto") {
-      return (
-        <Chip label="자동" size="small" variant="outlined" color="default" />
-      );
-    }
-    return (
-      <Typography variant="body2" color="text.secondary">
-        -
-      </Typography>
-    );
-  };
-
-  const getSlotLabel = (slotIndex: number, isMain: boolean) => {
-    if (isMain || slotIndex === 0) return "대표";
-    return `서브 ${slotIndex}`;
-  };
-
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "-";
-    return safeToLocaleString(dateStr, "ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
+    const [items, setItems] = useState<ReviewHistoryItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 20,
+        total: 0,
+        hasMore: false,
     });
-  };
-
-  const hasActiveFilters =
-    reviewType || reviewStatus || gender || from || to || searchTerm;
-
-  return (
-    <Box>
+    // 필터 상태
+    const [reviewType, setReviewType] = useState<string>("");
+    const [reviewStatus, setReviewStatus] = useState<string>("");
+    const [gender, setGender] = useState<string>("");
+    const [from, setFrom] = useState<string>("");
+    const [to, setTo] = useState<string>("");
+    const [searchTerm, setSearchTerm] = useState<string>("");
+    const [searchInput, setSearchInput] = useState<string>("");
+    // 이미지 미리보기
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    // Vision 데이터 확장
+    const [expandedImageId, setExpandedImageId] = useState<string | null>(null);
+    const [visionDataCache, setVisionDataCache] = useState<Record<string, ImageValidationResponse | null>>({});
+    const [visionLoading, setVisionLoading] = useState<string | null>(null);
+    const fetchHistory = useCallback(async (page: number = 1, limit: number = pagination.limit) => {
+        try {
+            setLoading(true);
+            setError(null);
+            const filters: ReviewHistoryFilter = { page, limit };
+            if (reviewType)
+                filters.reviewType = reviewType as "admin" | "auto";
+            if (reviewStatus)
+                filters.reviewStatus = reviewStatus as "approved" | "rejected";
+            if (gender)
+                filters.gender = gender as "MALE" | "FEMALE";
+            if (from)
+                filters.from = from;
+            if (to)
+                filters.to = to;
+            if (searchTerm)
+                filters.searchTerm = searchTerm;
+            const response: ReviewHistoryResponse = await AdminService.userReview.getReviewHistory(filters);
+            setItems(response.items);
+            setPagination(response.pagination);
+            setExpandedImageId(null);
+        }
+        catch (err: any) {
+            setError(err.response?.data?.message ||
+                "심사 이력을 불러오는 중 오류가 발생했습니다.");
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [reviewType, reviewStatus, gender, from, to, searchTerm, pagination.limit]);
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory]);
+    const handleToggleVision = async (imageId: string) => {
+        if (expandedImageId === imageId) {
+            setExpandedImageId(null);
+            return;
+        }
+        setExpandedImageId(imageId);
+        if (visionDataCache[imageId] !== undefined)
+            return;
+        try {
+            setVisionLoading(imageId);
+            const data = await AdminService.userReview.getImageValidation(imageId);
+            setVisionDataCache((prev) => ({ ...prev, [imageId]: data }));
+        }
+        catch (err: any) {
+            if (err.response?.status === 404) {
+                setVisionDataCache((prev) => ({ ...prev, [imageId]: null }));
+            }
+            else {
+                setVisionDataCache((prev) => ({ ...prev, [imageId]: null }));
+            }
+        }
+        finally {
+            setVisionLoading(null);
+        }
+    };
+    const handleSearch = () => {
+        setSearchTerm(searchInput);
+    };
+    const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            handleSearch();
+        }
+    };
+    const handleClearFilters = () => {
+        setReviewType("");
+        setReviewStatus("");
+        setGender("");
+        setFrom("");
+        setTo("");
+        setSearchTerm("");
+        setSearchInput("");
+    };
+    const handleChangePage = (_: unknown, newPage: number) => {
+        fetchHistory(newPage + 1, pagination.limit);
+    };
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newLimit = parseInt(event.target.value, 10);
+        fetchHistory(1, newLimit);
+    };
+    const getResultChip = (status: string) => {
+        if (status === "approved") {
+            return <Chip size="sm">{"승인"}</Chip>;
+        }
+        return <Chip size="sm">{"반려"}</Chip>;
+    };
+    const getReviewTypeChip = (type: string | null) => {
+        if (type === "admin") {
+            return (<Chip size="sm">{"수동"}</Chip>);
+        }
+        if (type === "auto") {
+            return (<Chip size="sm">{"자동"}</Chip>);
+        }
+        return (<p>
+        -
+      </p>);
+    };
+    const getSlotLabel = (slotIndex: number, isMain: boolean) => {
+        if (isMain || slotIndex === 0)
+            return "대표";
+        return `서브 ${slotIndex}`;
+    };
+    const formatDate = (dateStr: string | null) => {
+        if (!dateStr)
+            return "-";
+        return safeToLocaleString(dateStr, "ko-KR", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+    const hasActiveFilters = reviewType || reviewStatus || gender || from || to || searchTerm;
+    return (<div>
       {/* 필터 영역 */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>심사 유형</InputLabel>
-            <Select
-              value={reviewType}
-              label="심사 유형"
-              onChange={(e) => setReviewType(e.target.value)}
-            >
-              <MenuItem value="">전체</MenuItem>
-              <MenuItem value="admin">수동 (Admin)</MenuItem>
-              <MenuItem value="auto">자동</MenuItem>
-            </Select>
-          </FormControl>
+      <section style={{ padding: 16, marginBottom: 16 }} className="rounded-xl border bg-white p-4">
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ minWidth: 120 }}>
+            <label>심사 유형</label>
+            <Select value={reviewType} aria-label={"심사 유형"} onChange={(key) => {
+            const value = String(key ?? "");
+            setReviewType(value);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+              <ListBox.Item id={""} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
+              <ListBox.Item id={"admin"} textValue={"\uC218\uB3D9 (Admin)"}>수동 (Admin)</ListBox.Item>
+              <ListBox.Item id={"auto"} textValue={"\uC790\uB3D9"}>자동</ListBox.Item>
+            </ListBox></Select.Popover></Select>
+          </div>
 
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>심사 결과</InputLabel>
-            <Select
-              value={reviewStatus}
-              label="심사 결과"
-              onChange={(e) => setReviewStatus(e.target.value)}
-            >
-              <MenuItem value="">전체</MenuItem>
-              <MenuItem value="approved">승인</MenuItem>
-              <MenuItem value="rejected">반려</MenuItem>
-            </Select>
-          </FormControl>
+          <div style={{ minWidth: 120 }}>
+            <label>심사 결과</label>
+            <Select value={reviewStatus} aria-label={"심사 결과"} onChange={(key) => {
+            const value = String(key ?? "");
+            setReviewStatus(value);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+              <ListBox.Item id={""} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
+              <ListBox.Item id={"approved"} textValue={"\uC2B9\uC778"}>승인</ListBox.Item>
+              <ListBox.Item id={"rejected"} textValue={"\uBC18\uB824"}>반려</ListBox.Item>
+            </ListBox></Select.Popover></Select>
+          </div>
 
-          <FormControl size="small" sx={{ minWidth: 100 }}>
-            <InputLabel>성별</InputLabel>
-            <Select
-              value={gender}
-              label="성별"
-              onChange={(e) => setGender(e.target.value)}
-            >
-              <MenuItem value="">전체</MenuItem>
-              <MenuItem value="MALE">남성</MenuItem>
-              <MenuItem value="FEMALE">여성</MenuItem>
-            </Select>
-          </FormControl>
+          <div style={{ minWidth: 100 }}>
+            <label>성별</label>
+            <Select value={gender} aria-label={"성별"} onChange={(key) => {
+            const value = String(key ?? "");
+            setGender(value);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+              <ListBox.Item id={""} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
+              <ListBox.Item id={"MALE"} textValue={"\uB0A8\uC131"}>남성</ListBox.Item>
+              <ListBox.Item id={"FEMALE"} textValue={"\uC5EC\uC131"}>여성</ListBox.Item>
+            </ListBox></Select.Popover></Select>
+          </div>
 
-          <TextField
-            size="small"
-            type="date"
-            label="시작일"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{ width: 160 }}
-          />
+          <TextField className="mb-4"><Label>{"시작일"}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)}></Input></TextField>
 
-          <TextField
-            size="small"
-            type="date"
-            label="종료일"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{ width: 160 }}
-          />
+          <TextField className="mb-4"><Label>{"종료일"}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)}></Input></TextField>
 
-          <TextField
-            size="small"
-            placeholder="이름, 이메일, 전화번호 검색"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            sx={{ width: 220 }}
-            InputProps={{
-              endAdornment: (
-                <IconButton size="small" onClick={handleSearch}>
-                  <SearchIcon fontSize="small" />
-                </IconButton>
-              ),
-            }}
-          />
+          <TextField className="mb-4"><Input aria-label="심사 이력 검색" placeholder="이름, 이메일, 전화번호 검색" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={handleSearchKeyDown}></Input></TextField>
 
-          {hasActiveFilters && (
-            <Button size="small" variant="outlined" onClick={handleClearFilters}>
+          {hasActiveFilters && (<Button onPress={handleClearFilters} variant="secondary">
               초기화
-            </Button>
-          )}
-        </Box>
-      </Paper>
+            </Button>)}
+        </div>
+      </section>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+      {error && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
           {error}
-        </Alert>
-      )}
+        </aside>)}
 
       {/* 테이블 */}
-      <TableContainer component={Paper}>
-        {loading && (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
-        )}
+      <div>
+        {loading && (<div style={{ display: "flex", justifyContent: "center", paddingBlock: 32 }}>
+            <Spinner size="sm"></Spinner>
+          </div>)}
 
-        {!loading && (
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>이미지</TableCell>
-                <TableCell>유저명</TableCell>
-                <TableCell>성별</TableCell>
-                <TableCell>나이</TableCell>
-                <TableCell>슬롯</TableCell>
-                <TableCell>결과</TableCell>
-                <TableCell>유형</TableCell>
-                <TableCell>반려 사유</TableCell>
-                <TableCell>심사자</TableCell>
-                <TableCell>심사일시</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 6 }}>
-                    <Typography color="text.secondary">
+        {!loading && (<table className="w-full text-sm">
+            <thead className="bg-gray-50 text-left">
+              <tr className="border-b">
+                <th scope="col" className="border-b px-4 py-3">이미지</th>
+                <th scope="col" className="border-b px-4 py-3">유저명</th>
+                <th scope="col" className="border-b px-4 py-3">성별</th>
+                <th scope="col" className="border-b px-4 py-3">나이</th>
+                <th scope="col" className="border-b px-4 py-3">슬롯</th>
+                <th scope="col" className="border-b px-4 py-3">결과</th>
+                <th scope="col" className="border-b px-4 py-3">유형</th>
+                <th scope="col" className="border-b px-4 py-3">반려 사유</th>
+                <th scope="col" className="border-b px-4 py-3">심사자</th>
+                <th scope="col" className="border-b px-4 py-3">심사일시</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length === 0 ? (<tr className="border-b">
+                  <td colSpan={10} style={{ paddingBlock: 48 }} className="border-b px-4 py-3">
+                    <p>
                       심사 이력이 없습니다.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((item) => {
-                  const isAuto = item.reviewType === "auto";
-                  const isExpanded = expandedImageId === item.imageId;
-
-                  return (
-                    <Fragment key={item.imageId}>
-                      <TableRow
-                        hover
-                        onClick={isAuto ? () => handleToggleVision(item.imageId) : undefined}
-                        sx={{
-                          cursor: isAuto ? "pointer" : "default",
-                          ...(isExpanded && {
-                            backgroundColor: "action.selected",
-                          }),
-                        }}
-                      >
-                        <TableCell>
-                          <Avatar
-                            src={item.imageUrl}
-                            variant="rounded"
-                            sx={{
-                              width: 48,
-                              height: 48,
-                              cursor: "pointer",
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewImage(item.imageUrl);
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>{item.user.name || "-"}</TableCell>
-                        <TableCell>
+                    </p>
+                  </td>
+                </tr>) : (items.map((item) => {
+                const isAuto = item.reviewType === "auto";
+                const isExpanded = expandedImageId === item.imageId;
+                return (<Fragment key={item.imageId}>
+                      <tr style={{ cursor: isAuto ? "pointer" : "default" }} className="border-b">
+                        <td className="border-b px-4 py-3">
+                          <img src={item.imageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+                        </td>
+                        <td className="border-b px-4 py-3">{item.user.name || "-"}</td>
+                        <td className="border-b px-4 py-3">
                           {item.user.gender === "MALE"
-                            ? "남"
-                            : item.user.gender === "FEMALE"
-                              ? "여"
-                              : "-"}
-                        </TableCell>
-                        <TableCell>{item.user.age ?? "-"}</TableCell>
-                        <TableCell>
+                        ? "남"
+                        : item.user.gender === "FEMALE"
+                            ? "여"
+                            : "-"}
+                        </td>
+                        <td className="border-b px-4 py-3">{item.user.age ?? "-"}</td>
+                        <td className="border-b px-4 py-3">
                           {getSlotLabel(item.slotIndex, item.isMain)}
-                        </TableCell>
-                        <TableCell>{getResultChip(item.reviewStatus)}</TableCell>
-                        <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        </td>
+                        <td className="border-b px-4 py-3">{getResultChip(item.reviewStatus)}</td>
+                        <td className="border-b px-4 py-3">
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                             {getReviewTypeChip(item.reviewType)}
-                            {isAuto && (
-                              isExpanded ? (
-                                <ExpandLessIcon fontSize="small" color="action" />
-                              ) : (
-                                <ExpandMoreIcon fontSize="small" color="action" />
-                              )
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ maxWidth: 200 }}>
-                          {item.rejectionReason ? (
-                            <Tooltip title={item.rejectionReason}>
-                              <Typography
-                                variant="body2"
-                                noWrap
-                                sx={{ cursor: "help" }}
-                              >
+                            {isAuto && <Button variant="tertiary" isIconOnly aria-label={`${item.user.name || "사용자"} 자동 심사 상세`} aria-expanded={isExpanded} onPress={() => handleToggleVision(item.imageId)}>{isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}</Button>}
+                          </div>
+                        </td>
+                        <td style={{ maxWidth: 200 }} className="border-b px-4 py-3">
+                          {item.rejectionReason ? (<span title={item.rejectionReason}>
+                              <p style={{ cursor: "help" }}>
                                 {item.rejectionReason}
-                              </Typography>
-                            </Tooltip>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
+                              </p>
+                            </span>) : (<p>
                               -
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {item.reviewedBy || (
-                            <Typography variant="body2" color="text.secondary">
+                            </p>)}
+                        </td>
+                        <td className="border-b px-4 py-3">
+                          {item.reviewedBy || (<p>
                               시스템
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ whiteSpace: "nowrap" }}>
+                            </p>)}
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }} className="border-b px-4 py-3">
                           {formatDate(item.reviewedAt)}
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
 
                       {/* Vision 데이터 확장 Row */}
-                      {isAuto && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={10}
-                            sx={{ py: 0, borderBottom: isExpanded ? undefined : "none" }}
-                          >
-                            <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                              {visionLoading === item.imageId ? (
-                                <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
-                                  <CircularProgress size={24} />
-                                </Box>
-                              ) : visionDataCache[item.imageId] === null ? (
-                                <Alert severity="info" sx={{ m: 1 }}>
+                      {isAuto && (<tr className="border-b">
+                          <td colSpan={10} style={{ paddingBlock: 0 }} className="border-b px-4 py-3">
+                            <div hidden={!isExpanded}>
+                              {visionLoading === item.imageId ? (<div style={{ display: "flex", justifyContent: "center", paddingBlock: 16 }}>
+                                  <Spinner size="sm"></Spinner>
+                                </div>) : visionDataCache[item.imageId] === null ? (<aside role="alert" className="rounded-lg border p-3" style={{ margin: 8 }}>
                                   해당 이미지의 Vision 검증 데이터가 없습니다.
-                                </Alert>
-                              ) : visionDataCache[item.imageId] ? (
-                                <VisionDataCard data={visionDataCache[item.imageId]!} />
-                              ) : null}
-                            </Collapse>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </Fragment>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        )}
+                                </aside>) : visionDataCache[item.imageId] ? (<VisionDataCard data={visionDataCache[item.imageId]!}></VisionDataCard>) : null}
+                            </div>
+                          </td>
+                        </tr>)}
+                    </Fragment>);
+            }))}
+            </tbody>
+          </table>)}
 
-        <TablePagination
-          component="div"
-          count={pagination.total}
-          page={pagination.page - 1}
-          onPageChange={handleChangePage}
-          rowsPerPage={pagination.limit}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[10, 20, 50]}
-          labelRowsPerPage="표시 건수"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}-${to} / 총 ${count !== -1 ? count : `${to}+`}건`
-          }
-        />
-      </TableContainer>
+        <div className="flex items-center justify-end gap-3 border-t p-4"><div><Select aria-label="페이지당 행 수" value={pagination.limit} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleChangeRowsPerPage)({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Label>페이지당 행 수</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox><ListBox.Item id={10} textValue={"10"}>10</ListBox.Item><ListBox.Item id={20} textValue={"20"}>20</ListBox.Item><ListBox.Item id={50} textValue={"50"}>50</ListBox.Item></ListBox></Select.Popover></Select></div><Button variant="secondary" isDisabled={pagination.page - 1 <= 0} onPress={() => (handleChangePage)(null, pagination.page - 1 - 1)}>이전</Button><span>{pagination.page - 1 + 1} 페이지 / {pagination.total}개</span><Button variant="secondary" isDisabled={(pagination.page - 1 + 1) * pagination.limit >= pagination.total} onPress={() => (handleChangePage)(null, pagination.page - 1 + 1)}>다음</Button></div>
+      </div>
 
       {/* 이미지 미리보기 Dialog */}
-      <Dialog
-        open={!!previewImage}
-        onClose={() => setPreviewImage(null)}
-        maxWidth="md"
-      >
-        <Box sx={{ position: "relative" }}>
-          <IconButton
-            onClick={() => setPreviewImage(null)}
-            sx={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              color: "white",
-              "&:hover": { backgroundColor: "rgba(0,0,0,0.7)" },
-              zIndex: 1,
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-          {previewImage && (
-            <img
-              src={previewImage}
-              alt="미리보기"
-              style={{
+      <Modal.Backdrop isOpen={!!previewImage} onOpenChange={next => {
+            if (!next)
+                (() => setPreviewImage(null))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+        <div style={{ position: "relative" }}>
+          <Button onPress={() => setPreviewImage(null)} variant="tertiary" isIconOnly={true} style={{ position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.5)", color: "white", zIndex: 1 }}>
+            <CloseIcon></CloseIcon>
+          </Button>
+          {previewImage && (<img src={previewImage} alt="미리보기" style={{
                 maxWidth: "90vw",
                 maxHeight: "85vh",
                 display: "block",
-              }}
-            />
-          )}
-        </Box>
-      </Dialog>
-    </Box>
-  );
+            }}></img>)}
+        </div>
+      </Modal.Dialog></Modal.Container></Modal.Backdrop>
+    </div>);
 }

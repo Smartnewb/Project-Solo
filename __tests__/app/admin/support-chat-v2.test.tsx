@@ -1,48 +1,42 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import SupportChatV2 from '@/app/admin/support-chat/support-chat-v2';
+import React from "react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import SupportChatV2 from "@/app/admin/support-chat/support-chat-v2";
 
 let mockSessionFromUrl: string | null = null;
 let mockIsMobile = false;
 const mockReplace = jest.fn();
 
-jest.mock('@mui/material', () => {
-  const actual = jest.requireActual('@mui/material');
-  return {
-    ...actual,
-    useMediaQuery: jest.fn(() => mockIsMobile),
-  };
-});
-
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     replace: mockReplace,
   })),
   useSearchParams: jest.fn(() => ({
-    get: (key: string) => (key === 'session' ? mockSessionFromUrl : null),
-    toString: () => (mockSessionFromUrl ? `session=${mockSessionFromUrl}` : ''),
+    get: (key: string) => (key === "session" ? mockSessionFromUrl : null),
+    toString: () => (mockSessionFromUrl ? `session=${mockSessionFromUrl}` : ""),
   })),
 }));
 
-jest.mock('@/app/admin/support-chat/components/StatusCountBar', () => ({
+jest.mock("@/app/admin/support-chat/components/StatusCountBar", () => ({
   __esModule: true,
   default: () => <div>status-count-bar</div>,
 }));
 
-jest.mock('@/app/admin/support-chat/components/SessionQueue', () => ({
+jest.mock("@/app/admin/support-chat/components/SessionQueue", () => ({
   __esModule: true,
   default: ({ selectedSessionId }: { selectedSessionId: string | null }) => (
-    <div>session-queue:{selectedSessionId ?? 'none'}</div>
+    <div>session-queue:{selectedSessionId ?? "none"}</div>
   ),
 }));
 
-jest.mock('@/app/admin/support-chat/components/ChatPanel', () => ({
+jest.mock("@/app/admin/support-chat/components/ChatPanel", () => ({
   __esModule: true,
-  default: ({ sessionId }: { sessionId: string | null }) => <div>chat-panel:{sessionId ?? 'none'}</div>,
+  default: ({ sessionId }: { sessionId: string | null }) => (
+    <div>chat-panel:{sessionId ?? "none"}</div>
+  ),
 }));
 
-jest.mock('@/app/admin/support-chat/hooks/useSessionPolling', () => ({
+jest.mock("@/app/admin/support-chat/hooks/useSessionPolling", () => ({
   useSessionPolling: jest.fn(() => ({
     activeSessions: [],
     resolvedSessions: [],
@@ -53,30 +47,55 @@ jest.mock('@/app/admin/support-chat/hooks/useSessionPolling', () => ({
   })),
 }));
 
-describe('SupportChatV2 mobile session deep link', () => {
+describe("SupportChatV2 mobile session deep link", () => {
   beforeEach(() => {
     mockSessionFromUrl = null;
     mockIsMobile = false;
     mockReplace.mockReset();
+    Element.prototype.getAnimations = jest.fn(() => []);
+    global.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as any;
+    window.matchMedia = jest.fn(
+      () =>
+        ({
+          matches: mockIsMobile,
+          media: "",
+          onchange: null,
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn(),
+          addListener: jest.fn(),
+          removeListener: jest.fn(),
+          dispatchEvent: jest.fn(),
+        }) as any,
+    );
   });
 
-  it('opens chat on first mobile render when session query exists', () => {
+  it("opens chat on first mobile render when session query exists", () => {
     mockIsMobile = true;
-    mockSessionFromUrl = 'session-123';
+    mockSessionFromUrl = "session-123";
 
     render(<SupportChatV2 />);
 
-    expect(screen.getByText('chat-panel:session-123')).toBeInTheDocument();
-    expect(screen.queryByText('session-queue:session-123')).not.toBeInTheDocument();
+    expect(screen.getByText("chat-panel:session-123")).toBeInTheDocument();
+    expect(
+      screen.queryByText("session-queue:session-123"),
+    ).not.toBeInTheDocument();
   });
 
-  it('keeps desktop split layout when session query exists', () => {
+  it("keeps desktop split layout when session query exists", async () => {
     mockIsMobile = false;
-    mockSessionFromUrl = 'session-123';
+    mockSessionFromUrl = "session-123";
 
     render(<SupportChatV2 />);
 
-    expect(screen.getByText('session-queue:session-123')).toBeInTheDocument();
-    expect(screen.getByText('chat-panel:session-123')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: /목록/ }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(screen.getByText("session-queue:session-123")).toBeInTheDocument();
+    expect(screen.getByText("chat-panel:session-123")).toBeInTheDocument();
   });
 });

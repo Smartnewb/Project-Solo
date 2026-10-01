@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-
 export default function CommunityAutomationPage() {
-	redirect('/admin/community-automation/target-posts');
+    redirect('/admin/community-automation/target-posts');
 }

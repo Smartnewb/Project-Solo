@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = 'support-chat:read-state';
+const STORAGE_KEY = "support-chat:read-state";
 
 type ReadMap = Record<string, number>;
 
 function load(): ReadMap {
-  if (typeof window === 'undefined') return {};
+  if (typeof window === "undefined") return {};
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as ReadMap) : {};
@@ -46,7 +46,7 @@ export function useReadState() {
       const seen = readMap[sessionId];
       return seen === undefined || messageCount > seen;
     },
-    [readMap]
+    [readMap],
   );
 
   return { isUnread, markRead };

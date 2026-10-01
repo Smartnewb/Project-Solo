@@ -1,20 +1,15 @@
-'use client';
+"use client";
+import { Button, Spinner } from "@heroui/react";
+import { ArrowLeftRight as SyncAltIcon } from "lucide-react";
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Typography,
-} from '@mui/material';
-import SyncAltIcon from '@mui/icons-material/SyncAlt';
-import { usePixelCampusEpisode } from '@/app/admin/hooks/use-pixel-campus';
-import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-import { EpisodeForm } from '../../components/EpisodeForm';
-import { PixelCampusStatusBadge } from '../../components/PixelCampusStatusBadge';
-import { StatusActionDialog } from '../../components/StatusActionDialog';
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+
+import { usePixelCampusEpisode } from "@/app/admin/hooks/use-pixel-campus";
+import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
+import { EpisodeForm } from "../../components/EpisodeForm";
+import { PixelCampusStatusBadge } from "../../components/PixelCampusStatusBadge";
+import { StatusActionDialog } from "../../components/StatusActionDialog";
 
 export default function PixelCampusEditPage() {
   const params = useParams<{ id: string }>();
@@ -25,20 +20,32 @@ export default function PixelCampusEditPage() {
 
   if (episodeQuery.isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-        <CircularProgress />
-      </Box>
+      <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+        <Spinner aria-label="로딩 중" />
+      </div>
     );
   }
 
   if (episodeQuery.error) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {getAdminErrorMessage(episodeQuery.error, '에피소드를 불러오지 못했습니다.')}
-        </Alert>
-        <Button onClick={() => router.push('/admin/pixel-campus')}>목록으로</Button>
-      </Box>
+      <div style={{ padding: 24 }}>
+        <div
+          role="alert"
+          className="rounded-lg border border-default p-3 text-sm"
+          style={{ marginBottom: 16 }}
+        >
+          {getAdminErrorMessage(
+            episodeQuery.error,
+            "에피소드를 불러오지 못했습니다.",
+          )}
+        </div>
+        <Button
+          onClick={() => router.push("/admin/pixel-campus")}
+          variant={"secondary"}
+        >
+          목록으로
+        </Button>
+      </div>
     );
   }
 
@@ -46,38 +53,36 @@ export default function PixelCampusEditPage() {
 
   if (!episode) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="warning">에피소드를 찾을 수 없습니다.</Alert>
-      </Box>
+      <div style={{ padding: 24 }}>
+        <div
+          role="alert"
+          className="rounded-lg border border-default p-3 text-sm"
+        >
+          에피소드를 찾을 수 없습니다.
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-          gap: 2,
+    <div style={{ padding: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+          gap: 16,
         }}
       >
-        <Box>
-          <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
-            픽셀 캠퍼스 에피소드 편집
-          </Typography>
+        <div>
+          <h5 style={{ marginBottom: 8 }}>픽셀 캠퍼스 에피소드 편집</h5>
           <PixelCampusStatusBadge status={episode.status} />
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<SyncAltIcon />}
-          onClick={() => setStatusDialogOpen(true)}
-        >
-          상태 변경
+        </div>
+        <Button onClick={() => setStatusDialogOpen(true)} variant={"secondary"}>
+          {<SyncAltIcon size={16} />}상태 변경
         </Button>
-      </Box>
-
+      </div>
       <EpisodeForm key={episode.id} mode="edit" episode={episode} />
       <StatusActionDialog
         open={statusDialogOpen}
@@ -85,6 +90,6 @@ export default function PixelCampusEditPage() {
         onClose={() => setStatusDialogOpen(false)}
         onSuccess={() => episodeQuery.refetch()}
       />
-    </Box>
+    </div>
   );
 }

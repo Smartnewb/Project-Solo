@@ -1,20 +1,11 @@
-'use client';
+"use client";
+import { Label, ListBox, Select, Switch } from "@heroui/react";
 
-import { useState, useEffect, useMemo } from 'react';
-import {
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
-  Box,
-  FormControlLabel,
-  Switch,
-  Typography
-} from '@mui/material';
-import { useCountry } from '@/contexts/CountryContext';
-import AdminService from '@/app/services/admin';
-import type { AdminClusterItem } from '@/types/admin';
+import { useState, useEffect, useMemo } from "react";
+
+import { useCountry } from "@/contexts/CountryContext";
+import AdminService from "@/app/services/admin";
+import type { AdminClusterItem } from "@/types/admin";
 
 // 지역 타입 - 백엔드 API에서 동적으로 결정되므로 string 타입 사용
 export type Region = string;
@@ -24,7 +15,7 @@ interface RegionOption {
   label: string;
 }
 
-const ALL_OPTION: RegionOption = { value: 'ALL', label: '전체 지역' };
+const ALL_OPTION: RegionOption = { value: "ALL", label: "전체 지역" };
 
 // Fix 1: 국가별 캐시 분리 - Map<country, data>
 const _cacheByCountry = new Map<string, AdminClusterItem[]>();
@@ -37,8 +28,9 @@ function fetchClusters(country: string): Promise<AdminClusterItem[]> {
   const pending = _promiseByCountry.get(country);
   if (pending) return pending;
 
-  const promise = AdminService.universities.getClusters()
-    .then(data => {
+  const promise = AdminService.universities
+    .getClusters()
+    .then((data) => {
       _cacheByCountry.set(country, data);
       return data;
     })
@@ -56,7 +48,7 @@ function fetchClusters(country: string): Promise<AdminClusterItem[]> {
 function buildClusterOptions(clusters: AdminClusterItem[]): RegionOption[] {
   return [
     ALL_OPTION,
-    ...clusters.map(c => ({
+    ...clusters.map((c) => ({
       value: c.regions[0]?.code ?? c.id,
       label: c.name,
     })),
@@ -64,17 +56,20 @@ function buildClusterOptions(clusters: AdminClusterItem[]): RegionOption[] {
 }
 
 function buildIndividualOptions(clusters: AdminClusterItem[]): RegionOption[] {
-  const regions = clusters.flatMap(c => c.regions);
+  const regions = clusters.flatMap((c) => c.regions);
   return [
     ALL_OPTION,
-    ...regions.map(r => ({ value: r.code, label: r.name })),
+    ...regions.map((r) => ({ value: r.code, label: r.name })),
   ];
 }
 
 /** 클러스터 데이터를 API에서 가져와 옵션 목록을 반환하는 훅 */
+/** 클러스터 데이터를 API에서 가져와 옵션 목록을 반환하는 훅 */
 export function useClusterOptions() {
   const { country } = useCountry();
-  const [clusters, setClusters] = useState<AdminClusterItem[]>(() => _cacheByCountry.get(country) || []);
+  const [clusters, setClusters] = useState<AdminClusterItem[]>(
+    () => _cacheByCountry.get(country) || [],
+  );
   const [loading, setLoading] = useState(() => !_cacheByCountry.has(country));
   const [error, setError] = useState<Error | null>(null); // Fix 2: 에러 상태 노출
 
@@ -94,13 +89,13 @@ export function useClusterOptions() {
     setError(null);
 
     fetchClusters(country)
-      .then(data => {
+      .then((data) => {
         if (!cancelled) {
           setClusters(data);
           setLoading(false);
         }
       })
-      .catch(err => {
+      .catch((err) => {
         if (!cancelled) {
           setError(err instanceof Error ? err : new Error(String(err)));
           setClusters([]);
@@ -108,11 +103,19 @@ export function useClusterOptions() {
         }
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [country]); // Fix 1: country 변경 시 재패칭
 
-  const clusterOptions = useMemo(() => buildClusterOptions(clusters), [clusters]);
-  const individualOptions = useMemo(() => buildIndividualOptions(clusters), [clusters]);
+  const clusterOptions = useMemo(
+    () => buildClusterOptions(clusters),
+    [clusters],
+  );
+  const individualOptions = useMemo(
+    () => buildIndividualOptions(clusters),
+    [clusters],
+  );
 
   return { clusters, clusterOptions, individualOptions, loading, error };
 }
@@ -124,8 +127,8 @@ interface RegionFilterProps {
   onClusterModeChange?: (useCluster: boolean) => void;
   showClusterToggle?: boolean;
   disabled?: boolean;
-  size?: 'small' | 'medium';
-  variant?: 'outlined' | 'filled' | 'standard';
+  size?: "small" | "medium";
+  variant?: "outlined" | "filled" | "standard";
   fullWidth?: boolean;
   sx?: any;
 }
@@ -137,81 +140,94 @@ export default function RegionFilter({
   onClusterModeChange,
   showClusterToggle = false,
   disabled = false,
-  size = 'small',
-  variant = 'outlined',
+  size = "small",
+  variant = "outlined",
   fullWidth = false,
-  sx = {}
+  sx = {},
 }: RegionFilterProps) {
-  const { clusterOptions, individualOptions, loading, error } = useClusterOptions();
+  const { clusterOptions, individualOptions, loading, error } =
+    useClusterOptions();
 
-  const handleChange = (event: SelectChangeEvent<string>) => {
-    onChange(event.target.value);
-  };
-
-  const handleClusterToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newUseCluster = event.target.checked;
+  const handleClusterToggle = (newUseCluster: boolean) => {
     if (onClusterModeChange) {
       onClusterModeChange(newUseCluster);
     }
-    onChange('ALL');
+    onChange("ALL");
   };
 
   const regionOptions = useCluster ? clusterOptions : individualOptions;
 
   return (
-    <Box sx={sx}>
+    <div style={sx}>
       {showClusterToggle && (
-        <Box sx={{ mb: 1 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={useCluster}
-                onChange={handleClusterToggle}
-                size="small"
-                disabled={disabled}
-              />
-            }
-            label={
-              <Typography variant="caption" color="textSecondary">
-                {useCluster ? '클러스터 단위' : '개별 지역'}
-              </Typography>
-            }
-          />
-        </Box>
+        <div style={{ marginBottom: 4 }}>
+          <div className="flex items-center gap-2">
+            <Switch
+              isSelected={useCluster}
+              isDisabled={disabled}
+              onChange={handleClusterToggle}
+            >
+              <Switch.Content>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+                <Label>
+                  {
+                    <div className={"text-sm text-neutral-700"}>
+                      {useCluster ? "클러스터 단위" : "개별 지역"}
+                    </div>
+                  }
+                </Label>
+              </Switch.Content>
+            </Switch>
+          </div>
+        </div>
       )}
-      <FormControl
-        size={size}
-        variant={variant}
-        fullWidth={fullWidth}
-        disabled={disabled || loading}
-        error={!!error}
-      >
-        <InputLabel id="region-filter-label">지역</InputLabel>
+      <div>
         <Select
-          labelId="region-filter-label"
-          id="region-filter"
-          value={value}
-          label="지역"
-          onChange={handleChange}
+          selectedKey={value}
+          onSelectionChange={(key) => onChange(String(key))}
+          isDisabled={disabled || loading}
+          aria-label={"지역"}
+          className="w-full"
         >
-          {regionOptions.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
+          <Label>{"지역"}</Label>
+          <Select.Trigger>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {regionOptions.map((option) => (
+                <ListBox.Item
+                  key={option.value}
+                  id={option.value}
+                  textValue={option.label}
+                >
+                  {option.label}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
         </Select>
-      </FormControl>
+      </div>
       {error && (
-        <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+        <div
+          style={{ marginTop: 2, display: "block" }}
+          className={"text-sm text-neutral-700"}
+        >
           지역 목록을 불러오지 못했습니다
-        </Typography>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
 
 // 지역 필터 훅
-export function useRegionFilter(initialRegion: Region = 'ALL', initialUseCluster: boolean = true) {
+export function useRegionFilter(
+  initialRegion: Region = "ALL",
+  initialUseCluster: boolean = true,
+) {
   const [region, setRegion] = useState<Region>(initialRegion);
   const [useCluster, setUseCluster] = useState<boolean>(initialUseCluster);
 
@@ -221,11 +237,11 @@ export function useRegionFilter(initialRegion: Region = 'ALL', initialUseCluster
 
   const handleClusterModeChange = (newUseCluster: boolean) => {
     setUseCluster(newUseCluster);
-    setRegion('ALL');
+    setRegion("ALL");
   };
 
   const getRegionParam = (): string | undefined => {
-    if (region === 'ALL') return undefined;
+    if (region === "ALL") return undefined;
     return region;
   };
 
@@ -239,23 +255,29 @@ export function useRegionFilter(initialRegion: Region = 'ALL', initialUseCluster
     setRegion: handleRegionChange,
     setUseCluster: handleClusterModeChange,
     getRegionParam,
-    getUseClusterParam
+    getUseClusterParam,
   };
 }
 
 // 캐시 기반 라벨 조회 - 현재 국가의 캐시에서 조회
-export const getRegionLabel = (region: Region, useCluster: boolean = true): string => {
-  if (region === 'ALL') return '전체 지역';
+export const getRegionLabel = (
+  region: Region,
+  useCluster: boolean = true,
+): string => {
+  if (region === "ALL") return "전체 지역";
 
   // 현재 localStorage의 국가로 캐시 조회
-  const country = (typeof window !== 'undefined' && localStorage.getItem('admin_selected_country')) || 'kr';
+  const country =
+    (typeof window !== "undefined" &&
+      localStorage.getItem("admin_selected_country")) ||
+    "kr";
   const cache = _cacheByCountry.get(country);
   if (!cache || cache.length === 0) return region;
 
   const options = useCluster
     ? buildClusterOptions(cache)
     : buildIndividualOptions(cache);
-  const option = options.find(opt => opt.value === region);
+  const option = options.find((opt) => opt.value === region);
   return option?.label || region;
 };
 

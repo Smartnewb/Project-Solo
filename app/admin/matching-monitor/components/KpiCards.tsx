@@ -1,12 +1,7 @@
-'use client';
-
-import { Box, Card, CardContent, Typography } from '@mui/material';
-import GroupIcon from '@mui/icons-material/Group';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import ChatIcon from '@mui/icons-material/Chat';
-import type { PoolOverview, MatchRate, PostMatchFunnel } from '../types';
-
+"use client";
+import { Card } from "@heroui/react";
+import { Handshake, Heart, MessageCircle, Users } from "lucide-react";
+import type { PoolOverview, MatchRate, PostMatchFunnel } from "../types";
 interface KpiCardProps {
 	icon: React.ReactNode;
 	label: string;
@@ -14,77 +9,74 @@ interface KpiCardProps {
 	sub?: string;
 	bgColor: string;
 }
-
 function KpiCard({ icon, label, value, sub, bgColor }: KpiCardProps) {
 	return (
-		<Card sx={{ flex: 1, minWidth: 200 }}>
-			<CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
-				<Box
-					sx={{
-						p: 1.5,
-						borderRadius: 2,
+		<Card style={{ flex: 1, minWidth: 200 }}>
+			<Card.Content
+				style={{
+					display: "flex",
+					alignItems: "center",
+					gap: 16,
+					paddingTop: 16,
+					paddingBottom: 16,
+				}}
+			>
+				<div
+					style={{
+						padding: 12,
+						borderRadius: 16,
 						backgroundColor: bgColor,
-						display: 'flex',
-						alignItems: 'center',
+						display: "flex",
+						alignItems: "center",
 					}}
 				>
 					{icon}
-				</Box>
-				<Box>
-					<Typography variant="body2" color="text.secondary">
-						{label}
-					</Typography>
-					<Typography variant="h5" fontWeight={700}>
-						{value}
-					</Typography>
-					{sub && (
-						<Typography variant="caption" color="text.secondary">
-							{sub}
-						</Typography>
-					)}
-				</Box>
-			</CardContent>
+				</div>
+				<div>
+					<p className={"text-sm text-neutral-700"}>{label}</p>
+					<h2 className={"text-lg font-semibold text-neutral-900"}>{value}</h2>
+					{sub && <span className={"text-sm text-neutral-700"}>{sub}</span>}
+				</div>
+			</Card.Content>
 		</Card>
 	);
 }
-
 interface Props {
 	pool: PoolOverview;
 	matchRate: MatchRate;
 	funnel: PostMatchFunnel;
 }
-
 export default function KpiCards({ pool, matchRate, funnel }: Props) {
 	return (
-		<Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+		<div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
 			<KpiCard
-				icon={<GroupIcon sx={{ color: '#3b82f6' }} />}
+				icon={<Users style={{ color: "#3b82f6" }} size={18} />}
 				label="전체 적격 유저"
 				value={pool.totalEligible.toLocaleString()}
 				sub={`활성 ${pool.activeUsers30d.toLocaleString()}명`}
 				bgColor="#eff6ff"
 			/>
 			<KpiCard
-				icon={<FavoriteIcon sx={{ color: '#ec4899' }} />}
+				icon={<Heart style={{ color: "#ec4899" }} size={18} />}
 				label="매칭 생성"
 				value={matchRate.totalCreated.toLocaleString()}
 				sub={`스케줄드 ${matchRate.scheduledCount} / 일반 ${matchRate.normalCount}`}
 				bgColor="#fdf2f8"
 			/>
 			<KpiCard
-				icon={<HandshakeIcon sx={{ color: '#f59e0b' }} />}
+				icon={<Handshake style={{ color: "#f59e0b" }} size={18} />}
 				label="상호 수락률"
 				value={`${funnel.mutualAcceptRate}%`}
 				sub={`${funnel.mutualAccepted}건 수락`}
 				bgColor="#fffbeb"
 			/>
 			<KpiCard
-				icon={<ChatIcon sx={{ color: '#10b981' }} />}
+				icon={<MessageCircle style={{ color: "#10b981" }} size={18} />}
 				label="채팅 개설률"
 				value={`${funnel.chatOpenRate}%`}
 				sub={`활성 채팅방 ${funnel.chatRoomsActive}개`}
 				bgColor="#ecfdf5"
 			/>
-		</Box>
+		</div>
 	);
 }

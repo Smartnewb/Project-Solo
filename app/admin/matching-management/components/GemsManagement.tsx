@@ -1,430 +1,278 @@
 'use client';
-
+import { Button, Spinner, Chip, Modal, TextField, Label, Input, TextArea } from '@heroui/react';
 import React, { useState } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Alert,
-  CircularProgress,
-  InputAdornment,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Avatar,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Divider
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  Remove as RemoveIcon,
-  Diamond as DiamondIcon
-} from '@mui/icons-material';
+import { Search as SearchIcon, Plus as AddIcon, Minus as RemoveIcon, Diamond as DiamondIcon } from 'lucide-react';
 import { UserSearchResult } from '../types';
 import AdminService from '@/app/services/admin';
 import { MAX_GEM_GRANT } from '@/app/admin/constants/gem-limits';
-
 interface GemsManagementProps {
-  searchTerm: string;
-  searchLoading: boolean;
-  error: string | null;
-  searchResults: UserSearchResult[];
-  selectedUser: UserSearchResult | null;
-  setSearchTerm: (term: string) => void;
-  searchUsers: () => void;
-  handleUserSelect: (user: UserSearchResult) => void;
+    searchTerm: string;
+    searchLoading: boolean;
+    error: string | null;
+    searchResults: UserSearchResult[];
+    selectedUser: UserSearchResult | null;
+    setSearchTerm: (term: string) => void;
+    searchUsers: () => void;
+    handleUserSelect: (user: UserSearchResult) => void;
 }
-
 interface GemsInfo {
-  userId: string;
-  gemBalance: number;
-  totalCharged: number;
-  totalConsumed: number;
-  lastTransaction: string;
+    userId: string;
+    gemBalance: number;
+    totalCharged: number;
+    totalConsumed: number;
+    lastTransaction: string;
 }
-
-const GemsManagement: React.FC<GemsManagementProps> = ({
-  searchTerm,
-  searchLoading,
-  error,
-  searchResults,
-  selectedUser,
-  setSearchTerm,
-  searchUsers,
-  handleUserSelect
-}) => {
-  // 구슬 관련 상태
-  const [gemsInfo, setGemsInfo] = useState<GemsInfo | null>(null);
-  const [gemsLoading, setGemsLoading] = useState(false);
-  const [gemsError, setGemsError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionResult, setActionResult] = useState<string | null>(null);
-  
-  // 구슬 액션 관련 상태
-  const [gemsCount, setGemsCount] = useState(1);
-  const [overLimitDialogOpen, setOverLimitDialogOpen] = useState(false);
-  const [overLimitReason, setOverLimitReason] = useState('');
-
-  // 구슬 정보 조회
-  const fetchGemsInfo = async (userId: string) => {
-    setGemsLoading(true);
-    setGemsError(null);
-    setGemsInfo(null);
-
-    try {
-      const response = await AdminService.userAppearance.getUserGems(userId);
-      ;
-      setGemsInfo(response);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message ||
-                          err.response?.data?.error ||
-                          err.message ||
-                          '구슬 정보 조회 중 오류가 발생했습니다.';
-      setGemsError(errorMessage);
-    } finally {
-      setGemsLoading(false);
-    }
-  };
-
-  // 구슬 추가
-  const addGems = async () => {
-    if (!selectedUser) return;
-
-    if (gemsCount > MAX_GEM_GRANT) {
-      setOverLimitReason('');
-      setOverLimitDialogOpen(true);
-      return;
-    }
-
-    await executeAddGems();
-  };
-
-  const executeAddGems = async (reason?: string) => {
-    if (!selectedUser) return;
-
-    setActionLoading(true);
-    setGemsError(null);
-    setActionResult(null);
-
-    try {
-      const response = await AdminService.userAppearance.addUserGems(
-        selectedUser.id,
-        gemsCount,
-        reason,
-      );
-      ;
-
-      setActionResult(
-        reason
-          ? `성공적으로 ${gemsCount}개의 구슬을 추가했습니다. [상한 초과 사유: ${reason}]`
-          : `성공적으로 ${gemsCount}개의 구슬을 추가했습니다.`
-      );
-
-      await fetchGemsInfo(selectedUser.id);
-      setGemsCount(1);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message ||
-                          err.response?.data?.error ||
-                          err.message ||
-                          '구슬 추가 중 오류가 발생했습니다.';
-      setGemsError(errorMessage);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleOverLimitConfirm = async () => {
-    setOverLimitDialogOpen(false);
-    await executeAddGems(overLimitReason);
-  };
-
-  // 구슬 제거
-  const removeGems = async () => {
-    if (!selectedUser) return;
-
-    setActionLoading(true);
-    setGemsError(null);
-    setActionResult(null);
-
-    try {
-      const response = await AdminService.userAppearance.removeUserGems(
-        selectedUser.id,
-        gemsCount,
-      );
-      ;
-
-      setActionResult(`성공적으로 ${gemsCount}개의 구슬을 제거했습니다.`);
-
-      // 구슬 정보 새로고침
-      await fetchGemsInfo(selectedUser.id);
-      setGemsCount(1);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message ||
-                          err.response?.data?.error ||
-                          err.message ||
-                          '구슬 제거 중 오류가 발생했습니다.';
-      setGemsError(errorMessage);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // 사용자 선택 핸들러
-  const handleUserSelectWithGems = async (user: UserSearchResult) => {
-    handleUserSelect(user);
-    await fetchGemsInfo(user.id);
-  };
-
-  return (
-    <Box>
+const GemsManagement: React.FC<GemsManagementProps> = ({ searchTerm, searchLoading, error, searchResults, selectedUser, setSearchTerm, searchUsers, handleUserSelect }) => {
+    // 구슬 관련 상태
+    const [gemsInfo, setGemsInfo] = useState<GemsInfo | null>(null);
+    const [gemsLoading, setGemsLoading] = useState(false);
+    const [gemsError, setGemsError] = useState<string | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [actionResult, setActionResult] = useState<string | null>(null);
+    // 구슬 액션 관련 상태
+    const [gemsCount, setGemsCount] = useState(1);
+    const [overLimitDialogOpen, setOverLimitDialogOpen] = useState(false);
+    const [overLimitReason, setOverLimitReason] = useState('');
+    // 구슬 정보 조회
+    const fetchGemsInfo = async (userId: string) => {
+        setGemsLoading(true);
+        setGemsError(null);
+        setGemsInfo(null);
+        try {
+            const response = await AdminService.userAppearance.getUserGems(userId);
+            ;
+            setGemsInfo(response);
+        }
+        catch (err: any) {
+            const errorMessage = err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                '구슬 정보 조회 중 오류가 발생했습니다.';
+            setGemsError(errorMessage);
+        }
+        finally {
+            setGemsLoading(false);
+        }
+    };
+    // 구슬 추가
+    const addGems = async () => {
+        if (!selectedUser)
+            return;
+        if (gemsCount > MAX_GEM_GRANT) {
+            setOverLimitReason('');
+            setOverLimitDialogOpen(true);
+            return;
+        }
+        await executeAddGems();
+    };
+    const executeAddGems = async (reason?: string) => {
+        if (!selectedUser)
+            return;
+        setActionLoading(true);
+        setGemsError(null);
+        setActionResult(null);
+        try {
+            const response = await AdminService.userAppearance.addUserGems(selectedUser.id, gemsCount, reason);
+            ;
+            setActionResult(reason
+                ? `성공적으로 ${gemsCount}개의 구슬을 추가했습니다. [상한 초과 사유: ${reason}]`
+                : `성공적으로 ${gemsCount}개의 구슬을 추가했습니다.`);
+            await fetchGemsInfo(selectedUser.id);
+            setGemsCount(1);
+        }
+        catch (err: any) {
+            const errorMessage = err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                '구슬 추가 중 오류가 발생했습니다.';
+            setGemsError(errorMessage);
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    const handleOverLimitConfirm = async () => {
+        setOverLimitDialogOpen(false);
+        await executeAddGems(overLimitReason);
+    };
+    // 구슬 제거
+    const removeGems = async () => {
+        if (!selectedUser)
+            return;
+        setActionLoading(true);
+        setGemsError(null);
+        setActionResult(null);
+        try {
+            const response = await AdminService.userAppearance.removeUserGems(selectedUser.id, gemsCount);
+            ;
+            setActionResult(`성공적으로 ${gemsCount}개의 구슬을 제거했습니다.`);
+            // 구슬 정보 새로고침
+            await fetchGemsInfo(selectedUser.id);
+            setGemsCount(1);
+        }
+        catch (err: any) {
+            const errorMessage = err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                '구슬 제거 중 오류가 발생했습니다.';
+            setGemsError(errorMessage);
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    // 사용자 선택 핸들러
+    const handleUserSelectWithGems = async (user: UserSearchResult) => {
+        handleUserSelect(user);
+        await fetchGemsInfo(user.id);
+    };
+    return (<div>
       {/* 사용자 검색 섹션 */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <section style={{ padding: 24, marginBottom: 24 }} className="rounded-xl border bg-white p-4">
+        <h2 className="text-lg font-semibold">
           구슬 관리
-        </Typography>
+        </h2>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <TextField
-            fullWidth
-            label="사용자 이름 검색"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Button
-            variant="contained"
-            onClick={searchUsers}
-            disabled={searchLoading}
-            sx={{ minWidth: 100 }}
-          >
-            {searchLoading ? <CircularProgress size={24} /> : '검색'}
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <TextField className="mb-4"><Label>{"사용자 이름 검색"}</Label><Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && searchUsers()}></Input></TextField>
+          <Button onPress={searchUsers} isDisabled={searchLoading} variant="primary" style={{ minWidth: 100 }}>
+            {searchLoading ? <Spinner size="sm"></Spinner> : '검색'}
           </Button>
-        </Box>
+        </div>
 
         {/* 에러 메시지 */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+        {error && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
             {error}
-          </Alert>
-        )}
+          </aside>)}
 
         {/* 검색 결과 */}
-        {searchResults.length > 0 && (
-          <TableContainer component={Paper} sx={{ mt: 2 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>프로필</TableCell>
-                  <TableCell>이름</TableCell>
-                  <TableCell>전화번호</TableCell>
-                  <TableCell>성별</TableCell>
-                  <TableCell>대학교</TableCell>
-                  <TableCell>외모등급</TableCell>
-                  <TableCell>액션</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {searchResults.map((user) => (
-                  <TableRow 
-                    key={user.id}
-                    selected={selectedUser?.id === user.id}
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': { backgroundColor: 'action.hover' }
-                    }}
-                  >
-                    <TableCell>
-                      <Avatar
-                        src={user.profileImageUrl}
-                        alt={user.name}
-                        sx={{ width: 40, height: 40 }}
-                      />
-                    </TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.phoneNumber}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.gender === 'MALE' ? '남성' : '여성'}
-                        color={user.gender === 'MALE' ? 'primary' : 'secondary'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>{typeof user.university === 'object' ? user.university?.name || '-' : user.university || '-'}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.appearanceGrade || 'UNKNOWN'}
-                        color="default"
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleUserSelectWithGems(user)}
-                        disabled={gemsLoading}
-                      >
+        {searchResults.length > 0 && (<div style={{ marginTop: 16 }}>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-left">
+                <tr className="border-b">
+                  <th scope="col" className="border-b px-4 py-3">프로필</th>
+                  <th scope="col" className="border-b px-4 py-3">이름</th>
+                  <th scope="col" className="border-b px-4 py-3">전화번호</th>
+                  <th scope="col" className="border-b px-4 py-3">성별</th>
+                  <th scope="col" className="border-b px-4 py-3">대학교</th>
+                  <th scope="col" className="border-b px-4 py-3">외모등급</th>
+                  <th scope="col" className="border-b px-4 py-3">액션</th>
+                </tr>
+              </thead>
+              <tbody>
+                {searchResults.map((user) => (<tr key={user.id} style={{ cursor: 'pointer' }} className="border-b">
+                    <td className="border-b px-4 py-3">
+                      <img src={user.profileImageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+                    </td>
+                    <td className="border-b px-4 py-3">{user.name}</td>
+                    <td className="border-b px-4 py-3">{user.phoneNumber}</td>
+                    <td className="border-b px-4 py-3">
+                      <Chip size="sm">{user.gender === 'MALE' ? '남성' : '여성'}</Chip>
+                    </td>
+                    <td className="border-b px-4 py-3">{typeof user.university === 'object' ? user.university?.name || '-' : user.university || '-'}</td>
+                    <td className="border-b px-4 py-3">
+                      <Chip size="sm">{user.appearanceGrade || 'UNKNOWN'}</Chip>
+                    </td>
+                    <td className="border-b px-4 py-3">
+                      <Button onPress={() => handleUserSelectWithGems(user)} isDisabled={gemsLoading} variant="secondary">
                         선택
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+                    </td>
+                  </tr>))}
+              </tbody>
+            </table>
+          </div>)}
+      </section>
 
       {/* 선택된 사용자의 구슬 정보 */}
-      {selectedUser && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <DiamondIcon color="primary" />
+      {selectedUser && (<section style={{ padding: 24 }} className="rounded-xl border bg-white p-4">
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="text-lg font-semibold">
+            <DiamondIcon></DiamondIcon>
             {selectedUser.name}님의 구슬 정보
-          </Typography>
+          </h2>
 
-          {gemsLoading && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
-            </Box>
-          )}
+          {gemsLoading && (<div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+              <Spinner size="sm"></Spinner>
+            </div>)}
 
-          {gemsError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+          {gemsError && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
               {gemsError}
-            </Alert>
-          )}
+            </aside>)}
 
-          {actionResult && (
-            <Alert severity="success" sx={{ mb: 2 }}>
+          {actionResult && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
               {actionResult}
-            </Alert>
-          )}
+            </aside>)}
 
-          {gemsInfo && (
-            <Box>
+          {gemsInfo && (<div>
               {/* 구슬 정보 표시 */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 3 }}>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="h4" color="primary" gutterBottom>
+              <div style={{ display: 'grid', gap: 16, marginBottom: 24 }}>
+                <section style={{ padding: 16, textAlign: 'center' }} className="rounded-xl border bg-white p-4">
+                  <p>
                     {gemsInfo.gemBalance}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </p>
+                  <p>
                     현재 구슬 보유량
-                  </Typography>
-                </Paper>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="h6" gutterBottom>
+                  </p>
+                </section>
+                <section style={{ padding: 16, textAlign: 'center' }} className="rounded-xl border bg-white p-4">
+                  <h2 className="text-lg font-semibold">
                     {gemsInfo.totalCharged}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </h2>
+                  <p>
                     총 충전량
-                  </Typography>
-                </Paper>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="h6" gutterBottom>
+                  </p>
+                </section>
+                <section style={{ padding: 16, textAlign: 'center' }} className="rounded-xl border bg-white p-4">
+                  <h2 className="text-lg font-semibold">
                     {gemsInfo.totalConsumed}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </h2>
+                  <p>
                     총 소모량
-                  </Typography>
-                </Paper>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="body1" gutterBottom>
+                  </p>
+                </section>
+                <section style={{ padding: 16, textAlign: 'center' }} className="rounded-xl border bg-white p-4">
+                  <p>
                     {gemsInfo.lastTransaction || '-'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </p>
+                  <p>
                     마지막 거래일
-                  </Typography>
-                </Paper>
-              </Box>
+                  </p>
+                </section>
+              </div>
 
               {/* 구슬 관리 액션 */}
-              <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-end' }}>
-                <TextField
-                  type="number"
-                  label="구슬 개수"
-                  value={gemsCount}
-                  onChange={(e) => setGemsCount(Math.max(1, parseInt(e.target.value) || 1))}
-                  inputProps={{ min: 1, max: 1000 }}
-                  sx={{ width: 120 }}
-                />
+              <div style={{ display: 'flex', gap: 24, alignItems: 'flex-end' }}>
+                <TextField className="mb-4"><Label>{"구슬 개수"}</Label><Input type="number" value={gemsCount} onChange={(e) => setGemsCount(Math.max(1, parseInt(e.target.value) || 1))} {...{ min: 1, max: 1000 }}></Input></TextField>
 
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<AddIcon />}
-                  onClick={addGems}
-                  disabled={actionLoading}
-                  sx={{ minWidth: 120 }}
-                >
-                  {actionLoading ? <CircularProgress size={20} /> : '구슬 추가'}
+                <Button onPress={addGems} isDisabled={actionLoading} variant="primary" style={{ minWidth: 120 }}>{<AddIcon></AddIcon>}
+                  {actionLoading ? <Spinner size="sm"></Spinner> : '구슬 추가'}
                 </Button>
 
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<RemoveIcon />}
-                  onClick={removeGems}
-                  disabled={actionLoading || !gemsInfo || gemsInfo.gemBalance === 0}
-                  sx={{ minWidth: 120 }}
-                >
-                  {actionLoading ? <CircularProgress size={20} /> : '구슬 제거'}
+                <Button onPress={removeGems} isDisabled={actionLoading || !gemsInfo || gemsInfo.gemBalance === 0} variant="secondary" style={{ minWidth: 120 }}>{<RemoveIcon></RemoveIcon>}
+                  {actionLoading ? <Spinner size="sm"></Spinner> : '구슬 제거'}
                 </Button>
-              </Box>
-            </Box>
-          )}
-        </Paper>
-      )}
+              </div>
+            </div>)}
+        </section>)}
 
-      <Dialog open={overLimitDialogOpen} onClose={() => setOverLimitDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>구슬 지급 확인</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
+      <Modal.Backdrop isOpen={overLimitDialogOpen} onOpenChange={next => {
+            if (!next)
+                (() => setOverLimitDialogOpen(false))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+        <Modal.Heading>구슬 지급 확인</Modal.Heading>
+        <Modal.Body>
+          <p style={{ marginBottom: 16 }}>
             100개 이상의 구슬을 지급하려고 합니다. 사유를 입력해주세요.
-          </DialogContentText>
-          <TextField
-            fullWidth
-            label="지급 사유"
-            value={overLimitReason}
-            onChange={(e) => setOverLimitReason(e.target.value)}
-            multiline
-            rows={3}
-            autoFocus
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOverLimitDialogOpen(false)}>취소</Button>
-          <Button
-            onClick={handleOverLimitConfirm}
-            variant="contained"
-            color="primary"
-            disabled={!overLimitReason.trim()}
-          >
+          </p>
+          <TextField className="mb-4"><Label>{"지급 사유"}</Label><TextArea value={overLimitReason} onChange={(e) => setOverLimitReason(e.target.value)} rows={3} autoFocus></TextArea></TextField>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onPress={() => setOverLimitDialogOpen(false)} variant="tertiary">취소</Button>
+          <Button onPress={handleOverLimitConfirm} isDisabled={!overLimitReason.trim()} variant="primary">
             확인
           </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
+        </Modal.Footer>
+      </Modal.Dialog></Modal.Container></Modal.Backdrop>
+    </div>);
 };
-
 export default GemsManagement;

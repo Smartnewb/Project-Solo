@@ -1,12 +1,13 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import type { AiProfileValidationWarning } from '@/app/types/ai-profile-generator';
-import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
+import type { AiProfileValidationWarning } from "@/app/types/ai-profile-generator";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/ui/alert";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -14,12 +15,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
-import { Switch } from '@/shared/ui/switch';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Switch } from "@/shared/ui/switch";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   open: boolean;
@@ -28,24 +29,19 @@ interface Props {
   version: number;
 }
 
-const SEVERITY_LABEL: Record<'low' | 'medium' | 'high', string> = {
-  low: '낮음',
-  medium: '중간',
-  high: '높음',
+const SEVERITY_LABEL: Record<"low" | "medium" | "high", string> = {
+  low: "낮음",
+  medium: "중간",
+  high: "높음",
 };
 
-const SEVERITY_CLASS: Record<'low' | 'medium' | 'high', string> = {
-  low: 'text-slate-600',
-  medium: 'text-amber-600',
-  high: 'text-red-600',
+const SEVERITY_CLASS: Record<"low" | "medium" | "high", string> = {
+  low: "text-slate-600",
+  medium: "text-amber-600",
+  high: "text-red-600",
 };
 
-export function PublishDialog({
-  open,
-  onOpenChange,
-  draftId,
-  version,
-}: Props) {
+export function PublishDialog({ open, onOpenChange, draftId, version }: Props) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const handleError = useAiProfileErrorHandler(
@@ -80,7 +76,7 @@ export function PublishDialog({
         confirmStaleWarnings,
       }),
     onSuccess: () => {
-      toast.success('AI 컴패니언이 발행되었습니다.');
+      toast.success("AI 컴패니언이 발행되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -96,11 +92,9 @@ export function PublishDialog({
   const warnings = (dryRunQuery.data?.warnings ??
     []) as AiProfileValidationWarning[];
   const staleCount = warnings.filter(
-    (w) => typeof w.code === 'string' && w.code.toLowerCase().includes('stale'),
+    (w) => typeof w.code === "string" && w.code.toLowerCase().includes("stale"),
   ).length;
-  const hasHighWarnings = warnings.some(
-    (w) => w.severity === 'high',
-  );
+  const hasHighWarnings = warnings.some((w) => w.severity === "high");
   const publishDisabled =
     !canPublish ||
     publishMutation.isPending ||
@@ -151,14 +145,14 @@ export function PublishDialog({
                   </p>
                   <ul className="mt-2 space-y-1 text-xs">
                     {warnings.map((w, idx) => {
-                      const sev = (w.severity ?? 'low') as
-                        | 'low'
-                        | 'medium'
-                        | 'high';
+                      const sev = (w.severity ?? "low") as
+                        | "low"
+                        | "medium"
+                        | "high";
                       return (
                         <li key={idx} className={SEVERITY_CLASS[sev]}>
                           [{SEVERITY_LABEL[sev]}] {String(w.domain)}
-                          {w.path ? ` · ${w.path}` : ''} — {w.message}
+                          {w.path ? ` · ${w.path}` : ""} — {w.message}
                         </li>
                       );
                     })}
@@ -220,17 +214,20 @@ export function PublishDialog({
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={publishMutation.isPending}
+            isDisabled={publishMutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
           <Button
             onClick={() => publishMutation.mutate()}
-            disabled={publishDisabled}
+            isDisabled={publishDisabled}
+            variant={"primary"}
+            size={"md"}
           >
-            {publishMutation.isPending ? '발행 중…' : '발행'}
+            {publishMutation.isPending ? "발행 중…" : "발행"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,31 +1,34 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useEffect, useMemo, useState } from 'react';
+import { Button } from "@heroui/react";
+
+import { useEffect, useMemo, useState } from "react";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
-} from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+} from "@tanstack/react-query";
+import { Plus, Search } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import type {
   PromptVersion,
   PromptVersionListQuery,
-} from '@/app/types/ai-profile-generator';
-import { Alert, AlertDescription } from '@/shared/ui/alert';
-import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Badge } from '@/shared/ui/badge';
-import { Button } from '@/shared/ui/button';
-import { Input } from '@/shared/ui/input';
+} from "@/app/types/ai-profile-generator";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
+import { Badge } from "@/shared/ui/badge";
+
+import { Input } from "@/shared/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
+} from "@/shared/ui/select";
 import {
   Table,
   TableBody,
@@ -33,31 +36,31 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/shared/ui/table';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { formatDate } from '../_shared/format';
+} from "@/shared/ui/table";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { formatDate } from "../_shared/format";
 import {
   PROMPT_VERSION_STATUS_LABEL,
   PROMPT_VERSION_STATUS_VARIANT,
-} from '../_shared/status';
-import { GeneratorTabs } from '../_tabs';
-import { useAiProfileErrorHandler } from '../_shared-error';
-import { PromptVersionDetailDrawer } from './prompt-version-detail-drawer';
-import { PromptVersionFormDialog } from './prompt-version-form-dialog';
+} from "../_shared/status";
+import { GeneratorTabs } from "../_tabs";
+import { useAiProfileErrorHandler } from "../_shared-error";
+import { PromptVersionDetailDrawer } from "./prompt-version-detail-drawer";
+import { PromptVersionFormDialog } from "./prompt-version-form-dialog";
 
 const DEFAULT_LIMIT = 20;
 
-type ActiveFilter = 'all' | 'active' | 'archived';
+type ActiveFilter = "all" | "active" | "archived";
 
 const ACTIVE_OPTIONS: Array<{ value: ActiveFilter; label: string }> = [
-  { value: 'all', label: '전체 상태' },
-  { value: 'active', label: '활성' },
-  { value: 'archived', label: '아카이브' },
+  { value: "all", label: "전체 상태" },
+  { value: "active", label: "활성" },
+  { value: "archived", label: "아카이브" },
 ];
 
 function activeFilterToFlag(filter: ActiveFilter): boolean | undefined {
-  if (filter === 'active') return true;
-  if (filter === 'archived') return false;
+  if (filter === "active") return true;
+  if (filter === "archived") return false;
   return undefined;
 }
 
@@ -69,9 +72,9 @@ export function PromptVersionsClient() {
     aiProfileGeneratorKeys.promptVersions(),
   );
 
-  const [q, setQ] = useState('');
-  const [debouncedQ, setDebouncedQ] = useState('');
-  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
+  const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [cursor, setCursor] = useState<string | undefined>();
   const [accumulated, setAccumulated] = useState<PromptVersion[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -115,10 +118,9 @@ export function PromptVersionsClient() {
   }, [listQuery.data, cursor]);
 
   const setDefaultMutation = useMutation({
-    mutationFn: (id: string) =>
-      aiProfileGenerator.setDefaultPromptVersion(id),
+    mutationFn: (id: string) => aiProfileGenerator.setDefaultPromptVersion(id),
     onSuccess: () => {
-      toast.success('기본 프롬프트 버전으로 설정했습니다.');
+      toast.success("기본 프롬프트 버전으로 설정했습니다.");
       qc.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.promptVersions(),
       });
@@ -131,7 +133,7 @@ export function PromptVersionsClient() {
   const archiveMutation = useMutation({
     mutationFn: (id: string) => aiProfileGenerator.archivePromptVersion(id),
     onSuccess: () => {
-      toast.success('프롬프트 버전을 아카이브했습니다.');
+      toast.success("프롬프트 버전을 아카이브했습니다.");
       qc.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.promptVersions(),
       });
@@ -153,22 +155,22 @@ export function PromptVersionsClient() {
 
   const handleSetDefault = async (pv: PromptVersion) => {
     const ok = await confirm({
-      title: '기본 프롬프트 버전 설정',
+      title: "기본 프롬프트 버전 설정",
       message: `"${pv.name}" 을 기본 프롬프트 버전으로 설정하시겠습니까?`,
-      confirmText: '설정',
-      cancelText: '취소',
-      severity: 'warning',
+      confirmText: "설정",
+      cancelText: "취소",
+      severity: "warning",
     });
     if (ok) setDefaultMutation.mutate(pv.id);
   };
 
   const handleArchive = async (pv: PromptVersion) => {
     const ok = await confirm({
-      title: '프롬프트 버전 아카이브',
+      title: "프롬프트 버전 아카이브",
       message: `"${pv.name}" 을 아카이브하시겠습니까?`,
-      confirmText: '아카이브',
-      cancelText: '취소',
-      severity: 'warning',
+      confirmText: "아카이브",
+      cancelText: "취소",
+      severity: "warning",
     });
     if (ok) archiveMutation.mutate(pv.id);
   };
@@ -189,8 +191,8 @@ export function PromptVersionsClient() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={handleCreate}>
-            <Plus className="mr-1 h-4 w-4" /> 새 프롬프트 버전
+          <Button onClick={handleCreate} variant={"primary"} size={"md"}>
+            <Plus className="mr-1 h-4 w-4" />새 프롬프트 버전
           </Button>
         </div>
       </header>
@@ -210,6 +212,7 @@ export function PromptVersionsClient() {
             value={activeFilter}
             onValueChange={(value) => setActiveFilter(value as ActiveFilter)}
           >
+            <HeroSelectLabel className="sr-only">{"상태"}</HeroSelectLabel>
             <SelectTrigger>
               <SelectValue placeholder="상태" />
             </SelectTrigger>
@@ -287,34 +290,34 @@ export function PromptVersionsClient() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
-                        variant="outline"
-                        size="sm"
                         onClick={() => setDetailId(pv.id)}
+                        variant={"outline"}
+                        size={"sm"}
                       >
                         상세
                       </Button>
-                      {pv.status !== 'archived' ? (
+                      {pv.status !== "archived" ? (
                         <>
                           <Button
-                            variant="outline"
-                            size="sm"
                             onClick={() => handleEdit(pv)}
+                            variant={"outline"}
+                            size={"sm"}
                           >
                             편집
                           </Button>
                           {!pv.isDefault ? (
                             <Button
-                              variant="outline"
-                              size="sm"
                               onClick={() => handleSetDefault(pv)}
+                              variant={"outline"}
+                              size={"sm"}
                             >
                               기본 설정
                             </Button>
                           ) : null}
                           <Button
-                            variant="outline"
-                            size="sm"
                             onClick={() => handleArchive(pv)}
+                            variant={"outline"}
+                            size={"sm"}
                           >
                             아카이브
                           </Button>
@@ -333,12 +336,12 @@ export function PromptVersionsClient() {
         <span>표시 중 {accumulated.length}건</span>
         {nextCursor ? (
           <Button
-            variant="outline"
-            size="sm"
             onClick={() => setCursor(nextCursor)}
-            disabled={listQuery.isFetching}
+            isDisabled={listQuery.isFetching}
+            variant={"outline"}
+            size={"sm"}
           >
-            {listQuery.isFetching ? '불러오는 중…' : '더 보기'}
+            {listQuery.isFetching ? "불러오는 중…" : "더 보기"}
           </Button>
         ) : null}
       </div>

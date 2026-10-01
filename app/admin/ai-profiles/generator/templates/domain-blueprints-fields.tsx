@@ -1,18 +1,19 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
 import {
   DOMAIN_LABEL,
   FULL_DOMAINS,
   type AiProfileDomain,
   type DomainBlueprint,
-} from '@/app/types/ai-profile-generator';
-import { Button } from '@/shared/ui/button';
-import { Label } from '@/shared/ui/label';
-import { Textarea } from '@/shared/ui/textarea';
-import { AdvancedJsonPanel } from '../_shared/advanced-json-panel';
-import { Section } from '../_shared/collapsible-section';
-import { asStringArray, pickExtra } from '../_shared/policy-utils';
-import { StringListInput } from '../_shared/string-list-input';
+} from "@/app/types/ai-profile-generator";
+
+import { Label } from "@/shared/ui/label";
+import { Textarea } from "@/shared/ui/textarea";
+import { AdvancedJsonPanel } from "../_shared/advanced-json-panel";
+import { Section } from "../_shared/collapsible-section";
+import { asStringArray, pickExtra } from "../_shared/policy-utils";
+import { StringListInput } from "../_shared/string-list-input";
 
 interface Props {
   value: Record<string, unknown>;
@@ -23,14 +24,14 @@ interface Props {
 const KNOWN_DOMAIN_KEYS = FULL_DOMAINS as readonly string[];
 
 function asBlueprint(v: unknown): DomainBlueprint {
-  if (!v || typeof v !== 'object' || Array.isArray(v)) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) {
     return { required: [], optional: [] };
   }
   const record = v as Record<string, unknown>;
   return {
     required: asStringArray(record.required),
     optional: asStringArray(record.optional),
-    hint: typeof record.hint === 'string' ? record.hint : undefined,
+    hint: typeof record.hint === "string" ? record.hint : undefined,
   };
 }
 
@@ -38,11 +39,13 @@ function isEmptyBlueprint(bp: DomainBlueprint): boolean {
   return (
     bp.required.length === 0 &&
     bp.optional.length === 0 &&
-    (!bp.hint || bp.hint.trim() === '')
+    (!bp.hint || bp.hint.trim() === "")
   );
 }
 
-function pickKnown(value: Record<string, unknown>): Record<string, DomainBlueprint> {
+function pickKnown(
+  value: Record<string, unknown>,
+): Record<string, DomainBlueprint> {
   const out: Record<string, DomainBlueprint> = {};
   for (const key of Object.keys(value)) {
     if (KNOWN_DOMAIN_KEYS.includes(key)) {
@@ -64,7 +67,7 @@ export function DomainBlueprintsFields({ value, onChange, disabled }: Props) {
           required: bp.required,
           optional: bp.optional,
         };
-        if (bp.hint && bp.hint.trim() !== '') {
+        if (bp.hint && bp.hint.trim() !== "") {
           serialized.hint = bp.hint;
         }
         merged[domain] = serialized;
@@ -97,7 +100,7 @@ export function DomainBlueprintsFields({ value, onChange, disabled }: Props) {
           required: bp.required,
           optional: bp.optional,
         };
-        if (bp.hint && bp.hint.trim() !== '') {
+        if (bp.hint && bp.hint.trim() !== "") {
           serialized.hint = bp.hint;
         }
         merged[domain] = serialized;
@@ -120,9 +123,7 @@ export function DomainBlueprintsFields({ value, onChange, disabled }: Props) {
               <Label>필수 필드</Label>
               <StringListInput
                 value={bp.required}
-                onChange={(next) =>
-                  updateDomain(domain, { required: next })
-                }
+                onChange={(next) => updateDomain(domain, { required: next })}
                 placeholder="예: name"
                 disabled={disabled}
               />
@@ -131,9 +132,7 @@ export function DomainBlueprintsFields({ value, onChange, disabled }: Props) {
               <Label>선택 필드</Label>
               <StringListInput
                 value={bp.optional}
-                onChange={(next) =>
-                  updateDomain(domain, { optional: next })
-                }
+                onChange={(next) => updateDomain(domain, { optional: next })}
                 placeholder="예: hometown"
                 disabled={disabled}
               />
@@ -141,7 +140,7 @@ export function DomainBlueprintsFields({ value, onChange, disabled }: Props) {
             <div className="space-y-1.5">
               <Label>힌트</Label>
               <Textarea
-                value={bp.hint ?? ''}
+                value={bp.hint ?? ""}
                 onChange={(event) =>
                   updateDomain(domain, {
                     hint: event.target.value || undefined,
@@ -156,9 +155,9 @@ export function DomainBlueprintsFields({ value, onChange, disabled }: Props) {
               <div className="flex justify-end">
                 <Button
                   type="button"
-                  size="sm"
-                  variant="outline"
                   onClick={() => removeDomain(domain)}
+                  variant={"outline"}
+                  size={"sm"}
                 >
                   이 도메인 블루프린트 제거
                 </Button>

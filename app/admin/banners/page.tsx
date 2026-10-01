@@ -1,5 +1,4 @@
 import BannersPageV2 from './banners-v2';
-
 export default function BannersPage() {
-  return <BannersPageV2 />;
+    return <BannersPageV2></BannersPageV2>;
 }

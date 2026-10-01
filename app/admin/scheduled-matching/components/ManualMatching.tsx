@@ -1,776 +1,564 @@
 'use client';
-
+import { Button, Spinner, Chip, Modal, TextField, Label, Input, Select, ListBox, Checkbox } from '@heroui/react';
+import { RefreshCw as RefreshIcon, Search as SearchIcon, CircleCheck as CheckCircleIcon, CircleX as CancelIcon, Play as PlayArrowIcon, Eye as VisibilityIcon, TriangleAlert as WarningIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Alert,
-  CircularProgress,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Divider,
-  TablePagination,
-} from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SearchIcon from '@mui/icons-material/Search';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import WarningIcon from '@mui/icons-material/Warning';
-import { Button } from '@/shared/ui';
-
 import { scheduledMatchingService } from '../service';
 import { safeToLocaleString } from '@/app/utils/formatters';
-import type {
-  ManualMatchType,
-  MatchPriority,
-  MatchingStatus,
-  ManualMatching as ManualMatchingType,
-  ManualMatchingRequest,
-  ValidateMatchingResponse,
-  ManualMatchingListParams,
-} from '../types';
-
-const MATCH_TYPE_OPTIONS: { value: ManualMatchType; label: string }[] = [
-  { value: 'cs_support', label: 'CS 대응' },
-  { value: 'test', label: '테스트' },
-  { value: 'promotion', label: '프로모션' },
-  { value: 'recovery', label: '매칭 복구' },
-  { value: 'vip', label: 'VIP 특별 매칭' },
-  { value: 'other', label: '기타' },
+import type { ManualMatchType, MatchPriority, MatchingStatus, ManualMatching as ManualMatchingType, ManualMatchingRequest, ValidateMatchingResponse, ManualMatchingListParams, } from '../types';
+const MATCH_TYPE_OPTIONS: {
+    value: ManualMatchType;
+    label: string;
+}[] = [
+    { value: 'cs_support', label: 'CS 대응' },
+    { value: 'test', label: '테스트' },
+    { value: 'promotion', label: '프로모션' },
+    { value: 'recovery', label: '매칭 복구' },
+    { value: 'vip', label: 'VIP 특별 매칭' },
+    { value: 'other', label: '기타' },
 ];
-
-const PRIORITY_OPTIONS: { value: MatchPriority; label: string }[] = [
-  { value: 'low', label: '낮음' },
-  { value: 'normal', label: '보통' },
-  { value: 'high', label: '높음' },
-  { value: 'urgent', label: '긴급' },
+const PRIORITY_OPTIONS: {
+    value: MatchPriority;
+    label: string;
+}[] = [
+    { value: 'low', label: '낮음' },
+    { value: 'normal', label: '보통' },
+    { value: 'high', label: '높음' },
+    { value: 'urgent', label: '긴급' },
 ];
-
-const STATUS_OPTIONS: { value: MatchingStatus; label: string; color: 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' }[] = [
-  { value: 'scheduled', label: '예약됨', color: 'info' },
-  { value: 'processing', label: '처리 중', color: 'warning' },
-  { value: 'completed', label: '완료', color: 'success' },
-  { value: 'failed', label: '실패', color: 'error' },
-  { value: 'cancelled', label: '취소됨', color: 'default' },
+const STATUS_OPTIONS: {
+    value: MatchingStatus;
+    label: string;
+    color: 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info';
+}[] = [
+    { value: 'scheduled', label: '예약됨', color: 'info' },
+    { value: 'processing', label: '처리 중', color: 'warning' },
+    { value: 'completed', label: '완료', color: 'success' },
+    { value: 'failed', label: '실패', color: 'error' },
+    { value: 'cancelled', label: '취소됨', color: 'default' },
 ];
-
 const getStatusChip = (status: MatchingStatus) => {
-  const option = STATUS_OPTIONS.find((o) => o.value === status);
-  return (
-    <Chip
-      label={option?.label || status}
-      color={option?.color || 'default'}
-      size="small"
-    />
-  );
+    const option = STATUS_OPTIONS.find((o) => o.value === status);
+    return (<Chip size="sm">{option?.label || status}</Chip>);
 };
-
 const getMatchTypeLabel = (type: ManualMatchType) => {
-  return MATCH_TYPE_OPTIONS.find((o) => o.value === type)?.label || type;
+    return MATCH_TYPE_OPTIONS.find((o) => o.value === type)?.label || type;
 };
-
 const formatDateTime = (dateString: string) => {
-  return safeToLocaleString(dateString);
+    return safeToLocaleString(dateString);
 };
-
 export default function ManualMatching() {
-  // Form state
-  const [userId1, setUserId1] = useState('');
-  const [userId2, setUserId2] = useState('');
-  const [scheduledAt, setScheduledAt] = useState('');
-  const [matchType, setMatchType] = useState<ManualMatchType>('cs_support');
-  const [reason, setReason] = useState('');
-  const [priority, setPriority] = useState<MatchPriority>('normal');
-  const [notifyUsers, setNotifyUsers] = useState(true);
-  const [skipValidation, setSkipValidation] = useState(false);
-
-  // Validation state
-  const [validationResult, setValidationResult] = useState<ValidateMatchingResponse | null>(null);
-  const [validating, setValidating] = useState(false);
-
-  // List state
-  const [matchings, setMatchings] = useState<ManualMatchingType[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<MatchingStatus | ''>('');
-  const [typeFilter, setTypeFilter] = useState<ManualMatchType | ''>('');
-
-  // UI state
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [detailDialog, setDetailDialog] = useState<ManualMatchingType | null>(null);
-  const [cancelDialog, setCancelDialog] = useState<ManualMatchingType | null>(null);
-  const [executeDialog, setExecuteDialog] = useState<ManualMatchingType | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
-
-  // Fetch list
-  const fetchMatchings = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params: ManualMatchingListParams = {
-        page: page + 1,
-        limit: rowsPerPage,
-      };
-      if (statusFilter) params.status = statusFilter;
-      if (typeFilter) params.matchType = typeFilter;
-
-      const response = await scheduledMatchingService.getManualMatchingList(params);
-      setMatchings(response.data);
-      setTotal(response.pagination.total);
-    } catch {
-      setError('수동 매칭 목록을 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, rowsPerPage, statusFilter, typeFilter]);
-
-  useEffect(() => {
-    fetchMatchings();
-  }, [fetchMatchings]);
-
-  // Validate users
-  const handleValidate = async () => {
-    if (!userId1.trim() || !userId2.trim()) {
-      setError('두 유저의 ID를 모두 입력해주세요.');
-      return;
-    }
-
-    try {
-      setValidating(true);
-      setError(null);
-      setValidationResult(null);
-
-      const result = await scheduledMatchingService.validateManualMatching([
-        userId1.trim(),
-        userId2.trim(),
-      ]);
-      setValidationResult(result);
-
-      if (!result.isValid) {
-        setError(result.blockedReasons.join(', '));
-      }
-    } catch {
-      setError('유저 검증에 실패했습니다.');
-    } finally {
-      setValidating(false);
-    }
-  };
-
-  // Create manual matching
-  const handleCreate = async () => {
-    if (!userId1.trim() || !userId2.trim()) {
-      setError('두 유저의 ID를 모두 입력해주세요.');
-      return;
-    }
-    if (!scheduledAt) {
-      setError('매칭 예정 시간을 입력해주세요.');
-      return;
-    }
-    if (!reason.trim()) {
-      setError('매칭 사유를 입력해주세요.');
-      return;
-    }
-
-    try {
-      setCreating(true);
-      setError(null);
-      setSuccess(null);
-
-      const request: ManualMatchingRequest = {
-        userIds: [userId1.trim(), userId2.trim()],
-        scheduledAt: new Date(scheduledAt).toISOString(),
-        matchType,
-        reason: reason.trim(),
-        priority,
-        notifyUsers,
-        skipValidation,
-      };
-
-      await scheduledMatchingService.createManualMatching(request);
-      setSuccess('수동 매칭이 생성되었습니다.');
-
-      // Reset form
-      setUserId1('');
-      setUserId2('');
-      setScheduledAt('');
-      setReason('');
-      setValidationResult(null);
-
-      // Refresh list
-      fetchMatchings();
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '수동 매칭 생성에 실패했습니다.';
-      setError(errorMessage);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  // Cancel matching
-  const handleCancel = async () => {
-    if (!cancelDialog || !cancelReason.trim()) return;
-
-    try {
-      await scheduledMatchingService.cancelManualMatching(cancelDialog.id, cancelReason.trim());
-      setSuccess('매칭이 취소되었습니다.');
-      setCancelDialog(null);
-      setCancelReason('');
-      fetchMatchings();
-    } catch {
-      setError('매칭 취소에 실패했습니다.');
-    }
-  };
-
-  // Execute matching immediately
-  const handleExecute = async () => {
-    if (!executeDialog) return;
-
-    try {
-      await scheduledMatchingService.executeManualMatching(executeDialog.id);
-      setSuccess('매칭이 실행되었습니다.');
-      setExecuteDialog(null);
-      fetchMatchings();
-    } catch {
-      setError('매칭 실행에 실패했습니다.');
-    }
-  };
-
-  // Get default scheduled time (1 hour from now)
-  const getDefaultScheduledTime = () => {
-    const date = new Date();
-    date.setHours(date.getHours() + 1);
-    date.setMinutes(0);
-    date.setSeconds(0);
-    return date.toISOString().slice(0, 16);
-  };
-
-  return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    // Form state
+    const [userId1, setUserId1] = useState('');
+    const [userId2, setUserId2] = useState('');
+    const [scheduledAt, setScheduledAt] = useState('');
+    const [matchType, setMatchType] = useState<ManualMatchType>('cs_support');
+    const [reason, setReason] = useState('');
+    const [priority, setPriority] = useState<MatchPriority>('normal');
+    const [notifyUsers, setNotifyUsers] = useState(true);
+    const [skipValidation, setSkipValidation] = useState(false);
+    // Validation state
+    const [validationResult, setValidationResult] = useState<ValidateMatchingResponse | null>(null);
+    const [validating, setValidating] = useState(false);
+    // List state
+    const [matchings, setMatchings] = useState<ManualMatchingType[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [total, setTotal] = useState(0);
+    const [statusFilter, setStatusFilter] = useState<MatchingStatus | ''>('');
+    const [typeFilter, setTypeFilter] = useState<ManualMatchType | ''>('');
+    // UI state
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+    const [detailDialog, setDetailDialog] = useState<ManualMatchingType | null>(null);
+    const [cancelDialog, setCancelDialog] = useState<ManualMatchingType | null>(null);
+    const [executeDialog, setExecuteDialog] = useState<ManualMatchingType | null>(null);
+    const [cancelReason, setCancelReason] = useState('');
+    // Fetch list
+    const fetchMatchings = useCallback(async () => {
+        try {
+            setLoading(true);
+            const params: ManualMatchingListParams = {
+                page: page + 1,
+                limit: rowsPerPage,
+            };
+            if (statusFilter)
+                params.status = statusFilter;
+            if (typeFilter)
+                params.matchType = typeFilter;
+            const response = await scheduledMatchingService.getManualMatchingList(params);
+            setMatchings(response.data);
+            setTotal(response.pagination.total);
+        }
+        catch {
+            setError('수동 매칭 목록을 불러오는데 실패했습니다.');
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [page, rowsPerPage, statusFilter, typeFilter]);
+    useEffect(() => {
+        fetchMatchings();
+    }, [fetchMatchings]);
+    // Validate users
+    const handleValidate = async () => {
+        if (!userId1.trim() || !userId2.trim()) {
+            setError('두 유저의 ID를 모두 입력해주세요.');
+            return;
+        }
+        try {
+            setValidating(true);
+            setError(null);
+            setValidationResult(null);
+            const result = await scheduledMatchingService.validateManualMatching([
+                userId1.trim(),
+                userId2.trim(),
+            ]);
+            setValidationResult(result);
+            if (!result.isValid) {
+                setError(result.blockedReasons.join(', '));
+            }
+        }
+        catch {
+            setError('유저 검증에 실패했습니다.');
+        }
+        finally {
+            setValidating(false);
+        }
+    };
+    // Create manual matching
+    const handleCreate = async () => {
+        if (!userId1.trim() || !userId2.trim()) {
+            setError('두 유저의 ID를 모두 입력해주세요.');
+            return;
+        }
+        if (!scheduledAt) {
+            setError('매칭 예정 시간을 입력해주세요.');
+            return;
+        }
+        if (!reason.trim()) {
+            setError('매칭 사유를 입력해주세요.');
+            return;
+        }
+        try {
+            setCreating(true);
+            setError(null);
+            setSuccess(null);
+            const request: ManualMatchingRequest = {
+                userIds: [userId1.trim(), userId2.trim()],
+                scheduledAt: new Date(scheduledAt).toISOString(),
+                matchType,
+                reason: reason.trim(),
+                priority,
+                notifyUsers,
+                skipValidation,
+            };
+            await scheduledMatchingService.createManualMatching(request);
+            setSuccess('수동 매칭이 생성되었습니다.');
+            // Reset form
+            setUserId1('');
+            setUserId2('');
+            setScheduledAt('');
+            setReason('');
+            setValidationResult(null);
+            // Refresh list
+            fetchMatchings();
+        }
+        catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : '수동 매칭 생성에 실패했습니다.';
+            setError(errorMessage);
+        }
+        finally {
+            setCreating(false);
+        }
+    };
+    // Cancel matching
+    const handleCancel = async () => {
+        if (!cancelDialog || !cancelReason.trim())
+            return;
+        try {
+            await scheduledMatchingService.cancelManualMatching(cancelDialog.id, cancelReason.trim());
+            setSuccess('매칭이 취소되었습니다.');
+            setCancelDialog(null);
+            setCancelReason('');
+            fetchMatchings();
+        }
+        catch {
+            setError('매칭 취소에 실패했습니다.');
+        }
+    };
+    // Execute matching immediately
+    const handleExecute = async () => {
+        if (!executeDialog)
+            return;
+        try {
+            await scheduledMatchingService.executeManualMatching(executeDialog.id);
+            setSuccess('매칭이 실행되었습니다.');
+            setExecuteDialog(null);
+            fetchMatchings();
+        }
+        catch {
+            setError('매칭 실행에 실패했습니다.');
+        }
+    };
+    // Get default scheduled time (1 hour from now)
+    const getDefaultScheduledTime = () => {
+        const date = new Date();
+        date.setHours(date.getHours() + 1);
+        date.setMinutes(0);
+        date.setSeconds(0);
+        return date.toISOString().slice(0, 16);
+    };
+    return (<div>
+      <h2 className="text-lg font-semibold">
         수동 매칭
-      </Typography>
+      </h2>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+      {error && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
           {error}
-        </Alert>
-      )}
+        </aside>)}
 
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
+      {success && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
           {success}
-        </Alert>
-      )}
+        </aside>)}
 
       {/* Create Form */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+      <section style={{ padding: 24, marginBottom: 24 }} className="rounded-xl border bg-white p-4">
+        <p>
           새 수동 매칭 생성
-        </Typography>
+        </p>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <TextField
-            label="유저 1 ID"
-            value={userId1}
-            onChange={(e) => setUserId1(e.target.value)}
-            size="small"
-            sx={{ flex: 1 }}
-            placeholder="UUID 입력"
-          />
-          <TextField
-            label="유저 2 ID"
-            value={userId2}
-            onChange={(e) => setUserId2(e.target.value)}
-            size="small"
-            sx={{ flex: 1 }}
-            placeholder="UUID 입력"
-          />
-          <Button
-            variant="outline"
-            onClick={handleValidate}
-            disabled={validating || !userId1.trim() || !userId2.trim()}
-          >
-            {validating ? <CircularProgress size={16} /> : <SearchIcon sx={{ fontSize: 16, mr: 0.5 }} />}
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <TextField className="mb-4"><Label>{"유저 1 ID"}</Label><Input value={userId1} onChange={(e) => setUserId1(e.target.value)} placeholder="UUID 입력"></Input></TextField>
+          <TextField className="mb-4"><Label>{"유저 2 ID"}</Label><Input value={userId2} onChange={(e) => setUserId2(e.target.value)} placeholder="UUID 입력"></Input></TextField>
+          <Button onPress={handleValidate} isDisabled={validating || !userId1.trim() || !userId2.trim()} variant="tertiary">
+            {validating ? <Spinner size="sm"></Spinner> : <SearchIcon style={{ fontSize: 16, marginRight: 4 }}></SearchIcon>}
             검증
           </Button>
-        </Box>
+        </div>
 
-        {validationResult && (
-          <Alert
-            severity={validationResult.isValid ? 'success' : 'error'}
-            sx={{ mb: 2 }}
-            icon={validationResult.isValid ? <CheckCircleIcon /> : <CancelIcon />}
-          >
-            <Box>
-              <Typography variant="body2" fontWeight="medium">
+        {validationResult && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
+            <div>
+              <p>
                 {validationResult.isValid ? '매칭 가능' : '매칭 불가'}
-              </Typography>
-              {validationResult.users.map((u) => (
-                <Box key={u.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                  <Typography variant="caption">
+              </p>
+              {validationResult.users.map((u) => (<div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <p>
                     {u.name} ({u.matchingStatus})
-                  </Typography>
-                  {u.warnings.map((w, i) => (
-                    <Chip key={i} label={w} size="small" color="warning" sx={{ height: 20 }} />
-                  ))}
-                </Box>
-              ))}
-              {validationResult.blockedReasons.length > 0 && (
-                <Typography variant="caption" color="error">
+                  </p>
+                  {u.warnings.map((w, i) => (<Chip key={`${u.id}-${i}`} size="sm">{w}</Chip>))}
+                </div>))}
+              {validationResult.blockedReasons.length > 0 && (<p>
                   {validationResult.blockedReasons.join(', ')}
-                </Typography>
-              )}
-            </Box>
-          </Alert>
-        )}
+                </p>)}
+            </div>
+          </aside>)}
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <TextField
-            type="datetime-local"
-            label="매칭 예정 시간"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
-            size="small"
-            sx={{ width: 250 }}
-            InputLabelProps={{ shrink: true }}
-            inputProps={{ min: getDefaultScheduledTime() }}
-          />
-          <FormControl size="small" sx={{ width: 150 }}>
-            <InputLabel>매칭 유형</InputLabel>
-            <Select
-              value={matchType}
-              label="매칭 유형"
-              onChange={(e) => setMatchType(e.target.value as ManualMatchType)}
-            >
-              {MATCH_TYPE_OPTIONS.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <TextField className="mb-4"><Label>{"매칭 예정 시간"}</Label><Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} {...{ min: getDefaultScheduledTime() }}></Input></TextField>
+          <div style={{ width: 150 }}>
+            <label>매칭 유형</label>
+            <Select value={matchType} aria-label={"매칭 유형"} onChange={(key) => {
+            const value = String(key ?? "");
+            setMatchType(value as ManualMatchType);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+              {MATCH_TYPE_OPTIONS.map((opt) => (<ListBox.Item key={opt.value} id={opt.value} textValue={String(opt.label)}>
                   {opt.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ width: 120 }}>
-            <InputLabel>우선순위</InputLabel>
-            <Select
-              value={priority}
-              label="우선순위"
-              onChange={(e) => setPriority(e.target.value as MatchPriority)}
-            >
-              {PRIORITY_OPTIONS.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
+                </ListBox.Item>))}
+            </ListBox></Select.Popover></Select>
+          </div>
+          <div style={{ width: 120 }}>
+            <label>우선순위</label>
+            <Select value={priority} aria-label={"우선순위"} onChange={(key) => {
+            const value = String(key ?? "");
+            setPriority(value as MatchPriority);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+              {PRIORITY_OPTIONS.map((opt) => (<ListBox.Item key={opt.value} id={opt.value} textValue={String(opt.label)}>
                   {opt.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
+                </ListBox.Item>))}
+            </ListBox></Select.Popover></Select>
+          </div>
+        </div>
 
-        <TextField
-          fullWidth
-          label="매칭 사유"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          size="small"
-          sx={{ mb: 2 }}
-          placeholder="예: CS 티켓 #12345 - 매칭 누락 보상"
-          required
-        />
+        <TextField isRequired={true} className="mb-4"><Label>{"매칭 사유"}</Label><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="예: CS 티켓 #12345 - 매칭 누락 보상" required></Input></TextField>
 
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={notifyUsers}
-                onChange={(e) => setNotifyUsers(e.target.checked)}
-              />
-            }
-            label="유저에게 알림 발송"
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={skipValidation}
-                onChange={(e) => setSkipValidation(e.target.checked)}
-              />
-            }
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <Checkbox isSelected={notifyUsers} onChange={checked => setNotifyUsers(checked)} className="inline-flex items-center gap-2 mr-4"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control>{"유저에게 알림 발송"}</Checkbox.Content></Checkbox>
+          <Checkbox isSelected={skipValidation} onChange={checked => setSkipValidation(checked)} className="inline-flex items-center gap-2 mr-4"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control>{<div>
                 유효성 검사 스킵
-                <Tooltip title="주의: 매칭 빈도, 선호도, 대학 제한 등의 검사를 건너뜁니다">
-                  <WarningIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-                </Tooltip>
-              </Box>
-            }
-          />
-        </Box>
+                <span title="주의: 매칭 빈도, 선호도, 대학 제한 등의 검사를 건너뜁니다">
+                  <WarningIcon></WarningIcon>
+                </span>
+              </div>}</Checkbox.Content></Checkbox>
+        </div>
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Button onClick={handleCreate} disabled={creating}>
-            {creating ? <CircularProgress size={16} sx={{ mr: 1 }} /> : null}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button onPress={handleCreate} isDisabled={creating} variant="tertiary">
+            {creating ? <Spinner size="sm" style={{ marginRight: 8 }}></Spinner> : null}
             매칭 생성
           </Button>
-        </Box>
-      </Paper>
+        </div>
+      </section>
 
       {/* List */}
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle1" fontWeight="medium">
+      <section style={{ padding: 24 }} className="rounded-xl border bg-white p-4">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <p>
             수동 매칭 목록
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <FormControl size="small" sx={{ width: 120 }}>
-              <InputLabel>상태</InputLabel>
-              <Select
-                value={statusFilter}
-                label="상태"
-                onChange={(e) => {
-                  setStatusFilter(e.target.value as MatchingStatus | '');
-                  setPage(0);
-                }}
-              >
-                <MenuItem value="">전체</MenuItem>
-                {STATUS_OPTIONS.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ width: 120 }}>
-              <InputLabel>유형</InputLabel>
-              <Select
-                value={typeFilter}
-                label="유형"
-                onChange={(e) => {
-                  setTypeFilter(e.target.value as ManualMatchType | '');
-                  setPage(0);
-                }}
-              >
-                <MenuItem value="">전체</MenuItem>
-                {MATCH_TYPE_OPTIONS.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Tooltip title="새로고침">
-              <IconButton onClick={fetchMatchings} size="small" aria-label="수동 매칭 목록 새로고침">
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>상태</TableCell>
-                <TableCell>유형</TableCell>
-                <TableCell>유저</TableCell>
-                <TableCell>예정 시간</TableCell>
-                <TableCell>사유</TableCell>
-                <TableCell>생성자</TableCell>
-                <TableCell>생성일</TableCell>
-                <TableCell align="right">액션</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                    <CircularProgress size={24} />
-                  </TableCell>
-                </TableRow>
-              ) : matchings.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                    <Typography variant="subtitle2" fontWeight={700}>
-                      조건에 맞는 수동 매칭이 없습니다.
-                    </Typography>
-                    <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                      국가나 유형 필터를 변경해 다시 확인하세요.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                matchings.map((matching) => (
-                  <TableRow key={matching.id} hover>
-                    <TableCell>{getStatusChip(matching.status)}</TableCell>
-                    <TableCell>{getMatchTypeLabel(matching.matchType)}</TableCell>
-                    <TableCell>
-                      {matching.users.map((u) => (
-                        <Chip
-                          key={u.id}
-                          label={`${u.name} (${u.gender === 'MALE' ? '남' : '여'})`}
-                          size="small"
-                          sx={{ mr: 0.5 }}
-                        />
-                      ))}
-                    </TableCell>
-                    <TableCell>{formatDateTime(matching.scheduledAt)}</TableCell>
-                    <TableCell>
-                      <Tooltip title={matching.reason}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            maxWidth: 150,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {matching.reason}
-                        </Typography>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>{matching.createdBy.name}</TableCell>
-                    <TableCell>{formatDateTime(matching.createdAt)}</TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="상세보기">
-                        <IconButton
-                          size="small"
-                          onClick={() => setDetailDialog(matching)}
-                          aria-label="수동 매칭 상세 보기"
-                        >
-                          <VisibilityIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Tooltip>
-                      {matching.status === 'scheduled' && (
-                        <>
-                          <Tooltip title="즉시 실행">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => setExecuteDialog(matching)}
-                              aria-label="수동 매칭 즉시 실행"
-                            >
-                              <PlayArrowIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="취소">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => setCancelDialog(matching)}
-                              aria-label="수동 매칭 취소"
-                            >
-                              <CancelIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <TablePagination
-          component="div"
-          count={total}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
+          </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ width: 120 }}>
+              <label>상태</label>
+              <Select value={statusFilter} aria-label={"상태"} onChange={(key) => {
+            const value = String(key ?? "");
+            setStatusFilter(value as MatchingStatus | '');
             setPage(0);
-          }}
-          rowsPerPageOptions={[10, 20, 50]}
-          labelRowsPerPage="페이지당 행:"
-        />
-      </Paper>
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+                <ListBox.Item id={""} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
+                {STATUS_OPTIONS.map((opt) => (<ListBox.Item key={opt.value} id={opt.value} textValue={String(opt.label)}>
+                    {opt.label}
+                  </ListBox.Item>))}
+              </ListBox></Select.Popover></Select>
+            </div>
+            <div style={{ width: 120 }}>
+              <label>유형</label>
+              <Select value={typeFilter} aria-label={"유형"} onChange={(key) => {
+            const value = String(key ?? "");
+            setTypeFilter(value as ManualMatchType | '');
+            setPage(0);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+                <ListBox.Item id={""} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
+                {MATCH_TYPE_OPTIONS.map((opt) => (<ListBox.Item key={opt.value} id={opt.value} textValue={String(opt.label)}>
+                    {opt.label}
+                  </ListBox.Item>))}
+              </ListBox></Select.Popover></Select>
+            </div>
+            <span title={"새로고침"}>
+              <Button onPress={fetchMatchings} aria-label="수동 매칭 목록 새로고침" variant="tertiary" isIconOnly={true}>
+                <RefreshIcon></RefreshIcon>
+              </Button>
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-left">
+              <tr className="border-b">
+                <th scope="col" className="border-b px-4 py-3">상태</th>
+                <th scope="col" className="border-b px-4 py-3">유형</th>
+                <th scope="col" className="border-b px-4 py-3">유저</th>
+                <th scope="col" className="border-b px-4 py-3">예정 시간</th>
+                <th scope="col" className="border-b px-4 py-3">사유</th>
+                <th scope="col" className="border-b px-4 py-3">생성자</th>
+                <th scope="col" className="border-b px-4 py-3">생성일</th>
+                <th scope="col" className="border-b px-4 py-3">액션</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (<tr className="border-b">
+                  <td colSpan={8} style={{ paddingBlock: 32 }} className="border-b px-4 py-3">
+                    <Spinner size="sm"></Spinner>
+                  </td>
+                </tr>) : matchings.length === 0 ? (<tr className="border-b">
+                  <td colSpan={8} style={{ paddingBlock: 32 }} className="border-b px-4 py-3">
+                    <p>
+                      조건에 맞는 수동 매칭이 없습니다.
+                    </p>
+                    <p style={{ marginTop: 4 }}>
+                      국가나 유형 필터를 변경해 다시 확인하세요.
+                    </p>
+                  </td>
+                </tr>) : (matchings.map((matching) => (<tr key={matching.id} className="border-b">
+                    <td className="border-b px-4 py-3">{getStatusChip(matching.status)}</td>
+                    <td className="border-b px-4 py-3">{getMatchTypeLabel(matching.matchType)}</td>
+                    <td className="border-b px-4 py-3">
+                      {matching.users.map((u) => (<Chip key={u.id} size="sm">{`${u.name} (${u.gender === 'MALE' ? '남' : '여'})`}</Chip>))}
+                    </td>
+                    <td className="border-b px-4 py-3">{formatDateTime(matching.scheduledAt)}</td>
+                    <td className="border-b px-4 py-3">
+                      <span title={matching.reason}>
+                        <p style={{ maxWidth: 150, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {matching.reason}
+                        </p>
+                      </span>
+                    </td>
+                    <td className="border-b px-4 py-3">{matching.createdBy.name}</td>
+                    <td className="border-b px-4 py-3">{formatDateTime(matching.createdAt)}</td>
+                    <td className="border-b px-4 py-3">
+                      <span title={"상세보기"}>
+                        <Button onPress={() => setDetailDialog(matching)} aria-label="수동 매칭 상세 보기" variant="tertiary" isIconOnly={true}>
+                          <VisibilityIcon style={{ fontSize: 18 }}></VisibilityIcon>
+                        </Button>
+                      </span>
+                      {matching.status === 'scheduled' && (<>
+                          <span title={"즉시 실행"}>
+                            <Button onPress={() => setExecuteDialog(matching)} aria-label="수동 매칭 즉시 실행" variant="tertiary" isIconOnly={true}>
+                              <PlayArrowIcon style={{ fontSize: 18 }}></PlayArrowIcon>
+                            </Button>
+                          </span>
+                          <span title={"취소"}>
+                            <Button onPress={() => setCancelDialog(matching)} aria-label="수동 매칭 취소" variant="tertiary" isIconOnly={true}>
+                              <CancelIcon style={{ fontSize: 18 }}></CancelIcon>
+                            </Button>
+                          </span>
+                        </>)}
+                    </td>
+                  </tr>)))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t p-4"><div><Select aria-label="페이지당 행 수" value={rowsPerPage} onChange={(key) => {
+            const value = String(key ?? "");
+            setRowsPerPage(parseInt(value, 10));
+            setPage(0);
+        }} className="min-w-[120px]"><Label>페이지당 행 수</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox><ListBox.Item id={10} textValue={"10"}>10</ListBox.Item><ListBox.Item id={20} textValue={"20"}>20</ListBox.Item><ListBox.Item id={50} textValue={"50"}>50</ListBox.Item></ListBox></Select.Popover></Select></div><Button variant="secondary" isDisabled={page <= 0} onPress={() => ((_, newPage) => setPage(newPage))(null, page - 1)}>이전</Button><span>{page + 1} 페이지 / {total}개</span><Button variant="secondary" isDisabled={(page + 1) * rowsPerPage >= total} onPress={() => ((_, newPage) => setPage(newPage))(null, page + 1)}>다음</Button></div>
+      </section>
 
       {/* Detail Dialog */}
-      <Dialog open={!!detailDialog} onClose={() => setDetailDialog(null)} maxWidth="sm" fullWidth>
-        {detailDialog && (
-          <>
-            <DialogTitle>수동 매칭 상세</DialogTitle>
-            <DialogContent dividers>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
+      <Modal.Backdrop isOpen={!!detailDialog} onOpenChange={next => {
+            if (!next)
+                (() => setDetailDialog(null))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+        {detailDialog && (<>
+            <Modal.Heading>수동 매칭 상세</Modal.Heading>
+            <Modal.Body>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <p>
                     ID
-                  </Typography>
-                  <Typography variant="body2">{detailDialog.id}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
+                  </p>
+                  <p>{detailDialog.id}</p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <p>
                     상태
-                  </Typography>
+                  </p>
                   {getStatusChip(detailDialog.status)}
-                </Box>
-                <Divider />
-                <Typography variant="subtitle2">매칭 유저</Typography>
-                {detailDialog.users.map((u) => (
-                  <Box key={u.id} sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <Chip
-                      label={u.gender === 'MALE' ? '남' : '여'}
-                      size="small"
-                      color={u.gender === 'MALE' ? 'info' : 'secondary'}
-                    />
-                    <Box>
-                      <Typography variant="body2">{u.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                </div>
+                <hr></hr>
+                <p>매칭 유저</p>
+                {detailDialog.users.map((u) => (<div key={u.id} style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <Chip size="sm">{u.gender === 'MALE' ? '남' : '여'}</Chip>
+                    <div>
+                      <p>{u.name}</p>
+                      <p>
                         {u.university}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-                <Divider />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
+                      </p>
+                    </div>
+                  </div>))}
+                <hr></hr>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <p>
                     유형
-                  </Typography>
-                  <Typography variant="body2">{getMatchTypeLabel(detailDialog.matchType)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
+                  </p>
+                  <p>{getMatchTypeLabel(detailDialog.matchType)}</p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <p>
                     사유
-                  </Typography>
-                  <Typography variant="body2">{detailDialog.reason}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
+                  </p>
+                  <p>{detailDialog.reason}</p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <p>
                     예정 시간
-                  </Typography>
-                  <Typography variant="body2">{formatDateTime(detailDialog.scheduledAt)}</Typography>
-                </Box>
-                {detailDialog.executedAt && (
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">
+                  </p>
+                  <p>{formatDateTime(detailDialog.scheduledAt)}</p>
+                </div>
+                {detailDialog.executedAt && (<div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <p>
                       실행 시간
-                    </Typography>
-                    <Typography variant="body2">{formatDateTime(detailDialog.executedAt)}</Typography>
-                  </Box>
-                )}
-                <Divider />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2" color="text.secondary">
+                    </p>
+                    <p>{formatDateTime(detailDialog.executedAt)}</p>
+                  </div>)}
+                <hr></hr>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <p>
                     생성자
-                  </Typography>
-                  <Typography variant="body2">
+                  </p>
+                  <p>
                     {detailDialog.createdBy.name} ({detailDialog.createdBy.email})
-                  </Typography>
-                </Box>
-                {detailDialog.cancelledAt && (
-                  <>
-                    <Divider />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">
+                  </p>
+                </div>
+                {detailDialog.cancelledAt && (<>
+                    <hr></hr>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <p>
                         취소 시간
-                      </Typography>
-                      <Typography variant="body2">{formatDateTime(detailDialog.cancelledAt)}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">
+                      </p>
+                      <p>{formatDateTime(detailDialog.cancelledAt)}</p>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <p>
                         취소 사유
-                      </Typography>
-                      <Typography variant="body2">{detailDialog.cancelReason}</Typography>
-                    </Box>
-                  </>
-                )}
-                {detailDialog.logs && detailDialog.logs.length > 0 && (
-                  <>
-                    <Divider />
-                    <Typography variant="subtitle2">로그</Typography>
-                    {detailDialog.logs.map((log, i) => (
-                      <Box key={i} sx={{ pl: 1, borderLeft: 2, borderColor: 'grey.300' }}>
-                        <Typography variant="caption" color="text.secondary">
+                      </p>
+                      <p>{detailDialog.cancelReason}</p>
+                    </div>
+                  </>)}
+                {detailDialog.logs && detailDialog.logs.length > 0 && (<>
+                    <hr></hr>
+                    <p>로그</p>
+                    {detailDialog.logs.map((log, i) => (<div key={i} style={{ paddingLeft: 8 }}>
+                        <p>
                           {formatDateTime(log.timestamp)} - {log.actor}
-                        </Typography>
-                        <Typography variant="body2">{log.details}</Typography>
-                      </Box>
-                    ))}
-                  </>
-                )}
-              </Box>
-            </DialogContent>
-            <DialogActions>
-              <Button variant="outline" onClick={() => setDetailDialog(null)}>
+                        </p>
+                        <p>{log.details}</p>
+                      </div>))}
+                  </>)}
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button onPress={() => setDetailDialog(null)} variant="tertiary">
                 닫기
               </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+            </Modal.Footer>
+          </>)}
+      </Modal.Dialog></Modal.Container></Modal.Backdrop>
 
       {/* Execute Dialog */}
-      <Dialog open={!!executeDialog} onClose={() => setExecuteDialog(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>수동 매칭 즉시 실행</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
+      <Modal.Backdrop isOpen={!!executeDialog} onOpenChange={next => {
+            if (!next)
+                (() => setExecuteDialog(null))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+        <Modal.Heading>수동 매칭 즉시 실행</Modal.Heading>
+        <Modal.Body>
+          <p>
             예약된 수동 매칭을 지금 실행합니다. 실행 후에는 매칭 상태가 변경됩니다.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button variant="outline" onClick={() => setExecuteDialog(null)}>
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onPress={() => setExecuteDialog(null)} variant="tertiary">
             닫기
           </Button>
-          <Button onClick={handleExecute}>
+          <Button onPress={handleExecute} variant="tertiary">
             즉시 실행
           </Button>
-        </DialogActions>
-      </Dialog>
+        </Modal.Footer>
+      </Modal.Dialog></Modal.Container></Modal.Backdrop>
 
       {/* Cancel Dialog */}
-      <Dialog open={!!cancelDialog} onClose={() => setCancelDialog(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>매칭 취소</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Modal.Backdrop isOpen={!!cancelDialog} onOpenChange={next => {
+            if (!next)
+                (() => setCancelDialog(null))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+        <Modal.Heading>매칭 취소</Modal.Heading>
+        <Modal.Body>
+          <p style={{ marginBottom: 16 }}>
             이 매칭을 취소하시겠습니까?
-          </Typography>
-          <TextField
-            fullWidth
-            label="취소 사유"
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-            size="small"
-            required
-            placeholder="취소 사유를 입력하세요"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button variant="outline" onClick={() => setCancelDialog(null)}>
+          </p>
+          <TextField isRequired={true} className="mb-4"><Label>{"취소 사유"}</Label><Input value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} required placeholder="취소 사유를 입력하세요"></Input></TextField>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onPress={() => setCancelDialog(null)} variant="tertiary">
             닫기
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleCancel}
-            disabled={!cancelReason.trim()}
-          >
+          <Button onPress={handleCancel} isDisabled={!cancelReason.trim()} variant="tertiary">
             취소 확인
           </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
+        </Modal.Footer>
+      </Modal.Dialog></Modal.Container></Modal.Backdrop>
+    </div>);
 }

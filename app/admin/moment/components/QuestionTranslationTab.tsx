@@ -1,55 +1,39 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
+"use client";
+import { Button, Card, Checkbox, Chip, Spinner } from "@heroui/react";
 import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Checkbox,
-  CircularProgress,
-  Alert,
-  Pagination,
-  Stepper,
-  Step,
-  StepLabel,
-  Card,
-  CardContent,
-  Divider,
-} from '@mui/material';
-import TranslateIcon from '@mui/icons-material/Translate';
-import PreviewIcon from '@mui/icons-material/Preview';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import AdminService from '@/app/services/admin';
+  Languages as TranslateIcon,
+  Eye as PreviewIcon,
+  CircleCheck as CheckCircleIcon,
+} from "lucide-react";
+
+import { useState, useEffect, useCallback } from "react";
+
+import AdminService from "@/app/services/admin";
 import type {
   Big5Dimension,
   QuestionListItem,
   TranslationPreviewItem,
   TranslatePreviewResponse,
   TranslateExecuteResponse,
-} from '@/types/moment';
-import { isTranslatePreviewResponse, isTranslateExecuteResponse } from '@/types/moment';
-import { safeToLocaleDateString } from '@/app/utils/formatters';
+} from "@/types/moment";
+import {
+  isTranslatePreviewResponse,
+  isTranslateExecuteResponse,
+} from "@/types/moment";
+import { safeToLocaleDateString } from "@/app/utils/formatters";
 
 const DIMENSION_LABELS: Record<Big5Dimension, string> = {
-  openness: '개방성',
-  conscientiousness: '성실성',
-  extraversion: '외향성',
-  agreeableness: '우호성',
-  neuroticism: '신경성',
+  openness: "개방성",
+  conscientiousness: "성실성",
+  extraversion: "외향성",
+  agreeableness: "우호성",
+  neuroticism: "신경성",
 };
 
-type TranslationStep = 'select' | 'preview' | 'result';
+type TranslationStep = "select" | "preview" | "result";
 
 export default function QuestionTranslationTab() {
-  const [step, setStep] = useState<TranslationStep>('select');
+  const [step, setStep] = useState<TranslationStep>("select");
   const [questions, setQuestions] = useState<QuestionListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +42,11 @@ export default function QuestionTranslationTab() {
   const [totalCount, setTotalCount] = useState(0);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [previewData, setPreviewData] = useState<TranslatePreviewResponse | null>(null);
-  const [resultData, setResultData] = useState<TranslateExecuteResponse | null>(null);
+  const [previewData, setPreviewData] =
+    useState<TranslatePreviewResponse | null>(null);
+  const [resultData, setResultData] = useState<TranslateExecuteResponse | null>(
+    null,
+  );
   const [processing, setProcessing] = useState(false);
 
   const fetchUntranslatedQuestions = useCallback(async () => {
@@ -68,7 +55,7 @@ export default function QuestionTranslationTab() {
 
     try {
       const response = await AdminService.momentQuestions.getList({
-        translationStatus: 'kr_only',
+        translationStatus: "kr_only",
         page,
         limit: 15,
         isActive: true,
@@ -78,14 +65,18 @@ export default function QuestionTranslationTab() {
       setTotalPages(response.pagination?.totalPages ?? 1);
       setTotalCount(response.pagination?.total ?? 0);
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || '질문 목록 조회에 실패했습니다.');
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "질문 목록 조회에 실패했습니다.",
+      );
     } finally {
       setLoading(false);
     }
   }, [page]);
 
   useEffect(() => {
-    if (step === 'select') {
+    if (step === "select") {
       fetchUntranslatedQuestions();
     }
   }, [fetchUntranslatedQuestions, step]);
@@ -104,13 +95,13 @@ export default function QuestionTranslationTab() {
     if (selectedIds.size === questions.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(questions.map(q => q.id)));
+      setSelectedIds(new Set(questions.map((q) => q.id)));
     }
   };
 
   const handlePreview = async () => {
     if (selectedIds.size === 0) {
-      setError('번역할 질문을 선택해주세요.');
+      setError("번역할 질문을 선택해주세요.");
       return;
     }
 
@@ -120,16 +111,16 @@ export default function QuestionTranslationTab() {
     try {
       const response = await AdminService.momentQuestions.translate({
         questionIds: Array.from(selectedIds),
-        targetSchema: 'jp',
+        targetSchema: "jp",
         preview: true,
       });
 
       if (isTranslatePreviewResponse(response)) {
         setPreviewData(response);
-        setStep('preview');
+        setStep("preview");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || '미리보기 실패');
+      setError(err.response?.data?.message || err.message || "미리보기 실패");
     } finally {
       setProcessing(false);
     }
@@ -142,23 +133,23 @@ export default function QuestionTranslationTab() {
     try {
       const response = await AdminService.momentQuestions.translate({
         questionIds: Array.from(selectedIds),
-        targetSchema: 'jp',
+        targetSchema: "jp",
         preview: false,
       });
 
       if (isTranslateExecuteResponse(response)) {
         setResultData(response);
-        setStep('result');
+        setStep("result");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || '번역 실행 실패');
+      setError(err.response?.data?.message || err.message || "번역 실행 실패");
     } finally {
       setProcessing(false);
     }
   };
 
   const handleReset = () => {
-    setStep('select');
+    setStep("select");
     setSelectedIds(new Set());
     setPreviewData(null);
     setResultData(null);
@@ -171,212 +162,333 @@ export default function QuestionTranslationTab() {
   };
 
   return (
-    <Box>
-      <Stepper activeStep={step === 'select' ? 0 : step === 'preview' ? 1 : 2} sx={{ mb: 4 }}>
-        <Step>
-          <StepLabel>질문 선택</StepLabel>
-        </Step>
-        <Step>
-          <StepLabel>번역 미리보기</StepLabel>
-        </Step>
-        <Step>
-          <StepLabel>완료</StepLabel>
-        </Step>
-      </Stepper>
-
+    <div>
+      <ol aria-label="번역 진행" className="flex gap-4 mb-6">
+        {(["select", "preview", "complete"] as const).map((stage, index) => (
+          <li
+            key={stage}
+            aria-current={step === stage ? "step" : undefined}
+            className={step === stage ? "font-semibold" : "text-muted"}
+          >
+            {index + 1}. {["질문 선택", "번역 미리보기", "완료"][index]}
+          </li>
+        ))}
+      </ol>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <div
+          role="alert"
+          className="rounded-lg border border-default p-3 text-sm"
+          style={{ marginBottom: 16 }}
+        >
           {error}
-        </Alert>
+          <Button
+            variant="secondary"
+            aria-label="알림 닫기"
+            onClick={() => setError(null)}
+          >
+            닫기
+          </Button>
+        </div>
       )}
-
-      {step === 'select' && (
+      {step === "select" && (
         <>
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body1">
+          <div style={{ padding: 16, marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <p>
                 번역되지 않은 질문: <strong>{totalCount}개</strong>
-              </Typography>
+              </p>
               <Button
-                variant="contained"
                 onClick={handlePreview}
-                disabled={selectedIds.size === 0 || processing}
-                startIcon={processing ? <CircularProgress size={20} /> : <PreviewIcon />}
+                variant={"primary"}
+                isDisabled={selectedIds.size === 0 || processing}
               >
+                {processing ? (
+                  <Spinner aria-label="로딩 중" />
+                ) : (
+                  <PreviewIcon size={16} />
+                )}
                 미리보기 ({selectedIds.size}개)
               </Button>
-            </Box>
-          </Paper>
+            </div>
+          </div>
 
           {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
-            </Box>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                paddingBlock: 32,
+              }}
+            >
+              <Spinner aria-label="로딩 중" />
+            </div>
           ) : (
             <>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell padding="checkbox">
+              <div>
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr>
+                      <th
+                        scope="col"
+                        className="px-3 py-2 border-b border-default"
+                      >
                         <Checkbox
-                          checked={questions.length > 0 && selectedIds.size === questions.length}
-                          indeterminate={selectedIds.size > 0 && selectedIds.size < questions.length}
+                          isSelected={
+                            questions.length > 0 &&
+                            selectedIds.size === questions.length
+                          }
+                          isIndeterminate={
+                            selectedIds.size > 0 &&
+                            selectedIds.size < questions.length
+                          }
+                          isDisabled={false}
                           onChange={handleSelectAll}
-                        />
-                      </TableCell>
-                      <TableCell>질문 (한국어)</TableCell>
-                      <TableCell align="center" width={100}>차원</TableCell>
-                      <TableCell align="center" width={100}>생성일</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
+                          aria-label={"선택"}
+                        >
+                          <Checkbox.Content>
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-2 border-b border-default"
+                      >
+                        질문 (한국어)
+                      </th>
+                      <th
+                        scope="col"
+                        style={{ width: 100 }}
+                        className="px-3 py-2 border-b border-default"
+                      >
+                        차원
+                      </th>
+                      <th
+                        scope="col"
+                        style={{ width: 100 }}
+                        className="px-3 py-2 border-b border-default"
+                      >
+                        생성일
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {questions.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} align="center">
-                          <Typography color="text.secondary" sx={{ py: 4 }}>
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-3 py-2 border-b border-default"
+                        >
+                          <p style={{ paddingBlock: 32 }}>
                             번역이 필요한 질문이 없습니다.
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
+                          </p>
+                        </td>
+                      </tr>
                     ) : (
                       questions.map((question) => (
-                        <TableRow key={question.id} hover>
-                          <TableCell padding="checkbox">
+                        <tr key={question.id}>
+                          <td className="px-3 py-2 border-b border-default">
                             <Checkbox
-                              checked={selectedIds.has(question.id)}
+                              isSelected={selectedIds.has(question.id)}
+                              isIndeterminate={false}
+                              isDisabled={false}
                               onChange={() => handleToggleSelect(question.id)}
-                            />
-                          </TableCell>
-                          <TableCell>{question.text}</TableCell>
-                          <TableCell align="center">
-                            <Chip
-                              label={DIMENSION_LABELS[question.dimension]}
-                              size="small"
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell align="center">{formatDate(question.createdAt)}</TableCell>
-                        </TableRow>
+                              aria-label={"선택"}
+                            >
+                              <Checkbox.Content>
+                                <Checkbox.Control>
+                                  <Checkbox.Indicator />
+                                </Checkbox.Control>
+                              </Checkbox.Content>
+                            </Checkbox>
+                          </td>
+                          <td className="px-3 py-2 border-b border-default">
+                            {question.text}
+                          </td>
+                          <td className="px-3 py-2 border-b border-default">
+                            <Chip size="sm">
+                              {DIMENSION_LABELS[question.dimension]}
+                            </Chip>
+                          </td>
+                          <td className="px-3 py-2 border-b border-default">
+                            {formatDate(question.createdAt)}
+                          </td>
+                        </tr>
                       ))
                     )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                  </tbody>
+                </table>
+              </div>
 
               {totalPages > 1 && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                  <Pagination
-                    count={totalPages}
-                    page={page}
-                    onChange={(_, value) => setPage(value)}
-                    color="primary"
-                  />
-                </Box>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    marginTop: 24,
+                  }}
+                >
+                  <nav aria-label="페이지" className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      isDisabled={page <= 1}
+                      onPress={() =>
+                        ((_, value) => setPage(value))(null, page - 1)
+                      }
+                    >
+                      이전
+                    </Button>
+                    <span>
+                      {page} / {totalPages}
+                    </span>
+                    <Button
+                      variant="secondary"
+                      isDisabled={page >= totalPages}
+                      onPress={() =>
+                        ((_, value) => setPage(value))(null, page + 1)
+                      }
+                    >
+                      다음
+                    </Button>
+                  </nav>
+                </div>
               )}
             </>
           )}
         </>
       )}
-
-      {step === 'preview' && previewData && (
+      {step === "preview" && previewData && (
         <>
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography variant="body1">
-                번역 예상: <strong>{Array.isArray(previewData.translations) ? previewData.translations.length : 0}개</strong>
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  예상 비용: ${Number(previewData.metadata?.estimatedCost ?? 0).toFixed(4)} | 예상 시간: {previewData.metadata?.estimatedTimeMs ?? 0}ms
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button variant="outlined" onClick={handleReset} disabled={processing}>
+          <div style={{ padding: 16, marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <p>
+                  번역 예상:{" "}
+                  <strong>
+                    {Array.isArray(previewData.translations)
+                      ? previewData.translations.length
+                      : 0}
+                    개
+                  </strong>
+                </p>
+                <p>
+                  예상 비용: $
+                  {Number(previewData.metadata?.estimatedCost ?? 0).toFixed(4)}|
+                  예상 시간: {previewData.metadata?.estimatedTimeMs ?? 0}ms
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button
+                  onClick={handleReset}
+                  variant={"secondary"}
+                  isDisabled={processing}
+                >
                   다시 선택
                 </Button>
                 <Button
-                  variant="contained"
                   onClick={handleExecuteTranslation}
-                  disabled={processing}
-                  startIcon={processing ? <CircularProgress size={20} /> : <TranslateIcon />}
+                  variant={"primary"}
+                  isDisabled={processing}
                 >
+                  {processing ? (
+                    <Spinner aria-label="로딩 중" />
+                  ) : (
+                    <TranslateIcon size={16} />
+                  )}
                   번역 실행
                 </Button>
-              </Box>
-            </Box>
-          </Paper>
+              </div>
+            </div>
+          </div>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {(Array.isArray(previewData.translations) ? previewData.translations : []).map((item, index) => (
-              <Card key={item.sourceId} variant="outlined">
-                <CardContent>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    #{index + 1}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        한국어 (원본)
-                      </Typography>
-                      <Typography variant="body1">{item.source.text}</Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        {(Array.isArray(item.source.options) ? item.source.options : []).join(' / ')}
-                      </Typography>
-                    </Box>
-                    <Divider orientation="vertical" flexItem />
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        일본어 (번역)
-                      </Typography>
-                      <Typography variant="body1">{item.translated.text}</Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        {(Array.isArray(item.translated.options) ? item.translated.options : []).join(' / ')}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {(Array.isArray(previewData.translations)
+              ? previewData.translations
+              : []
+            ).map((item, index) => (
+              <Card key={item.sourceId}>
+                <Card.Content>
+                  <p>#{index + 1}</p>
+                  <div style={{ display: "flex", gap: 16 }}>
+                    <div style={{ flex: 1 }}>
+                      <p>한국어 (원본)</p>
+                      <p>{item.source.text}</p>
+                      <p style={{ marginTop: 8 }}>
+                        {(Array.isArray(item.source.options)
+                          ? item.source.options
+                          : []
+                        ).join(" / ")}
+                      </p>
+                    </div>
+                    <hr />
+                    <div style={{ flex: 1 }}>
+                      <p>일본어 (번역)</p>
+                      <p>{item.translated.text}</p>
+                      <p style={{ marginTop: 8 }}>
+                        {(Array.isArray(item.translated.options)
+                          ? item.translated.options
+                          : []
+                        ).join(" / ")}
+                      </p>
+                    </div>
+                  </div>
+                </Card.Content>
               </Card>
             ))}
-          </Box>
+          </div>
         </>
       )}
-
-      {step === 'result' && resultData && (
-        <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <CheckCircleIcon sx={{ fontSize: 64, color: resultData.success ? 'success.main' : 'warning.main', mb: 2 }} />
-          <Typography variant="h5" gutterBottom>
-            번역 {resultData.success ? '완료' : '부분 완료'}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" gutterBottom>
+      {step === "result" && resultData && (
+        <div style={{ padding: 24, textAlign: "center" }}>
+          <CheckCircleIcon size={16} />
+          <h5>번역 {resultData.success ? "완료" : "부분 완료"}</h5>
+          <p>
             성공: {resultData.translated}개 / 실패: {resultData.failed}개
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            실제 비용: ${Number(resultData.metadata?.actualCost ?? 0).toFixed(4)} | 처리 시간: {resultData.metadata?.processingTimeMs ?? 0}ms
-          </Typography>
-
+          </p>
+          <p>
+            실제 비용: $
+            {Number(resultData.metadata?.actualCost ?? 0).toFixed(4)}| 처리
+            시간: {resultData.metadata?.processingTimeMs ?? 0}ms
+          </p>
           {resultData.failed > 0 && (
-            <Alert severity="warning" sx={{ mt: 2, textAlign: 'left' }}>
-              <Typography variant="body2">실패한 항목:</Typography>
+            <div
+              role="alert"
+              className="rounded-lg border border-default p-3 text-sm"
+              style={{ marginTop: 16, textAlign: "left" }}
+            >
+              <p>실패한 항목:</p>
               {resultData.results
-                .filter(r => r.status === 'failed')
-                .map(r => (
-                  <Typography key={r.sourceId} variant="body2">
+                .filter((r) => r.status === "failed")
+                .map((r) => (
+                  <p key={r.sourceId}>
                     - {r.sourceId}: {r.error}
-                  </Typography>
+                  </p>
                 ))}
-            </Alert>
+            </div>
           )}
-
           <Button
-            variant="contained"
             onClick={handleReset}
-            sx={{ mt: 3 }}
+            style={{ marginTop: 24 }}
+            variant={"primary"}
           >
             처음으로
           </Button>
-        </Paper>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }

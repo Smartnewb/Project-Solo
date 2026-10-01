@@ -3,236 +3,241 @@
 // === 통합 요약 API 응답 타입 ===
 
 export interface ActionItem {
-  type: string;
-  description: string;
-  count: number;
-  priority: "high" | "medium" | "low";
+	type: string;
+	description: string;
+	count: number;
+	priority: "high" | "medium" | "low";
 }
 
 export interface Alert {
-  type: "info" | "warning" | "error";
-  message: string;
+	type: "info" | "warning" | "error";
+	message: string;
 }
 
 export type AlertType =
-  | "SIGNUP_DROP"
-  | "REPORT_SURGE"
-  | "WITHDRAWAL_SURGE"
-  | "REVENUE_DROP"
-  | "MATCHING_FAILURE_SURGE";
+	| "SIGNUP_DROP"
+	| "REPORT_SURGE"
+	| "WITHDRAWAL_SURGE"
+	| "REVENUE_DROP"
+	| "MATCHING_FAILURE_SURGE";
 
 export interface KPI {
-  totalUsers: number;
-  dailySignups: number;
-  matchingRate: number;
-  monthlyRevenue: number;
+	totalUsers: number;
+	dailySignups: number;
+	matchingRate: number;
+	monthlyRevenue: number;
 }
 
 export interface MatchingStatus {
-  pendingToday: number;
-  completedToday: number;
-  failedToday: number;
+	pendingToday: number;
+	completedToday: number;
+	failedToday: number;
 }
 
 export interface DashboardSummaryResponse {
-  actionItems: ActionItem[];
-  alerts: Alert[];
-  kpi: KPI;
-  matchingStatus: MatchingStatus;
+	actionItems: ActionItem[];
+	alerts: Alert[];
+	kpi: KPI;
+	matchingStatus: MatchingStatus;
 }
 
 // === 매칭 퍼널 API 타입 ===
 
 export interface FunnelStep {
-  stage: string;
-  count: number;
-  rate: number;
+	stage: string;
+	count: number;
+	rate: number;
 }
 
 export interface ConversionRates {
-  matchToView: number;
-  viewToLike: number;
-  likeToMutual: number;
-  mutualToChat: number;
-  chatToActive: number;
+	matchToView: number;
+	viewToLike: number;
+	likeToMutual: number;
+	mutualToChat: number;
+	chatToActive: number;
 }
 
 export interface MatchingFunnelResponse {
-  funnel: FunnelStep[];
-  conversionRates: ConversionRates;
-  startDate: string;
-  endDate: string;
+	funnel: FunnelStep[];
+	conversionRates: ConversionRates;
+	startDate: string;
+	endDate: string;
 }
 
 // === 시간별 가입자 추이 API 타입 ===
 
 export interface HourlySignupData {
-  hour: number;
-  count: number;
+	hour: number;
+	count: number;
 }
 
 export interface HourlySignupsResponse {
-  data: HourlySignupData[];
-  date: string;
-  total: number;
+	data: HourlySignupData[];
+	date: string;
+	total: number;
 }
 
 // === 퍼널 스테이지 라벨 매핑 ===
 export const FUNNEL_STAGE_LABELS: Record<string, string> = {
-  matches_created: "매칭 생성",
-  profile_viewed: "프로필 확인",
-  like_sent: "좋아요 전송",
-  mutual_match: "양방향 매칭",
-  chat_started: "채팅 시작",
-  active_chat: "활성 채팅",
+	matches_created: "매칭 생성",
+	profile_viewed: "프로필 확인",
+	like_sent: "좋아요 전송",
+	mutual_match: "양방향 매칭",
+	chat_started: "채팅 시작",
+	active_chat: "활성 채팅",
 };
 
 // === 알림 타입 라벨 매핑 ===
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
-  SIGNUP_DROP: "가입자 감소",
-  REPORT_SURGE: "신고 급증",
-  WITHDRAWAL_SURGE: "탈퇴 급증",
-  REVENUE_DROP: "매출 감소",
-  MATCHING_FAILURE_SURGE: "매칭 실패 급증",
+	SIGNUP_DROP: "가입자 감소",
+	REPORT_SURGE: "신고 급증",
+	WITHDRAWAL_SURGE: "탈퇴 급증",
+	REVENUE_DROP: "매출 감소",
+	MATCHING_FAILURE_SURGE: "매칭 실패 급증",
 };
 
 // === 확장 매출 현황 타입 ===
 export interface RevenueComparison {
-  thisMonth: number;
-  lastMonth: number;
-  monthOverMonthChange: number;
-  monthlyAverage: number;
-  thisWeek: number;
-  lastWeek: number;
-  weekOverWeekChange: number;
-  weeklyAverage: number;
-  dailyAverage: number;
-  today: number;
-  lastWeekSameDay: number;
-  sameDayChange: number;
+	thisMonth: number;
+	lastMonth: number;
+	monthOverMonthChange: number;
+	monthlyAverage: number;
+	thisWeek: number;
+	lastWeek: number;
+	weekOverWeekChange: number;
+	weeklyAverage: number;
+	dailyAverage: number;
+	today: number;
+	lastWeekSameDay: number;
+	sameDayChange: number;
 }
 
 export interface ExtendedRevenueResponse {
-  revenue: RevenueComparison;
+	revenue: RevenueComparison;
 }
 
 // === 구슬 시스템 매칭 퍼널 타입 ===
 export interface MatchingTypeFunnelStep {
-  name: string;
-  count: number;
-  conversionRate: number;
-  overallConversionRate: number;
+	name: string;
+	count: number;
+	conversionRate: number;
+	overallConversionRate: number;
 }
 
 export interface MatchingTypeFunnel {
-  type: 'scheduled' | 'rematching' | 'total';
-  typeName: string;
-  steps: MatchingTypeFunnelStep[];
+	type: "scheduled" | "rematching" | "total";
+	typeName: string;
+	steps: MatchingTypeFunnelStep[];
 }
 
 export interface GemSystemFunnelDebugInfo {
-  matchesQuery: string;
-  likesQuery: string;
-  mutualLikesQuery: string;
-  chatRoomsQuery: string;
-  rawResults: Record<string, unknown>;
+	matchesQuery: string;
+	likesQuery: string;
+	mutualLikesQuery: string;
+	chatRoomsQuery: string;
+	rawResults: Record<string, unknown>;
 }
 
 export interface GemSystemFunnelResponse {
-  period: {
-    startDate: string;
-    endDate: string;
-  };
-  gemSystemStartDate: string;
-  funnelByType: MatchingTypeFunnel[];
-  totalFunnel: MatchingTypeFunnel;
-  debug?: GemSystemFunnelDebugInfo;
+	period: {
+		startDate: string;
+		endDate: string;
+	};
+	gemSystemStartDate: string;
+	funnelByType: MatchingTypeFunnel[];
+	totalFunnel: MatchingTypeFunnel;
+	debug?: GemSystemFunnelDebugInfo;
 }
 
 // === 실행 가능한 인사이트 타입 ===
 
-export type InsightSeverity = 'critical' | 'warning' | 'info';
-export type InsightCategory = 'retention' | 'revenue' | 'engagement' | 'matching' | 'user_experience';
-export type UrgencyLevel = 'critical' | 'warning';
+export type InsightSeverity = "critical" | "warning" | "info";
+export type InsightCategory =
+	| "retention"
+	| "revenue"
+	| "engagement"
+	| "matching"
+	| "user_experience";
+export type UrgencyLevel = "critical" | "warning";
 
 export interface HealthScore {
-  overall: number;
-  userGrowth: number;
-  retention: number;
-  revenue: number;
-  matchingQuality: number;
-  userSatisfaction: number;
+	overall: number;
+	userGrowth: number;
+	retention: number;
+	revenue: number;
+	matchingQuality: number;
+	userSatisfaction: number;
 }
 
 export interface UrgentAction {
-  urgency: UrgencyLevel;
-  title: string;
-  description: string;
-  count: number;
-  action: string;
-  actionUrl: string;
-  deadlineHours?: number;
+	urgency: UrgencyLevel;
+	title: string;
+	description: string;
+	count: number;
+	action: string;
+	actionUrl: string;
+	deadlineHours?: number;
 }
 
 export interface ActionableInsight {
-  id: string;
-  title: string;
-  description: string;
-  severity: InsightSeverity;
-  category: InsightCategory;
-  currentValue: number;
-  previousValue?: number;
-  changeRate?: number;
-  recommendations: string[];
-  relatedDashboard?: string;
-  affectedUsers: number;
-  potentialRevenueImpact?: number;
+	id: string;
+	title: string;
+	description: string;
+	severity: InsightSeverity;
+	category: InsightCategory;
+	currentValue: number;
+	previousValue?: number;
+	changeRate?: number;
+	recommendations: string[];
+	relatedDashboard?: string;
+	affectedUsers: number;
+	potentialRevenueImpact?: number;
 }
 
 export interface FunnelBottleneck {
-  stage: string;
-  conversionRate: number;
-  benchmarkRate: number;
-  droppedUsers: number;
-  possibleCauses: string[];
+	stage: string;
+	conversionRate: number;
+	benchmarkRate: number;
+	droppedUsers: number;
+	possibleCauses: string[];
 }
 
 export interface UserPainPoint {
-  id: string;
-  description: string;
-  affectedUsers: number;
-  percentage: number;
-  avgWaitDays?: number;
-  churnRisk: number;
-  solutions: string[];
+	id: string;
+	description: string;
+	affectedUsers: number;
+	percentage: number;
+	avgWaitDays?: number;
+	churnRisk: number;
+	solutions: string[];
 }
 
 export interface ActionableInsightsResponse {
-  generatedAt: string;
-  period: {
-    startDate: string;
-    endDate: string;
-  };
-  healthScore: HealthScore;
-  urgentActions: UrgentAction[];
-  insights: ActionableInsight[];
-  funnelBottlenecks: FunnelBottleneck[];
-  userPainPoints: UserPainPoint[];
-  summary: string;
+	generatedAt: string;
+	period: {
+		startDate: string;
+		endDate: string;
+	};
+	healthScore: HealthScore;
+	urgentActions: UrgentAction[];
+	insights: ActionableInsight[];
+	funnelBottlenecks: FunnelBottleneck[];
+	userPainPoints: UserPainPoint[];
+	summary: string;
 }
 
 // === 인사이트 카테고리 라벨 매핑 ===
 export const INSIGHT_CATEGORY_LABELS: Record<InsightCategory, string> = {
-  retention: '리텐션',
-  revenue: '매출',
-  engagement: '참여도',
-  matching: '매칭',
-  user_experience: '사용자 경험',
+	retention: "리텐션",
+	revenue: "매출",
+	engagement: "참여도",
+	matching: "매칭",
+	user_experience: "사용자 경험",
 };
 
 // === 인사이트 심각도 라벨 매핑 ===
 export const INSIGHT_SEVERITY_LABELS: Record<InsightSeverity, string> = {
-  critical: '심각',
-  warning: '주의',
-  info: '정보',
+	critical: "심각",
+	warning: "주의",
+	info: "정보",
 };

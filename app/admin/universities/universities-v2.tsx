@@ -1,37 +1,35 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useState, useEffect, useCallback } from 'react';
 import {
-  Box,
-  Typography,
   Button,
-  TextField,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
   Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-  Alert,
+  Spinner,
   Tabs,
-  Tab,
-  Chip,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import AdminService from '@/app/services/admin';
-import UniversityTable from './components/UniversityTable';
-import UniversityFormDialog from './components/UniversityFormDialog';
-import UniversityDetailDialog from './components/UniversityDetailDialog';
+  TextField,
+} from "@heroui/react";
+import { Plus as AddIcon, Search as SearchIcon } from "lucide-react";
+
+import { useState, useEffect, useCallback } from "react";
+
+import AdminService from "@/app/services/admin";
+import UniversityTable from "./components/UniversityTable";
+import UniversityFormDialog from "./components/UniversityFormDialog";
+import UniversityDetailDialog from "./components/UniversityDetailDialog";
 import type {
   UniversityItem,
   UniversityListParams,
   RegionMetaItem,
   TypeMetaItem,
   UniversityType,
-} from '@/types/admin';
+} from "@/types/admin";
 
-type TabValue = 'all' | 'active' | 'inactive';
-type LogoSortValue = 'default' | 'missingFirst';
+type TabValue = "all" | "active" | "inactive";
+type LogoSortValue = "default" | "missingFirst";
 
 const PAGE_SIZE = 20;
 const BULK_FETCH_SIZE = 100;
@@ -40,38 +38,43 @@ function hasLogo(university: UniversityItem) {
   return Boolean(university.logoUrl?.trim());
 }
 
-function sortUniversitiesByLogo(items: UniversityItem[], logoSort: LogoSortValue) {
-  if (logoSort !== 'missingFirst') return items;
+function sortUniversitiesByLogo(
+  items: UniversityItem[],
+  logoSort: LogoSortValue,
+) {
+  if (logoSort !== "missingFirst") return items;
 
   return [...items].sort((a, b) => {
     const logoDiff = Number(hasLogo(a)) - Number(hasLogo(b));
     if (logoDiff !== 0) return logoDiff;
-    return a.name.localeCompare(b.name, 'ko');
+    return a.name.localeCompare(b.name, "ko");
   });
 }
 
 function UniversitiesPageContent() {
-
   const [universities, setUniversities] = useState<UniversityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  const [tabValue, setTabValue] = useState<TabValue>('all');
-  const [searchName, setSearchName] = useState('');
-  const [filterRegion, setFilterRegion] = useState<string>('');
-  const [filterType, setFilterType] = useState<UniversityType | ''>('');
-  const [logoSort, setLogoSort] = useState<LogoSortValue>('default');
+  const [tabValue, setTabValue] = useState<TabValue>("all");
+  const [searchName, setSearchName] = useState("");
+  const [filterRegion, setFilterRegion] = useState<string>("");
+  const [filterType, setFilterType] = useState<UniversityType | "">("");
+  const [logoSort, setLogoSort] = useState<LogoSortValue>("default");
 
   const [regions, setRegions] = useState<RegionMetaItem[]>([]);
   const [types, setTypes] = useState<TypeMetaItem[]>([]);
 
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [editUniversity, setEditUniversity] = useState<UniversityItem | null>(null);
-  const [selectedUniversity, setSelectedUniversity] = useState<UniversityItem | null>(null);
+  const [editUniversity, setEditUniversity] = useState<UniversityItem | null>(
+    null,
+  );
+  const [selectedUniversity, setSelectedUniversity] =
+    useState<UniversityItem | null>(null);
 
   useEffect(() => {
     loadMetadata();
@@ -89,14 +92,13 @@ function UniversitiesPageContent() {
       ]);
       setRegions(regionsData);
       setTypes(typesData);
-    } catch (err: any) {
-    }
+    } catch (err: any) {}
   };
 
   const loadUniversities = useCallback(async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
       const params: UniversityListParams = {
         page,
@@ -106,29 +108,32 @@ function UniversitiesPageContent() {
       if (searchName) params.name = searchName;
       if (filterRegion) params.region = filterRegion;
       if (filterType) params.type = filterType;
-      if (tabValue !== 'all') {
-        params.isActive = tabValue === 'active';
+      if (tabValue !== "all") {
+        params.isActive = tabValue === "active";
       }
 
-      if (logoSort === 'missingFirst') {
+      if (logoSort === "missingFirst") {
         const firstPage = await AdminService.universities.getList({
           ...params,
           page: 1,
           limit: BULK_FETCH_SIZE,
         });
         const bulkTotalPages = firstPage.meta.totalPages;
-        const restPages = bulkTotalPages > 1
-          ? await Promise.all(
-            Array.from({ length: bulkTotalPages - 1 }, (_, index) =>
-              AdminService.universities.getList({
-                ...params,
-                page: index + 2,
-                limit: BULK_FETCH_SIZE,
-              }),
-            ),
-          )
-          : [];
-        const allItems = [firstPage, ...restPages].flatMap((data) => data.items);
+        const restPages =
+          bulkTotalPages > 1
+            ? await Promise.all(
+                Array.from({ length: bulkTotalPages - 1 }, (_, index) =>
+                  AdminService.universities.getList({
+                    ...params,
+                    page: index + 2,
+                    limit: BULK_FETCH_SIZE,
+                  }),
+                ),
+              )
+            : [];
+        const allItems = [firstPage, ...restPages].flatMap(
+          (data) => data.items,
+        );
         const sortedItems = sortUniversitiesByLogo(allItems, logoSort);
         const start = (page - 1) * PAGE_SIZE;
 
@@ -143,13 +148,13 @@ function UniversitiesPageContent() {
       setTotalPages(data.meta.totalPages);
       setTotalCount(data.meta.total);
     } catch (err: any) {
-      setError(err.message || '대학 목록을 불러오는데 실패했습니다.');
+      setError(err.message || "대학 목록을 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
     }
   }, [page, tabValue, searchName, filterRegion, filterType, logoSort]);
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: TabValue) => {
+  const handleTabChange = (newValue: TabValue) => {
     setTabValue(newValue);
     setPage(1);
   };
@@ -160,10 +165,10 @@ function UniversitiesPageContent() {
   };
 
   const handleReset = () => {
-    setSearchName('');
-    setFilterRegion('');
-    setFilterType('');
-    setLogoSort('default');
+    setSearchName("");
+    setFilterRegion("");
+    setFilterType("");
+    setLogoSort("default");
     setPage(1);
   };
 
@@ -183,7 +188,7 @@ function UniversitiesPageContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('이 대학을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    if (!confirm("이 대학을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
       return;
     }
 
@@ -191,7 +196,7 @@ function UniversitiesPageContent() {
       await AdminService.universities.delete(id);
       loadUniversities();
     } catch (err: any) {
-      alert(err.response?.data?.message || '삭제에 실패했습니다.');
+      alert(err.response?.data?.message || "삭제에 실패했습니다.");
     }
   };
 
@@ -200,7 +205,7 @@ function UniversitiesPageContent() {
       await AdminService.universities.update(id, { isActive });
       loadUniversities();
     } catch (err: any) {
-      alert(err.response?.data?.message || '상태 변경에 실패했습니다.');
+      alert(err.response?.data?.message || "상태 변경에 실패했습니다.");
     }
   };
 
@@ -220,110 +225,179 @@ function UniversitiesPageContent() {
   };
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h5" fontWeight="bold">
-            대학 관리
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            전체 {totalCount}개
-          </Typography>
-        </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddClick}>
-          대학 등록
+    <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+        }}
+      >
+        <div>
+          <h5 className="text-lg font-semibold text-foreground">대학 관리</h5>
+          <p style={{ marginTop: 4 }}>전체 {totalCount}개</p>
+        </div>
+        <Button onClick={handleAddClick} variant={"primary"}>
+          {<AddIcon size={16} />}대학 등록
         </Button>
-      </Box>
-
-      <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
-        <Tab label="전체" value="all" />
-        <Tab label="활성" value="active" />
-        <Tab label="비활성" value="inactive" />
+      </div>
+      <Tabs
+        selectedKey={tabValue}
+        onSelectionChange={(key) => handleTabChange(String(key) as TabValue)}
+        style={{ marginBottom: 24 }}
+      >
+        <Tabs.ListContainer>
+          <Tabs.List>
+            <Tabs.Tab id={"all"}>
+              {"전체"}
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id={"active"}>
+              {"활성"}
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id={"inactive"}>
+              {"비활성"}
+              <Tabs.Indicator />
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
       </Tabs>
-
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <TextField
-          label="대학명 검색"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-          sx={{ minWidth: 250 }}
-          size="small"
-        />
-
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>지역</InputLabel>
+      <div
+        style={{
+          marginBottom: 24,
+          display: "flex",
+          gap: 16,
+          flexWrap: "wrap",
+          alignItems: "flex-end",
+        }}
+      >
+        <TextField style={{ minWidth: 250 }}>
+          <Label>{"대학명 검색"}</Label>
+          <Input
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+        </TextField>
+        <div style={{ minWidth: 150 }}>
           <Select
-            value={filterRegion}
-            label="지역"
-            onChange={(e) => setFilterRegion(e.target.value)}
+            selectedKey={filterRegion || null}
+            onSelectionChange={(key) => setFilterRegion(String(key ?? ""))}
+            aria-label={"지역"}
           >
-            <MenuItem value="">전체</MenuItem>
-            {regions.map((region) => (
-              <MenuItem key={region.code} value={region.code}>
-                {region.nameLocal}
-              </MenuItem>
-            ))}
+            <HeroSelectLabel>지역</HeroSelectLabel>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id={""} textValue={"전체"}>
+                  전체
+                </ListBox.Item>
+                {regions.map((region) => (
+                  <ListBox.Item
+                    key={region.code}
+                    id={region.code}
+                    textValue={String(region.nameLocal)}
+                  >
+                    {region.nameLocal}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
           </Select>
-        </FormControl>
-
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>대학 유형</InputLabel>
+        </div>
+        <div style={{ minWidth: 150 }}>
           <Select
-            value={filterType}
-            label="대학 유형"
-            onChange={(e) => {
-              setFilterType(e.target.value as UniversityType | '');
+            selectedKey={filterType || null}
+            onSelectionChange={(key) => {
+              setFilterType(String(key ?? "") as UniversityType | "");
               setPage(1);
             }}
+            aria-label={"대학 유형"}
           >
-            <MenuItem value="">전체</MenuItem>
-            {types.map((type) => (
-              <MenuItem key={type.code} value={type.code}>
-                {type.name}
-              </MenuItem>
-            ))}
+            <HeroSelectLabel>대학 유형</HeroSelectLabel>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id={""} textValue={"전체"}>
+                  전체
+                </ListBox.Item>
+                {types.map((type) => (
+                  <ListBox.Item
+                    key={type.code}
+                    id={type.code}
+                    textValue={String(type.name)}
+                  >
+                    {type.name}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
           </Select>
-        </FormControl>
-
-        <FormControl size="small" sx={{ minWidth: 170 }}>
-          <InputLabel>로고 정렬</InputLabel>
+        </div>
+        <div style={{ minWidth: 170 }}>
           <Select
-            value={logoSort}
-            label="로고 정렬"
-            onChange={(e) => {
-              setLogoSort(e.target.value as LogoSortValue);
+            selectedKey={logoSort || null}
+            onSelectionChange={(key) => {
+              setLogoSort(String(key) as LogoSortValue);
               setPage(1);
             }}
+            aria-label={"로고 정렬"}
           >
-            <MenuItem value="default">기본</MenuItem>
-            <MenuItem value="missingFirst">로고 없는 순</MenuItem>
+            <HeroSelectLabel>로고 정렬</HeroSelectLabel>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id={"default"} textValue={"기본"}>
+                  기본
+                </ListBox.Item>
+                <ListBox.Item id={"missingFirst"} textValue={"로고 없는 순"}>
+                  로고 없는 순
+                </ListBox.Item>
+              </ListBox>
+            </Select.Popover>
           </Select>
-        </FormControl>
-
-        <Button variant="contained" startIcon={<SearchIcon />} onClick={handleSearch}>
-          검색
+        </div>
+        <Button onClick={handleSearch} variant={"primary"}>
+          {<SearchIcon size={16} />}검색
         </Button>
-
-        <Button variant="outlined" onClick={handleReset}>
+        <Button onClick={handleReset} variant={"secondary"}>
           초기화
         </Button>
-      </Box>
-
+      </div>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div
+          role="alert"
+          className="rounded-lg border border-default p-3 text-sm"
+          style={{ marginBottom: 16 }}
+        >
           {error}
-        </Alert>
+        </div>
       )}
-
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            paddingBlock: 64,
+          }}
+        >
+          <Spinner aria-label="로딩 중" />
+        </div>
       ) : universities.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography color="text.secondary">등록된 대학이 없습니다.</Typography>
-        </Box>
+        <div style={{ textAlign: "center", paddingBlock: 64 }}>
+          <p>등록된 대학이 없습니다.</p>
+        </div>
       ) : (
         <UniversityTable
           universities={universities}
@@ -336,7 +410,6 @@ function UniversitiesPageContent() {
           onPageChange={setPage}
         />
       )}
-
       <UniversityFormDialog
         open={formDialogOpen}
         onClose={handleFormClose}
@@ -345,7 +418,6 @@ function UniversitiesPageContent() {
         regions={regions}
         types={types}
       />
-
       {selectedUniversity && (
         <UniversityDetailDialog
           open={detailDialogOpen}
@@ -354,7 +426,7 @@ function UniversitiesPageContent() {
           onRefresh={loadUniversities}
         />
       )}
-    </Box>
+    </div>
   );
 }
 

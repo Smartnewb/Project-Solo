@@ -1,132 +1,112 @@
 "use client";
-
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Skeleton,
-  Grid,
-} from "@mui/material";
-import {
-  PersonAdd as SignupIcon,
-  People as TotalUsersIcon,
-  TrendingUp as MatchingIcon,
-} from "@mui/icons-material";
+import { Card, Skeleton } from "@heroui/react";
+import { TrendingUp, UserPlus, Users } from "lucide-react";
 import { KPI } from "../types";
-
 interface TodayMetricsProps {
-  kpi: KPI | null;
-  loading?: boolean;
+	kpi: KPI | null;
+	loading?: boolean;
 }
-
 interface MetricItemProps {
-  label: string;
-  value: number | string;
-  icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-  loading?: boolean;
-  suffix?: string;
+	label: string;
+	value: number | string;
+	icon: React.ReactNode;
+	color: string;
+	bgColor: string;
+	loading?: boolean;
+	suffix?: string;
 }
-
-const formatNumber = (value: number | undefined | null) => (value ?? 0).toLocaleString();
-
+const formatNumber = (value: number | undefined | null) =>
+	(value ?? 0).toLocaleString();
 function MetricItem({
-  label,
-  value,
-  icon,
-  color,
-  bgColor,
-  loading,
-  suffix,
+	label,
+	value,
+	icon,
+	color,
+	bgColor,
+	loading,
+	suffix,
 }: MetricItemProps) {
-  return (
-    <Box className="flex items-center gap-3">
-      <Box
-        sx={{
-          p: 1.5,
-          borderRadius: 2,
-          backgroundColor: bgColor,
-          color: color,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {icon}
-      </Box>
-      <Box className="flex-1">
-        <Typography variant="body2" color="text.secondary">
-          {label}
-        </Typography>
-        {loading ? (
-          <Skeleton width={80} height={28} />
-        ) : (
-          <Typography variant="h6" fontWeight={700} sx={{ color }}>
-            {typeof value === "number" ? formatNumber(value) : value}
-            {suffix && (
-              <Typography
-                component="span"
-                variant="body2"
-                sx={{ color: "#6b7280", ml: 0.5 }}
-              >
-                {suffix}
-              </Typography>
-            )}
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  );
+	return (
+		<div className="flex items-center gap-3">
+			<div
+				style={{
+					padding: 12,
+					borderRadius: 16,
+					backgroundColor: bgColor,
+					color: color,
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+				}}
+			>
+				{icon}
+			</div>
+			<div className="flex-1">
+				<p className={"text-sm text-neutral-700"}>{label}</p>
+				{loading ? (
+					<Skeleton style={{ width: 80, height: 28 }} className="rounded-xl" />
+				) : (
+					<h2 style={{}} className={"text-lg font-semibold text-neutral-900"}>
+						{typeof value === "number" ? formatNumber(value) : value}
+						{suffix && (
+							<span
+								style={{ color: "#6b7280", marginLeft: 4 }}
+								className={"text-sm text-neutral-700"}
+							>
+								{suffix}
+							</span>
+						)}
+					</h2>
+				)}
+			</div>
+		</div>
+	);
 }
-
 export default function TodayMetrics({ kpi, loading }: TodayMetricsProps) {
-  return (
-    <Card>
-      <CardContent>
-        <Box className="flex items-center gap-2 mb-4">
-          <Typography variant="h6" fontWeight={600}>
-            📊 오늘의 핵심 지표
-          </Typography>
-        </Box>
-
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
-            <MetricItem
-              label="오늘 가입"
-              value={kpi?.dailySignups ?? 0}
-              icon={<SignupIcon />}
-              color="#3b82f6"
-              bgColor="#eff6ff"
-              loading={loading}
-              suffix="명"
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <MetricItem
-              label="총 회원 수"
-              value={kpi?.totalUsers ?? 0}
-              icon={<TotalUsersIcon />}
-              color="#8b5cf6"
-              bgColor="#f5f3ff"
-              loading={loading}
-              suffix="명"
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <MetricItem
-              label="매칭률"
-              value={`${(kpi?.matchingRate ?? 0).toFixed(1)}`}
-              icon={<MatchingIcon />}
-              color="#10b981"
-              bgColor="#ecfdf5"
-              loading={loading}
-              suffix="%"
-            />
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
-  );
+	return (
+		<Card>
+			<Card.Content>
+				<div className="flex items-center gap-2 mb-4">
+					<h2 className={"text-lg font-semibold text-neutral-900"}>
+						📊 오늘의 핵심 지표
+					</h2>
+				</div>
+				<div className={"grid grid-cols-12 gap-4"}>
+					<div className={"min-w-0 col-span-12 sm:col-span-4"}>
+						<MetricItem
+							label="오늘 가입"
+							value={kpi?.dailySignups ?? 0}
+							icon={<UserPlus size={18} />}
+							color="#3b82f6"
+							bgColor="#eff6ff"
+							loading={loading}
+							suffix="명"
+						/>
+					</div>
+					<div className={"min-w-0 col-span-12 sm:col-span-4"}>
+						<MetricItem
+							label="총 회원 수"
+							value={kpi?.totalUsers ?? 0}
+							icon={<Users size={18} />}
+							color="#8b5cf6"
+							bgColor="#f5f3ff"
+							loading={loading}
+							suffix="명"
+						/>
+					</div>
+					<div className={"min-w-0 col-span-12 sm:col-span-4"}>
+						<MetricItem
+							label="매칭률"
+							value={`${(kpi?.matchingRate ?? 0).toFixed(1)}`}
+							icon={<TrendingUp size={18} />}
+							color="#10b981"
+							bgColor="#ecfdf5"
+							loading={loading}
+							suffix="%"
+						/>
+					</div>
+				</div>
+			</Card.Content>
+		</Card>
+	);
 }

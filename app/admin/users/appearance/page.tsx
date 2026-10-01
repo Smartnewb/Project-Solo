@@ -1,16 +1,9 @@
 "use client";
+import { Alert, Separator, Spinner, Tabs } from "@heroui/react";
 
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  Alert,
-  Tabs,
-  Tab,
-  Divider,
-} from "@mui/material";
+
 import { useAppearanceGradeStats } from "@/app/admin/hooks";
 import AppearanceGradeStatsCard from "@/components/admin/appearance/AppearanceGradeStatsCard";
 import UserAppearanceTable from "@/components/admin/appearance/UserAppearanceTable";
@@ -31,8 +24,16 @@ function AppearanceGradePageContent() {
     handleApplyFilter: (filters: any) => void;
   } | null>(null);
 
-  const { data: stats, isLoading: loading, error: statsError, refetch: refetchStats } = useAppearanceGradeStats();
-  const error = statsError ? (statsError as any)?.message || "외모 등급 통계를 불러오는 중 오류가 발생했습니다." : null;
+  const {
+    data: stats,
+    isLoading: loading,
+    error: statsError,
+    refetch: refetchStats,
+  } = useAppearanceGradeStats();
+  const error = statsError
+    ? (statsError as any)?.message ||
+      "외모 등급 통계를 불러오는 중 오류가 발생했습니다."
+    : null;
 
   useEffect(() => {
     const tabParam = searchParams?.get("tab");
@@ -67,54 +68,55 @@ function AppearanceGradePageContent() {
     };
   }, [refetchStats]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (
+    event: React.SyntheticEvent | null,
+    newValue: number,
+  ) => {
     setActiveTab(newValue);
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
+    <div>
+      <div className={"text-lg font-semibold text-neutral-900"}>
         사용자 관리
-      </Typography>
-
+      </div>
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
+        <Alert style={{ marginBottom: 12 }} status="danger" role="alert">
+          <Alert.Content>{error}</Alert.Content>
         </Alert>
       )}
-
       {/* 통계 카드 */}
-      <Box sx={{ mb: 4 }}>
+      <div style={{ marginBottom: 16 }}>
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-            <CircularProgress />
-          </Box>
+          <div
+            style={{ display: "flex", justifyContent: "center", padding: 16 }}
+          >
+            <Spinner aria-label="불러오는 중" size="sm" />
+          </div>
         ) : stats ? (
           <AppearanceGradeStatsCard stats={stats as any} />
         ) : null}
-      </Box>
-
-      <Divider sx={{ my: 3 }} />
-
+      </div>
+      <Separator style={{ marginTop: 12, marginBottom: 12 }}></Separator>
       {/* 탭 메뉴 */}
-      <Box sx={{ mb: 3 }}>
+      <div style={{ marginBottom: 12 }}>
         <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          aria-label="사용자 관리 탭"
+          selectedKey={activeTab}
+          onSelectionChange={(key) => handleTabChange(null, Number(key))}
         >
-          <Tab label="승인된 사용자" />
-          <Tab label="블랙리스트" />
-          <Tab label="미분류 사용자" />
-          <Tab label="중복 휴대폰 번호" />
-          <Tab label="대학교 인증 사용자" />
-          <Tab label="학생증 인증 신청자" />
+          <Tabs.List aria-label="목록 보기">
+            <Tabs.Tab id={0}>{"승인된 사용자"}</Tabs.Tab>
+            <Tabs.Tab id={1}>{"블랙리스트"}</Tabs.Tab>
+            <Tabs.Tab id={2}>{"미분류 사용자"}</Tabs.Tab>
+            <Tabs.Tab id={3}>{"중복 휴대폰 번호"}</Tabs.Tab>
+            <Tabs.Tab id={4}>{"대학교 인증 사용자"}</Tabs.Tab>
+            <Tabs.Tab id={5}>{"학생증 인증 신청자"}</Tabs.Tab>
+          </Tabs.List>
         </Tabs>
-      </Box>
-
+      </div>
       {/* 탭 컨텐츠 */}
-      <Box>
-        <Box hidden={activeTab !== 0}>
+      <div>
+        <div>
           <AppearanceFilterPanel
             onFilter={(filters) => {
               if (tableRef.current) {
@@ -127,23 +129,24 @@ function AppearanceGradePageContent() {
             userStatus="approved"
             ref={tableRef}
           />
-        </Box>
+        </div>
         {activeTab === 1 && (
-          <Alert severity="info">
-            블랙리스트는 새로운 메뉴 <a href="/admin/blacklist">/admin/blacklist</a>에서 관리합니다.
+          <Alert status={"default"} role="alert">
+            <Alert.Content>
+              블랙리스트는 새로운 메뉴{" "}
+              <a href="/admin/blacklist">/admin/blacklist</a>에서 관리합니다.
+            </Alert.Content>
           </Alert>
         )}
         {activeTab === 2 && <UnclassifiedUsersPanel />}
         {activeTab === 3 && <DuplicatePhoneUsersPanel />}
         {activeTab === 4 && <VerifiedUsersPanel />}
         {activeTab === 5 && <UniversityVerificationPendingPanel />}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
 export default function AppearanceGradePage() {
-  return (
-    <AppearanceGradePageContent />
-  );
+  return <AppearanceGradePageContent />;
 }

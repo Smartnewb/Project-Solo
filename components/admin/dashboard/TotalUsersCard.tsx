@@ -1,9 +1,10 @@
-'use client';
+"use client";
+import { Card, Spinner } from "@heroui/react";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
-import AdminService from '@/app/services/admin';
-import { getRegionLabel } from '@/components/admin/common/RegionFilter';
+import { useState, useEffect } from "react";
+
+import AdminService from "@/app/services/admin";
+import { getRegionLabel } from "@/components/admin/common/RegionFilter";
 
 interface TotalUsersCardProps {
   region?: string;
@@ -11,24 +12,34 @@ interface TotalUsersCardProps {
   useCluster?: boolean;
 }
 
-export default function TotalUsersCard({ region, includeDeleted = false, useCluster = true }: TotalUsersCardProps) {
+export default function TotalUsersCard({
+  region,
+  includeDeleted = false,
+  useCluster = true,
+}: TotalUsersCardProps) {
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 지역 라벨 생성
-  const regionLabel = region ? getRegionLabel(region as any, useCluster) : '전체 지역';
+  const regionLabel = region
+    ? getRegionLabel(region as any, useCluster)
+    : "전체 지역";
 
   useEffect(() => {
     const fetchTotalUsers = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getTotalUsersCount(region, includeDeleted, useCluster);
+        const data = await AdminService.stats.getTotalUsersCount(
+          region,
+          includeDeleted,
+          useCluster,
+        );
         setTotalUsers(data.totalUsers);
         setError(null);
       } catch (err) {
-        console.error('총 회원 수 조회 중 오류:', err);
-        setError('데이터를 불러오는데 실패했습니다.');
+        console.error("총 회원 수 조회 중 오류:", err);
+        setError("데이터를 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
       }
@@ -42,25 +53,23 @@ export default function TotalUsersCard({ region, includeDeleted = false, useClus
   }, [region, includeDeleted, useCluster]);
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography color="textSecondary" gutterBottom>
+    <Card>
+      <Card.Content>
+        <div className={"text-sm text-neutral-700"}>
           총 회원 수 ({regionLabel})
-        </Typography>
+        </div>
         {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" height="40px">
-            <CircularProgress size={24} />
-          </Box>
+          <div>
+            <Spinner aria-label="불러오는 중" size="sm" />
+          </div>
         ) : error ? (
-          <Typography color="error" variant="body2">
-            {error}
-          </Typography>
+          <div className={"text-sm text-neutral-700"}>{error}</div>
         ) : (
-          <Typography variant="h4">
+          <div className={"text-lg font-semibold text-neutral-900"}>
             {totalUsers?.toLocaleString() || 0}
-          </Typography>
+          </div>
         )}
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }

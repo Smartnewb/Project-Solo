@@ -1,663 +1,486 @@
 'use client';
-
+import { Button, Spinner, Chip, Modal, TextField, Label, Input, TextArea, Select, ListBox } from '@heroui/react';
+import { WandSparkles as AutoFixHighIcon, CircleCheck as CheckCircleIcon, Trash2 as DeleteOutlineIcon, Gavel as GavelIcon, RefreshCw as RefreshIcon, Save as SaveIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import {
-	Alert,
-	Box,
-	Button,
-	Chip,
-	CircularProgress,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
-	Divider,
-	FormControl,
-	IconButton,
-	InputLabel,
-	MenuItem,
-	Paper,
-	Select,
-	Stack,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	TextField,
-	Tooltip,
-	Typography,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material/Select';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import GavelIcon from '@mui/icons-material/Gavel';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SaveIcon from '@mui/icons-material/Save';
-import {
-	useLoveCourtMutations,
-	useLoveCourtSubmission,
-	useLoveCourtSubmissions,
-} from '@/app/admin/hooks';
-import type {
-	LoveCourtOptionStatus,
-	LoveCourtSubmission,
-	LoveCourtSubmissionStatus,
-	UpdateLoveCourtOptionCandidateBody,
-} from '@/app/services/admin/love-court';
+import { useLoveCourtMutations, useLoveCourtSubmission, useLoveCourtSubmissions, } from '@/app/admin/hooks';
+import type { LoveCourtOptionStatus, LoveCourtSubmission, LoveCourtSubmissionStatus, UpdateLoveCourtOptionCandidateBody, } from '@/app/services/admin/love-court';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-
 type StatusFilter = 'all' | LoveCourtSubmissionStatus;
 type OptionStatusFilter = 'all' | LoveCourtOptionStatus;
-
 const STATUS_LABEL: Record<LoveCourtSubmissionStatus, string> = {
-	submitted: '접수',
-	queued: '공개 대기',
-	published: '공개 중',
-	closed: '종료',
-	archived: '보관',
-	deleted_by_operator: '삭제',
+    submitted: '접수',
+    queued: '공개 대기',
+    published: '공개 중',
+    closed: '종료',
+    archived: '보관',
+    deleted_by_operator: '삭제',
 };
-
-const STATUS_COLOR: Record<
-	LoveCourtSubmissionStatus,
-	'default' | 'warning' | 'success' | 'error' | 'info'
-> = {
-	submitted: 'default',
-	queued: 'info',
-	published: 'success',
-	closed: 'default',
-	archived: 'default',
-	deleted_by_operator: 'error',
+const STATUS_COLOR: Record<LoveCourtSubmissionStatus, 'default' | 'warning' | 'success' | 'error' | 'info'> = {
+    submitted: 'default',
+    queued: 'info',
+    published: 'success',
+    closed: 'default',
+    archived: 'default',
+    deleted_by_operator: 'error',
 };
-
 const OPTION_STATUS_LABEL: Record<LoveCourtOptionStatus, string> = {
-	pending: '생성 대기',
-	generating: '생성 중',
-	generated: '생성 완료',
-	review_required: '검수 필요',
-	approved: '승인',
-	failed: '생성 실패',
+    pending: '생성 대기',
+    generating: '생성 중',
+    generated: '생성 완료',
+    review_required: '검수 필요',
+    approved: '승인',
+    failed: '생성 실패',
 };
-
-const OPTION_STATUS_COLOR: Record<
-	LoveCourtOptionStatus,
-	'default' | 'warning' | 'success' | 'error' | 'info'
-> = {
-	pending: 'default',
-	generating: 'info',
-	generated: 'info',
-	review_required: 'warning',
-	approved: 'success',
-	failed: 'error',
+const OPTION_STATUS_COLOR: Record<LoveCourtOptionStatus, 'default' | 'warning' | 'success' | 'error' | 'info'> = {
+    pending: 'default',
+    generating: 'info',
+    generated: 'info',
+    review_required: 'warning',
+    approved: 'success',
+    failed: 'error',
 };
-
-const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
-	{ value: 'all', label: '전체 상태' },
-	{ value: 'submitted', label: STATUS_LABEL.submitted },
-	{ value: 'queued', label: STATUS_LABEL.queued },
-	{ value: 'published', label: STATUS_LABEL.published },
-	{ value: 'closed', label: STATUS_LABEL.closed },
-	{ value: 'archived', label: STATUS_LABEL.archived },
-	{ value: 'deleted_by_operator', label: STATUS_LABEL.deleted_by_operator },
+const STATUS_OPTIONS: Array<{
+    value: StatusFilter;
+    label: string;
+}> = [
+    { value: 'all', label: '전체 상태' },
+    { value: 'submitted', label: STATUS_LABEL.submitted },
+    { value: 'queued', label: STATUS_LABEL.queued },
+    { value: 'published', label: STATUS_LABEL.published },
+    { value: 'closed', label: STATUS_LABEL.closed },
+    { value: 'archived', label: STATUS_LABEL.archived },
+    { value: 'deleted_by_operator', label: STATUS_LABEL.deleted_by_operator },
 ];
-
-const OPTION_STATUS_OPTIONS: Array<{ value: OptionStatusFilter; label: string }> = [
-	{ value: 'all', label: '전체 선택지' },
-	{ value: 'review_required', label: OPTION_STATUS_LABEL.review_required },
-	{ value: 'failed', label: OPTION_STATUS_LABEL.failed },
-	{ value: 'approved', label: OPTION_STATUS_LABEL.approved },
-	{ value: 'pending', label: OPTION_STATUS_LABEL.pending },
-	{ value: 'generating', label: OPTION_STATUS_LABEL.generating },
-	{ value: 'generated', label: OPTION_STATUS_LABEL.generated },
+const OPTION_STATUS_OPTIONS: Array<{
+    value: OptionStatusFilter;
+    label: string;
+}> = [
+    { value: 'all', label: '전체 선택지' },
+    { value: 'review_required', label: OPTION_STATUS_LABEL.review_required },
+    { value: 'failed', label: OPTION_STATUS_LABEL.failed },
+    { value: 'approved', label: OPTION_STATUS_LABEL.approved },
+    { value: 'pending', label: OPTION_STATUS_LABEL.pending },
+    { value: 'generating', label: OPTION_STATUS_LABEL.generating },
+    { value: 'generated', label: OPTION_STATUS_LABEL.generated },
 ];
-
 function formatDateTime(value: string | null | undefined): string {
-	if (!value) return '-';
-	return new Intl.DateTimeFormat('ko-KR', {
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
-	}).format(new Date(value));
+    if (!value)
+        return '-';
+    return new Intl.DateTimeFormat('ko-KR', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(new Date(value));
 }
-
 function shortText(value: string | null | undefined, max = 72): string {
-	if (!value) return '-';
-	return value.length > max ? `${value.slice(0, max)}...` : value;
+    if (!value)
+        return '-';
+    return value.length > max ? `${value.slice(0, max)}...` : value;
 }
-
-function normalizeOptions(
-	options: UpdateLoveCourtOptionCandidateBody[],
-): UpdateLoveCourtOptionCandidateBody[] {
-	return options
-		.map((option, index) => ({
-			id: option.id,
-			label: option.label.replace(/\s+/g, ' ').trim(),
-			displayOrder: index,
-		}))
-		.filter((option) => option.label.length > 0);
+function normalizeOptions(options: UpdateLoveCourtOptionCandidateBody[]): UpdateLoveCourtOptionCandidateBody[] {
+    return options
+        .map((option, index) => ({
+        id: option.id,
+        label: option.label.replace(/\s+/g, ' ').trim(),
+        displayOrder: index,
+    }))
+        .filter((option) => option.label.length > 0);
 }
-
 function summarize(items: LoveCourtSubmission[]) {
-	return {
-		reviewRequired: items.filter((item) => item.optionStatus === 'review_required').length,
-		failed: items.filter((item) => item.optionStatus === 'failed').length,
-		queued: items.filter((item) => item.status === 'queued').length,
-		published: items.filter((item) => item.status === 'published').length,
-	};
+    return {
+        reviewRequired: items.filter((item) => item.optionStatus === 'review_required').length,
+        failed: items.filter((item) => item.optionStatus === 'failed').length,
+        queued: items.filter((item) => item.status === 'queued').length,
+        published: items.filter((item) => item.status === 'published').length,
+    };
 }
-
-function StatusChip({ status }: { status: LoveCourtSubmissionStatus }) {
-	return <Chip size="small" color={STATUS_COLOR[status]} label={STATUS_LABEL[status]} />;
+function StatusChip({ status }: {
+    status: LoveCourtSubmissionStatus;
+}) {
+    return <Chip size="sm">{STATUS_LABEL[status]}</Chip>;
 }
-
-function OptionStatusChip({ status }: { status: LoveCourtOptionStatus }) {
-	return (
-		<Chip size="small" color={OPTION_STATUS_COLOR[status]} label={OPTION_STATUS_LABEL[status]} />
-	);
+function OptionStatusChip({ status }: {
+    status: LoveCourtOptionStatus;
+}) {
+    return (<Chip size="sm">{OPTION_STATUS_LABEL[status]}</Chip>);
 }
-
 export default function LoveCourtAdminPage() {
-	const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-	const [optionStatusFilter, setOptionStatusFilter] =
-		useState<OptionStatusFilter>('review_required');
-	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [editOptions, setEditOptions] = useState<UpdateLoveCourtOptionCandidateBody[]>([]);
-	const [deleteOpen, setDeleteOpen] = useState(false);
-	const [deleteReason, setDeleteReason] = useState('');
-	const [localError, setLocalError] = useState<string | null>(null);
-
-	const listParams = useMemo(
-		() => ({
-			status: statusFilter === 'all' ? undefined : statusFilter,
-			optionStatus: optionStatusFilter === 'all' ? undefined : optionStatusFilter,
-			limit: 100,
-		}),
-		[optionStatusFilter, statusFilter],
-	);
-	const summaryParams = useMemo(() => ({ limit: 100 }), []);
-
-	const submissionsQuery = useLoveCourtSubmissions(listParams);
-	const summaryQuery = useLoveCourtSubmissions(summaryParams);
-	const submissions = useMemo(
-		() => submissionsQuery.data?.items ?? [],
-		[submissionsQuery.data?.items],
-	);
-	const summaryItems = useMemo(
-		() => summaryQuery.data?.items ?? [],
-		[summaryQuery.data?.items],
-	);
-	const selectedQuery = useLoveCourtSubmission(selectedId);
-	const selected =
-		selectedQuery.data?.submission ?? submissions.find((submission) => submission.id === selectedId) ?? null;
-	const mutations = useLoveCourtMutations();
-	const counts = useMemo(() => summarize(summaryItems), [summaryItems]);
-	const published = summaryItems.find((submission) => submission.status === 'published');
-	const isBusy =
-		mutations.updateOptions.isPending ||
-		mutations.approveOptions.isPending ||
-		mutations.regenerateOptions.isPending ||
-		mutations.deleteSubmission.isPending ||
-		mutations.generateVerdict.isPending;
-
-	useEffect(() => {
-		if (selectedId && submissions.some((submission) => submission.id === selectedId)) return;
-		setSelectedId(submissions[0]?.id ?? null);
-	}, [selectedId, submissions]);
-
-	useEffect(() => {
-		if (!selected?.options) {
-			setEditOptions([]);
-			return;
-		}
-		setEditOptions(
-			[...selected.options]
-				.sort((a, b) => a.displayOrder - b.displayOrder)
-				.map((option) => ({
-					id: option.id,
-					label: option.label,
-					displayOrder: option.displayOrder,
-				})),
-		);
-	}, [selected?.id, selected?.options]);
-
-	const queryError = submissionsQuery.error ?? summaryQuery.error ?? selectedQuery.error;
-	const error = localError ?? (queryError ? getAdminErrorMessage(queryError, '불러오기 실패') : null);
-
-	function handleStatusChange(event: SelectChangeEvent) {
-		setStatusFilter(event.target.value as StatusFilter);
-	}
-
-	function handleOptionStatusChange(event: SelectChangeEvent) {
-		setOptionStatusFilter(event.target.value as OptionStatusFilter);
-	}
-
-	function updateOptionLabel(index: number, label: string) {
-		setEditOptions((prev) =>
-			prev.map((option, optionIndex) =>
-				optionIndex === index ? { ...option, label } : option,
-			),
-		);
-	}
-
-	function removeOption(index: number) {
-		setEditOptions((prev) => prev.filter((_, optionIndex) => optionIndex !== index));
-	}
-
-	function addOption() {
-		setEditOptions((prev) => [
-			...prev,
-			{ label: '', displayOrder: prev.length },
-		]);
-	}
-
-	async function handleSaveOptions() {
-		if (!selected) return;
-		const options = normalizeOptions(editOptions);
-		if (options.length < 2 || options.length > 4) {
-			setLocalError('선택지는 2-4개여야 합니다.');
-			return;
-		}
-		setLocalError(null);
-		try {
-			await mutations.updateOptions.mutateAsync({
-				submissionId: selected.id,
-				body: { options },
-			});
-		} catch (error) {
-			setLocalError(getAdminErrorMessage(error, '선택지 저장 실패'));
-		}
-	}
-
-	async function handleApprove() {
-		if (!selected) return;
-		setLocalError(null);
-		try {
-			await mutations.approveOptions.mutateAsync(selected.id);
-		} catch (error) {
-			setLocalError(getAdminErrorMessage(error, '승인 실패'));
-		}
-	}
-
-	async function handleRegenerate() {
-		if (!selected) return;
-		setLocalError(null);
-		try {
-			await mutations.regenerateOptions.mutateAsync(selected.id);
-		} catch (error) {
-			setLocalError(getAdminErrorMessage(error, '선택지 재생성 실패'));
-		}
-	}
-
-	async function handleGenerateVerdict(submission: LoveCourtSubmission) {
-		if (!submission.caseId) {
-			setLocalError('Case ID가 없어 판결을 생성할 수 없습니다.');
-			return;
-		}
-		if (
-			!window.confirm(
-				'현재 공개 중인 재판을 즉시 종료하고 AI 판결을 생성할까요? 다음 대기 재판이 있으면 바로 공개됩니다.',
-			)
-		) {
-			return;
-		}
-		setLocalError(null);
-		try {
-			await mutations.generateVerdict.mutateAsync(submission.caseId);
-		} catch (error) {
-			setLocalError(getAdminErrorMessage(error, 'AI 판결 생성 실패'));
-		}
-	}
-
-	async function handleDelete() {
-		if (!selected) return;
-		setLocalError(null);
-		try {
-			await mutations.deleteSubmission.mutateAsync({
-				submissionId: selected.id,
-				body: {
-					reasonCode: 'operator_rejected',
-					reasonMessage: deleteReason || '운영자 검수 기준에 따라 공개하지 않음',
-				},
-			});
-			setDeleteOpen(false);
-			setDeleteReason('');
-		} catch (error) {
-			setLocalError(getAdminErrorMessage(error, '삭제 실패'));
-		}
-	}
-
-	return (
-		<Box>
-			<Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems={{ lg: 'center' }} mb={2}>
-				<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-					<Paper variant="outlined" sx={{ px: 2, py: 1, minWidth: 128 }}>
-						<Typography variant="caption" color="text.secondary">
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const [optionStatusFilter, setOptionStatusFilter] = useState<OptionStatusFilter>('review_required');
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [editOptions, setEditOptions] = useState<UpdateLoveCourtOptionCandidateBody[]>([]);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteReason, setDeleteReason] = useState('');
+    const [localError, setLocalError] = useState<string | null>(null);
+    const listParams = useMemo(() => ({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        optionStatus: optionStatusFilter === 'all' ? undefined : optionStatusFilter,
+        limit: 100,
+    }), [optionStatusFilter, statusFilter]);
+    const summaryParams = useMemo(() => ({ limit: 100 }), []);
+    const submissionsQuery = useLoveCourtSubmissions(listParams);
+    const summaryQuery = useLoveCourtSubmissions(summaryParams);
+    const submissions = useMemo(() => submissionsQuery.data?.items ?? [], [submissionsQuery.data?.items]);
+    const summaryItems = useMemo(() => summaryQuery.data?.items ?? [], [summaryQuery.data?.items]);
+    const selectedQuery = useLoveCourtSubmission(selectedId);
+    const selected = selectedQuery.data?.submission ?? submissions.find((submission) => submission.id === selectedId) ?? null;
+    const mutations = useLoveCourtMutations();
+    const counts = useMemo(() => summarize(summaryItems), [summaryItems]);
+    const published = summaryItems.find((submission) => submission.status === 'published');
+    const isBusy = mutations.updateOptions.isPending ||
+        mutations.approveOptions.isPending ||
+        mutations.regenerateOptions.isPending ||
+        mutations.deleteSubmission.isPending ||
+        mutations.generateVerdict.isPending;
+    useEffect(() => {
+        if (selectedId && submissions.some((submission) => submission.id === selectedId))
+            return;
+        setSelectedId(submissions[0]?.id ?? null);
+    }, [selectedId, submissions]);
+    useEffect(() => {
+        if (!selected?.options) {
+            setEditOptions([]);
+            return;
+        }
+        setEditOptions([...selected.options]
+            .sort((a, b) => a.displayOrder - b.displayOrder)
+            .map((option) => ({
+            id: option.id,
+            label: option.label,
+            displayOrder: option.displayOrder,
+        })));
+    }, [selected?.id, selected?.options]);
+    const queryError = submissionsQuery.error ?? summaryQuery.error ?? selectedQuery.error;
+    const error = localError ?? (queryError ? getAdminErrorMessage(queryError, '불러오기 실패') : null);
+    function handleStatusChange(event: React.ChangeEvent<HTMLSelectElement>) {
+        setStatusFilter(event.target.value as StatusFilter);
+    }
+    function handleOptionStatusChange(event: React.ChangeEvent<HTMLSelectElement>) {
+        setOptionStatusFilter(event.target.value as OptionStatusFilter);
+    }
+    function updateOptionLabel(index: number, label: string) {
+        setEditOptions((prev) => prev.map((option, optionIndex) => optionIndex === index ? { ...option, label } : option));
+    }
+    function removeOption(index: number) {
+        setEditOptions((prev) => prev.filter((_, optionIndex) => optionIndex !== index));
+    }
+    function addOption() {
+        setEditOptions((prev) => [
+            ...prev,
+            { label: '', displayOrder: prev.length },
+        ]);
+    }
+    async function handleSaveOptions() {
+        if (!selected)
+            return;
+        const options = normalizeOptions(editOptions);
+        if (options.length < 2 || options.length > 4) {
+            setLocalError('선택지는 2-4개여야 합니다.');
+            return;
+        }
+        setLocalError(null);
+        try {
+            await mutations.updateOptions.mutateAsync({
+                submissionId: selected.id,
+                body: { options },
+            });
+        }
+        catch (error) {
+            setLocalError(getAdminErrorMessage(error, '선택지 저장 실패'));
+        }
+    }
+    async function handleApprove() {
+        if (!selected)
+            return;
+        setLocalError(null);
+        try {
+            await mutations.approveOptions.mutateAsync(selected.id);
+        }
+        catch (error) {
+            setLocalError(getAdminErrorMessage(error, '승인 실패'));
+        }
+    }
+    async function handleRegenerate() {
+        if (!selected)
+            return;
+        setLocalError(null);
+        try {
+            await mutations.regenerateOptions.mutateAsync(selected.id);
+        }
+        catch (error) {
+            setLocalError(getAdminErrorMessage(error, '선택지 재생성 실패'));
+        }
+    }
+    async function handleGenerateVerdict(submission: LoveCourtSubmission) {
+        if (!submission.caseId) {
+            setLocalError('Case ID가 없어 판결을 생성할 수 없습니다.');
+            return;
+        }
+        if (!window.confirm('현재 공개 중인 재판을 즉시 종료하고 AI 판결을 생성할까요? 다음 대기 재판이 있으면 바로 공개됩니다.')) {
+            return;
+        }
+        setLocalError(null);
+        try {
+            await mutations.generateVerdict.mutateAsync(submission.caseId);
+        }
+        catch (error) {
+            setLocalError(getAdminErrorMessage(error, 'AI 판결 생성 실패'));
+        }
+    }
+    async function handleDelete() {
+        if (!selected)
+            return;
+        setLocalError(null);
+        try {
+            await mutations.deleteSubmission.mutateAsync({
+                submissionId: selected.id,
+                body: {
+                    reasonCode: 'operator_rejected',
+                    reasonMessage: deleteReason || '운영자 검수 기준에 따라 공개하지 않음',
+                },
+            });
+            setDeleteOpen(false);
+            setDeleteReason('');
+        }
+        catch (error) {
+            setLocalError(getAdminErrorMessage(error, '삭제 실패'));
+        }
+    }
+    return (<div>
+			<div style={{ marginBottom: 16 }}>
+				<div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+					<section style={{ paddingInline: 16, paddingBlock: 8, minWidth: 128 }} className="rounded-xl border bg-white p-4">
+						<p>
 							검수 필요
-						</Typography>
-						<Typography variant="h6">{counts.reviewRequired}</Typography>
-					</Paper>
-					<Paper variant="outlined" sx={{ px: 2, py: 1, minWidth: 128 }}>
-						<Typography variant="caption" color="text.secondary">
+						</p>
+						<h2 className="text-lg font-semibold">{counts.reviewRequired}</h2>
+					</section>
+					<section style={{ paddingInline: 16, paddingBlock: 8, minWidth: 128 }} className="rounded-xl border bg-white p-4">
+						<p>
 							생성 실패
-						</Typography>
-						<Typography variant="h6">{counts.failed}</Typography>
-					</Paper>
-					<Paper variant="outlined" sx={{ px: 2, py: 1, minWidth: 128 }}>
-						<Typography variant="caption" color="text.secondary">
+						</p>
+						<h2 className="text-lg font-semibold">{counts.failed}</h2>
+					</section>
+					<section style={{ paddingInline: 16, paddingBlock: 8, minWidth: 128 }} className="rounded-xl border bg-white p-4">
+						<p>
 							공개 대기
-						</Typography>
-						<Typography variant="h6">{counts.queued}</Typography>
-					</Paper>
-					<Paper variant="outlined" sx={{ px: 2, py: 1, minWidth: 128 }}>
-						<Typography variant="caption" color="text.secondary">
+						</p>
+						<h2 className="text-lg font-semibold">{counts.queued}</h2>
+					</section>
+					<section style={{ paddingInline: 16, paddingBlock: 8, minWidth: 128 }} className="rounded-xl border bg-white p-4">
+						<p>
 							공개 중
-						</Typography>
-						<Typography variant="h6">{counts.published}</Typography>
-					</Paper>
-				</Stack>
-				<Box flex={1} />
-				<Stack direction="row" spacing={1} alignItems="center">
-					<FormControl size="small" sx={{ minWidth: 140 }}>
-						<InputLabel>상태</InputLabel>
-						<Select value={statusFilter} label="상태" onChange={handleStatusChange}>
-							{STATUS_OPTIONS.map((option) => (
-								<MenuItem key={option.value} value={option.value}>
+						</p>
+						<h2 className="text-lg font-semibold">{counts.published}</h2>
+					</section>
+				</div>
+				<div style={{ flex: 1 }}></div>
+				<div>
+					<div style={{ minWidth: 140 }}>
+						<label>상태</label>
+						<Select value={statusFilter} aria-label={"상태"} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleStatusChange)({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+							{STATUS_OPTIONS.map((option) => (<ListBox.Item key={option.value} id={option.value} textValue={String(option.label)}>
 									{option.label}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-					<FormControl size="small" sx={{ minWidth: 150 }}>
-						<InputLabel>선택지</InputLabel>
-						<Select
-							value={optionStatusFilter}
-							label="선택지"
-							onChange={handleOptionStatusChange}
-						>
-							{OPTION_STATUS_OPTIONS.map((option) => (
-								<MenuItem key={option.value} value={option.value}>
+								</ListBox.Item>))}
+						</ListBox></Select.Popover></Select>
+					</div>
+					<div style={{ minWidth: 150 }}>
+						<label>선택지</label>
+						<Select value={optionStatusFilter} aria-label={"선택지"} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleOptionStatusChange)({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+							{OPTION_STATUS_OPTIONS.map((option) => (<ListBox.Item key={option.value} id={option.value} textValue={String(option.label)}>
 									{option.label}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-					<Tooltip title="새로고침">
+								</ListBox.Item>))}
+						</ListBox></Select.Popover></Select>
+					</div>
+					<span title={"새로고침"}>
 						<span>
-							<IconButton onClick={() => submissionsQuery.refetch()} disabled={submissionsQuery.isFetching}>
-								<RefreshIcon />
-							</IconButton>
+							<Button onPress={() => submissionsQuery.refetch()} isDisabled={submissionsQuery.isFetching} variant="tertiary" isIconOnly={true} aria-label={"새로고침"}>
+								<RefreshIcon></RefreshIcon>
+							</Button>
 						</span>
-					</Tooltip>
-				</Stack>
-			</Stack>
+					</span>
+				</div>
+			</div>
 
-			{published && (
-				<Alert
-					severity="success"
-					sx={{ mb: 2 }}
-					action={
-						<Button
-							color="inherit"
-							size="small"
-							startIcon={<GavelIcon />}
-							disabled={isBusy || !published.caseId}
-							onClick={() => handleGenerateVerdict(published)}
-						>
-							AI 판결 생성
-						</Button>
-					}
-				>
+			{published && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
 					현재 공개 중: {published.title ?? published.id} · {formatDateTime(published.publishedAt)}
-				</Alert>
-			)}
+				</aside>)}
 
-			{error && (
-				<Alert severity="error" sx={{ mb: 2 }} onClose={() => setLocalError(null)}>
+			{error && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>
 					{error}
-				</Alert>
-			)}
+				</aside>)}
 
-			<Stack direction={{ xs: 'column', xl: 'row' }} spacing={2} alignItems="stretch">
-				<TableContainer component={Paper} sx={{ flex: 1, minWidth: 0 }}>
-					<Table size="small">
-						<TableHead>
-							<TableRow>
-								<TableCell>고민</TableCell>
-								<TableCell>상태</TableCell>
-								<TableCell>선택지</TableCell>
-								<TableCell>큐</TableCell>
-								<TableCell>접수</TableCell>
-								<TableCell align="right">액션</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{submissionsQuery.isLoading ? (
-								<TableRow>
-									<TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-										<CircularProgress />
-									</TableCell>
-								</TableRow>
-							) : submissions.length === 0 ? (
-								<TableRow>
-									<TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-										<Typography color="text.secondary">표시할 제출건이 없습니다.</Typography>
-									</TableCell>
-								</TableRow>
-							) : (
-								submissions.map((submission) => (
-									<TableRow
-										key={submission.id}
-										hover
-										selected={submission.id === selectedId}
-										onClick={() => setSelectedId(submission.id)}
-										sx={{ cursor: 'pointer' }}
-									>
-										<TableCell sx={{ maxWidth: 420 }}>
-											<Typography variant="body2" fontWeight={700} noWrap>
-												{submission.title ?? submission.id}
-											</Typography>
-											<Typography variant="caption" color="text.secondary">
+			<div>
+				<div style={{ flex: 1, minWidth: 0 }}>
+					<table className="w-full text-sm">
+						<thead className="bg-gray-50 text-left">
+							<tr className="border-b">
+								<th scope="col" className="border-b px-4 py-3">고민</th>
+								<th scope="col" className="border-b px-4 py-3">상태</th>
+								<th scope="col" className="border-b px-4 py-3">선택지</th>
+								<th scope="col" className="border-b px-4 py-3">큐</th>
+								<th scope="col" className="border-b px-4 py-3">접수</th>
+								<th scope="col" className="border-b px-4 py-3">액션</th>
+							</tr>
+						</thead>
+						<tbody>
+							{submissionsQuery.isLoading ? (<tr className="border-b">
+									<td colSpan={6} style={{ paddingBlock: 48 }} className="border-b px-4 py-3">
+										<Spinner size="sm"></Spinner>
+									</td>
+								</tr>) : submissions.length === 0 ? (<tr className="border-b">
+									<td colSpan={6} style={{ paddingBlock: 48 }} className="border-b px-4 py-3">
+										<p>표시할 제출건이 없습니다.</p>
+									</td>
+								</tr>) : (submissions.map((submission) => (<tr key={submission.id} style={{ cursor: 'pointer' }} className="border-b">
+										<td style={{ maxWidth: 420 }} className="border-b px-4 py-3">
+											<p>
+												<Button variant="tertiary" onPress={() => setSelectedId(submission.id)}>{submission.title ?? submission.id}</Button>
+											</p>
+											<p>
 												{shortText(submission.body)}
-											</Typography>
-										</TableCell>
-										<TableCell>
-											<StatusChip status={submission.status} />
-										</TableCell>
-										<TableCell>
-											<Stack spacing={0.5}>
-												<OptionStatusChip status={submission.optionStatus} />
-												<Typography variant="caption" color="text.secondary">
+											</p>
+										</td>
+										<td className="border-b px-4 py-3">
+											<StatusChip status={submission.status}></StatusChip>
+										</td>
+										<td className="border-b px-4 py-3">
+											<div>
+												<OptionStatusChip status={submission.optionStatus}></OptionStatusChip>
+												<p>
 													{submission.options?.length ?? 0}개
-												</Typography>
-											</Stack>
-										</TableCell>
-										<TableCell>
-											<Typography variant="body2">
+												</p>
+											</div>
+										</td>
+										<td className="border-b px-4 py-3">
+											<p>
 												{submission.queuePosition ? `${submission.queuePosition}번` : '-'}
-											</Typography>
-										</TableCell>
-										<TableCell>
-											<Typography variant="body2">{formatDateTime(submission.createdAt)}</Typography>
-										</TableCell>
-										<TableCell align="right">
-											<Button size="small" variant="outlined">
+											</p>
+										</td>
+										<td className="border-b px-4 py-3">
+											<p>{formatDateTime(submission.createdAt)}</p>
+										</td>
+										<td className="border-b px-4 py-3">
+											<Button variant="secondary">
 												보기
 											</Button>
-										</TableCell>
-									</TableRow>
-								))
-							)}
-						</TableBody>
-					</Table>
-				</TableContainer>
+										</td>
+									</tr>)))}
+						</tbody>
+					</table>
+				</div>
 
-				<Paper variant="outlined" sx={{ width: { xs: '100%', xl: 520 }, p: 2 }}>
-					{selected ? (
-						<Stack spacing={2}>
-							<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
-								<Box minWidth={0}>
-									<Typography variant="h6" fontWeight={700}>
+				<section style={{ padding: 16 }} className="rounded-xl border bg-white p-4">
+					{selected ? (<div>
+							<div>
+								<div style={{ minWidth: 0 }}>
+									<h2 className="text-lg font-semibold">
 										{selected.title ?? selected.id}
-									</Typography>
-									<Typography variant="caption" color="text.secondary">
+									</h2>
+									<p>
 										{selected.id}
-									</Typography>
-								</Box>
-								<Stack direction="row" spacing={0.75}>
-									<StatusChip status={selected.status} />
-									<OptionStatusChip status={selected.optionStatus} />
-								</Stack>
-							</Stack>
+									</p>
+								</div>
+								<div>
+									<StatusChip status={selected.status}></StatusChip>
+									<OptionStatusChip status={selected.optionStatus}></OptionStatusChip>
+								</div>
+							</div>
 
-							<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+							<p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
 								{selected.body}
-							</Typography>
+							</p>
 
-							{selected.optionGenerationError && (
-								<Alert severity="error">{selected.optionGenerationError}</Alert>
-							)}
+							{selected.optionGenerationError && (<aside role="alert" className="rounded-lg border p-3">{selected.optionGenerationError}</aside>)}
 
-							<Divider />
+							<hr></hr>
 
-							<Stack spacing={1.25}>
-								<Stack direction="row" justifyContent="space-between" alignItems="center">
-									<Typography variant="subtitle2" fontWeight={700}>
+							<div>
+								<div>
+									<p>
 										선택지
-									</Typography>
-									<Button size="small" onClick={addOption} disabled={editOptions.length >= 4 || isBusy}>
+									</p>
+									<Button onPress={addOption} isDisabled={editOptions.length >= 4 || isBusy} variant="tertiary">
 										추가
 									</Button>
-								</Stack>
-								{editOptions.length === 0 ? (
-									<Typography variant="body2" color="text.secondary">
+								</div>
+								{editOptions.length === 0 ? (<p>
 										선택지가 없습니다.
-									</Typography>
-								) : (
-									editOptions.map((option, index) => (
-										<Stack key={`${option.id ?? 'new'}-${index}`} direction="row" spacing={1} alignItems="center">
-											<TextField
-												size="small"
-												fullWidth
-												value={option.label}
-												onChange={(event) => updateOptionLabel(index, event.target.value)}
-												inputProps={{ maxLength: 100 }}
-											/>
-											<Tooltip title="선택지 제거">
+									</p>) : (editOptions.map((option, index) => (<div key={`${option.id ?? 'new'}-${index}`}>
+											<TextField className="mb-4"><Label>{`선택지 ${index + 1} 문구`}</Label><Input value={option.label} onChange={(event) => updateOptionLabel(index, event.target.value)} {...{ maxLength: 100 }}></Input></TextField>
+											<span title={"선택지 제거"}>
 												<span>
-													<IconButton
-														size="small"
-														onClick={() => removeOption(index)}
-														disabled={editOptions.length <= 2 || isBusy}
-													>
-														<DeleteOutlineIcon fontSize="small" />
-													</IconButton>
+													<Button onPress={() => removeOption(index)} isDisabled={editOptions.length <= 2 || isBusy} variant="tertiary" isIconOnly={true} aria-label={"선택지 제거"}>
+														<DeleteOutlineIcon></DeleteOutlineIcon>
+													</Button>
 												</span>
-											</Tooltip>
-										</Stack>
-									))
-								)}
-							</Stack>
+											</span>
+										</div>)))}
+							</div>
 
-							<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-								<Button
-									variant="outlined"
-									startIcon={<SaveIcon />}
-									disabled={!selected || editOptions.length < 2 || isBusy}
-									onClick={handleSaveOptions}
-								>
+							<div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+								<Button isDisabled={!selected || editOptions.length < 2 || isBusy} onPress={handleSaveOptions} variant="secondary">{<SaveIcon></SaveIcon>}
 									저장
 								</Button>
-								<Button
-									variant="contained"
-									color="success"
-									startIcon={<CheckCircleIcon />}
-									disabled={!selected || editOptions.length < 2 || isBusy}
-									onClick={handleApprove}
-								>
+								<Button isDisabled={!selected || editOptions.length < 2 || isBusy} onPress={handleApprove} variant="primary">{<CheckCircleIcon></CheckCircleIcon>}
 									승인
 								</Button>
-								<Button
-									variant="outlined"
-									startIcon={<AutoFixHighIcon />}
-									disabled={!selected || isBusy}
-									onClick={handleRegenerate}
-								>
+								<Button isDisabled={!selected || isBusy} onPress={handleRegenerate} variant="secondary">{<AutoFixHighIcon></AutoFixHighIcon>}
 									재생성
 								</Button>
-								{selected.status === 'published' && (
-									<Button
-										variant="contained"
-										color="warning"
-										startIcon={<GavelIcon />}
-										disabled={!selected.caseId || isBusy}
-										onClick={() => handleGenerateVerdict(selected)}
-									>
+								{selected.status === 'published' && (<Button isDisabled={!selected.caseId || isBusy} onPress={() => handleGenerateVerdict(selected)} variant="primary">{<GavelIcon></GavelIcon>}
 										AI 판결 생성 후 종료
-									</Button>
-								)}
-								<Button
-									variant="outlined"
-									color="error"
-									startIcon={<DeleteOutlineIcon />}
-									disabled={!selected || isBusy}
-									onClick={() => setDeleteOpen(true)}
-								>
+									</Button>)}
+								<Button isDisabled={!selected || isBusy} onPress={() => setDeleteOpen(true)} variant="secondary">{<DeleteOutlineIcon></DeleteOutlineIcon>}
 									삭제
 								</Button>
-							</Stack>
+							</div>
 
-							<Divider />
+							<hr></hr>
 
-							<Stack spacing={0.75}>
-								<Typography variant="caption" color="text.secondary">
+							<div>
+								<p>
 									카테고리: {selected.category ?? '-'}
-								</Typography>
-								<Typography variant="caption" color="text.secondary">
+								</p>
+								<p>
 									큐 진입: {formatDateTime(selected.queueEnteredAt)}
-								</Typography>
-								<Typography variant="caption" color="text.secondary">
+								</p>
+								<p>
 									공개: {formatDateTime(selected.publishedAt)}
-								</Typography>
-								<Typography variant="caption" color="text.secondary">
+								</p>
+								<p>
 									Case ID: {selected.caseId ?? '-'}
-								</Typography>
-							</Stack>
-						</Stack>
-					) : (
-						<Box display="flex" alignItems="center" justifyContent="center" minHeight={360}>
-							<Typography color="text.secondary">제출건을 선택하세요.</Typography>
-						</Box>
-					)}
-				</Paper>
-			</Stack>
+								</p>
+							</div>
+						</div>) : (<div style={{ display: "flex", minHeight: 360 }}>
+							<p>제출건을 선택하세요.</p>
+						</div>)}
+				</section>
+			</div>
 
-			<Dialog open={deleteOpen} onClose={() => !isBusy && setDeleteOpen(false)} fullWidth maxWidth="sm">
-				<DialogTitle>제출건 삭제</DialogTitle>
-				<DialogContent>
-					<TextField
-						autoFocus
-						margin="dense"
-						fullWidth
-						multiline
-						minRows={3}
-						label="사유"
-						value={deleteReason}
-						onChange={(event) => setDeleteReason(event.target.value)}
-					/>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setDeleteOpen(false)} disabled={isBusy}>
+			<Modal.Backdrop isOpen={deleteOpen} onOpenChange={next => {
+            if (!next)
+                (() => !isBusy && setDeleteOpen(false))();
+        }}><Modal.Container size="lg"><Modal.Dialog>
+				<Modal.Heading>제출건 삭제</Modal.Heading>
+				<Modal.Body>
+					<TextField className="mb-4"><Label>{"사유"}</Label><TextArea autoFocus value={deleteReason} onChange={(event) => setDeleteReason(event.target.value)}></TextArea></TextField>
+				</Modal.Body>
+				<Modal.Footer>
+					<Button onPress={() => setDeleteOpen(false)} isDisabled={isBusy} variant="tertiary">
 						취소
 					</Button>
-					<Button color="error" variant="contained" onClick={handleDelete} disabled={isBusy}>
+					<Button onPress={handleDelete} isDisabled={isBusy} variant="primary">
 						삭제
 					</Button>
-				</DialogActions>
-			</Dialog>
-		</Box>
-	);
+				</Modal.Footer>
+			</Modal.Dialog></Modal.Container></Modal.Backdrop>
+		</div>);
 }

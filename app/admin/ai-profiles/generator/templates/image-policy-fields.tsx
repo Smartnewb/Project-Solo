@@ -1,4 +1,5 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
 import {
   IMAGE_ASPECT_RATIOS,
@@ -11,24 +12,24 @@ import {
   type ImageQuality,
   type ImageResolution,
   type ModerationStrictness,
-} from '@/app/types/ai-profile-generator';
-import { Label } from '@/shared/ui/label';
+} from "@/app/types/ai-profile-generator";
+import { Label } from "@/shared/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { Textarea } from '@/shared/ui/textarea';
-import { AdvancedJsonPanel } from '../_shared/advanced-json-panel';
+} from "@/shared/ui/select";
+import { Textarea } from "@/shared/ui/textarea";
+import { AdvancedJsonPanel } from "../_shared/advanced-json-panel";
 import {
   asString,
   asStringArray,
   pickExtra,
   pruneEmpty,
-} from '../_shared/policy-utils';
-import { StringListInput } from '../_shared/string-list-input';
+} from "../_shared/policy-utils";
+import { StringListInput } from "../_shared/string-list-input";
 
 interface Props {
   value: Record<string, unknown>;
@@ -37,17 +38,17 @@ interface Props {
 }
 
 const KNOWN_KEYS = [
-  'providerHint',
-  'resolution',
-  'aspectRatio',
-  'quality',
-  'moderationStrictness',
-  'negativePrompts',
-  'requiredTags',
-  'styleBias',
+  "providerHint",
+  "resolution",
+  "aspectRatio",
+  "quality",
+  "moderationStrictness",
+  "negativePrompts",
+  "requiredTags",
+  "styleBias",
 ] as const;
 
-const UNSET = 'unset';
+const UNSET = "unset";
 
 export function ImagePolicyFields({ value, onChange, disabled }: Props) {
   const providerHint = asString(value.providerHint);
@@ -93,7 +94,6 @@ export function ImagePolicyFields({ value, onChange, disabled }: Props) {
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
-        <Label>Provider 힌트</Label>
         <Select
           value={providerHint || UNSET}
           onValueChange={(next) =>
@@ -104,6 +104,7 @@ export function ImagePolicyFields({ value, onChange, disabled }: Props) {
           }
           disabled={disabled}
         >
+          <HeroSelectLabel>Provider 힌트</HeroSelectLabel>
           <SelectTrigger>
             <SelectValue placeholder="Provider 선택" />
           </SelectTrigger>
@@ -119,7 +120,6 @@ export function ImagePolicyFields({ value, onChange, disabled }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>해상도</Label>
         <Select
           value={resolution || UNSET}
           onValueChange={(next) =>
@@ -130,6 +130,7 @@ export function ImagePolicyFields({ value, onChange, disabled }: Props) {
           }
           disabled={disabled}
         >
+          <HeroSelectLabel>해상도</HeroSelectLabel>
           <SelectTrigger>
             <SelectValue placeholder="해상도 선택" />
           </SelectTrigger>
@@ -145,7 +146,6 @@ export function ImagePolicyFields({ value, onChange, disabled }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>비율</Label>
         <Select
           value={aspectRatio || UNSET}
           onValueChange={(next) =>
@@ -156,6 +156,7 @@ export function ImagePolicyFields({ value, onChange, disabled }: Props) {
           }
           disabled={disabled}
         >
+          <HeroSelectLabel>비율</HeroSelectLabel>
           <SelectTrigger>
             <SelectValue placeholder="비율 선택" />
           </SelectTrigger>
@@ -171,17 +172,16 @@ export function ImagePolicyFields({ value, onChange, disabled }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>품질</Label>
         <Select
           value={quality || UNSET}
           onValueChange={(next) =>
             emitKnown({
-              quality:
-                next === UNSET ? undefined : (next as ImageQuality),
+              quality: next === UNSET ? undefined : (next as ImageQuality),
             })
           }
           disabled={disabled}
         >
+          <HeroSelectLabel>품질</HeroSelectLabel>
           <SelectTrigger>
             <SelectValue placeholder="품질 선택" />
           </SelectTrigger>
@@ -197,19 +197,17 @@ export function ImagePolicyFields({ value, onChange, disabled }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>Moderation 엄격도</Label>
         <Select
           value={moderationStrictness || UNSET}
           onValueChange={(next) =>
             emitKnown({
               moderationStrictness:
-                next === UNSET
-                  ? undefined
-                  : (next as ModerationStrictness),
+                next === UNSET ? undefined : (next as ModerationStrictness),
             })
           }
           disabled={disabled}
         >
+          <HeroSelectLabel>Moderation 엄격도</HeroSelectLabel>
           <SelectTrigger>
             <SelectValue placeholder="Moderation 엄격도 선택" />
           </SelectTrigger>

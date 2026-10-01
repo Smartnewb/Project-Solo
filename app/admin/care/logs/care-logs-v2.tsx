@@ -1,36 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-	Box,
-	Typography,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Paper,
-	TextField,
-	InputAdornment,
-	Select,
-	MenuItem,
-	FormControl,
-	InputLabel,
-	Chip,
-	Skeleton,
-	Tooltip,
-	TablePagination,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import { Button, Chip, Input, Label, ListBox, Pagination, Select, Spinner, TextField, Tooltip } from '@heroui/react';
 import AdminService from '@/app/services/admin';
 import type { CareLog } from '@/app/services/admin/care';
 
-const ACTION_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-	like: { label: '좋아요', color: '#db2777', bg: '#fce7f3' },
-	mutual_like: { label: '상호좋아요', color: '#2563eb', bg: '#dbeafe' },
-	open_chat: { label: '채팅방 개설', color: '#059669', bg: '#d1fae5' },
-};
+const ACTION_LABELS: Record<string, string> = {like: '좋아요', mutual_like: '상호좋아요', open_chat: '채팅방 개설'};
 
 function CareLogsContent() {
 	const [logs, setLogs] = useState<CareLog[]>([]);
@@ -83,169 +58,16 @@ function CareLogsContent() {
 		return () => clearTimeout(timer);
 	}, [searchInput]);
 
-	return (
-		<Box sx={{ p: 3 }}>
-			<Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
-				케어 이력
-			</Typography>
-
-			<Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-				<FormControl size="small" sx={{ minWidth: 140 }}>
-					<InputLabel>액션 타입</InputLabel>
-					<Select
-						value={actionFilter}
-						label="액션 타입"
-						onChange={(e) => setActionFilter(e.target.value)}
-					>
-						<MenuItem value="">전체</MenuItem>
-						<MenuItem value="like">좋아요</MenuItem>
-						<MenuItem value="mutual_like">상호좋아요</MenuItem>
-						<MenuItem value="open_chat">채팅방 개설</MenuItem>
-					</Select>
-				</FormControl>
-				<TextField
-					size="small"
-					placeholder="대상 유저 ID 검색..."
-					value={searchInput}
-					onChange={(e) => setSearchInput(e.target.value)}
-					InputProps={{
-						startAdornment: (
-							<InputAdornment position="start">
-								<SearchIcon sx={{ fontSize: 18, color: '#9ca3af' }} />
-							</InputAdornment>
-						),
-					}}
-					sx={{ flex: 1 }}
-				/>
-			</Box>
-
-			{error && (
-				<Typography color="error" sx={{ mb: 2 }}>
-					{error}
-				</Typography>
-			)}
-
-			<TableContainer component={Paper} variant="outlined">
-				<Table size="small">
-					<TableHead>
-						<TableRow sx={{ bgcolor: '#f9fafb' }}>
-							<TableCell sx={{ fontWeight: 600 }}>일시</TableCell>
-							<TableCell sx={{ fontWeight: 600 }}>대상 유저</TableCell>
-							<TableCell sx={{ fontWeight: 600 }}>파트너</TableCell>
-							<TableCell sx={{ fontWeight: 600 }}>액션</TableCell>
-							<TableCell sx={{ fontWeight: 600 }}>편지 내용</TableCell>
-							<TableCell sx={{ fontWeight: 600 }}>실행 어드민</TableCell>
-						</TableRow>
-					</TableHead>
-					<TableBody>
-						{loading
-							? [1, 2, 3].map((i) => (
-									<TableRow key={i}>
-										{[1, 2, 3, 4, 5, 6].map((j) => (
-											<TableCell key={j}>
-												<Skeleton variant="text" />
-											</TableCell>
-										))}
-									</TableRow>
-								))
-							: logs.length === 0
-								? (
-										<TableRow>
-											<TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
-												<Typography
-													color="text.secondary"
-													sx={{ fontSize: 13 }}
-												>
-													케어 이력이 없습니다
-												</Typography>
-											</TableCell>
-										</TableRow>
-									)
-								: logs.map((log) => {
-										const actionInfo = ACTION_LABELS[log.action] || {
-											label: log.action,
-											color: '#666',
-											bg: '#f3f4f6',
-										};
-										return (
-											<TableRow key={log.id} hover>
-												<TableCell
-													sx={{
-														fontSize: 12,
-														color: '#666',
-														whiteSpace: 'nowrap',
-													}}
-												>
-													{new Date(log.created_at).toLocaleDateString(
-														'ko-KR',
-														{
-															month: 'numeric',
-															day: 'numeric',
-															hour: '2-digit',
-															minute: '2-digit',
-														},
-													)}
-												</TableCell>
-												<TableCell sx={{ fontWeight: 500, fontSize: 13 }}>
-													{log.target_name}
-												</TableCell>
-												<TableCell sx={{ fontWeight: 500, fontSize: 13 }}>
-													{log.partner_name}
-												</TableCell>
-												<TableCell>
-													<Chip
-														label={actionInfo.label}
-														size="small"
-														sx={{
-															bgcolor: actionInfo.bg,
-															color: actionInfo.color,
-															fontWeight: 600,
-															fontSize: 10,
-															height: 22,
-														}}
-													/>
-												</TableCell>
-												<TableCell
-													sx={{ maxWidth: 200, fontSize: 12, color: '#666' }}
-												>
-													<Tooltip title={log.letter_content} arrow>
-														<Typography
-															noWrap
-															sx={{
-																fontSize: 12,
-																color: '#666',
-																maxWidth: 200,
-															}}
-														>
-															{log.letter_content}
-														</Typography>
-													</Tooltip>
-												</TableCell>
-												<TableCell sx={{ fontSize: 12, color: '#666' }}>
-													{log.admin_name}
-												</TableCell>
-											</TableRow>
-										);
-									})}
-					</TableBody>
-				</Table>
-			</TableContainer>
-
-			{!loading && logs.length > 0 && (
-				<TablePagination
-					component="div"
-					count={pagination.total}
-					page={pagination.page - 1}
-					onPageChange={(_, newPage) => fetchLogs(newPage + 1)}
-					rowsPerPage={pagination.limit}
-					rowsPerPageOptions={[20]}
-					labelDisplayedRows={({ from, to, count }) =>
-						`${from}-${to} / 총 ${count}건`
-					}
-				/>
-			)}
-		</Box>
-	);
+  return <section className="space-y-4">
+    <h1 className="text-2xl font-bold">케어 이력</h1>
+    <div className="grid gap-3 sm:grid-cols-[180px_1fr]"><Select value={actionFilter || 'all'} onChange={key => setActionFilter(key === 'all' ? '' : String(key))}><Label>액션 타입</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox><ListBox.Item id="all" textValue="전체">전체</ListBox.Item>{Object.entries(ACTION_LABELS).map(([action,label]) => <ListBox.Item key={action} id={action} textValue={label}>{label}</ListBox.Item>)}</ListBox></Select.Popover></Select>
+      <TextField value={searchInput} onChange={setSearchInput}><Label>대상 유저 ID 검색</Label><Input placeholder="대상 유저 ID 검색..." /></TextField></div>
+    {error && <p role="alert" className="text-danger">{error}</p>}
+    <div className="overflow-x-auto rounded-xl border border-border"><table className="w-full text-left text-sm"><caption className="sr-only">케어 실행 이력</caption><thead className="bg-gray-50"><tr>{['일시','대상 유저','파트너','액션','편지 내용','실행 어드민'].map(label => <th key={label} scope="col" className="px-3 py-3 font-semibold">{label}</th>)}</tr></thead><tbody>
+      {loading ? <tr><td colSpan={6} className="py-8 text-center"><Spinner aria-label="케어 이력 불러오는 중" /></td></tr> : !logs.length ? <tr><td colSpan={6} className="py-8 text-center text-gray-600">케어 이력이 없습니다</td></tr> : logs.map(log => <tr key={log.id} className="border-t border-border hover:bg-gray-50"><td className="px-3 py-3 whitespace-nowrap">{new Date(log.created_at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td className="px-3 py-3 font-medium">{log.target_name}</td><td className="px-3 py-3 font-medium">{log.partner_name}</td><td className="px-3 py-3"><Chip size="sm">{ACTION_LABELS[log.action] || log.action}</Chip></td><td className="max-w-[200px] px-3 py-3"><Tooltip><Button variant="ghost" size="sm" className="max-w-[200px] justify-start" aria-label={`${log.target_name} 편지 내용`}><span className="truncate">{log.letter_content}</span></Button><Tooltip.Content className="max-w-sm whitespace-pre-wrap">{log.letter_content}</Tooltip.Content></Tooltip></td><td className="px-3 py-3">{log.admin_name}</td></tr>)}
+    </tbody></table></div>
+    {!loading && logs.length > 0 && <Pagination size="sm" aria-label="케어 이력 페이지"><Pagination.Summary>{(pagination.page-1)*pagination.limit+1}-{Math.min(pagination.page*pagination.limit,pagination.total)} / 총 {pagination.total}건</Pagination.Summary><Pagination.Content><Pagination.Item><Pagination.Previous isDisabled={pagination.page <= 1} onPress={() => fetchLogs(pagination.page-1)}>이전</Pagination.Previous></Pagination.Item><Pagination.Item><Pagination.Next isDisabled={pagination.page*pagination.limit >= pagination.total} onPress={() => fetchLogs(pagination.page+1)}>다음</Pagination.Next></Pagination.Item></Pagination.Content></Pagination>}
+  </section>;
 }
 
 export default function CareLogsV2() {

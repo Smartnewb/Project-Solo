@@ -1,15 +1,18 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { Button } from "@heroui/react";
+
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import type {
   AiProfileTemplate,
   CreateTemplateBody,
   UpdateTemplateBody,
-} from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -17,24 +20,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { emptyObjectToUndef, pruneEmpty } from '../_shared/policy-utils';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/select";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { emptyObjectToUndef, pruneEmpty } from "../_shared/policy-utils";
+import { useAiProfileErrorHandler } from "../_shared-error";
 import {
   TemplatePolicyFields,
   type TemplatePolicyFieldsValue,
-} from './template-policy-fields';
+} from "./template-policy-fields";
 
 interface Props {
   open: boolean;
@@ -42,7 +45,7 @@ interface Props {
   template: AiProfileTemplate | null;
 }
 
-const PROMPT_VERSION_NONE = 'none';
+const PROMPT_VERSION_NONE = "none";
 
 interface FormState {
   name: string;
@@ -66,9 +69,9 @@ function emptyPolicy(): TemplatePolicyFieldsValue {
 function initState(template: AiProfileTemplate | null): FormState {
   if (!template) {
     return {
-      name: '',
-      description: '',
-      baseInstruction: '',
+      name: "",
+      description: "",
+      baseInstruction: "",
       promptVersionId: PROMPT_VERSION_NONE,
       policy: emptyPolicy(),
     };
@@ -85,7 +88,7 @@ function initState(template: AiProfileTemplate | null): FormState {
 
   return {
     name: template.name,
-    description: template.description ?? '',
+    description: template.description ?? "",
     baseInstruction: template.baseInstruction,
     promptVersionId: template.promptVersionId ?? PROMPT_VERSION_NONE,
     policy,
@@ -119,10 +122,10 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
   const mutation = useMutation({
     mutationFn: async () => {
       const name = form.name.trim();
-      if (!name) throw new Error('이름을 입력하세요.');
+      if (!name) throw new Error("이름을 입력하세요.");
       const baseInstruction = form.baseInstruction.trim();
       if (baseInstruction.length < 10) {
-        throw new Error('기본 지시문은 10자 이상이어야 합니다.');
+        throw new Error("기본 지시문은 10자 이상이어야 합니다.");
       }
 
       const domainInstructions = emptyObjectToUndef(
@@ -170,7 +173,9 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
       return aiProfileGenerator.createGenerationTemplate(createBody);
     },
     onSuccess: () => {
-      toast.success(isEdit ? '템플릿이 수정되었습니다.' : '템플릿이 생성되었습니다.');
+      toast.success(
+        isEdit ? "템플릿이 수정되었습니다." : "템플릿이 생성되었습니다.",
+      );
       qc.invalidateQueries({ queryKey: aiProfileGeneratorKeys.templates() });
       onOpenChange(false);
     },
@@ -191,7 +196,7 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? '템플릿 편집' : '새 템플릿 생성'}</DialogTitle>
+          <DialogTitle>{isEdit ? "템플릿 편집" : "새 템플릿 생성"}</DialogTitle>
           <DialogDescription>
             이름, 기본 지시문, 도메인별 지시문, 프롬프트 버전, 정책을 구조화된
             폼으로 관리합니다.
@@ -244,15 +249,13 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="template-prompt-version">
-              프롬프트 버전 (선택)
-            </Label>
             <Select
               value={form.promptVersionId}
               onValueChange={(value) =>
                 setForm((prev) => ({ ...prev, promptVersionId: value }))
               }
             >
+              <HeroSelectLabel>프롬프트 버전 (선택)</HeroSelectLabel>
               <SelectTrigger id="template-prompt-version">
                 <SelectValue placeholder="프롬프트 버전을 선택하세요" />
               </SelectTrigger>
@@ -274,9 +277,7 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
 
           <TemplatePolicyFields
             value={form.policy}
-            onChange={(next) =>
-              setForm((prev) => ({ ...prev, policy: next }))
-            }
+            onChange={(next) => setForm((prev) => ({ ...prev, policy: next }))}
           />
 
           {validationError ? (
@@ -286,14 +287,20 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={mutation.isPending}
+            isDisabled={mutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
-          <Button onClick={handleSubmit} disabled={mutation.isPending}>
-            {mutation.isPending ? '저장 중…' : isEdit ? '저장' : '생성'}
+          <Button
+            onClick={handleSubmit}
+            isDisabled={mutation.isPending}
+            variant={"primary"}
+            size={"md"}
+          >
+            {mutation.isPending ? "저장 중…" : isEdit ? "저장" : "생성"}
           </Button>
         </DialogFooter>
       </DialogContent>

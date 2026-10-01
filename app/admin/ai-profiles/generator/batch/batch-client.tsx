@@ -1,19 +1,20 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import { Alert, AlertDescription } from '@/shared/ui/alert';
-import { Button } from '@/shared/ui/button';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { shortId } from '../_shared/format';
-import { GeneratorTabs } from '../_tabs';
-import { BatchEnqueueDialog } from './batch-enqueue-dialog';
-import { BatchStatusBadge } from './batch-status-badge';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
+import { Alert, AlertDescription } from "@/shared/ui/alert";
 
-const LAST_JOB_KEY = 'ai-profile-generator:last-batch-job-id';
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { shortId } from "../_shared/format";
+import { GeneratorTabs } from "../_tabs";
+import { BatchEnqueueDialog } from "./batch-enqueue-dialog";
+import { BatchStatusBadge } from "./batch-status-badge";
+
+const LAST_JOB_KEY = "ai-profile-generator:last-batch-job-id";
 const POLL_INTERVAL_MS = 5_000;
 
 export function BatchClient() {
@@ -21,14 +22,14 @@ export function BatchClient() {
   const [jobId, setJobId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     const stored = window.localStorage.getItem(LAST_JOB_KEY);
     if (stored) setJobId(stored);
   }, []);
 
   const rememberJob = (id: string) => {
     setJobId(id);
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.localStorage.setItem(LAST_JOB_KEY, id);
     }
   };
@@ -45,7 +46,7 @@ export function BatchClient() {
     refetchInterval: (q) => {
       const state = q.state.data?.state;
       if (!state) return POLL_INTERVAL_MS;
-      if (state === 'completed' || state === 'failed') return false;
+      if (state === "completed" || state === "failed") return false;
       return POLL_INTERVAL_MS;
     },
   });
@@ -61,18 +62,23 @@ export function BatchClient() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">배치 생성</h1>
           <p className="mt-1 text-sm text-slate-500">
-            자연어 지시문을 기반으로 여러 Draft를 한 번에 생성합니다. 최근 배치의
-            상태를 이 페이지에서 확인합니다.
+            자연어 지시문을 기반으로 여러 Draft를 한 번에 생성합니다. 최근
+            배치의 상태를 이 페이지에서 확인합니다.
           </p>
         </div>
-        <Button onClick={() => setEnqueueOpen(true)}>
-          <Plus className="mr-1 h-4 w-4" /> 새 배치 enqueue
+        <Button
+          onClick={() => setEnqueueOpen(true)}
+          variant={"primary"}
+          size={"md"}
+        >
+          <Plus className="mr-1 h-4 w-4" />새 배치 enqueue
         </Button>
       </header>
 
       {jobId == null ? (
         <div className="rounded-md border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
-          최근 배치 이력이 없습니다. 상단의 &quot;새 배치 enqueue&quot; 버튼으로 시작하세요.
+          최근 배치 이력이 없습니다. 상단의 &quot;새 배치 enqueue&quot; 버튼으로
+          시작하세요.
         </div>
       ) : (
         <div className="rounded-md border border-slate-200 bg-white p-4">
@@ -86,14 +92,14 @@ export function BatchClient() {
             <div className="flex items-center gap-2">
               {status ? <BatchStatusBadge status={status.state} /> : null}
               <Button
-                variant="outline"
-                size="sm"
                 onClick={() => {
-                  if (typeof window !== 'undefined') {
+                  if (typeof window !== "undefined") {
                     window.localStorage.removeItem(LAST_JOB_KEY);
                   }
                   setJobId(null);
                 }}
+                variant={"outline"}
+                size={"sm"}
               >
                 초기화
               </Button>
@@ -115,7 +121,9 @@ export function BatchClient() {
                 <div className="flex-1 overflow-hidden rounded bg-slate-100">
                   <div
                     className="h-2 bg-sky-500"
-                    style={{ width: `${Math.min(100, Math.max(0, status.progress))}%` }}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, status.progress))}%`,
+                    }}
                   />
                 </div>
                 <span className="w-10 text-right font-mono text-xs">

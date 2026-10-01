@@ -1,39 +1,38 @@
-'use client';
+"use client";
+import { Chip } from "@heroui/react";
+import { X as CloseIcon } from "lucide-react";
 
-import { useState, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useState, useMemo } from "react";
 import {
-  Box,
-  Typography,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import type { AdminClusterItem } from '@/types/admin';
-import { CLUSTER_GEO, MAP_CENTER } from '../constants';
+  MapContainer,
+  TileLayer,
+  CircleMarker,
+  Popup,
+  Tooltip,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+
+import type { AdminClusterItem } from "@/types/admin";
+import { CLUSTER_GEO, MAP_CENTER } from "../constants";
 
 interface ClusterMapViewProps {
   clusters: AdminClusterItem[];
-  country: 'KR' | 'JP';
+  country: "KR" | "JP";
 }
 
-export default function ClusterMapView({ clusters, country }: ClusterMapViewProps) {
-  const [selectedCluster, setSelectedCluster] = useState<AdminClusterItem | null>(null);
+export default function ClusterMapView({
+  clusters,
+  country,
+}: ClusterMapViewProps) {
+  const [selectedCluster, setSelectedCluster] =
+    useState<AdminClusterItem | null>(null);
 
   const mapConfig = MAP_CENTER[country];
   const geoMap = CLUSTER_GEO[country] || {};
 
   const maxUsers = useMemo(
     () => Math.max(...clusters.map((c) => c.userCount), 1),
-    [clusters]
+    [clusters],
   );
 
   const getRadius = (userCount: number) => {
@@ -43,14 +42,14 @@ export default function ClusterMapView({ clusters, country }: ClusterMapViewProp
   };
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <div style={{ position: "relative" }}>
       <MapContainer
         center={[mapConfig.lat, mapConfig.lng]}
         zoom={mapConfig.zoom}
         style={{
-          height: '700px',
-          width: '100%',
-          borderRadius: '12px',
+          height: "700px",
+          width: "100%",
+          borderRadius: "12px",
           zIndex: 1,
         }}
         scrollWheelZoom={true}
@@ -73,7 +72,7 @@ export default function ClusterMapView({ clusters, country }: ClusterMapViewProp
               center={[geo.center.lat, geo.center.lng]}
               radius={radius}
               pathOptions={{
-                color: isSelected ? '#1E293B' : geo.color,
+                color: isSelected ? "#1E293B" : geo.color,
                 fillColor: geo.color,
                 fillOpacity: isSelected ? 0.8 : 0.5,
                 weight: isSelected ? 3 : 2,
@@ -83,71 +82,85 @@ export default function ClusterMapView({ clusters, country }: ClusterMapViewProp
               }}
             >
               <Tooltip direction="top" offset={[0, -radius]} permanent>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: '13px', lineHeight: 1.2 }}>
+                <div style={{ textAlign: "center" }}>
+                  <p
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "13px",
+                      lineHeight: 1.2,
+                    }}
+                  >
                     {cluster.name}
-                  </Typography>
-                  <Typography sx={{ fontSize: '12px', color: '#64748B' }}>
+                  </p>
+                  <p style={{ fontSize: "12px", color: "#64748B" }}>
                     {cluster.userCount.toLocaleString()}명
-                  </Typography>
-                </Box>
+                  </p>
+                </div>
               </Tooltip>
             </CircleMarker>
           );
         })}
 
-        {selectedCluster && (() => {
-          const geo = geoMap[selectedCluster.id];
-          if (!geo) return null;
-          return (
-            <Popup
-              position={[geo.center.lat, geo.center.lng]}
-              eventHandlers={{ remove: () => setSelectedCluster(null) }}
-            >
-              <ClusterPopupContent cluster={selectedCluster} color={geo.color} />
-            </Popup>
-          );
-        })()}
+        {selectedCluster &&
+          (() => {
+            const geo = geoMap[selectedCluster.id];
+            if (!geo) return null;
+            return (
+              <Popup
+                position={[geo.center.lat, geo.center.lng]}
+                eventHandlers={{ remove: () => setSelectedCluster(null) }}
+              >
+                <ClusterPopupContent
+                  cluster={selectedCluster}
+                  color={geo.color}
+                />
+              </Popup>
+            );
+          })()}
       </MapContainer>
-
       {/* 범례 */}
-      <Paper
-        elevation={3}
-        sx={{
-          position: 'absolute',
+      <div
+        style={{
+          position: "absolute",
           bottom: 16,
           left: 16,
           zIndex: 1000,
-          p: 2,
+          padding: 16,
           maxWidth: 200,
-          backgroundColor: 'rgba(255,255,255,0.95)',
+          backgroundColor: "rgba(255,255,255,0.95)",
         }}
       >
-        <Typography variant="caption" fontWeight={700} sx={{ mb: 1, display: 'block' }}>
-          클러스터 범례
-        </Typography>
+        <p style={{ marginBottom: 8, display: "block" }}>클러스터 범례</p>
         {clusters.map((cluster) => {
           const geo = geoMap[cluster.id];
           if (!geo) return null;
           return (
-            <Box key={cluster.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-              <Box
-                sx={{
+            <div
+              key={cluster.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 4,
+              }}
+            >
+              <div
+                style={{
                   width: 12,
                   height: 12,
-                  borderRadius: '50%',
+                  borderRadius: "50%",
                   backgroundColor: geo.color,
                   flexShrink: 0,
                 }}
-              />
-              <Typography variant="caption" noWrap>
-                {cluster.name} ({cluster.userCount.toLocaleString()})
-              </Typography>
-            </Box>
+              ></div>
+              <p>
+                {cluster.name}({cluster.userCount.toLocaleString()})
+              </p>
+            </div>
           );
         })}
-      </Paper>
-    </Box>
+      </div>
+    </div>
   );
 }
 
@@ -158,66 +171,98 @@ function ClusterPopupContent({
   cluster: AdminClusterItem;
   color: string;
 }) {
-  const sortedUnivs = [...cluster.universities].sort((a, b) => b.userCount - a.userCount);
+  const sortedUnivs = [...cluster.universities].sort(
+    (a, b) => b.userCount - a.userCount,
+  );
   const topUnivs = sortedUnivs.slice(0, 10);
 
   return (
-    <Box sx={{ minWidth: 280, maxWidth: 350 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-        <Box
-          sx={{
+    <div style={{ minWidth: 280, maxWidth: 350 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 12,
+        }}
+      >
+        <div
+          style={{
             width: 14,
             height: 14,
-            borderRadius: '50%',
+            borderRadius: "50%",
             backgroundColor: color,
             flexShrink: 0,
           }}
-        />
-        <Typography variant="subtitle1" fontWeight={700}>
-          {cluster.name}
-        </Typography>
-        <Chip
-          label={`${cluster.userCount.toLocaleString()}명`}
-          size="small"
-          sx={{ ml: 'auto', fontWeight: 600 }}
-        />
-      </Box>
-
-      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
+        ></div>
+        <p>{cluster.name}</p>
+        <Chip size="sm">{`${cluster.userCount.toLocaleString()}명`}</Chip>
+      </div>
+      <div
+        style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}
+      >
         {cluster.regions.map((r) => (
-          <Chip key={r.code} label={r.name} size="small" variant="outlined" />
+          <Chip key={r.code} size="sm">
+            {r.name}
+          </Chip>
         ))}
-      </Box>
-
-      <TableContainer sx={{ maxHeight: 300 }}>
-        <Table size="small" stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600, py: 0.5, fontSize: '12px' }}>대학</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 600, py: 0.5, fontSize: '12px' }}>
+      </div>
+      <div style={{ maxHeight: 300 }}>
+        <table className="w-full text-sm text-left">
+          <thead>
+            <tr>
+              <th
+                scope="col"
+                style={{ fontWeight: 600, paddingBlock: 4, fontSize: "12px" }}
+                className="px-3 py-2 border-b border-default"
+              >
+                대학
+              </th>
+              <th
+                scope="col"
+                style={{ fontWeight: 600, paddingBlock: 4, fontSize: "12px" }}
+                className="px-3 py-2 border-b border-default"
+              >
                 유저수
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
             {topUnivs.map((univ) => (
-              <TableRow key={univ.id} hover>
-                <TableCell sx={{ py: 0.5, fontSize: '12px' }}>{univ.name}</TableCell>
-                <TableCell align="right" sx={{ py: 0.5, fontSize: '12px' }}>
+              <tr key={univ.id}>
+                <td
+                  style={{ paddingBlock: 4, fontSize: "12px" }}
+                  className="px-3 py-2 border-b border-default"
+                >
+                  {univ.name}
+                </td>
+                <td
+                  style={{ paddingBlock: 4, fontSize: "12px" }}
+                  className="px-3 py-2 border-b border-default"
+                >
                   {univ.userCount.toLocaleString()}
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ))}
             {sortedUnivs.length > 10 && (
-              <TableRow>
-                <TableCell colSpan={2} sx={{ py: 0.5, fontSize: '11px', color: '#94A3B8', textAlign: 'center' }}>
+              <tr>
+                <td
+                  colSpan={2}
+                  style={{
+                    paddingBlock: 4,
+                    fontSize: "11px",
+                    color: "#94A3B8",
+                    textAlign: "center",
+                  }}
+                  className="px-3 py-2 border-b border-default"
+                >
                   외 {sortedUnivs.length - 10}개 대학
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

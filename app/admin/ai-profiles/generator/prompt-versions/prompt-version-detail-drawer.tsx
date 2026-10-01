@@ -1,38 +1,35 @@
-'use client';
-
-import { useQuery } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import { Badge } from '@/shared/ui/badge';
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
+import { Badge } from "@/shared/ui/badge";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/shared/ui/sheet';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { formatDate } from '../_shared/format';
+} from "@/shared/ui/sheet";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { formatDate } from "../_shared/format";
 import {
   PROMPT_VERSION_STATUS_LABEL,
   PROMPT_VERSION_STATUS_VARIANT,
-} from '../_shared/status';
+} from "../_shared/status";
 
 interface Props {
   promptVersionId: string | null;
   onClose: () => void;
 }
 
-export function PromptVersionDetailDrawer({
-  promptVersionId,
-  onClose,
-}: Props) {
+export function PromptVersionDetailDrawer({ promptVersionId, onClose }: Props) {
   const open = promptVersionId !== null;
 
   const detailQuery = useQuery({
     queryKey: promptVersionId
       ? aiProfileGeneratorKeys.promptVersionDetail(promptVersionId)
-      : ['ai-profile-generator', 'prompt-versions', 'detail', 'none'],
-    queryFn: () => aiProfileGenerator.getPromptVersion(promptVersionId as string),
+      : ["ai-profile-generator", "prompt-versions", "detail", "none"],
+    queryFn: () =>
+      aiProfileGenerator.getPromptVersion(promptVersionId as string),
     enabled: open,
   });
 
@@ -83,9 +80,7 @@ export function PromptVersionDetailDrawer({
             <dl className="grid grid-cols-2 gap-3 text-xs text-slate-500">
               <div>
                 <dt className="font-medium">작성자</dt>
-                <dd className="font-mono">
-                  {pv.createdByAdminUserId ?? '—'}
-                </dd>
+                <dd className="font-mono">{pv.createdByAdminUserId ?? "—"}</dd>
               </div>
               <div>
                 <dt className="font-medium">생성일</dt>
@@ -97,7 +92,7 @@ export function PromptVersionDetailDrawer({
               </div>
               <div>
                 <dt className="font-medium">기본 버전</dt>
-                <dd>{pv.isDefault ? '예' : '아니오'}</dd>
+                <dd>{pv.isDefault ? "예" : "아니오"}</dd>
               </div>
             </dl>
 

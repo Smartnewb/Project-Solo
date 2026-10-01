@@ -1,13 +1,17 @@
 // 외모 등급 타입
-export type AppearanceGrade = 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
+export type AppearanceGrade = "S" | "A" | "B" | "C" | "UNKNOWN";
 
 // 성별 타입
-export type Gender = 'MALE' | 'FEMALE';
+export type Gender = "MALE" | "FEMALE";
 
 // 유저 상태 타입
-export type UserStatus = 'pending' | 'approved' | 'rejected';
+export type UserStatus = "pending" | "approved" | "rejected";
 
-export type ApprovalMode = 'PHOTO_APPROVED' | 'BLIND_APPROVED' | 'GRADE_REQUIRED' | string;
+export type ApprovalMode =
+  | "PHOTO_APPROVED"
+  | "BLIND_APPROVED"
+  | "GRADE_REQUIRED"
+  | string;
 
 // 프로필 이미지 타입
 export interface ProfileImage {
@@ -148,7 +152,10 @@ export function isBlindApprovedUser(user: {
   approvalMode?: ApprovalMode | null;
   blindMatchingApprovedAt?: string | null;
 }): boolean {
-  return user.approvalMode === 'BLIND_APPROVED' || Boolean(user.blindMatchingApprovedAt);
+  return (
+    user.approvalMode === "BLIND_APPROVED" ||
+    Boolean(user.blindMatchingApprovedAt)
+  );
 }
 
 export function isGradeRequiredUser(user: {
@@ -161,7 +168,7 @@ export function isGradeRequiredUser(user: {
 }): boolean {
   const rank = user.appearanceGrade ?? user.rank;
   return (
-    rank === 'UNKNOWN' &&
+    rank === "UNKNOWN" &&
     !isBlindApprovedUser(user) &&
     (user.hasApprovedPhoto === true || Number(user.approvedPhotoCount ?? 0) > 0)
   );

@@ -1,5 +1,4 @@
 import PushNotificationsV2 from './push-notifications-v2';
-
 export default function PushNotificationsPage() {
-  return <PushNotificationsV2 />;
+    return <PushNotificationsV2></PushNotificationsV2>;
 }

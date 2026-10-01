@@ -1,14 +1,15 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   DOMAIN_LABEL,
   type AiProfileDomain,
-} from '@/app/types/ai-profile-generator';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -16,12 +17,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useAiProfileErrorHandler } from '../_shared-error';
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   open: boolean;
@@ -30,13 +31,14 @@ interface Props {
   version: number;
   domain: AiProfileDomain;
   /** Full dot-path including domain prefix (e.g. basic.university.name) */
+  /** Full dot-path including domain prefix (e.g. basic.university.name) */
   initialPath: string;
   initialValue: unknown;
 }
 
 function toJsonText(value: unknown): string {
-  if (value === undefined || value === null) return '';
-  if (typeof value === 'string') return JSON.stringify(value);
+  if (value === undefined || value === null) return "";
+  if (typeof value === "string") return JSON.stringify(value);
   try {
     return JSON.stringify(value, null, 2);
   } catch {
@@ -60,14 +62,14 @@ export function FieldEditDialog({
   );
   const [path, setPath] = useState(initialPath);
   const [valueText, setValueText] = useState(() => toJsonText(initialValue));
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState("");
   const [parseError, setParseError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setPath(initialPath);
       setValueText(toJsonText(initialValue));
-      setReason('');
+      setReason("");
       setParseError(null);
     }
   }, [open, initialPath, initialValue]);
@@ -76,7 +78,7 @@ export function FieldEditDialog({
     mutationFn: () => {
       let parsed: unknown;
       try {
-        parsed = valueText.trim() === '' ? null : JSON.parse(valueText);
+        parsed = valueText.trim() === "" ? null : JSON.parse(valueText);
       } catch (err) {
         throw new Error(
           `JSON 파싱 실패: ${err instanceof Error ? err.message : String(err)}`,
@@ -90,14 +92,17 @@ export function FieldEditDialog({
       });
     },
     onSuccess: () => {
-      toast.success('필드가 수정되었습니다.');
+      toast.success("필드가 수정되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
       onOpenChange(false);
     },
     onError: (error) => {
-      if (error instanceof Error && error.message.startsWith('JSON 파싱 실패')) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("JSON 파싱 실패")
+      ) {
         setParseError(error.message);
         return;
       }
@@ -106,9 +111,7 @@ export function FieldEditDialog({
   });
 
   const canSubmit =
-    path.trim().length > 0 &&
-    reason.trim().length > 0 &&
-    !mutation.isPending;
+    path.trim().length > 0 && reason.trim().length > 0 && !mutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,14 +163,20 @@ export function FieldEditDialog({
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={mutation.isPending}
+            isDisabled={mutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
-          <Button onClick={() => mutation.mutate()} disabled={!canSubmit}>
-            {mutation.isPending ? '저장 중…' : '저장'}
+          <Button
+            onClick={() => mutation.mutate()}
+            isDisabled={!canSubmit}
+            variant={"primary"}
+            size={"md"}
+          >
+            {mutation.isPending ? "저장 중…" : "저장"}
           </Button>
         </DialogFooter>
       </DialogContent>

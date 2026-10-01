@@ -1,5 +1,6 @@
-import { redirect } from 'next/navigation';
+
+import { redirect } from "next/navigation";
 
 export default function AIChatManagementPagePage() {
-  redirect('/admin/ghost-chat');
+  redirect("/admin/ghost-chat");
 }

@@ -1,15 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
-import AdminService from '@/app/services/admin';
-import type { DashboardPeriod, DashboardCountry } from './types';
+import { useQuery } from "@tanstack/react-query";
+import AdminService from "@/app/services/admin";
+import type { DashboardPeriod, DashboardCountry } from "./types";
 
 export const monitorKeys = {
-	all: ['admin', 'matching-monitor'] as const,
+	all: ["admin", "matching-monitor"] as const,
 	dashboard: (period: DashboardPeriod, country: DashboardCountry) =>
-		[...monitorKeys.all, 'dashboard', { period, country }] as const,
-	diagnosis: (userId: string) => [...monitorKeys.all, 'diagnosis', userId] as const,
+		[...monitorKeys.all, "dashboard", { period, country }] as const,
+	diagnosis: (userId: string) =>
+		[...monitorKeys.all, "diagnosis", userId] as const,
 };
 
-export function useMatchingDashboard(period: DashboardPeriod, country: DashboardCountry) {
+export function useMatchingDashboard(
+	period: DashboardPeriod,
+	country: DashboardCountry,
+) {
 	return useQuery({
 		queryKey: monitorKeys.dashboard(period, country),
 		queryFn: () => AdminService.matchingMonitor.getDashboard(period, country),

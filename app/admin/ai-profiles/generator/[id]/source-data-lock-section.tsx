@@ -1,15 +1,16 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Lock, Unlock } from 'lucide-react';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import { Button } from '@/shared/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
-import { useToast } from '@/shared/ui/admin/toast';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { SourceDataPicker } from '../_shared/source-data-picker';
-import { useAiProfileErrorHandler } from '../_shared-error';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Lock, Unlock } from "lucide-react";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { useToast } from "@/shared/ui/admin/toast";
+import { aiProfileGeneratorKeys } from "../../_shared/query-keys";
+import { SourceDataPicker } from "../_shared/source-data-picker";
+import { useAiProfileErrorHandler } from "../_shared-error";
 
 interface Props {
   draftId: string;
@@ -30,7 +31,7 @@ function readSnapshot(snapshot: Record<string, unknown>) {
     departmentName: (department?.name as string | undefined) ?? null,
     locked: Boolean(
       (snapshot?.locked as boolean | undefined) ??
-        (university?.id && department?.id),
+      (university?.id && department?.id),
     ),
   };
 }
@@ -56,7 +57,7 @@ export function SourceDataLockSection({
   const lockMutation = useMutation({
     mutationFn: () => {
       if (!universityId || !departmentId) {
-        throw new Error('대학과 학과를 선택하세요.');
+        throw new Error("대학과 학과를 선택하세요.");
       }
       return aiProfileGenerator.lockSourceData(draftId, {
         expectedVersion: version,
@@ -65,7 +66,7 @@ export function SourceDataLockSection({
       });
     },
     onSuccess: () => {
-      toast.success('소스 데이터가 잠겼습니다.');
+      toast.success("소스 데이터가 잠겼습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -80,7 +81,7 @@ export function SourceDataLockSection({
         expectedVersion: version,
       }),
     onSuccess: () => {
-      toast.success('소스 데이터 잠금이 해제되었습니다.');
+      toast.success("소스 데이터 잠금이 해제되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
       });
@@ -103,20 +104,20 @@ export function SourceDataLockSection({
           <div className="flex gap-2">
             {locked ? (
               <Button
-                size="sm"
-                variant="outline"
                 onClick={() => clearMutation.mutate()}
-                disabled={clearMutation.isPending}
+                isDisabled={clearMutation.isPending}
+                variant={"outline"}
+                size={"sm"}
               >
-                {clearMutation.isPending ? '해제 중…' : '해제'}
+                {clearMutation.isPending ? "해제 중…" : "해제"}
               </Button>
             ) : null}
             <Button
-              size="sm"
-              variant={editing ? 'ghost' : 'outline'}
               onClick={() => setEditing((v) => !v)}
+              variant={editing ? "ghost" : "outline"}
+              size={"sm"}
             >
-              {editing ? '취소' : locked ? '변경' : '잠금 설정'}
+              {editing ? "취소" : locked ? "변경" : "잠금 설정"}
             </Button>
           </div>
         ) : null}
@@ -124,8 +125,8 @@ export function SourceDataLockSection({
       <CardContent className="space-y-3">
         {locked ? (
           <p className="text-sm text-slate-700">
-            대학: <strong>{universityName ?? '(알 수 없음)'}</strong> · 학과:{' '}
-            <strong>{departmentName ?? '(알 수 없음)'}</strong>
+            대학: <strong>{universityName ?? "(알 수 없음)"}</strong> · 학과:{" "}
+            <strong>{departmentName ?? "(알 수 없음)"}</strong>
           </p>
         ) : (
           <p className="text-xs text-slate-500">
@@ -145,13 +146,14 @@ export function SourceDataLockSection({
             />
             <div className="flex justify-end">
               <Button
-                size="sm"
                 onClick={() => lockMutation.mutate()}
-                disabled={
+                isDisabled={
                   lockMutation.isPending || !universityId || !departmentId
                 }
+                variant={"primary"}
+                size={"sm"}
               >
-                {lockMutation.isPending ? '잠금 중…' : '잠금'}
+                {lockMutation.isPending ? "잠금 중…" : "잠금"}
               </Button>
             </div>
           </div>

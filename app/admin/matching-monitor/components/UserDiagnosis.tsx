@@ -1,211 +1,212 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+"use client";
 import {
-	Box,
-	Card,
-	CardContent,
-	Typography,
-	TextField,
-	Button,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	Chip,
 	Alert,
-	CircularProgress,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import { safeFormat } from '@/app/utils/formatters';
-import { useUserDiagnosis } from '../hooks';
-import type { UserDiagnosisResponse } from '../types';
-
-export default function UserDiagnosis({ initialUserId }: { initialUserId?: string }) {
-	const [inputId, setInputId] = useState(initialUserId || '');
-	const [searchId, setSearchId] = useState(initialUserId || '');
-
+	Button,
+	Card,
+	Chip,
+	Input,
+	Spinner,
+	TextField,
+} from "@heroui/react";
+import { Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { safeFormat } from "@/app/utils/formatters";
+import { useUserDiagnosis } from "../hooks";
+import type { UserDiagnosisResponse } from "../types";
+export default function UserDiagnosis({
+	initialUserId,
+}: {
+	initialUserId?: string;
+}) {
+	const [inputId, setInputId] = useState(initialUserId || "");
+	const [searchId, setSearchId] = useState(initialUserId || "");
 	useEffect(() => {
 		if (initialUserId) {
 			setInputId(initialUserId);
 			setSearchId(initialUserId);
 		}
 	}, [initialUserId]);
-
 	const { data, isLoading, error } = useUserDiagnosis(searchId);
-
 	const handleSearch = () => {
 		if (inputId.trim()) {
 			setSearchId(inputId.trim());
 		}
 	};
-
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+		<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 			<Card>
-				<CardContent>
-					<Typography variant="subtitle1" fontWeight={700} gutterBottom>
-						유저 매칭 진단
-					</Typography>
-					<Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-						<TextField
-							size="small"
-							placeholder="유저 ID 입력"
-							value={inputId}
-							onChange={(e) => setInputId(e.target.value)}
-							onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-							sx={{ flex: 1, maxWidth: 400 }}
-						/>
+				<Card.Content>
+					<p className={"text-sm text-neutral-700"}>유저 매칭 진단</p>
+					<div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+						<TextField className="w-full" aria-label={"유저 ID 입력"}>
+							<Input
+								placeholder="유저 ID 입력"
+								value={inputId}
+								onChange={(e) => setInputId(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+								style={{ flex: 1, maxWidth: 400 }}
+								aria-label={"유저 ID 입력"}
+							/>
+						</TextField>
 						<Button
-							variant="contained"
-							startIcon={<SearchIcon />}
 							onClick={handleSearch}
-							disabled={!inputId.trim()}
+							variant={"primary"}
+							isDisabled={!inputId.trim()}
+							size={"md"}
 						>
-							진단
+							{<Search size={18} />}진단
 						</Button>
-					</Box>
-				</CardContent>
+					</div>
+				</Card.Content>
 			</Card>
-
 			{isLoading && (
-				<Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-					<CircularProgress />
-				</Box>
+				<div
+					style={{
+						display: "flex",
+						justifyContent: "center",
+						paddingTop: 32,
+						paddingBottom: 32,
+					}}
+				>
+					<Spinner aria-label="불러오는 중" size="sm" />
+				</div>
 			)}
-
 			{error && (
-				<Alert severity="error">
-					진단 조회 실패: {(error as Error).message}
+				<Alert status={"danger"}>
+					<Alert.Content>
+						진단 조회 실패: {(error as Error).message}
+					</Alert.Content>
 				</Alert>
 			)}
-
 			{data && <DiagnosisResult data={data} />}
-		</Box>
+		</div>
 	);
 }
-
-function DiagnosisResult({ data }: { data: UserDiagnosisResponse }) {
+function DiagnosisResult({
+	data,
+}: {
+	data: UserDiagnosisResponse;
+}) {
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-			<Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-				<Card sx={{ flex: 1, minWidth: 200 }}>
-					<CardContent sx={{ textAlign: 'center' }}>
-						<Typography variant="caption" color="text.secondary">
+		<div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+			<div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+				<Card style={{ flex: 1, minWidth: 200 }}>
+					<Card.Content style={{ textAlign: "center" }}>
+						<span className={"text-sm text-neutral-700"}>
 							30일 내 실패 횟수
-						</Typography>
-						<Typography variant="h4" fontWeight={700} color="error.main">
+						</span>
+						<h4 className={"text-lg font-semibold text-neutral-900"}>
 							{data.totalFailures30d}
-						</Typography>
-						<Typography variant="caption" color="text.secondary">
+						</h4>
+						<span className={"text-sm text-neutral-700"}>
 							{data.consecutiveFailureDays}일 연속
-						</Typography>
-					</CardContent>
+						</span>
+					</Card.Content>
 				</Card>
-				<Card sx={{ flex: 1, minWidth: 200 }}>
-					<CardContent sx={{ textAlign: 'center' }}>
-						<Typography variant="caption" color="text.secondary">
-							이성 적격 유저
-						</Typography>
-						<Typography variant="h4" fontWeight={700} color="primary.main">
+				<Card style={{ flex: 1, minWidth: 200 }}>
+					<Card.Content style={{ textAlign: "center" }}>
+						<span className={"text-sm text-neutral-700"}>이성 적격 유저</span>
+						<h4 className={"text-lg font-semibold text-neutral-900"}>
 							{data.poolVisibility.eligibleOpponents.toLocaleString()}
-						</Typography>
-					</CardContent>
+						</h4>
+					</Card.Content>
 				</Card>
-				<Card sx={{ flex: 1, minWidth: 200 }}>
-					<CardContent sx={{ textAlign: 'center' }}>
-						<Typography variant="caption" color="text.secondary">
-							히스토리 제외
-						</Typography>
-						<Typography variant="h4" fontWeight={700} color="warning.main">
+				<Card style={{ flex: 1, minWidth: 200 }}>
+					<Card.Content style={{ textAlign: "center" }}>
+						<span className={"text-sm text-neutral-700"}>히스토리 제외</span>
+						<h4 className={"text-lg font-semibold text-neutral-900"}>
 							{data.poolVisibility.excludedByHistory.toLocaleString()}
-						</Typography>
-					</CardContent>
+						</h4>
+					</Card.Content>
 				</Card>
-				<Card sx={{ flex: 1, minWidth: 200 }}>
-					<CardContent sx={{ textAlign: 'center' }}>
-						<Typography variant="caption" color="text.secondary">
+				<Card style={{ flex: 1, minWidth: 200 }}>
+					<Card.Content style={{ textAlign: "center" }}>
+						<span className={"text-sm text-neutral-700"}>
 							실질 매칭 가능 풀
-						</Typography>
-						<Typography variant="h4" fontWeight={700} color="success.main">
+						</span>
+						<h4 className={"text-lg font-semibold text-neutral-900"}>
 							{data.poolVisibility.netEligible.toLocaleString()}
-						</Typography>
-					</CardContent>
+						</h4>
+					</Card.Content>
 				</Card>
-			</Box>
-
+			</div>
 			{data.dominantFailureReason && (
-				<Alert severity="warning">
-					주요 실패 사유: <strong>{data.dominantFailureReason}</strong>
+				<Alert status={"warning"}>
+					<Alert.Content>
+						주요 실패 사유: <strong>{data.dominantFailureReason}</strong>
+					</Alert.Content>
 				</Alert>
 			)}
-
 			<Card>
-				<CardContent>
-					<Typography variant="subtitle1" fontWeight={700} gutterBottom>
+				<Card.Content>
+					<p className={"text-sm text-neutral-700"}>
 						최근 실패 이력 ({data.failureHistory.length}건)
-					</Typography>
-					<TableContainer sx={{ maxHeight: 500 }}>
-						<Table size="small" stickyHeader>
-							<TableHead>
-								<TableRow>
-									<TableCell>시각</TableCell>
-									<TableCell>유형</TableCell>
-									<TableCell>사유</TableCell>
-									<TableCell>파이프라인</TableCell>
-									<TableCell align="right">릴랙스</TableCell>
-									<TableCell align="right">필터 전</TableCell>
-									<TableCell align="right">필터 후</TableCell>
-									<TableCell align="right">지역 풀</TableCell>
-								</TableRow>
-							</TableHead>
-							<TableBody>
+					</p>
+					<div style={{ maxHeight: 500 }} className={"overflow-x-auto"}>
+						<table
+							className={
+								"w-full text-sm text-left [&_td]:p-3 [&_thead]:bg-neutral-50 [&_tr]:border-b"
+							}
+						>
+							<thead>
+								<tr>
+									<th scope="col">시각</th>
+									<th scope="col">유형</th>
+									<th scope="col">사유</th>
+									<th scope="col">파이프라인</th>
+									<th scope="col">릴랙스</th>
+									<th scope="col">필터 전</th>
+									<th scope="col">필터 후</th>
+									<th scope="col">지역 풀</th>
+								</tr>
+							</thead>
+							<tbody>
 								{data.failureHistory.map((item, i) => (
-									<TableRow key={i}>
-										<TableCell>
-											<Typography variant="caption">
-												{safeFormat(item.failedAt, 'MM/dd HH:mm')}
-											</Typography>
-										</TableCell>
-										<TableCell>
-											<Chip label={item.matchType} size="small" variant="outlined" />
-										</TableCell>
-										<TableCell>
-											<Typography
-												variant="body2"
-												sx={{
+									<tr key={i}>
+										<td>
+											<span className={"text-sm text-neutral-700"}>
+												{safeFormat(item.failedAt, "MM/dd HH:mm")}
+											</span>
+										</td>
+										<td>
+											<Chip size={"sm"} variant={"soft"}>
+												<Chip.Label>{item.matchType}</Chip.Label>
+											</Chip>
+										</td>
+										<td>
+											<p
+												style={{
 													maxWidth: 180,
-													overflow: 'hidden',
-													textOverflow: 'ellipsis',
-													whiteSpace: 'nowrap',
+													overflow: "hidden",
+													textOverflow: "ellipsis",
+													whiteSpace: "nowrap",
 												}}
 												title={item.failureReason}
+												className={"text-sm text-neutral-700"}
 											>
 												{item.failureReason}
-											</Typography>
-										</TableCell>
-										<TableCell>
-											<Typography variant="caption">{item.pipelineStep}</Typography>
-										</TableCell>
-										<TableCell align="right">{item.maxRelaxationLevel ?? '-'}</TableCell>
-										<TableCell align="right">
-											{item.candidatesBeforeFilter?.toLocaleString() ?? '-'}
-										</TableCell>
-										<TableCell align="right">
-											{item.candidatesAfterFilter?.toLocaleString() ?? '-'}
-										</TableCell>
-										<TableCell align="right">
-											{item.poolInRegion?.toLocaleString() ?? '-'}
-										</TableCell>
-									</TableRow>
+											</p>
+										</td>
+										<td>
+											<span className={"text-sm text-neutral-700"}>
+												{item.pipelineStep}
+											</span>
+										</td>
+										<td>{item.maxRelaxationLevel ?? "-"}</td>
+										<td>
+											{item.candidatesBeforeFilter?.toLocaleString() ?? "-"}
+										</td>
+										<td>
+											{item.candidatesAfterFilter?.toLocaleString() ?? "-"}
+										</td>
+										<td>{item.poolInRegion?.toLocaleString() ?? "-"}</td>
+									</tr>
 								))}
-							</TableBody>
-						</Table>
-					</TableContainer>
-				</CardContent>
+							</tbody>
+						</table>
+					</div>
+				</Card.Content>
 			</Card>
-		</Box>
+		</div>
 	);
 }

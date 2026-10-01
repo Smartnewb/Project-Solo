@@ -1,204 +1,140 @@
 'use client';
-
-import {
-  Box,
-  Button,
-  Chip,
-  Divider,
-  Drawer,
-  Link,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Button, Chip, Drawer } from '@heroui/react';
 import { ExternalLink, X } from 'lucide-react';
 import type { ProfileImageAuditItem } from '@/app/services/admin';
-import {
-  formatAuditStatus,
-  formatValidationDecision,
-  formatValidationSummary,
-  sortAuditSiblingImages,
-} from '../profile-image-audit-utils';
-
+import { formatAuditStatus, formatValidationDecision, formatValidationSummary, sortAuditSiblingImages, } from '../profile-image-audit-utils';
 type Props = {
-  readonly item: ProfileImageAuditItem;
-  readonly open: boolean;
-  readonly onClose: () => void;
+    readonly item: ProfileImageAuditItem;
+    readonly open: boolean;
+    readonly onClose: () => void;
 };
-
 type Metric = {
-  readonly label: string;
-  readonly value: string;
+    readonly label: string;
+    readonly value: string;
 };
-
 function formatDate(value: string | null | undefined): string {
-  if (!value) return '-';
-  return new Date(value).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+    if (!value)
+        return '-';
+    return new Date(value).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
 }
-
 function countText(value: number | null | undefined): string {
-  return (value ?? 0).toLocaleString();
+    return (value ?? 0).toLocaleString();
 }
-
 function getMetrics(item: ProfileImageAuditItem): readonly Metric[] {
-  const context = item.reviewContext;
-  return [
-    { label: '가입일', value: formatDate(context?.userCreatedAt) },
-    { label: '좋아요', value: countText(context?.receivedLikeCount) },
-    { label: '매칭', value: countText(context?.matchCount) },
-    { label: '채팅', value: countText(context?.chatRoomCount) },
-  ];
+    const context = item.reviewContext;
+    return [
+        { label: '가입일', value: formatDate(context?.userCreatedAt) },
+        { label: '좋아요', value: countText(context?.receivedLikeCount) },
+        { label: '매칭', value: countText(context?.matchCount) },
+        { label: '채팅', value: countText(context?.chatRoomCount) },
+    ];
 }
-
 export function ProfileImageAuditDetailDrawer({ item, open, onClose }: Props) {
-  const context = item.reviewContext;
-  const reportCount = context?.reportCount ?? item.riskSignals.reportCount;
-  const hasSuspension = context?.hasSuspensionHistory ?? item.riskSignals.hasSuspensionHistory;
-  const isFirstReview = context?.isFirstReview ?? item.riskSignals.isFirstReview;
-  const isUniversityVerified =
-    context?.isUniversityVerified ?? item.riskSignals.isUniversityVerified;
-  const hasPurchased = context?.hasPurchased ?? item.riskSignals.hasPurchaseHistory;
-  const rejectionHistory = item.rejectionHistory ?? [];
-  const rejectedImages = item.rejectedImages ?? [];
-
-  return (
-    <Drawer anchor="right" open={open} onClose={onClose}>
-      <Box sx={{ width: { xs: 360, sm: 520 }, maxWidth: '100vw', p: 2.5 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" component="h2" fontWeight={800}>
+    const context = item.reviewContext;
+    const reportCount = context?.reportCount ?? item.riskSignals.reportCount;
+    const hasSuspension = context?.hasSuspensionHistory ?? item.riskSignals.hasSuspensionHistory;
+    const isFirstReview = context?.isFirstReview ?? item.riskSignals.isFirstReview;
+    const isUniversityVerified = context?.isUniversityVerified ?? item.riskSignals.isUniversityVerified;
+    const hasPurchased = context?.hasPurchased ?? item.riskSignals.hasPurchaseHistory;
+    const rejectionHistory = item.rejectionHistory ?? [];
+    const rejectedImages = item.rejectedImages ?? [];
+    return (<Drawer.Backdrop isOpen={open} onOpenChange={v => !v && onClose()}><Drawer.Content placement="right" className="w-full max-w-[480px]"><Drawer.Dialog className="overflow-y-auto">
+      <div style={{ maxWidth: '100vw', padding: 20 }}>
+        <div style={{ marginBottom: 16 }}>
+          <Drawer.Heading className="text-lg font-semibold">
             심사 상세
-          </Typography>
-          <Button size="small" startIcon={<X size={16} />} onClick={onClose}>
+          </Drawer.Heading>
+          <Button onPress={onClose} variant="tertiary">{<X></X>}
             닫기
           </Button>
-        </Stack>
+        </div>
 
-        <Stack spacing={2}>
-          {(reportCount > 0 || hasSuspension) && (
-            <Box sx={{ border: '1px solid #fecaca', bgcolor: '#fef2f2', borderRadius: 1, p: 1.5 }}>
-              {reportCount > 0 && <Typography fontWeight={800}>신고 {reportCount}회</Typography>}
-              {hasSuspension && <Typography color="error.main">제재 이력 있음</Typography>}
-            </Box>
-          )}
+        <div>
+          {(reportCount > 0 || hasSuspension) && (<div style={{ border: '1px solid #fecaca', backgroundColor: '#fef2f2', borderRadius: 1, padding: 12 }}>
+              {reportCount > 0 && <p>신고 {reportCount}회</p>}
+              {hasSuspension && <p>제재 이력 있음</p>}
+            </div>)}
 
-          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-            {isFirstReview && <Chip size="small" label="첫 심사" color="info" variant="outlined" />}
-            {isUniversityVerified && <Chip size="small" label="학교 인증" color="success" variant="outlined" />}
-            {hasPurchased && <Chip size="small" label="구매 이력" color="warning" variant="outlined" />}
-            {item.isBlacklisted && <Chip size="small" label="블랙리스트" color="error" />}
-            {item.suspendedAt && <Chip size="small" label="정지 계정" color="error" />}
-          </Stack>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {isFirstReview && <Chip size="sm">{"첫 심사"}</Chip>}
+            {isUniversityVerified && <Chip size="sm">{"학교 인증"}</Chip>}
+            {hasPurchased && <Chip size="sm">{"구매 이력"}</Chip>}
+            {item.isBlacklisted && <Chip size="sm">{"블랙리스트"}</Chip>}
+            {item.suspendedAt && <Chip size="sm">{"정지 계정"}</Chip>}
+          </div>
 
-          <Box>
-            <Typography variant="subtitle2" fontWeight={800} mb={1}>
+          <div>
+            <p style={{ marginBottom: 8 }}>
               연관 사진
-            </Typography>
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              {sortAuditSiblingImages(item.siblingImages).map((image, index) => (
-                <Box key={image.profileImageId} sx={{ width: 82 }}>
-                  <Box
-                    component="img"
-                    src={image.thumbnailUrl ?? image.imageUrl}
-                    alt={`연관 사진 ${index + 1}`}
-                    sx={{
-                      width: 82,
-                      height: 96,
-                      objectFit: 'cover',
-                      borderRadius: 1,
-                      border: image.profileImageId === item.profileImageId ? '2px solid #2563eb' : '1px solid #cbd5e1',
-                    }}
-                  />
-                  <Typography variant="caption" display="block" noWrap>
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {sortAuditSiblingImages(item.siblingImages).map((image, index) => (<div key={image.profileImageId} style={{ width: 82 }}>
+                  <img src={image.thumbnailUrl ?? image.imageUrl} alt={`연관 사진 ${index + 1}`} style={{ width: 82, height: 96, objectFit: 'cover', borderRadius: 1, border: image.profileImageId === item.profileImageId ? '2px solid #2563eb' : '1px solid #cbd5e1' }}/>
+                  <p>
                     {image.isMain ? '대표' : `${image.slotIndex + 1}번`} · {image.reviewStatus}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-          </Box>
+                  </p>
+                </div>))}
+            </div>
+          </div>
 
-          <Divider />
+          <hr></hr>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 1 }}>
-            {getMetrics(item).map((metric) => (
-              <Box key={metric.label} sx={{ border: '1px solid #e2e8f0', borderRadius: 1, p: 1 }}>
-                <Typography variant="caption" color="text.secondary">{metric.label}</Typography>
-                <Typography variant="body2" fontWeight={800}>{metric.value}</Typography>
-              </Box>
-            ))}
-          </Box>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {getMetrics(item).map((metric) => (<div key={metric.label} style={{ border: '1px solid #e2e8f0', borderRadius: 1, padding: 8 }}>
+                <p>{metric.label}</p>
+                <p>{metric.value}</p>
+              </div>))}
+          </div>
 
-          <Box>
-            <Typography variant="subtitle2" fontWeight={800}>이전 거절 이력</Typography>
-            {rejectionHistory.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">없음</Typography>
-            ) : (
-              rejectionHistory.map((history) => (
-                <Typography key={`${history.createdAt}-${history.reason}`} variant="body2">
+          <div>
+            <p>이전 거절 이력</p>
+            {rejectionHistory.length === 0 ? (<p>없음</p>) : (rejectionHistory.map((history) => (<p key={`${history.createdAt}-${history.reason}`}>
                   {history.category} · {history.reason} · {formatDate(history.createdAt)}
-                </Typography>
-              ))
-            )}
-          </Box>
+                </p>)))}
+          </div>
 
-          <Box>
-            <Typography variant="subtitle2" fontWeight={800}>거절된 이미지 이력</Typography>
-            {rejectedImages.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">없음</Typography>
-            ) : (
-              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" mt={1}>
-                {rejectedImages.map((image, index) => (
-                  <Box key={image.id} sx={{ width: 76 }}>
-                    <Box
-                      component="img"
-                      src={image.imageUrl}
-                      alt={`거절된 이미지 ${index + 1}`}
-                      sx={{ width: 76, height: 88, objectFit: 'cover', borderRadius: 1 }}
-                    />
-                    <Typography variant="caption" display="block" noWrap>
+          <div>
+            <p>거절된 이미지 이력</p>
+            {rejectedImages.length === 0 ? (<p>없음</p>) : (<div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {rejectedImages.map((image, index) => (<div key={image.id} style={{ width: 76 }}>
+                    <img src={image.imageUrl} alt={`거절된 이미지 ${index + 1}`} style={{ width: 76, height: 88, objectFit: 'cover', borderRadius: 1 }}/>
+                    <p>
                       {image.rejectionReason}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
-            )}
-          </Box>
+                    </p>
+                  </div>))}
+              </div>)}
+          </div>
 
-          <Box>
-            <Typography variant="subtitle2" fontWeight={800}>소개글</Typography>
-            <Typography variant="body2" color={item.bio ? 'text.primary' : 'text.secondary'}>
+          <div>
+            <p>소개글</p>
+            <p>
               {item.bio ?? '없음'}
-            </Typography>
-          </Box>
+            </p>
+          </div>
 
-          <Box sx={{ border: '1px solid #e2e8f0', borderRadius: 1, p: 1.5 }}>
-            <Typography variant="subtitle2" fontWeight={800}>검증 요약</Typography>
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 1, padding: 12 }}>
+            <p>검증 요약</p>
             {[
-              { label: '검증 점수', value: String(item.validation?.totalScore ?? '-') },
-              { label: '자동 판정', value: formatValidationDecision(item.validation?.autoDecision ?? null) },
-              { label: '판정 사유', value: item.validation?.decisionReason ?? '-' },
-              { label: '카드 표시', value: formatValidationSummary(item) },
-              { label: '감사 상태', value: formatAuditStatus(item.auditStatus) },
-            ].map((row) => (
-              <Stack key={row.label} direction="row" spacing={1} justifyContent="space-between">
-                <Typography variant="body2" color="text.secondary">{row.label}</Typography>
-                <Typography variant="body2" fontWeight={700}>{row.value}</Typography>
-              </Stack>
-            ))}
-          </Box>
+            { label: '검증 점수', value: String(item.validation?.totalScore ?? '-') },
+            { label: '자동 판정', value: formatValidationDecision(item.validation?.autoDecision ?? null) },
+            { label: '판정 사유', value: item.validation?.decisionReason ?? '-' },
+            { label: '카드 표시', value: formatValidationSummary(item) },
+            { label: '감사 상태', value: formatAuditStatus(item.auditStatus) },
+        ].map((row) => (<div key={row.label}>
+                <p>{row.label}</p>
+                <p>{row.value}</p>
+              </div>))}
+          </div>
 
-          <Link
-            href={`/admin/users/appearance?userId=${encodeURIComponent(item.userId)}`}
-            underline="hover"
-            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, fontWeight: 800 }}
-          >
+          <a href={`/admin/users/appearance?userId=${encodeURIComponent(item.userId)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
             사용자 상세에서 열기
-            <ExternalLink size={15} />
-          </Link>
-        </Stack>
-      </Box>
-    </Drawer>
-  );
+            <ExternalLink></ExternalLink>
+          </a>
+        </div>
+      </div>
+    </Drawer.Dialog></Drawer.Content></Drawer.Backdrop>);
 }

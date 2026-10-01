@@ -1,8 +1,8 @@
 // --- Dashboard Response ---
 
 export interface MatchingDashboardResponse {
-	period: 'today' | '7d' | '30d';
-	country: 'KR' | 'JP' | 'ALL';
+	period: "today" | "7d" | "30d";
+	country: "KR" | "JP" | "ALL";
 	cachedAt: string;
 	pool: PoolOverview;
 	matchRate: MatchRate;
@@ -101,7 +101,7 @@ export interface BatchPerformance {
 export interface AtRiskUser {
 	userId: string;
 	name: string;
-	gender: 'MALE' | 'FEMALE';
+	gender: "MALE" | "FEMALE";
 	consecutiveFailureDays: number;
 	lastFailureReason: string;
 	lastFailedAt: string;
@@ -130,14 +130,14 @@ export interface HistoryTtl {
 }
 
 export interface HealthAlert {
-	level: 'info' | 'warn' | 'critical';
+	level: "info" | "warn" | "critical";
 	metric: string;
 	message: string;
 }
 
 export interface HealthScore {
 	score: number;
-	grade: 'HEALTHY' | 'CAUTION' | 'CRITICAL';
+	grade: "HEALTHY" | "CAUTION" | "CRITICAL";
 	alerts: HealthAlert[];
 }
 
@@ -175,15 +175,15 @@ export interface PeriodComparison {
 
 export interface MatchDetail {
 	connectionId: string;
-	matchType: 'scheduled' | 'rematching' | 'profile_viewer' | 'admin';
+	matchType: "scheduled" | "rematching" | "profile_viewer" | "admin";
 	publishedAt: string;
 	maleName: string;
 	femaleName: string;
-	likeStatus: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REJECTED' | null;
+	likeStatus: "PENDING" | "ACCEPTED" | "EXPIRED" | "REJECTED" | null;
 	hasLetter: boolean;
 	hasChatRoom: boolean;
 	chatActive: boolean;
-	activity24hStatus: 'mutual' | 'one_sided' | 'inactive' | null;
+	activity24hStatus: "mutual" | "one_sided" | "inactive" | null;
 	messageCount: number;
 	lastMessageAt: string | null;
 }
@@ -225,5 +225,5 @@ export interface UserDiagnosisResponse {
 
 // --- Query params ---
 
-export type DashboardPeriod = 'today' | '7d' | '30d';
-export type DashboardCountry = 'KR' | 'JP' | 'ALL';
+export type DashboardPeriod = "today" | "7d" | "30d";
+export type DashboardCountry = "KR" | "JP" | "ALL";

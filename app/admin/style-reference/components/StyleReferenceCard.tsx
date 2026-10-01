@@ -1,121 +1,50 @@
 'use client';
-
-import {
-  Box,
-  Card,
-  CardMedia,
-  CardContent,
-  Chip,
-  IconButton,
-  Tooltip,
-  Typography,
-} from '@mui/material';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import RestoreIcon from '@mui/icons-material/Restore';
+import { Button, Chip } from '@heroui/react';
+import { EyeOff as VisibilityOffIcon, RotateCcw as RestoreIcon } from 'lucide-react';
 import type { StyleReferenceItem } from '@/app/services/admin';
 import { getKeywordMeta, CATEGORY_LABELS, GENDER_LABELS } from '../constants';
-
 interface StyleReferenceCardProps {
-  item: StyleReferenceItem;
-  onDeactivate: (id: string) => void;
-  onReactivate: (id: string) => void;
-  isLoading?: boolean;
+    item: StyleReferenceItem;
+    onDeactivate: (id: string) => void;
+    onReactivate: (id: string) => void;
+    isLoading?: boolean;
 }
+export function StyleReferenceCard({ item, onDeactivate, onReactivate, isLoading, }: StyleReferenceCardProps) {
+    return (<div style={{ opacity: item.isActive ? 1 : 0.5, position: 'relative' }} className="rounded-xl border p-4">
+      <img height={120} alt={`${GENDER_LABELS[item.gender]} ${CATEGORY_LABELS[item.category]}`} style={{ objectFit: 'cover', backgroundColor: "#f3f4f6" }} src={item.thumbnailUrl ?? item.imageUrl}/>
 
-export function StyleReferenceCard({
-  item,
-  onDeactivate,
-  onReactivate,
-  isLoading,
-}: StyleReferenceCardProps) {
-  return (
-    <Card
-      variant="outlined"
-      sx={{ opacity: item.isActive ? 1 : 0.5, position: 'relative' }}
-    >
-      <CardMedia
-        component="img"
-        height={120}
-        image={item.thumbnailUrl ?? item.imageUrl}
-        alt={`${GENDER_LABELS[item.gender]} ${CATEGORY_LABELS[item.category]}`}
-        sx={{ objectFit: 'cover', bgcolor: 'grey.100' }}
-      />
-
-      {!item.isActive && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 8,
-            left: 8,
-            bgcolor: 'error.main',
-            color: 'white',
-            px: 0.75,
-            py: 0.25,
-            borderRadius: 1,
-            fontSize: 10,
-            fontWeight: 600,
-          }}
-        >
+      {!item.isActive && (<div style={{ position: 'absolute', top: 8, left: 8, backgroundColor: "#dc2626", color: 'white', paddingInline: 6, paddingBlock: 2, borderRadius: 1, fontSize: 10, fontWeight: 600 }}>
           비활성
-        </Box>
-      )}
+        </div>)}
 
-      <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.75 }}>
+      <div style={{ padding: 8 }} className="p-4">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
           {item.tags.slice(0, 3).map((tag) => {
             const meta = getKeywordMeta(tag);
-            return (
-              <Chip
-                key={tag}
-                label={meta ? `${meta.emoji} ${meta.nameKo}` : tag}
-                size="small"
-                sx={{ fontSize: 10, height: 20 }}
-              />
-            );
-          })}
-          {item.tags.length > 3 && (
-            <Chip
-              label={`+${item.tags.length - 3}`}
-              size="small"
-              sx={{ fontSize: 10, height: 20 }}
-            />
-          )}
-        </Box>
+            return (<Chip key={tag} size="sm">{meta ? `${meta.emoji} ${meta.nameKo}` : tag}</Chip>);
+        })}
+          {item.tags.length > 3 && (<Chip size="sm">{`+${item.tags.length - 3}`}</Chip>)}
+        </div>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="caption" color="text.secondary" noWrap>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <p>
             {GENDER_LABELS[item.gender]} · {CATEGORY_LABELS[item.category]}
-          </Typography>
+          </p>
 
-          {item.isActive ? (
-            <Tooltip title="비활성화">
+          {item.isActive ? (<span title={"비활성화"}>
               <span>
-                <IconButton
-                  size="small"
-                  color="default"
-                  disabled={isLoading}
-                  onClick={() => onDeactivate(item.id)}
-                >
-                  <VisibilityOffIcon fontSize="inherit" />
-                </IconButton>
+                <Button isDisabled={isLoading} onPress={() => onDeactivate(item.id)} variant="tertiary" isIconOnly={true} aria-label={"비활성화"}>
+                  <VisibilityOffIcon></VisibilityOffIcon>
+                </Button>
               </span>
-            </Tooltip>
-          ) : (
-            <Tooltip title="재활성화">
+            </span>) : (<span title={"재활성화"}>
               <span>
-                <IconButton
-                  size="small"
-                  color="primary"
-                  disabled={isLoading}
-                  onClick={() => onReactivate(item.id)}
-                >
-                  <RestoreIcon fontSize="inherit" />
-                </IconButton>
+                <Button isDisabled={isLoading} onPress={() => onReactivate(item.id)} variant="tertiary" isIconOnly={true} aria-label={"재활성화"}>
+                  <RestoreIcon></RestoreIcon>
+                </Button>
               </span>
-            </Tooltip>
-          )}
-        </Box>
-      </CardContent>
-    </Card>
-  );
+            </span>)}
+        </div>
+      </div>
+    </div>);
 }

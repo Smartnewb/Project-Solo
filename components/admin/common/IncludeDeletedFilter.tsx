@@ -1,7 +1,7 @@
 "use client";
+import { Label, Switch } from "@heroui/react";
 
 import { useState } from "react";
-import { FormControlLabel, Switch, Box, Typography } from "@mui/material";
 
 interface IncludeDeletedFilterProps {
   value: boolean;
@@ -22,28 +22,21 @@ export default function IncludeDeletedFilter({
   labelPlacement = "start",
   sx = {},
 }: IncludeDeletedFilterProps) {
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(event.target.checked);
-  };
-
   const displayLabel = label ?? (value ? "탈퇴자 포함" : "탈퇴자 미포함");
 
   return (
-    <Box sx={sx}>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={value}
-            onChange={handleChange}
-            disabled={disabled}
-            size={size}
-            color="primary"
-          />
-        }
-        label={displayLabel}
-        labelPlacement={labelPlacement}
-      />
-    </Box>
+    <div style={sx}>
+      <div className="flex items-center gap-2">
+        <Switch isSelected={value} isDisabled={disabled} onChange={onChange}>
+          <Switch.Content>
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            <Label>{displayLabel}</Label>
+          </Switch.Content>
+        </Switch>
+      </div>
+    </div>
   );
 }
 

@@ -1,17 +1,13 @@
-'use client';
+"use client";
+import { Tabs } from "@heroui/react";
+import {
+  FlaskConical as ScienceIcon,
+  Camera as PhotoCameraIcon,
+} from "lucide-react";
 
-import { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Tabs,
-  Tab,
-} from '@mui/material';
-import {
-  Science as ScienceIcon,
-  PhotoCamera as PhotoCameraIcon,
-} from '@mui/icons-material';
-import VisionPhotoTestTab from './components/VisionPhotoTestTab';
+import { useState, useEffect } from "react";
+
+import VisionPhotoTestTab from "./components/VisionPhotoTestTab";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -30,13 +26,12 @@ const TabPanel = (props: TabPanelProps) => {
       aria-labelledby={`lab-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+      {value === index && <div style={{ paddingTop: 24 }}>{children}</div>}
     </div>
   );
 };
 
 function LabPageContent() {
-
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -44,28 +39,38 @@ function LabPageContent() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <ScienceIcon />
+    <div style={{ padding: 24 }}>
+      <h4 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <ScienceIcon size={16} />
         실험실
-      </Typography>
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="실험실 탭">
-          <Tab
-            label="VISION 프로필 심사"
-            icon={<PhotoCameraIcon />}
-            iconPosition="start"
-            id="lab-tab-0"
-            aria-controls="lab-tabpanel-0"
-          />
+      </h4>
+      <div
+        style={{
+          borderBottom: "1px solid #e4e4e7",
+          borderColor: "#e4e4e7",
+          marginBottom: 16,
+        }}
+      >
+        <Tabs
+          selectedKey={tabValue}
+          onSelectionChange={(key) =>
+            handleTabChange({} as React.SyntheticEvent, Number(key))
+          }
+        >
+          <Tabs.ListContainer>
+            <Tabs.List>
+              <Tabs.Tab id={0}>
+                {"VISION 프로필 심사"}
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
         </Tabs>
-      </Box>
-
+      </div>
       <TabPanel value={tabValue} index={0}>
         <VisionPhotoTestTab />
       </TabPanel>
-    </Box>
+    </div>
   );
 }
 

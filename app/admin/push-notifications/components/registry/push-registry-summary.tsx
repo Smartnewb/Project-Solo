@@ -1,27 +1,17 @@
-import { Paper, Typography } from '@mui/material';
-
-export function PushRegistrySummaryCard({
-	label,
-	value,
-	helper,
-}: {
-	label: string;
-	value: string;
-	helper?: string;
+export function PushRegistrySummaryCard({ label, value, helper, }: {
+    label: string;
+    value: string;
+    helper?: string;
 }) {
-	return (
-		<Paper variant="outlined" sx={{ p: 2, borderRadius: 1 }}>
-			<Typography variant="body2" color="text.secondary">
+    return (<section style={{ padding: 16, borderRadius: 1 }} className="rounded-xl border bg-white p-4">
+			<p>
 				{label}
-			</Typography>
-			<Typography variant="h6" fontWeight={700}>
+			</p>
+			<h2 className="text-lg font-semibold">
 				{value}
-			</Typography>
-			{helper ? (
-				<Typography variant="caption" color="text.secondary">
+			</h2>
+			{helper ? (<p>
 					{helper}
-				</Typography>
-			) : null}
-		</Paper>
-	);
+				</p>) : null}
+		</section>);
 }

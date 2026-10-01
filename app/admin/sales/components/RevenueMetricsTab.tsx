@@ -1,4 +1,5 @@
 "use client";
+import { Button, Checkbox, Input, Label } from "@heroui/react";
 
 import { useEffect, useRef, useState } from "react";
 import { salesService } from "@/app/services/sales";
@@ -158,15 +159,17 @@ function MetricTooltipIcon({
 
   return (
     <div className="relative inline-block ml-1.5">
-      <button
+      <Button
         type="button"
         className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium text-gray-400 bg-gray-100 rounded-full hover:bg-gray-200 hover:text-gray-600 transition-colors cursor-help"
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
         onClick={() => setIsVisible(!isVisible)}
+        variant={"secondary"}
+        size={"md"}
       >
         ?
-      </button>
+      </Button>
       {isVisible && (
         <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-white border border-gray-200 rounded-lg shadow-lg text-left">
           <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-gray-200" />
@@ -216,8 +219,11 @@ export function RevenueMetricsTab({
     useState<PaymentSuccessRateResponse | null>(null);
 
   const [includeDeleted, setIncludeDeleted] = useState(false);
-  const [cardPeriodType, setCardPeriodType] = useState<CardPeriodType>("monthly");
-  const [cardStartDate, setCardStartDate] = useState(initialCardRange.startDate);
+  const [cardPeriodType, setCardPeriodType] =
+    useState<CardPeriodType>("monthly");
+  const [cardStartDate, setCardStartDate] = useState(
+    initialCardRange.startDate,
+  );
   const [cardEndDate, setCardEndDate] = useState(initialCardRange.endDate);
   const [customStartDate, setCustomStartDate] = useState(getOneMonthAgo());
   const [customEndDate, setCustomEndDate] = useState(getToday());
@@ -227,7 +233,9 @@ export function RevenueMetricsTab({
   const [trendStartDate, setTrendStartDate] = useState<string>(
     initialTrendRange.start,
   );
-  const [trendEndDate, setTrendEndDate] = useState<string>(initialTrendRange.end);
+  const [trendEndDate, setTrendEndDate] = useState<string>(
+    initialTrendRange.end,
+  );
 
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [loadingAov, setLoadingAov] = useState(false);
@@ -251,7 +259,10 @@ export function RevenueMetricsTab({
   };
 
   const fetchRevenueCards = async (range?: CardDateRange) => {
-    const activeRange = range ?? { startDate: cardStartDate, endDate: cardEndDate };
+    const activeRange = range ?? {
+      startDate: cardStartDate,
+      endDate: cardEndDate,
+    };
     const params = {
       startDate: activeRange.startDate,
       endDate: activeRange.endDate,
@@ -264,14 +275,16 @@ export function RevenueMetricsTab({
     try {
       const metricsRes = await salesService.getRevenueMetrics(params);
       setRevenueMetrics(metricsRes);
-    } catch { } finally {
+    } catch {
+    } finally {
       setLoadingMetrics(false);
     }
 
     try {
       const aovRes = await salesService.getAverageOrderValue(params);
       setAovData(aovRes);
-    } catch { } finally {
+    } catch {
+    } finally {
       setLoadingAov(false);
     }
   };
@@ -289,21 +302,24 @@ export function RevenueMetricsTab({
     try {
       const repurchaseRes = await salesService.getRepurchaseAnalysis();
       setRepurchaseData(repurchaseRes);
-    } catch { } finally {
+    } catch {
+    } finally {
       setLoadingRepurchase(false);
     }
 
     try {
       const conversionRes = await salesService.getConversionRate(params);
       setConversionData(conversionRes);
-    } catch { } finally {
+    } catch {
+    } finally {
       setLoadingConversion(false);
     }
 
     try {
       const ltvRes = await salesService.getLtvAnalysis();
       setLtvData(ltvRes);
-    } catch { } finally {
+    } catch {
+    } finally {
       setLoadingLtv(false);
     }
 
@@ -311,7 +327,8 @@ export function RevenueMetricsTab({
     try {
       const successRateRes = await salesService.getSuccessRate();
       setSuccessRateData(successRateRes);
-    } catch { } finally {
+    } catch {
+    } finally {
       setLoadingSuccessRate(false);
     }
 
@@ -328,7 +345,8 @@ export function RevenueMetricsTab({
         includeDeleted,
       });
       setTrendData(trendRes);
-    } catch { } finally {
+    } catch {
+    } finally {
       setLoadingTrend(false);
     }
   };
@@ -418,7 +436,7 @@ export function RevenueMetricsTab({
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}회 구매</p>
-          <p className="text-[#ff385c]">
+          <p className="text-[#7A4AE2]">
             사용자 수: {formatNumber(data.userCount)}명
           </p>
           <p className="text-gray-600">비율: {data.percentage.toFixed(1)}%</p>
@@ -438,8 +456,8 @@ export function RevenueMetricsTab({
     loadingSuccessRate;
 
   const getSuccessRateColor = (rate: number): string => {
-    if (rate >= 95) return "text-[#ff385c]";
-    if (rate >= 90) return "text-[#ff385c]";
+    if (rate >= 95) return "text-[#7A4AE2]";
+    if (rate >= 90) return "text-[#7A4AE2]";
     if (rate >= 80) return "text-yellow-600";
     return "text-red-600";
   };
@@ -455,13 +473,15 @@ export function RevenueMetricsTab({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold text-gray-900">수익 지표</h2>
-        <button
+        <Button
           onClick={handleRefresh}
-          disabled={isAnyLoading}
-          className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[#7A4AE2] text-white rounded-lg hover:bg-[#7A4AE2] transition-colors disabled:opacity-50"
+          isDisabled={isAnyLoading}
+          variant={"secondary"}
+          size={"md"}
         >
           새로고침
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -474,55 +494,64 @@ export function RevenueMetricsTab({
         <div className="flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
-              {(Object.keys(CARD_PERIOD_LABELS) as CardPeriodType[]).map((period) => (
-                <button
-                  key={period}
-                  type="button"
-                  onClick={() => handleCardPeriodChange(period)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    cardPeriodType === period
-                      ? "bg-[#ff385c] text-white shadow-sm"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                  }`}
-                >
-                  {CARD_PERIOD_LABELS[period]}
-                </button>
-              ))}
+              {(Object.keys(CARD_PERIOD_LABELS) as CardPeriodType[]).map(
+                (period) => (
+                  <Button
+                    key={period}
+                    type="button"
+                    onClick={() => handleCardPeriodChange(period)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      cardPeriodType === period
+                        ? "bg-[#7A4AE2] text-white shadow-sm"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    }`}
+                    variant={"secondary"}
+                    size={"md"}
+                  >
+                    {CARD_PERIOD_LABELS[period]}
+                  </Button>
+                ),
+              )}
             </div>
 
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={includeDeleted}
-                onChange={(e) => setIncludeDeleted(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-[#ff385c] focus:ring-[#ff385c]"
-              />
-              탈퇴자 포함
-            </label>
+            <Checkbox
+              isSelected={includeDeleted}
+              isIndeterminate={undefined}
+              onChange={(isSelected) => setIncludeDeleted(isSelected)}
+            >
+              <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <Label>탈퇴자 포함</Label>
+              </Checkbox.Content>
+            </Checkbox>
           </div>
 
           {cardPeriodType === "custom" && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-              <input
+              <Input
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A4AE2] focus:border-transparent"
               />
               <span className="text-gray-400 text-sm">~</span>
-              <input
+              <Input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A4AE2] focus:border-transparent"
               />
-              <button
+              <Button
                 type="button"
                 onClick={handleApplyCustomPeriod}
-                className="px-3 py-1.5 text-sm font-medium bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors"
+                className="px-3 py-1.5 text-sm font-medium bg-[#7A4AE2] text-white rounded-lg hover:bg-[#7A4AE2] transition-colors"
+                variant={"secondary"}
+                size={"md"}
               >
                 적용
-              </button>
+              </Button>
             </div>
           )}
 
@@ -554,7 +583,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-[#ff385c]">
+              <div className="text-2xl font-bold text-[#7A4AE2]">
                 {revenueMetrics ? formatCurrency(revenueMetrics.arpu) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -578,7 +607,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-[#ff385c]">
+              <div className="text-2xl font-bold text-[#7A4AE2]">
                 {revenueMetrics ? formatCurrency(revenueMetrics.arppu) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -601,7 +630,7 @@ export function RevenueMetricsTab({
           {loadingMetrics ? (
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
-            <div className="text-2xl font-bold text-[#ff385c]">
+            <div className="text-2xl font-bold text-[#7A4AE2]">
               {revenueMetrics
                 ? formatPercent(revenueMetrics.payingUserRate)
                 : "-"}
@@ -619,7 +648,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-[#ff385c]">
+              <div className="text-2xl font-bold text-[#7A4AE2]">
                 {aovData ? formatCurrency(aovData.aov) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -638,48 +667,52 @@ export function RevenueMetricsTab({
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
               {(["daily", "weekly", "monthly"] as const).map((g) => (
-                <button
+                <Button
                   key={g}
                   type="button"
                   onClick={() => handleGranularityChange(g)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     granularity === g
-                      ? "bg-[#ff385c] text-white shadow-sm"
+                      ? "bg-[#7A4AE2] text-white shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
+                  variant={"secondary"}
+                  size={"md"}
                 >
                   {g === "daily" ? "일별" : g === "weekly" ? "주별" : "월별"}
-                </button>
+                </Button>
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <input
+              <Input
                 type="date"
                 value={trendStartDate}
                 onChange={(e) => setTrendStartDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A4AE2] focus:border-transparent"
               />
               <span className="text-gray-400 text-sm">~</span>
-              <input
+              <Input
                 type="date"
                 value={trendEndDate}
                 onChange={(e) => setTrendEndDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7A4AE2] focus:border-transparent"
               />
-              <button
+              <Button
                 type="button"
                 onClick={fetchTrendData}
-                disabled={loadingTrend}
-                className="px-3 py-1.5 text-sm font-medium bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-sm font-medium bg-[#7A4AE2] text-white rounded-lg hover:bg-[#7A4AE2] transition-colors disabled:opacity-50"
+                isDisabled={loadingTrend}
+                variant={"secondary"}
+                size={"md"}
               >
                 적용
-              </button>
+              </Button>
             </div>
           </div>
         </div>
         {loadingTrend ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7A4AE2]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : trendData && trendData.data.length > 0 ? (
@@ -712,10 +745,10 @@ export function RevenueMetricsTab({
                   yAxisId="amount"
                   type="monotone"
                   dataKey="arpu"
-                  stroke="#ff385c"
+                  stroke="#7A4AE2"
                   strokeWidth={2}
                   name="ARPU"
-                  dot={{ fill: "#ff385c", r: 4 }}
+                  dot={{ fill: "#7A4AE2", r: 4 }}
                 />
                 <Line
                   yAxisId="amount"
@@ -761,7 +794,7 @@ export function RevenueMetricsTab({
         </h3>
         {loadingSuccessRate ? (
           <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#7A4AE2]" />
           </div>
         ) : successRateData ? (
           <div className="space-y-4">
@@ -785,7 +818,7 @@ export function RevenueMetricsTab({
                 <div className="text-xs text-gray-500">총 시도</div>
               </div>
               <div className="text-center p-3 bg-green-50 rounded-lg">
-                <div className="text-lg font-semibold text-[#ff385c]">
+                <div className="text-lg font-semibold text-[#7A4AE2]">
                   {formatNumber(successRateData.successfulPayments)}건
                 </div>
                 <div className="text-xs text-gray-500">성공</div>
@@ -803,7 +836,7 @@ export function RevenueMetricsTab({
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#ff385c] to-green-400 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-[#7A4AE2] to-green-400 transition-all duration-500"
                 style={{ width: `${successRateData.successRate}%` }}
               />
             </div>
@@ -820,12 +853,12 @@ export function RevenueMetricsTab({
           </h3>
           {loadingConversion ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#7A4AE2]" />
             </div>
           ) : conversionData ? (
             <div className="space-y-4">
               <div className="text-center p-6 bg-[#f7f7f7] rounded-lg">
-                <div className="text-4xl font-bold text-[#ff385c]">
+                <div className="text-4xl font-bold text-[#7A4AE2]">
                   {formatPercent(conversionData.conversionRate)}
                 </div>
                 <div className="text-sm text-gray-500 mt-1">전환율</div>
@@ -838,7 +871,7 @@ export function RevenueMetricsTab({
                   <div className="text-xs text-gray-500">전체 사용자</div>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-semibold text-[#ff385c]">
+                  <div className="text-lg font-semibold text-[#7A4AE2]">
                     {formatNumber(conversionData.convertedUsers)}명
                   </div>
                   <div className="text-xs text-gray-500">결제 사용자</div>
@@ -847,7 +880,7 @@ export function RevenueMetricsTab({
               <div className="text-center p-3 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-600">
                   첫 결제까지 평균{" "}
-                  <span className="font-semibold text-[#ff385c]">
+                  <span className="font-semibold text-[#7A4AE2]">
                     {conversionData.avgDaysToFirstPurchase.toFixed(1)}일
                   </span>
                 </div>
@@ -864,12 +897,12 @@ export function RevenueMetricsTab({
           </h3>
           {loadingRepurchase ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#7A4AE2]" />
             </div>
           ) : repurchaseData ? (
             <div className="space-y-4">
               <div className="text-center p-6 bg-green-50 rounded-lg">
-                <div className="text-4xl font-bold text-[#ff385c]">
+                <div className="text-4xl font-bold text-[#7A4AE2]">
                   {formatPercent(repurchaseData.repeatPurchaseRate)}
                 </div>
                 <div className="text-sm text-gray-500 mt-1">재구매율</div>
@@ -882,7 +915,7 @@ export function RevenueMetricsTab({
                   <div className="text-xs text-gray-500">전체 구매자</div>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-semibold text-[#ff385c]">
+                  <div className="text-lg font-semibold text-[#7A4AE2]">
                     {formatNumber(repurchaseData.repeatPurchasers)}명
                   </div>
                   <div className="text-xs text-gray-500">재구매자</div>
@@ -900,7 +933,7 @@ export function RevenueMetricsTab({
                 <div className="text-center p-3 bg-[#f7f7f7] rounded-lg">
                   <div className="text-sm text-gray-600">
                     구매 간격{" "}
-                    <span className="font-semibold text-[#ff385c]">
+                    <span className="font-semibold text-[#7A4AE2]">
                       {repurchaseData.avgDaysBetweenPurchases.toFixed(1)}일
                     </span>
                   </div>
@@ -919,7 +952,7 @@ export function RevenueMetricsTab({
         </h3>
         {loadingRepurchase ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7A4AE2]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : repurchaseData &&
@@ -943,7 +976,7 @@ export function RevenueMetricsTab({
                 <Tooltip content={<DistributionTooltip />} />
                 <Bar
                   dataKey="userCount"
-                  fill="#ff385c"
+                  fill="#7A4AE2"
                   radius={[4, 4, 0, 0]}
                   name="사용자 수"
                 />
@@ -961,7 +994,7 @@ export function RevenueMetricsTab({
         <h3 className="text-lg font-semibold text-gray-900 mb-4">LTV 분석</h3>
         {loadingLtv ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7A4AE2]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : ltvData ? (
@@ -969,19 +1002,19 @@ export function RevenueMetricsTab({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">평균 LTV</div>
-                <div className="text-xl font-bold text-[#ff385c]">
+                <div className="text-xl font-bold text-[#7A4AE2]">
                   {formatCurrency(ltvData.avgLtv)}
                 </div>
               </div>
               <div className="text-center p-4 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">7일 LTV</div>
-                <div className="text-xl font-bold text-[#ff385c]">
+                <div className="text-xl font-bold text-[#7A4AE2]">
                   {formatCurrency(ltvData.avgLtv7Days)}
                 </div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">30일 LTV</div>
-                <div className="text-xl font-bold text-[#ff385c]">
+                <div className="text-xl font-bold text-[#7A4AE2]">
                   {formatCurrency(ltvData.avgLtv30Days)}
                 </div>
               </div>
@@ -1024,10 +1057,10 @@ export function RevenueMetricsTab({
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
                           {formatNumber(cohort.userCount)}명
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#7A4AE2] font-medium">
                           {formatCurrency(cohort.ltv7Days)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#7A4AE2] font-medium">
                           {formatCurrency(cohort.ltv30Days)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-orange-600 font-medium">

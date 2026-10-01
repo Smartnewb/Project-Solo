@@ -1,32 +1,43 @@
-'use client';
+"use client";
+import { Tabs } from "@heroui/react";
+import { LayoutGrid as GridViewIcon, List as ViewListIcon } from "lucide-react";
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Box, ToggleButton, ToggleButtonGroup, useMediaQuery, useTheme } from '@mui/material';
-import { GridView as GridViewIcon, ViewList as ViewListIcon } from '@mui/icons-material';
-import StatusCountBar from './components/StatusCountBar';
-import SessionQueue from './components/SessionQueue';
-import ChatPanel from './components/ChatPanel';
-import SessionGrid from './components/SessionGrid';
-import ChatDetailDialog from './components/ChatDetailDialog';
-import { useSessionPolling } from './hooks/useSessionPolling';
-import type { SupportDomain } from '@/app/types/support-chat';
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+
+import StatusCountBar from "./components/StatusCountBar";
+import SessionQueue from "./components/SessionQueue";
+import ChatPanel from "./components/ChatPanel";
+import SessionGrid from "./components/SessionGrid";
+import ChatDetailDialog from "./components/ChatDetailDialog";
+import { useSessionPolling } from "./hooks/useSessionPolling";
+import type { SupportDomain } from "@/app/types/support-chat";
 
 function SupportChatPageContent() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 899px)");
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const sessionFromUrl = searchParams?.get('session') ?? null;
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
-  const [activeTab, setActiveTab] = useState<'active' | 'resolved'>('active');
-  const [domainFilter, setDomainFilter] = useState<SupportDomain | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
+  const sessionFromUrl = searchParams?.get("session") ?? null;
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    sessionFromUrl,
+  );
+  const [activeTab, setActiveTab] = useState<"active" | "resolved">("active");
+  const [domainFilter, setDomainFilter] = useState<SupportDomain | "all">(
+    "all",
+  );
+  const [viewMode, setViewMode] = useState<"grid" | "split">("grid");
   const [gridSessionId, setGridSessionId] = useState<string | null>(null);
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
-  const [mobileView, setMobileView] = useState<'list' | 'chat'>(() =>
-    isMobile && sessionFromUrl ? 'chat' : 'list'
+  const [mobileView, setMobileView] = useState<"list" | "chat">(() =>
+    sessionFromUrl ? "chat" : "list",
   );
 
   const prevMessageCountsRef = useRef<Record<string, number>>({});
@@ -35,8 +46,8 @@ function SupportChatPageContent() {
 
   // 데스크톱 알림 권한 요청 (최초 1회)
   useEffect(() => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-    if (Notification.permission === 'default') {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission === "default") {
       void Notification.requestPermission();
     }
   }, []);
@@ -46,9 +57,13 @@ function SupportChatPageContent() {
     if (sessionFromUrl && sessionFromUrl !== selectedSessionId) {
       setSelectedSessionId(sessionFromUrl);
       if (isMobile) {
-        setMobileView('chat');
+        setMobileView("chat");
       }
-    } else if (!sessionFromUrl && selectedSessionId && !initializedFromUrlRef.current) {
+    } else if (
+      !sessionFromUrl &&
+      selectedSessionId &&
+      !initializedFromUrlRef.current
+    ) {
       setSelectedSessionId(null);
     }
     initializedFromUrlRef.current = true;
@@ -73,7 +88,9 @@ function SupportChatPageContent() {
       if (prevCount !== undefined && session.messageCount > prevCount) {
         // Only count as unread if not the currently selected session
         if (session.sessionId !== selectedSessionId) {
-          newUnread[session.sessionId] = (unreadMap[session.sessionId] || 0) + (session.messageCount - prevCount);
+          newUnread[session.sessionId] =
+            (unreadMap[session.sessionId] || 0) +
+            (session.messageCount - prevCount);
         }
       }
       prevMessageCountsRef.current[session.sessionId] = session.messageCount;
@@ -86,10 +103,12 @@ function SupportChatPageContent() {
 
   // 신규 대기 문의 데스크톱 알림
   useEffect(() => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-    if (Notification.permission !== 'granted') return;
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
 
-    const freshIds = [...newSessionIds].filter((id) => !notifiedSessionIdsRef.current.has(id));
+    const freshIds = [...newSessionIds].filter(
+      (id) => !notifiedSessionIdsRef.current.has(id),
+    );
     if (freshIds.length === 0) return;
 
     freshIds.forEach((id) => notifiedSessionIdsRef.current.add(id));
@@ -97,13 +116,13 @@ function SupportChatPageContent() {
     const target = activeSessions.find((s) => freshIds.includes(s.sessionId));
     const body =
       freshIds.length === 1
-        ? `${target?.userNickname || '사용자'}님의 새 문의가 도착했습니다.`
+        ? `${target?.userNickname || "사용자"}님의 새 문의가 도착했습니다.`
         : `새 문의 ${freshIds.length}건이 도착했습니다.`;
 
     try {
-      const notification = new Notification('썸타임 고객지원 — 새 문의', {
+      const notification = new Notification("썸타임 고객지원 — 새 문의", {
         body,
-        tag: 'support-chat-new',
+        tag: "support-chat-new",
       });
       notification.onclick = () => {
         window.focus();
@@ -119,45 +138,57 @@ function SupportChatPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newSessionIds, activeSessions]);
 
-  const handleSelectSession = useCallback((sessionId: string) => {
-    setSelectedSessionId(sessionId);
-    // Update URL with session ID
-    const params = new URLSearchParams(searchParams?.toString() ?? '');
-    params.set('session', sessionId);
-    router.replace(`/admin/support-chat?${params.toString()}`, { scroll: false });
-    // Clear unread for selected session
-    setUnreadMap((prev) => {
-      if (!prev[sessionId]) return prev;
-      const next = { ...prev };
-      delete next[sessionId];
-      return next;
-    });
-    if (isMobile) {
-      setMobileView('chat');
-    }
-  }, [isMobile, router, searchParams]);
+  const handleSelectSession = useCallback(
+    (sessionId: string) => {
+      setSelectedSessionId(sessionId);
+      // Update URL with session ID
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      params.set("session", sessionId);
+      router.replace(`/admin/support-chat?${params.toString()}`, {
+        scroll: false,
+      });
+      // Clear unread for selected session
+      setUnreadMap((prev) => {
+        if (!prev[sessionId]) return prev;
+        const next = { ...prev };
+        delete next[sessionId];
+        return next;
+      });
+      if (isMobile) {
+        setMobileView("chat");
+      }
+    },
+    [isMobile, router, searchParams],
+  );
 
   const handleSessionUpdated = useCallback(() => {
     refresh();
   }, [refresh]);
 
   const handleMobileBack = useCallback(() => {
-    setMobileView('list');
+    setMobileView("list");
     setSelectedSessionId(null);
-    router.replace('/admin/support-chat', { scroll: false });
+    router.replace("/admin/support-chat", { scroll: false });
   }, [router]);
 
   // Mobile layout
   if (isMobile) {
     return (
-      <Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div
+        style={{
+          padding: 16,
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <StatusCountBar
           waitingCount={statusCounts.waiting}
           handlingCount={statusCounts.handling}
           resolvedCount={statusCounts.resolved}
         />
-        {mobileView === 'list' ? (
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+        {mobileView === "list" ? (
+          <div style={{ flex: 1, overflow: "hidden" }}>
             <SessionQueue
               activeSessions={activeSessions}
               resolvedSessions={resolvedSessions}
@@ -171,47 +202,59 @@ function SupportChatPageContent() {
               onClearNewSessionIds={clearNewSessionIds}
               unreadMap={unreadMap}
             />
-          </Box>
+          </div>
         ) : (
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <div style={{ flex: 1, overflow: "hidden" }}>
             <ChatPanel
               sessionId={selectedSessionId}
               onSessionUpdated={handleSessionUpdated}
               onBack={handleMobileBack}
             />
-          </Box>
+          </div>
         )}
-      </Box>
+      </div>
     );
   }
 
   // Desktop layout
   return (
-    <Box sx={{ p: 3, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ flex: 1 }}>
+    <div
+      style={{
+        padding: 24,
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ flex: 1 }}>
           <StatusCountBar
             waitingCount={statusCounts.waiting}
             handlingCount={statusCounts.handling}
             resolvedCount={statusCounts.resolved}
           />
-        </Box>
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={viewMode}
-          onChange={(_, value) => value && setViewMode(value)}
-          sx={{ mb: 2 }}
+        </div>
+        <Tabs
+          selectedKey={viewMode}
+          onSelectionChange={(key) =>
+            setViewMode(String(key) as "grid" | "split")
+          }
         >
-          <ToggleButton value="grid">
-            <GridViewIcon fontSize="small" sx={{ mr: 0.5 }} /> 그리드
-          </ToggleButton>
-          <ToggleButton value="split">
-            <ViewListIcon fontSize="small" sx={{ mr: 0.5 }} /> 목록
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-      {viewMode === 'grid' ? (
+          <Tabs.ListContainer>
+            <Tabs.List>
+              <Tabs.Tab id={"grid"}>
+                <GridViewIcon size={16} /> 그리드
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id={"split"}>
+                <ViewListIcon size={16} /> 목록
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
+        </Tabs>
+      </div>
+      {viewMode === "grid" ? (
         <>
           <SessionGrid
             activeSessions={activeSessions}
@@ -232,37 +275,37 @@ function SupportChatPageContent() {
           )}
         </>
       ) : (
-      <Box
-        sx={{
-          flex: 1,
-          display: 'flex',
-          border: 1,
-          borderColor: 'divider',
-          borderRadius: 2,
-          overflow: 'hidden',
-          bgcolor: 'background.paper',
-        }}
-      >
-        <SessionQueue
-          activeSessions={activeSessions}
-          resolvedSessions={resolvedSessions}
-          selectedSessionId={selectedSessionId}
-          onSelectSession={handleSelectSession}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          domainFilter={domainFilter}
-          onDomainFilterChange={setDomainFilter}
-          newSessionIds={newSessionIds}
-          onClearNewSessionIds={clearNewSessionIds}
-          unreadMap={unreadMap}
-        />
-        <ChatPanel
-          sessionId={selectedSessionId}
-          onSessionUpdated={handleSessionUpdated}
-        />
-      </Box>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            border: "1px solid #e4e4e7",
+            borderColor: "#e4e4e7",
+            borderRadius: 2,
+            overflow: "hidden",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <SessionQueue
+            activeSessions={activeSessions}
+            resolvedSessions={resolvedSessions}
+            selectedSessionId={selectedSessionId}
+            onSelectSession={handleSelectSession}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            domainFilter={domainFilter}
+            onDomainFilterChange={setDomainFilter}
+            newSessionIds={newSessionIds}
+            onClearNewSessionIds={clearNewSessionIds}
+            unreadMap={unreadMap}
+          />
+          <ChatPanel
+            sessionId={selectedSessionId}
+            onSessionUpdated={handleSessionUpdated}
+          />
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
 

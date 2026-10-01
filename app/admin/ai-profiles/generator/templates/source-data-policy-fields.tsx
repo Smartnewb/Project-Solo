@@ -1,6 +1,7 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent } from "react";
 import {
   CAMPUS_AREAS,
   FALLBACK_STRATEGIES,
@@ -8,24 +9,20 @@ import {
   type CampusArea,
   type FallbackStrategy,
   type GenderPresentation,
-} from '@/app/types/ai-profile-generator';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
+} from "@/app/types/ai-profile-generator";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { AdvancedJsonPanel } from '../_shared/advanced-json-panel';
-import { NumberRangeInput } from '../_shared/number-range-input';
-import {
-  asStringArray,
-  pickExtra,
-  pruneEmpty,
-} from '../_shared/policy-utils';
-import { StringListInput } from '../_shared/string-list-input';
+} from "@/shared/ui/select";
+import { AdvancedJsonPanel } from "../_shared/advanced-json-panel";
+import { NumberRangeInput } from "../_shared/number-range-input";
+import { asStringArray, pickExtra, pruneEmpty } from "../_shared/policy-utils";
+import { StringListInput } from "../_shared/string-list-input";
 
 interface Props {
   value: Record<string, unknown>;
@@ -34,22 +31,22 @@ interface Props {
 }
 
 const KNOWN_KEYS = [
-  'universityIds',
-  'departmentIds',
-  'campusAreas',
-  'ageRange',
-  'genderPresentation',
-  'minReferenceCount',
-  'fallbackStrategy',
+  "universityIds",
+  "departmentIds",
+  "campusAreas",
+  "ageRange",
+  "genderPresentation",
+  "minReferenceCount",
+  "fallbackStrategy",
 ] as const;
 
-const UNSET = 'unset';
+const UNSET = "unset";
 
 function asRange(v: unknown): { min?: number; max?: number } {
-  if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
   const record = v as Record<string, unknown>;
-  const min = typeof record.min === 'number' ? record.min : undefined;
-  const max = typeof record.max === 'number' ? record.max : undefined;
+  const min = typeof record.min === "number" ? record.min : undefined;
+  const max = typeof record.max === "number" ? record.max : undefined;
   return { min, max };
 }
 
@@ -59,17 +56,17 @@ export function SourceDataPolicyFields({ value, onChange, disabled }: Props) {
   const campusAreas = asStringArray(value.campusAreas);
   const ageRange = asRange(value.ageRange);
   const genderPresentation =
-    typeof value.genderPresentation === 'string'
+    typeof value.genderPresentation === "string"
       ? (value.genderPresentation as string)
-      : '';
+      : "";
   const minReferenceCount =
-    typeof value.minReferenceCount === 'number'
+    typeof value.minReferenceCount === "number"
       ? value.minReferenceCount
       : undefined;
   const fallbackStrategy =
-    typeof value.fallbackStrategy === 'string'
+    typeof value.fallbackStrategy === "string"
       ? (value.fallbackStrategy as string)
-      : '';
+      : "";
 
   const extra = pickExtra(value, KNOWN_KEYS);
 
@@ -102,7 +99,7 @@ export function SourceDataPolicyFields({ value, onChange, disabled }: Props) {
 
   const handleMinReference = (event: ChangeEvent<HTMLInputElement>) => {
     const raw = event.target.value.trim();
-    const parsed = raw === '' ? undefined : Number(raw);
+    const parsed = raw === "" ? undefined : Number(raw);
     emitKnown({
       minReferenceCount:
         parsed === undefined || Number.isNaN(parsed) ? undefined : parsed,
@@ -139,15 +136,13 @@ export function SourceDataPolicyFields({ value, onChange, disabled }: Props) {
         <Label>지역 (캠퍼스 권역)</Label>
         <StringListInput
           value={campusAreas}
-          onChange={(next) =>
-            emitKnown({ campusAreas: next as CampusArea[] })
-          }
-          placeholder={`허용 코드: ${CAMPUS_AREAS.join(', ')}`}
+          onChange={(next) => emitKnown({ campusAreas: next as CampusArea[] })}
+          placeholder={`허용 코드: ${CAMPUS_AREAS.join(", ")}`}
           disabled={disabled}
         />
         {invalidCampusAreas.length > 0 ? (
           <p className="text-xs text-amber-600">
-            표준 코드가 아닌 값: {invalidCampusAreas.join(', ')}
+            표준 코드가 아닌 값: {invalidCampusAreas.join(", ")}
           </p>
         ) : null}
       </div>
@@ -168,19 +163,17 @@ export function SourceDataPolicyFields({ value, onChange, disabled }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>성별</Label>
         <Select
           value={genderPresentation || UNSET}
           onValueChange={(next) =>
             emitKnown({
               genderPresentation:
-                next === UNSET
-                  ? undefined
-                  : (next as GenderPresentation),
+                next === UNSET ? undefined : (next as GenderPresentation),
             })
           }
           disabled={disabled}
         >
+          <HeroSelectLabel>성별</HeroSelectLabel>
           <SelectTrigger>
             <SelectValue placeholder="성별 선택" />
           </SelectTrigger>
@@ -200,7 +193,7 @@ export function SourceDataPolicyFields({ value, onChange, disabled }: Props) {
         <Input
           type="number"
           inputMode="numeric"
-          value={minReferenceCount ?? ''}
+          value={minReferenceCount ?? ""}
           onChange={handleMinReference}
           placeholder="예: 20"
           disabled={disabled}
@@ -208,7 +201,6 @@ export function SourceDataPolicyFields({ value, onChange, disabled }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>Fallback 전략</Label>
         <Select
           value={fallbackStrategy || UNSET}
           onValueChange={(next) =>
@@ -219,6 +211,7 @@ export function SourceDataPolicyFields({ value, onChange, disabled }: Props) {
           }
           disabled={disabled}
         >
+          <HeroSelectLabel>Fallback 전략</HeroSelectLabel>
           <SelectTrigger>
             <SelectValue placeholder="Fallback 전략 선택" />
           </SelectTrigger>

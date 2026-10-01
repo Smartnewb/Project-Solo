@@ -1,251 +1,259 @@
-'use client';
+"use client";
+import { Button } from "@heroui/react";
 
 import { useState, useEffect } from "react";
-import { salesService } from '@/app/services/sales';
-import { TrendCustomResponse  } from "../types";
-import { 
-    ResponsiveContainer, 
-    ComposedChart, 
-    Bar, 
-    Line, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
-    Legend 
-} from 'recharts';
+import { salesService } from "@/app/services/sales";
+import { TrendCustomResponse } from "../types";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { formatCurrency } from "../utils";
 import { smsService } from "@/app/services/sms";
 
 interface MonthlyPaymentData {
-    month: string;
-    totalAmount: number;
-    pgAmount: number;
-    iapAmount: number;
-    totalCount: number;
-    pgCount: number;
-    iapCount: number;
-    totalPaidUsers: number;
-    pgPaidUsers: number;
-    iapPaidUsers: number;
+  month: string;
+  totalAmount: number;
+  pgAmount: number;
+  iapAmount: number;
+  totalCount: number;
+  pgCount: number;
+  iapCount: number;
+  totalPaidUsers: number;
+  pgPaidUsers: number;
+  iapPaidUsers: number;
 }
 
 export function MonthlyPaymentGraph() {
-    // === 상태관리 ===
-    const [chartData, setChartData] = useState<MonthlyPaymentData[]>([]);
-    const [selectedYear, setSelectedYear] = useState<string>('2025'); // NOTE: 연간 버튼 구현 추가 필요
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    
+  // === 상태관리 ===
+  const [chartData, setChartData] = useState<MonthlyPaymentData[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>("2025"); // NOTE: 연간 버튼 구현 추가 필요
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    // === API ===
-    const fetchMonthlyPaymentData = async () => {
-        setIsLoading(true);
-        
-        try {
-            const response = await salesService.getTrendMonthly({
-                paymentType: "all", 
-                byRegion: false,
-            });
-            
-            ;
-            
-            // 전체 배열을 차트 데이터로 변환
-            const transformedData: MonthlyPaymentData[] = response.data.map(item => ({
-                month: item.label,
-                totalAmount: item.amount,
-                pgAmount: item.excludeIapAmount ?? 0,
-                iapAmount: item.iapOnlyAmount ?? 0,
-                totalCount: item.count,
-                pgCount: item.excludeIapCount ?? 0,
-                iapCount: item.iapOnlyCount ?? 0,
-                totalPaidUsers: item.paidUserCount ?? 0,
-                pgPaidUsers: item.excludeIapPaidUserCount || 0,
-                iapPaidUsers: item.iapOnlyPaidUserCount || 0,
-            }));
-            
-            setChartData(transformedData);
-            
-        } catch(error) {
-            setChartData([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  // === API ===
+  const fetchMonthlyPaymentData = async () => {
+    setIsLoading(true);
 
-    // MARK: - 그래프 툴팁
-    const CustomTooltip = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
-            const data = payload[0].payload;
-            return (
-                <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
-                    <p className="font-medium">{`${formatMonthLabel(label)}`}</p>
-                    <p style={{ color: "#8884d8" }}>
-                        WELCOME payment: {formatCurrency(data.pgAmount)} ({data.pgCount}건, {data.pgPaidUsers}명)
-                    </p>
-                    <p style={{ color: "#82ca9d" }}>
-                        Apple 인앱 결제: {formatCurrency(data.iapAmount)} ({data.iapCount}건, {data.iapPaidUsers}명)
-                    </p>
-                    <p className="font-semibold border-t pt-1 mt-1">
-                        총 매출: {formatCurrency(data.totalAmount)} ({data.totalCount}건)
-                    </p>
-                    <p className="text-orange-600 font-semibold">
-                        총 유료 사용자: {data.totalPaidUsers}명
-                    </p>
-                    <p className="text-[#ff385c] text-sm">
-                        사용자당 평균: {data.totalPaidUsers > 0 ? formatCurrency(data.totalAmount / data.totalPaidUsers) : formatCurrency(0)}
-                    </p>
-                </div>
-            );
-        }
-        return null;
-    };
+    try {
+      const response = await salesService.getTrendMonthly({
+        paymentType: "all",
+        byRegion: false,
+      });
 
-    const formatMonthLabel = (monthStr: string): string => {
-        // "2025-01-28" -> "1월"
-        const parts = monthStr.split('-');
-        if (parts.length >= 2) {
-            const month = parseInt(parts[1]);
-            return `${month}월`;
-        }
-        return monthStr;
-    };
+      // 전체 배열을 차트 데이터로 변환
+      const transformedData: MonthlyPaymentData[] = response.data.map(
+        (item) => ({
+          month: item.label,
+          totalAmount: item.amount,
+          pgAmount: item.excludeIapAmount ?? 0,
+          iapAmount: item.iapOnlyAmount ?? 0,
+          totalCount: item.count,
+          pgCount: item.excludeIapCount ?? 0,
+          iapCount: item.iapOnlyCount ?? 0,
+          totalPaidUsers: item.paidUserCount ?? 0,
+          pgPaidUsers: item.excludeIapPaidUserCount || 0,
+          iapPaidUsers: item.iapOnlyPaidUserCount || 0,
+        }),
+      );
 
-    const CustomStackLabel = (props: any) => {
-        const { payload, x, y, width } = props;
-        
-        if (props.dataKey === 'iapAmount') {
-            return (
-                <text
-                    x={x + width / 2}
-                    y={y - 5}
-                    fill="#666"
-                    textAnchor="middle"
-                    fontSize="12"
-                    fontWeight="500"
-                >
-                    {payload.totalCount}건
-                </text>
-            );
-        }
-        return null;
-    };
+      setChartData(transformedData);
+    } catch (error) {
+      setChartData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // MARK: - 그래프 툴팁
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+          <p className="font-medium">{`${formatMonthLabel(label)}`}</p>
+          <p style={{ color: "#8884d8" }}>
+            WELCOME payment: {formatCurrency(data.pgAmount)} ({data.pgCount}건,{" "}
+            {data.pgPaidUsers}명)
+          </p>
+          <p style={{ color: "#82ca9d" }}>
+            Apple 인앱 결제: {formatCurrency(data.iapAmount)} ({data.iapCount}
+            건, {data.iapPaidUsers}명)
+          </p>
+          <p className="font-semibold border-t pt-1 mt-1">
+            총 매출: {formatCurrency(data.totalAmount)} ({data.totalCount}건)
+          </p>
+          <p className="text-orange-600 font-semibold">
+            총 유료 사용자: {data.totalPaidUsers}명
+          </p>
+          <p className="text-[#7A4AE2] text-sm">
+            사용자당 평균:{" "}
+            {data.totalPaidUsers > 0
+              ? formatCurrency(data.totalAmount / data.totalPaidUsers)
+              : formatCurrency(0)}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
-    // === hooks ===
-    // MARK: - 마운트
-    useEffect(()=>{
-        fetchMonthlyPaymentData();
-    },[]);
+  const formatMonthLabel = (monthStr: string): string => {
+    // "2025-01-28" -> "1월"
+    const parts = monthStr.split("-");
+    if (parts.length >= 2) {
+      const month = parseInt(parts[1]);
+      return `${month}월`;
+    }
+    return monthStr;
+  };
 
-    return (
-        <>
-            {/* MARK: - 전체 컨테이너 */}
-            <div className="bg-white rounded-md w-ful border border-border px-6 py-6">
-                {/* MARK: - 헤더(타이틀) */}
-                <div className="flex justify-between items-center mb-[0px]">
-                    <h2 className="text-xl font-semibold">월별 매출 추이</h2>
-                    <button className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
-                    ${selectedYear === '2025'
-                        ? 'text-white bg-[#ff385c]'
-                        : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
-                    }`}>{selectedYear}</button>
-                </div>
+  const CustomStackLabel = (props: any) => {
+    const { payload, x, y, width } = props;
 
+    if (props.dataKey === "iapAmount") {
+      return (
+        <text
+          x={x + width / 2}
+          y={y - 5}
+          fill="#666"
+          textAnchor="middle"
+          fontSize="12"
+          fontWeight="500"
+        >
+          {payload.totalCount}건
+        </text>
+      );
+    }
+    return null;
+  };
 
-                {/* MAR: - 메인 콘텐츠 */}
-                <div>
-                    {/* MARK: - 로딩 상태 */}
-                    {isLoading && (
-                        <div className="flex justify-center items-center py-12">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]"></div>
-                            <span className="ml-2">데이터를 불러오는 중...</span>
-                        </div>
-                    )}
+  // === hooks ===
+  // MARK: - 마운트
+  useEffect(() => {
+    fetchMonthlyPaymentData();
+  }, []);
 
-                    {/* MARK: - 차트 영역 */}
-                    {!isLoading && chartData.length > 0 && (
-                        <div className="h-[420px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <ComposedChart 
-                                    data={chartData}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" tickFormatter={formatMonthLabel}/>
-                                    
-                                    {/* MARK: - 금액 축 (왼쪽 축) */}
-                                    <YAxis
-                                        yAxisId='amount'
-                                        orientation='left'
-                                        tickFormatter={formatCurrency}
-                                        tick={{ fontSize: 12 }}
-                                        width={80}
-                                    />
-                                    
-                                    {/* MARK: - 건수 축 (오른쪽 축) */}
-                                    <YAxis 
-                                        yAxisId='totalCount'
-                                        orientation='right'
-                                        tickFormatter={(value) => `${value}건`}
-                                        tick={{ fontSize: 12 }}
-                                        width={60}
-                                    />
+  return (
+    <>
+      {/* MARK: - 전체 컨테이너 */}
+      <div className="bg-white rounded-md w-ful border border-border px-6 py-6">
+        {/* MARK: - 헤더(타이틀) */}
+        <div className="flex justify-between items-center mb-[0px]">
+          <h2 className="text-xl font-semibold">월별 매출 추이</h2>
+          <Button
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors
+                    ${
+                      selectedYear === "2025"
+                        ? "text-white bg-[#7A4AE2]"
+                        : "border border-border text-gray-700 bg-gary-100 text-gray-700"
+                    }`}
+            variant={"secondary"}
+            size={"md"}
+          >
+            {selectedYear}
+          </Button>
+        </div>
 
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Legend />
-                                    
-                                    {/* MARK: - 스택형 막대 */}
-                                    <Bar
-                                        yAxisId='amount'
-                                        dataKey="pgAmount"
-                                        stackId="a"
-                                        fill="#8884d8"
-                                        name="WELCOME payment"
-                                    />
-                                    <Bar
-                                        yAxisId='amount'
-                                        dataKey="iapAmount"
-                                        stackId="a"
-                                        fill="#82ca9d"
-                                        name="Apple 인앱 결제"
-                                        label={<CustomStackLabel />}
-                                    />
-                                    
-                                    {/* MARK: - 매출건수 추이선 */}
-                                    <Line
-                                        yAxisId='totalCount'
-                                        type="monotone"
-                                        dataKey="totalCount"
-                                        stroke="#ff7c7c"
-                                        strokeWidth={2}
-                                        name="총 매출 건수"
-                                        dot={{ fill: '#ff7c7c', strokeWidth: 2, r: 4 }}
-                                        strokeDasharray="5 5"
-                                    />
-
-                                    <Line
-                                        yAxisId='totalCount'
-                                        type="monotone"
-                                        dataKey="totalPaidUsers"
-                                        stroke="#ff9500"
-                                        strokeWidth={3}
-                                        name="총 유료 사용자 수"
-                                        dot={{ fill: '#ff9500', strokeWidth: 2, r: 5 }}
-                                    />
-                                    
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        </div>
-                    )}
-
-                    {/* MARK: - 에러처리 */}
-                    {!isLoading && chartData.length === 0  && (
-                        <div className="text-center py-12 text-gray-500">
-                            해당 기간에 표시할 데이터가 없습니다.
-                        </div>
-                    )}
-                </div>
+        {/* MAR: - 메인 콘텐츠 */}
+        <div>
+          {/* MARK: - 로딩 상태 */}
+          {isLoading && (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7A4AE2]"></div>
+              <span className="ml-2">데이터를 불러오는 중...</span>
             </div>
-        </>
-    );
-};
+          )}
+
+          {/* MARK: - 차트 영역 */}
+          {!isLoading && chartData.length > 0 && (
+            <div className="h-[420px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" tickFormatter={formatMonthLabel} />
+
+                  {/* MARK: - 금액 축 (왼쪽 축) */}
+                  <YAxis
+                    yAxisId="amount"
+                    orientation="left"
+                    tickFormatter={formatCurrency}
+                    tick={{ fontSize: 12 }}
+                    width={80}
+                  />
+
+                  {/* MARK: - 건수 축 (오른쪽 축) */}
+                  <YAxis
+                    yAxisId="totalCount"
+                    orientation="right"
+                    tickFormatter={(value) => `${value}건`}
+                    tick={{ fontSize: 12 }}
+                    width={60}
+                  />
+
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+
+                  {/* MARK: - 스택형 막대 */}
+                  <Bar
+                    yAxisId="amount"
+                    dataKey="pgAmount"
+                    stackId="a"
+                    fill="#8884d8"
+                    name="WELCOME payment"
+                  />
+                  <Bar
+                    yAxisId="amount"
+                    dataKey="iapAmount"
+                    stackId="a"
+                    fill="#82ca9d"
+                    name="Apple 인앱 결제"
+                    label={<CustomStackLabel />}
+                  />
+
+                  {/* MARK: - 매출건수 추이선 */}
+                  <Line
+                    yAxisId="totalCount"
+                    type="monotone"
+                    dataKey="totalCount"
+                    stroke="#ff7c7c"
+                    strokeWidth={2}
+                    name="총 매출 건수"
+                    dot={{ fill: "#ff7c7c", strokeWidth: 2, r: 4 }}
+                    strokeDasharray="5 5"
+                  />
+
+                  <Line
+                    yAxisId="totalCount"
+                    type="monotone"
+                    dataKey="totalPaidUsers"
+                    stroke="#ff9500"
+                    strokeWidth={3}
+                    name="총 유료 사용자 수"
+                    dot={{ fill: "#ff9500", strokeWidth: 2, r: 5 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* MARK: - 에러처리 */}
+          {!isLoading && chartData.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              해당 기간에 표시할 데이터가 없습니다.
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

@@ -1,5 +1,6 @@
+import {selectHeroValue,heroSelectTrigger} from '@/app/admin/content/test-utils/hero-select';
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock Next.js navigation
@@ -13,6 +14,7 @@ const mockCreate = jest.fn();
 const mockUpdate = jest.fn();
 const mockGet = jest.fn();
 const mockPublish = jest.fn();
+const mockPreviewHtml = jest.fn();
 type MockPreset = {
   id: string;
   name: string;
@@ -30,6 +32,9 @@ jest.mock('@/app/services/admin', () => ({
       update: (...args: unknown[]) => mockUpdate(...args),
       get: (...args: unknown[]) => mockGet(...args),
       publish: (...args: unknown[]) => mockPublish(...args),
+      previewHtml: (...args: unknown[]) => mockPreviewHtml(...args),
+      uploadHtmlImage: jest.fn(),
+      restoreHtml: jest.fn(),
     },
     backgroundPresets: {
       getActive: () => mockBackgroundGet(),
@@ -39,6 +44,9 @@ jest.mock('@/app/services/admin', () => ({
     sometimeArticles: { uploadImage: jest.fn() },
   },
 }));
+
+jest.mock('@/app/admin/hooks', () => ({ useLongformCategories: () => ({data:[{code:'story_relationship',displayName:'연애'},{code:'announcement',displayName:'공지'}]}) }));
+jest.mock('@/app/admin/content/components/seo/OgPreviewCard', () => ({OgPreviewCard: () => null}));
 
 // Mock toast
 const mockToast = {
@@ -103,9 +111,10 @@ async function setBackgroundForValidation() {
   // We bypass by switching to CUSTOM with a url: we need direct state manipulation.
 }
 
-describe('LongformForm', () => {
+describe('LongformForm', () =>{
   beforeEach(() => {
     jest.clearAllMocks();
+    window.history.replaceState({}, '', '/');
     mockBackgroundGet.mockResolvedValue([
       { id: 'p1', name: 'p1', displayName: 'Preset 1', imageUrl: 'https://img/p1', order: 0 },
     ]);
@@ -173,11 +182,7 @@ describe('LongformForm', () => {
       target: { value: '본문 내용입니다.' },
     });
 
-    // Open the MUI Select by clicking the displayed control div.
-    const comboboxes = screen.getAllByRole('combobox');
-    fireEvent.mouseDown(comboboxes[0]);
-    const relationshipOption = await screen.findByRole('option', { name: '연애' });
-    fireEvent.click(relationshipOption);
+    await selectHeroValue('카테고리','story_relationship');
 
     const saveButton = screen.getByRole('button', { name: /저장$/ });
     fireEvent.click(saveButton);
@@ -190,4 +195,60 @@ describe('LongformForm', () => {
     expect(payload.body).toBe('본문 내용입니다.');
     expect(payload.title).toBe('제목A');
   });
+});
+
+it('saves HTML through the card-news API without legacy body and keeps the saved revision after publication failure', async () => {
+  jest.clearAllMocks();
+  window.history.replaceState({}, '', '/admin/content/longform/create?format=html');
+  const state = { revision:1, variants:{kr:{safeHtml:'<p>safe</p>',safeCss:''}}, translation:{status:'pending',attempts:0} };
+  mockCreate.mockResolvedValue({id:'html-id',noticeHtmlState:state});
+  mockUpdate.mockResolvedValue({id:'html-id',noticeHtmlState:{...state,revision:2}});
+  mockPreviewHtml.mockResolvedValue({previewDigest:'digest',document:'<p>validated</p>'});
+  mockPublish.mockRejectedValue(new Error('publication failed'));
+  render(<LongformForm mode="create" />);
+  await screen.findByText('HTML 공지 작성');
+  fireEvent.change(screen.getByLabelText(/^제목/),{target:{value:'HTML title'}});
+  fireEvent.change(screen.getByLabelText(/^설명/),{target:{value:'HTML description'}});
+  fireEvent.change(screen.getByLabelText('HTML'),{target:{value:'<p>notice</p>'}});
+  fireEvent.click(screen.getByRole('button',{name:'검증 및 미리보기'}));
+  await screen.findByTitle('검증된 KR 공지 미리보기');
+  fireEvent.click(screen.getByRole('button',{name:'저장 후 발행'}));
+  await waitFor(() => expect(mockPublish).toHaveBeenCalled());
+  const payload = mockCreate.mock.calls[0][0];
+  expect(payload).toMatchObject({categoryCode:'announcement',layoutMode:'longform',hasReward:false,noticeHtmlInput:{html:'<p>notice</p>',css:'',previewDigest:'digest',expectedRevision:0}});
+  expect(payload).not.toHaveProperty('body');
+  expect(payload).not.toHaveProperty('backgroundImage');
+  expect(payload).not.toHaveProperty('sections');
+  await waitFor(() => expect(screen.getByRole('button',{name:'저장',exact:true})).not.toBeDisabled());
+  expect(screen.getByLabelText('HTML 공지 · JP 자동 번역')).toBeDisabled();
+  fireEvent.click(screen.getByRole('button',{name:'저장',exact:true}));
+  await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
+  expect(mockCreate).toHaveBeenCalledTimes(1);
+  expect(mockUpdate.mock.calls[0][1].noticeHtmlInput.expectedRevision).toBe(1);
+  expect(mockPush).not.toHaveBeenCalled();
+});
+
+it('preserves metadata edited while an HTML save is awaiting its response', async () => {
+  jest.clearAllMocks();
+  window.history.replaceState({}, '', '/admin/content/longform/create?format=html');
+  let complete!: (value: unknown) => void;
+  mockCreate.mockReturnValue(new Promise((resolve) => { complete = resolve; }));
+  mockPreviewHtml.mockResolvedValue({ previewDigest: 'digest', document: '<p>validated</p>' });
+  render(<LongformForm mode="create" />);
+  await screen.findByText('HTML 공지 작성');
+  fireEvent.change(screen.getByLabelText(/^제목/), { target: { value: 'Submitted title' } });
+  fireEvent.change(screen.getByLabelText(/^설명/), { target: { value: 'Description' } });
+  fireEvent.change(screen.getByLabelText('HTML'), { target: { value: '<p>notice</p>' } });
+  fireEvent.click(screen.getByRole('button', { name: '검증 및 미리보기' }));
+  await screen.findByTitle('검증된 KR 공지 미리보기');
+  fireEvent.click(screen.getByRole('button', { name: '저장', exact: true }));
+  await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+  fireEvent.change(screen.getByLabelText(/^제목/), { target: { value: 'New unsaved title' } });
+  await act(async () => complete({ id: 'notice', noticeHtmlState: {
+    revision: 1, variants: { kr: { safeHtml: '<p>notice</p>', safeCss: '' } },
+    translation: { status: 'pending', attempts: 0 },
+  } }));
+  expect(mockCreate.mock.calls[0][0].title).toBe('Submitted title');
+  expect(screen.getByLabelText(/^제목/)).toHaveValue('New unsaved title');
+  expect(screen.getByRole('button', { name: '저장', exact: true })).toBeDisabled();
 });

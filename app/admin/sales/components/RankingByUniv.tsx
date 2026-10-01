@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState, useEffect } from "react";
 import { salesService } from "@/app/services/sales";
@@ -151,9 +152,6 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
 
     const startDateString = formateDateToString(start);
     const endDateString = formateDateToString(end);
-    ;
-    ;
-
     try {
       const response = await salesService.getUniversityRank({
         startDate: startDateString,
@@ -165,7 +163,6 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
       if (response) {
         setTotalData(response);
       } else {
-        ;
         setTotalData(null);
       }
     } catch (error) {
@@ -315,45 +312,53 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
 
           <div className="flex items-center gap-2">
             <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
+              <Button
                 onClick={() => setViewMode("top20")}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   viewMode === "top20"
-                    ? "bg-white text-[#e00b41] shadow-sm"
+                    ? "bg-white text-[#7A4AE2] shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
+                variant={"secondary"}
+                size={"md"}
               >
                 전체 Top 20
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setViewMode("byCluster")}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   viewMode === "byCluster"
-                    ? "bg-white text-[#e00b41] shadow-sm"
+                    ? "bg-white text-[#7A4AE2] shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
+                variant={"secondary"}
+                size={"md"}
               >
                 클러스터별
-              </button>
+              </Button>
             </div>
           </div>
         </div>
 
         {viewMode === "byCluster" && (
           <div className="flex items-center gap-3 mt-3">
-            <button
+            <Button
               onClick={expandAllClusters}
-              className="text-xs text-[#ff385c] hover:text-[#e00b41] font-medium"
+              className="text-xs text-[#7A4AE2] hover:text-[#7A4AE2] font-medium"
+              variant={"secondary"}
+              size={"md"}
             >
               모두 펼치기
-            </button>
+            </Button>
             <span className="text-gray-300">|</span>
-            <button
+            <Button
               onClick={collapseAllClusters}
-              className="text-xs text-[#ff385c] hover:text-[#e00b41] font-medium"
+              className="text-xs text-[#7A4AE2] hover:text-[#7A4AE2] font-medium"
+              variant={"secondary"}
+              size={"md"}
             >
               모두 접기
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -361,7 +366,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-[#ff385c] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-[#7A4AE2] border-t-transparent rounded-full animate-spin"></div>
             <span className="text-gray-500">데이터 로딩중...</span>
           </div>
         </div>
@@ -394,25 +399,25 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
             <table className="w-full">
               <thead className="bg-gradient-to-r from-[#f7f7f7] to-indigo-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider w-16">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A4AE2] uppercase tracking-wider w-16">
                     순위
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A4AE2] uppercase tracking-wider">
                     대학명
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#7A4AE2] uppercase tracking-wider">
                     클러스터
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#7A4AE2] uppercase tracking-wider">
                     매출
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#7A4AE2] uppercase tracking-wider">
                     결제건수
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#7A4AE2] uppercase tracking-wider">
                     비율
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#7A4AE2] uppercase tracking-wider">
                     평균매출
                   </th>
                 </tr>
@@ -452,13 +457,13 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#ffd1da] text-[#e00b41]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#ffd1da] text-[#7A4AE2]">
                           {CLUSTER_NAMES[cluster]}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
                         <span
-                          className={`text-sm font-semibold ${isTopThree ? "text-[#e00b41]" : "text-[#ff385c]"}`}
+                          className={`text-sm font-semibold ${isTopThree ? "text-[#7A4AE2]" : "text-[#7A4AE2]"}`}
                         >
                           {formatCurrency(item.amount)}
                         </span>
@@ -469,7 +474,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <span className="text-sm text-[#ff385c] font-medium">
+                        <span className="text-sm text-[#7A4AE2] font-medium">
                           {item.percentage !== undefined
                             ? `${item.percentage.toFixed(1)}%`
                             : "-"}
@@ -510,17 +515,19 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                 key={clusterCode}
                 className="rounded-lg border border-gray-200 overflow-hidden"
               >
-                <button
+                <Button
                   onClick={() => toggleCluster(clusterCode)}
                   className={`w-full px-5 py-4 flex items-center justify-between transition-colors ${
                     isExpanded
                       ? "bg-[#f7f7f7] border-b border-[#ffd1da]"
                       : "bg-white hover:bg-gray-50"
                   }`}
+                  variant={"secondary"}
+                  size={"md"}
                 >
                   <div className="flex items-center gap-4">
                     <svg
-                      className={`w-5 h-5 text-[#ff385c] transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                      className={`w-5 h-5 text-[#7A4AE2] transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -540,16 +547,15 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                       <span className="text-xs text-gray-400 font-mono">
                         {clusterCode}
                       </span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#ffd1da] text-[#e00b41] text-xs font-semibold">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#ffd1da] text-[#7A4AE2] text-xs font-semibold">
                         {clusterItems.length}
                       </span>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <p className="text-xs text-gray-400">총 매출</p>
-                      <p className="text-sm font-bold text-[#e00b41]">
+                      <p className="text-sm font-bold text-[#7A4AE2]">
                         {formatCurrency(clusterTotal)}
                       </p>
                     </div>
@@ -560,7 +566,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                       </p>
                     </div>
                   </div>
-                </button>
+                </Button>
 
                 {isExpanded && (
                   <div className="bg-white">
@@ -599,13 +605,13 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                             <td className="px-5 py-3 text-sm font-medium text-gray-900">
                               {item.universityName}
                             </td>
-                            <td className="px-5 py-3 text-right text-sm font-semibold text-[#ff385c]">
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-[#7A4AE2]">
                               {formatCurrency(item.amount)}
                             </td>
                             <td className="px-5 py-3 text-right text-sm text-gray-600">
                               {item.count}건
                             </td>
-                            <td className="px-5 py-3 text-right text-sm text-[#ff385c] font-medium">
+                            <td className="px-5 py-3 text-right text-sm text-[#7A4AE2] font-medium">
                               {item.percentage !== undefined
                                 ? `${item.percentage.toFixed(1)}%`
                                 : "-"}

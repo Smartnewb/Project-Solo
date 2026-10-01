@@ -10,3 +10,7 @@ if (!global.fetch) {
   global.Response = jest.fn();
   global.Headers = class Headers extends Map {};
 }
+
+// React Aria uses this browser API for collection item selectors; jsdom lacks it.
+global.CSS = global.CSS || {};
+global.CSS.escape = global.CSS.escape || require("css.escape");

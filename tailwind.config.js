@@ -26,16 +26,16 @@ module.exports = {
         },
         accent: {
           DEFAULT: 'var(--color-accent)',       // #ff385c
-          foreground: 'hsl(var(--accent-foreground))'
+          foreground: 'hsl(var(--legacy-accent-foreground))'
         },
         background: 'var(--color-background)',  // #ffffff
-        foreground: 'hsl(var(--foreground))',
+        foreground: 'hsl(var(--legacy-foreground))',
         text: {
           DEFAULT: 'var(--color-text)',         // #222222
           body: 'var(--color-body)',            // #3f3f3f
           light: 'var(--color-text-light)',     // #6a6a6a
           muted: 'var(--color-muted-soft)',     // #929292
-          foreground: 'hsl(var(--foreground))'
+          foreground: 'hsl(var(--legacy-foreground))'
         },
         border: 'var(--color-border)',          // #dddddd
         white: 'var(--color-white)',            // #FFFFFF
@@ -60,7 +60,7 @@ module.exports = {
   				foreground: 'hsl(var(--popover-foreground))'
   			},
   			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
+				DEFAULT: 'hsl(var(--legacy-muted))',
   				foreground: 'hsl(var(--muted-foreground))'
   			},
   			destructive: {

@@ -1,5 +1,4 @@
 import ProfileImageAuditV2 from './profile-image-audit-v2';
-
 export default function ProfileImageAuditPage() {
-  return <ProfileImageAuditV2 />;
+    return <ProfileImageAuditV2></ProfileImageAuditV2>;
 }

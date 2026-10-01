@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  Typography,
-  CircularProgress,
   Alert,
-  IconButton
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import AdminService from '@/app/services/admin';
+  Button,
+  Input,
+  Label,
+  Modal,
+  Spinner,
+  TextArea,
+  TextField,
+} from "@heroui/react";
+import { X } from "lucide-react";
+import React, { useState } from "react";
+
+import AdminService from "@/app/services/admin";
 
 interface EmailNotificationModalProps {
   open: boolean;
@@ -30,17 +28,17 @@ const EmailNotificationModal: React.FC<EmailNotificationModalProps> = ({
   userId,
   userEmail,
   userName,
-  onSuccess
+  onSuccess,
 }) => {
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async () => {
     if (!userId || !subject.trim() || !message.trim()) {
-      setError('제목과 내용을 모두 입력해주세요.');
+      setError("제목과 내용을 모두 입력해주세요.");
       return;
     }
 
@@ -48,7 +46,11 @@ const EmailNotificationModal: React.FC<EmailNotificationModalProps> = ({
       setLoading(true);
       setError(null);
 
-      await AdminService.userAppearance.sendEmailNotification(userId, subject, message);
+      await AdminService.userAppearance.sendEmailNotification(
+        userId,
+        subject,
+        message,
+      );
 
       setSuccess(true);
       if (onSuccess) onSuccess();
@@ -58,118 +60,142 @@ const EmailNotificationModal: React.FC<EmailNotificationModalProps> = ({
         handleClose();
       }, 1000);
     } catch (error: any) {
-      setError(error.message || '이메일 공지사항 발송 중 오류가 발생했습니다.');
+      setError(error.message || "이메일 공지사항 발송 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setSubject('');
-    setMessage('');
+    setSubject("");
+    setMessage("");
     setError(null);
     setSuccess(false);
     onClose();
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
-        }
+    <Modal.Backdrop
+      isOpen={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleClose?.();
       }}
+      isDismissable={handleClose !== undefined}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">이메일 발송</Typography>
-        <IconButton edge="end" color="inherit" onClick={handleClose} aria-label="close">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ mt: 2 }}>
-          {userEmail && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                수신자
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                {userName ? `${userName} (${userEmail})` : userEmail}
-              </Typography>
-            </Box>
-          )}
-
-          <TextField
-            label="제목"
-            fullWidth
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            margin="normal"
-            variant="outlined"
-            disabled={loading}
-            placeholder="이메일 제목을 입력하세요"
-            InputLabelProps={{ shrink: true }}
-          />
-
-          <TextField
-            label="내용"
-            fullWidth
-            multiline
-            rows={6}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            margin="normal"
-            variant="outlined"
-            disabled={loading}
-            placeholder="이메일 내용을 입력하세요"
-            InputLabelProps={{ shrink: true }}
-          />
-
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              이메일이 성공적으로 발송되었습니다.
-            </Alert>
-          )}
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button
-          onClick={handleClose}
-          color="inherit"
-          disabled={loading}
-          sx={{ borderRadius: 2 }}
-        >
-          취소
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          color="primary"
-          disabled={loading || !subject.trim() || !message.trim()}
-          sx={{ borderRadius: 2, position: 'relative' }}
-        >
-          {loading ? (
-            <>
-              <CircularProgress size={24} sx={{ color: 'white', position: 'absolute' }} />
-              <span style={{ opacity: 0 }}>발송하기</span>
-            </>
-          ) : (
-            '발송하기'
-          )}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      <Modal.Container size="md" scroll="inside">
+        <Modal.Dialog>
+          <Modal.Header
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Modal.Heading>
+              <div className={"text-lg font-semibold text-neutral-900"}>
+                이메일 발송
+              </div>
+              <Button
+                onClick={handleClose}
+                aria-label="close"
+                variant={"ghost"}
+                isDisabled={undefined}
+                isIconOnly={true}
+                size={"md"}
+                className="rounded-lg"
+              >
+                <X />
+              </Button>
+            </Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            <div style={{ marginTop: 8 }}>
+              {userEmail && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className={"text-sm text-neutral-700"}>수신자</div>
+                  <div
+                    style={{ fontWeight: "medium" }}
+                    className={"text-sm text-neutral-700"}
+                  >
+                    {userName ? `${userName} (${userEmail})` : userEmail}
+                  </div>
+                </div>
+              )}
+              <TextField
+                className="w-full"
+                isDisabled={loading}
+                isInvalid={undefined}
+              >
+                <Label>{"제목"}</Label>
+                <Input
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="이메일 제목을 입력하세요"
+                  aria-label={"제목"}
+                />
+              </TextField>
+              <TextField
+                className="w-full"
+                isDisabled={loading}
+                isInvalid={undefined}
+              >
+                <Label>{"내용"}</Label>
+                <TextArea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="이메일 내용을 입력하세요"
+                  rows={6}
+                  aria-label={"내용"}
+                />
+              </TextField>
+              {error && (
+                <Alert style={{ marginTop: 8 }} status="danger" role="alert">
+                  <Alert.Content>{error}</Alert.Content>
+                </Alert>
+              )}
+              {success && (
+                <Alert style={{ marginTop: 8 }} status={"success"} role="alert">
+                  <Alert.Content>
+                    이메일이 성공적으로 발송되었습니다.
+                  </Alert.Content>
+                </Alert>
+              )}
+            </div>
+          </Modal.Body>
+          <Modal.Footer
+            style={{ paddingLeft: 12, paddingRight: 12, paddingBottom: 12 }}
+          >
+            <Button
+              onClick={handleClose}
+              style={{ borderRadius: 8 }}
+              variant={"ghost"}
+              isDisabled={loading}
+              size={"md"}
+              className="rounded-xl"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              style={{ borderRadius: 8, position: "relative" }}
+              variant={"primary"}
+              isDisabled={loading || !subject.trim() || !message.trim()}
+              size={"md"}
+              className="rounded-xl"
+            >
+              {loading ? (
+                <>
+                  <Spinner aria-label="불러오는 중" size="sm" />
+                  <span style={{ opacity: 0 }}>발송하기</span>
+                </>
+              ) : (
+                "발송하기"
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 };
 

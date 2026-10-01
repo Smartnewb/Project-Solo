@@ -1,4 +1,4 @@
-import { DraftEditorClient } from './draft-editor-client';
+import { DraftEditorClient } from "./draft-editor-client";
 
 export default async function DraftEditorPage({
   params,

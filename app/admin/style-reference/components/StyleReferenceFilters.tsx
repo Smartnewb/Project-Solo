@@ -1,58 +1,53 @@
 'use client';
-
-import { Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+import { Select, ListBox } from '@heroui/react';
 import { CATEGORY_LABELS, GENDER_LABELS } from '../constants';
-
 interface Filters {
-  gender: 'ALL' | 'MALE' | 'FEMALE';
-  category: 'ALL' | 'VIBE' | 'FASHION' | 'COLOR_TONE';
-  status: 'ALL' | 'ACTIVE' | 'INACTIVE';
+    gender: 'ALL' | 'MALE' | 'FEMALE';
+    category: 'ALL' | 'VIBE' | 'FASHION' | 'COLOR_TONE';
+    status: 'ALL' | 'ACTIVE' | 'INACTIVE';
 }
-
 interface StyleReferenceFiltersProps {
-  filters: Filters;
-  onChange: (filters: Filters) => void;
+    filters: Filters;
+    onChange: (filters: Filters) => void;
 }
-
 export function StyleReferenceFilters({ filters, onChange }: StyleReferenceFiltersProps) {
-  const handleChange =
-    (field: keyof Filters) => (e: SelectChangeEvent) => {
-      onChange({ ...filters, [field]: e.target.value });
+    const handleChange = (field: keyof Filters) => (e: React.ChangeEvent<HTMLSelectElement>) => {
+        onChange({ ...filters, [field]: e.target.value });
     };
+    return (<div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+      <div style={{ minWidth: 120 }}>
+        <label>성별</label>
+        <Select value={filters.gender} aria-label={"성별"} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleChange('gender'))({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+          <ListBox.Item id={"ALL"} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
+          {(Object.keys(GENDER_LABELS) as Array<keyof typeof GENDER_LABELS>).map((g) => (<ListBox.Item key={g} id={g} textValue={String(GENDER_LABELS[g])}>{GENDER_LABELS[g]}</ListBox.Item>))}
+        </ListBox></Select.Popover></Select>
+      </div>
 
-  return (
-    <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-      <FormControl size="small" sx={{ minWidth: 120 }}>
-        <InputLabel>성별</InputLabel>
-        <Select value={filters.gender} label="성별" onChange={handleChange('gender')}>
-          <MenuItem value="ALL">전체</MenuItem>
-          {(Object.keys(GENDER_LABELS) as Array<keyof typeof GENDER_LABELS>).map((g) => (
-            <MenuItem key={g} value={g}>{GENDER_LABELS[g]}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <div style={{ minWidth: 140 }}>
+        <label>카테고리</label>
+        <Select value={filters.category} aria-label={"카테고리"} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleChange('category'))({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+          <ListBox.Item id={"ALL"} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
+          {(Object.keys(CATEGORY_LABELS) as Array<keyof typeof CATEGORY_LABELS>).map((c) => (<ListBox.Item key={c} id={c} textValue={String(CATEGORY_LABELS[c])}>{CATEGORY_LABELS[c]}</ListBox.Item>))}
+        </ListBox></Select.Popover></Select>
+      </div>
 
-      <FormControl size="small" sx={{ minWidth: 140 }}>
-        <InputLabel>카테고리</InputLabel>
-        <Select value={filters.category} label="카테고리" onChange={handleChange('category')}>
-          <MenuItem value="ALL">전체</MenuItem>
-          {(Object.keys(CATEGORY_LABELS) as Array<keyof typeof CATEGORY_LABELS>).map((c) => (
-            <MenuItem key={c} value={c}>{CATEGORY_LABELS[c]}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      <FormControl size="small" sx={{ minWidth: 120 }}>
-        <InputLabel>상태</InputLabel>
-        <Select value={filters.status} label="상태" onChange={handleChange('status')}>
-          <MenuItem value="ALL">전체</MenuItem>
-          <MenuItem value="ACTIVE">활성</MenuItem>
-          <MenuItem value="INACTIVE">비활성</MenuItem>
-        </Select>
-      </FormControl>
-    </Box>
-  );
+      <div style={{ minWidth: 120 }}>
+        <label>상태</label>
+        <Select value={filters.status} aria-label={"상태"} onChange={(key) => {
+            const value = String(key ?? "");
+            (handleChange('status'))({ target: { value: value }, currentTarget: { value: value } } as never);
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+          <ListBox.Item id={"ALL"} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
+          <ListBox.Item id={"ACTIVE"} textValue={"\uD65C\uC131"}>활성</ListBox.Item>
+          <ListBox.Item id={"INACTIVE"} textValue={"\uBE44\uD65C\uC131"}>비활성</ListBox.Item>
+        </ListBox></Select.Popover></Select>
+      </div>
+    </div>);
 }
-
 export type { Filters };

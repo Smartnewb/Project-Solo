@@ -1,33 +1,22 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
+"use client";
+import { Button as HeroActionButton } from "@heroui/react";
+import { Button, Spinner, Tooltip } from "@heroui/react";
 import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  IconButton,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tooltip,
-  Typography,
-} from '@mui/material';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import type { PixelCampusEpisodeStatus } from '@/types/admin';
-import { usePixelCampusEpisodes } from '@/app/admin/hooks/use-pixel-campus';
-import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-import { formatDateTime } from '../constants';
-import { PixelCampusStatusBadge } from './PixelCampusStatusBadge';
+  ChartColumn as BarChartIcon,
+  Pencil as EditIcon,
+  Eye as VisibilityIcon,
+} from "lucide-react";
+
+import { useRouter } from "next/navigation";
+
+import type { PixelCampusEpisodeStatus } from "@/types/admin";
+import { usePixelCampusEpisodes } from "@/app/admin/hooks/use-pixel-campus";
+import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
+import { formatDateTime } from "../constants";
+import { PixelCampusStatusBadge } from "./PixelCampusStatusBadge";
 
 interface Props {
-  status: PixelCampusEpisodeStatus | 'all';
+  status: PixelCampusEpisodeStatus | "all";
   onStatsClick: (episodeId: string) => void;
 }
 
@@ -37,17 +26,23 @@ export function EpisodeListTab({ status, onStatsClick }: Props) {
 
   if (episodesQuery.isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-        <CircularProgress />
-      </Box>
+      <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
+        <Spinner aria-label="로딩 중" />
+      </div>
     );
   }
 
   if (episodesQuery.error) {
     return (
-      <Alert severity="error">
-        {getAdminErrorMessage(episodesQuery.error, '에피소드 목록을 불러오지 못했습니다.')}
-      </Alert>
+      <div
+        role="alert"
+        className="rounded-lg border border-default p-3 text-sm"
+      >
+        {getAdminErrorMessage(
+          episodesQuery.error,
+          "에피소드 목록을 불러오지 못했습니다.",
+        )}
+      </div>
     );
   }
 
@@ -55,87 +50,117 @@ export function EpisodeListTab({ status, onStatsClick }: Props) {
 
   if (!episodes.length) {
     return (
-      <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          표시할 에피소드가 없습니다.
-        </Typography>
-      </Paper>
+      <div style={{ padding: 32, textAlign: "center" }}>
+        <p>표시할 에피소드가 없습니다.</p>
+      </div>
     );
   }
 
   return (
-    <TableContainer component={Paper} variant="outlined">
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>챕터-화</TableCell>
-            <TableCell>제목</TableCell>
-            <TableCell>상태</TableCell>
-            <TableCell>공개일</TableCell>
-            <TableCell align="right">참여수</TableCell>
-            <TableCell align="right">액션</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
+    <div>
+      <table className="w-full text-sm text-left">
+        <thead>
+          <tr>
+            <th scope="col" className="px-3 py-2 border-b border-default">
+              챕터-화
+            </th>
+            <th scope="col" className="px-3 py-2 border-b border-default">
+              제목
+            </th>
+            <th scope="col" className="px-3 py-2 border-b border-default">
+              상태
+            </th>
+            <th scope="col" className="px-3 py-2 border-b border-default">
+              공개일
+            </th>
+            <th scope="col" className="px-3 py-2 border-b border-default">
+              참여수
+            </th>
+            <th scope="col" className="px-3 py-2 border-b border-default">
+              액션
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {episodes.map((episode) => (
-            <TableRow
-              key={episode.id}
-              hover
-              sx={{ cursor: 'pointer' }}
-              onClick={() => router.push(`/admin/pixel-campus/edit/${episode.id}`)}
-            >
-              <TableCell>
-                {episode.chapterNo}-{episode.episodeNo}
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2" fontWeight={600}>
-                  {episode.title}
-                </Typography>
-              </TableCell>
-              <TableCell>
+            <tr key={episode.id} style={{ cursor: "pointer" }}>
+              <td className="px-3 py-2 border-b border-default">
+                <HeroActionButton
+                  variant="ghost"
+                  className="h-auto justify-start whitespace-normal p-0"
+                  onClick={() =>
+                    router.push(`/admin/pixel-campus/edit/${episode.id}`)
+                  }
+                >
+                  {episode.chapterNo}-{episode.episodeNo}
+                </HeroActionButton>
+              </td>
+              <td className="px-3 py-2 border-b border-default">
+                <p>{episode.title}</p>
+              </td>
+              <td className="px-3 py-2 border-b border-default">
                 <PixelCampusStatusBadge status={episode.status} />
-              </TableCell>
-              <TableCell>{formatDateTime(episode.publishAt)}</TableCell>
-              <TableCell align="right">{episode.answerCount ?? 0}</TableCell>
-              <TableCell align="right">
-                <Tooltip title="상세">
-                  <IconButton
-                    size="small"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      router.push(`/admin/pixel-campus/edit/${episode.id}`);
-                    }}
-                  >
-                    <VisibilityIcon fontSize="small" />
-                  </IconButton>
+              </td>
+              <td className="px-3 py-2 border-b border-default">
+                {formatDateTime(episode.publishAt)}
+              </td>
+              <td className="px-3 py-2 border-b border-default">
+                {episode.answerCount ?? 0}
+              </td>
+              <td className="px-3 py-2 border-b border-default">
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        router.push(`/admin/pixel-campus/edit/${episode.id}`);
+                      }}
+                      variant={"secondary"}
+                      isIconOnly
+                      aria-label="작업"
+                    >
+                      <VisibilityIcon size={16} />
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>{"상세"}</Tooltip.Content>
                 </Tooltip>
-                <Tooltip title="편집">
-                  <IconButton
-                    size="small"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      router.push(`/admin/pixel-campus/edit/${episode.id}`);
-                    }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        router.push(`/admin/pixel-campus/edit/${episode.id}`);
+                      }}
+                      variant={"secondary"}
+                      isIconOnly
+                      aria-label="작업"
+                    >
+                      <EditIcon size={16} />
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>{"편집"}</Tooltip.Content>
                 </Tooltip>
-                <Tooltip title="통계">
-                  <IconButton
-                    size="small"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onStatsClick(episode.id);
-                    }}
-                  >
-                    <BarChartIcon fontSize="small" />
-                  </IconButton>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onStatsClick(episode.id);
+                      }}
+                      variant={"secondary"}
+                      isIconOnly
+                      aria-label="작업"
+                    >
+                      <BarChartIcon size={16} />
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>{"통계"}</Tooltip.Content>
                 </Tooltip>
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+        </tbody>
+      </table>
+    </div>
   );
 }

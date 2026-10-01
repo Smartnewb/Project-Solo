@@ -1,14 +1,8 @@
 "use client";
+import { Skeleton } from "@heroui/react";
 
 import { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Skeleton,
-  LinearProgress,
-  linearProgressClasses,
-  styled,
-} from "@mui/material";
+
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import AdminService from "@/app/services/admin";
 
@@ -29,30 +23,6 @@ interface GenderStatsCardProps {
 
 const MALE_COLOR = "#3b82f6";
 const FEMALE_COLOR = "#ec4899";
-
-const MaleProgress = styled(LinearProgress)(() => ({
-  height: 10,
-  borderRadius: 5,
-  [`&.${linearProgressClasses.colorPrimary}`]: {
-    backgroundColor: "#e0e7ff",
-  },
-  [`& .${linearProgressClasses.bar}`]: {
-    borderRadius: 5,
-    backgroundColor: MALE_COLOR,
-  },
-}));
-
-const FemaleProgress = styled(LinearProgress)(() => ({
-  height: 10,
-  borderRadius: 5,
-  [`&.${linearProgressClasses.colorPrimary}`]: {
-    backgroundColor: "#fce7f3",
-  },
-  [`& .${linearProgressClasses.bar}`]: {
-    borderRadius: 5,
-    backgroundColor: FEMALE_COLOR,
-  },
-}));
 
 function MaleIcon() {
   return (
@@ -111,42 +81,42 @@ function FemaleIcon() {
 
 function LoadingSkeleton() {
   return (
-    <Box className="flex flex-col md:flex-row gap-8 p-6">
-      <Box
+    <div className="flex flex-col md:flex-row gap-8 p-6">
+      <div
         className="flex-shrink-0 flex items-center justify-center"
-        sx={{ width: { xs: "100%", md: 200 }, height: 200 }}
+        style={{ width: 200, height: 200 }}
       >
-        <Skeleton variant="circular" width={180} height={180} />
-      </Box>
-      <Box className="flex-1 flex flex-col gap-6">
-        <Box className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-50">
-          <Skeleton variant="text" width={120} height={32} />
-        </Box>
-        <Box className="flex flex-col gap-4">
-          <Box className="p-4 rounded-xl bg-[#f7f7f7]">
-            <Box className="flex justify-between mb-2">
-              <Skeleton variant="text" width={80} />
-              <Skeleton variant="text" width={60} />
-            </Box>
-            <Skeleton variant="rounded" height={10} />
-          </Box>
-          <Box className="p-4 rounded-xl bg-pink-50/50">
-            <Box className="flex justify-between mb-2">
-              <Skeleton variant="text" width={80} />
-              <Skeleton variant="text" width={60} />
-            </Box>
-            <Skeleton variant="rounded" height={10} />
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+        <Skeleton className="h-6 w-full rounded-lg" />
+      </div>
+      <div className="flex-1 flex flex-col gap-6">
+        <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-50">
+          <Skeleton className="h-6 w-full rounded-lg" />
+        </div>
+        <div className="flex flex-col gap-4">
+          <div className="p-4 rounded-xl bg-[#f7f7f7]">
+            <div className="flex justify-between mb-2">
+              <Skeleton className="h-6 w-full rounded-lg" />
+              <Skeleton className="h-6 w-full rounded-lg" />
+            </div>
+            <Skeleton className="h-6 w-full rounded-lg" />
+          </div>
+          <div className="p-4 rounded-xl bg-pink-50/50">
+            <div className="flex justify-between mb-2">
+              <Skeleton className="h-6 w-full rounded-lg" />
+              <Skeleton className="h-6 w-full rounded-lg" />
+            </div>
+            <Skeleton className="h-6 w-full rounded-lg" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <Box className="flex flex-col items-center justify-center py-12 px-6">
-      <Box className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
+    <div className="flex flex-col items-center justify-center py-12 px-6">
+      <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
         <svg
           width="32"
           height="32"
@@ -162,14 +132,12 @@ function ErrorState({ message }: { message: string }) {
             strokeLinecap="round"
           />
         </svg>
-      </Box>
-      <Typography className="text-slate-600 text-center font-medium">
-        {message}
-      </Typography>
-      <Typography className="text-slate-400 text-sm mt-1">
+      </div>
+      <div className={"text-sm text-neutral-700"}>{message}</div>
+      <div className={"text-sm text-neutral-700"}>
         잠시 후 다시 시도해주세요
-      </Typography>
-    </Box>
+      </div>
+    </div>
   );
 }
 
@@ -229,10 +197,10 @@ export default function GenderStatsCard({
   ];
 
   return (
-    <Box className="flex flex-col lg:flex-row gap-6 p-6">
-      <Box
+    <div className="flex flex-col lg:flex-row gap-6 p-6">
+      <div
         className="flex-shrink-0 relative"
-        sx={{ width: { xs: "100%", lg: 220 }, height: 220 }}
+        style={{ width: "100%", height: 220 }}
       >
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -256,144 +224,134 @@ export default function GenderStatsCard({
             </Pie>
           </PieChart>
         </ResponsiveContainer>
-
-        <Box className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <Typography className="text-slate-400 text-xs font-medium tracking-wide uppercase">
-            Total
-          </Typography>
-          <Typography
-            className="font-bold text-slate-800"
-            sx={{ fontSize: "1.75rem", lineHeight: 1.2 }}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <div className={"text-sm text-neutral-700"}>Total</div>
+          <div
+            style={{ fontSize: "1.75rem", lineHeight: 1.2 }}
+            className={"text-sm text-neutral-700"}
           >
             {stats.totalCount.toLocaleString()}
-          </Typography>
-          <Typography className="text-slate-400 text-xs">명</Typography>
-        </Box>
-      </Box>
-
-      <Box className="flex-1 flex flex-col gap-5">
-        <Box
+          </div>
+          <div className={"text-sm text-neutral-700"}>명</div>
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col gap-5">
+        <div
           className="flex items-center justify-center gap-3 py-3 px-5 rounded-2xl"
-          sx={{
+          style={{
             background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
             border: "1px solid #e2e8f0",
           }}
         >
-          <Box className="flex items-center gap-1.5">
-            <Box
+          <div className="flex items-center gap-1.5">
+            <div
               className="w-3 h-3 rounded-full"
-              sx={{ backgroundColor: MALE_COLOR }}
-            />
-            <Typography className="font-semibold text-slate-700">
-              {(stats.genderRatio || '0:0').split(":")[0]}
-            </Typography>
-          </Box>
-          <Typography className="text-slate-300 font-light text-lg">
-            :
-          </Typography>
-          <Box className="flex items-center gap-1.5">
-            <Typography className="font-semibold text-slate-700">
-              {(stats.genderRatio || '0:0').split(":")[1]}
-            </Typography>
-            <Box
+              style={{ backgroundColor: MALE_COLOR }}
+            ></div>
+            <div className={"text-sm text-neutral-700"}>
+              {(stats.genderRatio || "0:0").split(":")[0]}
+            </div>
+          </div>
+          <div className={"text-sm text-neutral-700"}>:</div>
+          <div className="flex items-center gap-1.5">
+            <div className={"text-sm text-neutral-700"}>
+              {(stats.genderRatio || "0:0").split(":")[1]}
+            </div>
+            <div
               className="w-3 h-3 rounded-full"
-              sx={{ backgroundColor: FEMALE_COLOR }}
-            />
-          </Box>
-        </Box>
-
-        <Box className="flex flex-col gap-4">
-          <Box
+              style={{ backgroundColor: FEMALE_COLOR }}
+            ></div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">
+          <div
             className="p-4 rounded-2xl transition-all duration-200 hover:shadow-md"
-            sx={{
+            style={{
               background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
               border: "1px solid #bfdbfe",
             }}
           >
-            <Box className="flex items-center justify-between mb-3">
-              <Box className="flex items-center gap-2">
-                <Box
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  sx={{ backgroundColor: "rgba(59, 130, 246, 0.15)" }}
+                  style={{ backgroundColor: "rgba(59, 130, 246, 0.15)" }}
                 >
                   <MaleIcon />
-                </Box>
-                <Typography className="font-semibold text-slate-700">
-                  남성
-                </Typography>
-              </Box>
-              <Box className="flex items-baseline gap-1">
-                <Typography
-                  className="font-bold"
-                  sx={{ color: MALE_COLOR, fontSize: "1.25rem" }}
+                </div>
+                <div className={"text-sm text-neutral-700"}>남성</div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <div
+                  style={{ color: MALE_COLOR, fontSize: "1.25rem" }}
+                  className={"text-sm text-neutral-700"}
                 >
                   {stats.maleCount.toLocaleString()}
-                </Typography>
-                <Typography className="text-slate-500 text-sm">명</Typography>
-              </Box>
-            </Box>
-            <Box className="flex items-center gap-3">
-              <Box className="flex-1">
-                <MaleProgress
-                  variant="determinate"
+                </div>
+                <div className={"text-sm text-neutral-700"}>명</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <progress
+                  max={100}
                   value={stats.malePercentage}
+                  className="h-2 w-full"
                 />
-              </Box>
-              <Typography
-                className="font-semibold text-sm min-w-[48px] text-right"
-                sx={{ color: MALE_COLOR }}
+              </div>
+              <div
+                style={{ color: MALE_COLOR }}
+                className={"text-sm text-neutral-700"}
               >
                 {stats.malePercentage.toFixed(1)}%
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box
+              </div>
+            </div>
+          </div>
+          <div
             className="p-4 rounded-2xl transition-all duration-200 hover:shadow-md"
-            sx={{
+            style={{
               background: "linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)",
               border: "1px solid #fbcfe8",
             }}
           >
-            <Box className="flex items-center justify-between mb-3">
-              <Box className="flex items-center gap-2">
-                <Box
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  sx={{ backgroundColor: "rgba(236, 72, 153, 0.15)" }}
+                  style={{ backgroundColor: "rgba(236, 72, 153, 0.15)" }}
                 >
                   <FemaleIcon />
-                </Box>
-                <Typography className="font-semibold text-slate-700">
-                  여성
-                </Typography>
-              </Box>
-              <Box className="flex items-baseline gap-1">
-                <Typography
-                  className="font-bold"
-                  sx={{ color: FEMALE_COLOR, fontSize: "1.25rem" }}
+                </div>
+                <div className={"text-sm text-neutral-700"}>여성</div>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <div
+                  style={{ color: FEMALE_COLOR, fontSize: "1.25rem" }}
+                  className={"text-sm text-neutral-700"}
                 >
                   {stats.femaleCount.toLocaleString()}
-                </Typography>
-                <Typography className="text-slate-500 text-sm">명</Typography>
-              </Box>
-            </Box>
-            <Box className="flex items-center gap-3">
-              <Box className="flex-1">
-                <FemaleProgress
-                  variant="determinate"
+                </div>
+                <div className={"text-sm text-neutral-700"}>명</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <progress
+                  max={100}
                   value={stats.femalePercentage}
+                  className="h-2 w-full"
                 />
-              </Box>
-              <Typography
-                className="font-semibold text-sm min-w-[48px] text-right"
-                sx={{ color: FEMALE_COLOR }}
+              </div>
+              <div
+                style={{ color: FEMALE_COLOR }}
+                className={"text-sm text-neutral-700"}
               >
                 {stats.femalePercentage.toFixed(1)}%
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

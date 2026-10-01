@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState } from "react";
 
@@ -50,53 +51,61 @@ function SalesPageContent() {
             </div>
             <div className="flex items-center space-x-3">
               <div className="bg-[#f7f7f7] px-3 py-1 rounded-full">
-                <span className="text-[#e00b41] text-sm font-medium">
+                <span className="text-[#7A4AE2] text-sm font-medium">
                   실시간 데이터
                 </span>
               </div>
             </div>
           </div>
           <div className="mt-6 flex gap-2 border-b border-gray-200">
-            <button
+            <Button
               onClick={() => setMainTab("sales")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 mainTab === "sales"
-                  ? "border-[#ff385c] text-[#ff385c]"
+                  ? "border-[#7A4AE2] text-[#7A4AE2]"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
+              variant={"secondary"}
+              size={"md"}
             >
               매출 현황
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setMainTab("metrics")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 mainTab === "metrics"
-                  ? "border-[#ff385c] text-[#ff385c]"
+                  ? "border-[#7A4AE2] text-[#7A4AE2]"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
+              variant={"secondary"}
+              size={"md"}
             >
               수익 지표
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setMainTab("products")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 mainTab === "products"
-                  ? "border-[#ff385c] text-[#ff385c]"
+                  ? "border-[#7A4AE2] text-[#7A4AE2]"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
+              variant={"secondary"}
+              size={"md"}
             >
               상품 분석
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setMainTab("insights")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 mainTab === "insights"
-                  ? "border-[#ff385c] text-[#ff385c]"
+                  ? "border-[#7A4AE2] text-[#7A4AE2]"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
+              variant={"secondary"}
+              size={"md"}
             >
               인사이트
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -137,26 +146,30 @@ function SalesPageContent() {
                     </p>
                   </div>
                   <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                    <button
+                    <Button
                       onClick={() => setSalesTrendTab("monthly")}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                         salesTrendTab === "monthly"
-                          ? "bg-white text-[#e00b41] shadow-sm"
+                          ? "bg-white text-[#7A4AE2] shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
                       }`}
+                      variant={"secondary"}
+                      size={"md"}
                     >
                       월별
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => setSalesTrendTab("daily")}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                         salesTrendTab === "daily"
-                          ? "bg-white text-[#e00b41] shadow-sm"
+                          ? "bg-white text-[#7A4AE2] shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
                       }`}
+                      variant={"secondary"}
+                      size={"md"}
                     >
                       일별
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

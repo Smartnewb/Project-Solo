@@ -1,130 +1,133 @@
-'use client';
-
-import {
-	Box,
-	Card,
-	CardContent,
-	Typography,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
-	LinearProgress,
-	Chip,
-} from '@mui/material';
-import type { PoolOverview as PoolOverviewType, SegmentStat } from '../types';
-
-const PROGRESS_SX = {
-	height: 8,
-	borderRadius: 1,
-	bgcolor: '#fce7f3',
-	'& .MuiLinearProgress-bar': { bgcolor: '#3b82f6' },
-} as const;
-
+"use client";
+import { Card, Chip, ProgressBar } from "@heroui/react";
+import type { PoolOverview as PoolOverviewType, SegmentStat } from "../types";
 interface Props {
 	pool: PoolOverviewType;
 	segments: SegmentStat[];
 }
-
 function formatRankLabel(rank: string) {
-	return rank === 'UNKNOWN' ? '등급 미분류' : rank;
+	return rank === "UNKNOWN" ? "등급 미분류" : rank;
 }
-
 export default function PoolOverviewSection({ pool, segments }: Props) {
 	const { maleCount, femaleCount } = pool;
 	const total = maleCount + femaleCount;
 	const malePercent = total > 0 ? (maleCount / total) * 100 : 50;
-
 	return (
-		<Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-			<Card sx={{ flex: 1, minWidth: 340 }}>
-				<CardContent>
-					<Typography variant="subtitle1" fontWeight={700} gutterBottom>
-						매칭 풀 현황
-					</Typography>
-
-					<Box sx={{ mb: 2 }}>
-						<Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-							<Typography variant="body2" color="primary">
+		<div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+			<Card className="w-full lg:flex-1 min-w-0">
+				<Card.Content>
+					<p className={"text-sm text-neutral-700"}>매칭 풀 현황</p>
+					<div style={{ marginBottom: 16 }}>
+						<div
+							style={{
+								display: "flex",
+								justifyContent: "space-between",
+								marginBottom: 4,
+							}}
+						>
+							<p className={"text-sm text-neutral-700"}>
 								남성 {maleCount.toLocaleString()}명
-							</Typography>
-							<Typography variant="body2" color="error">
+							</p>
+							<p className={"text-sm text-neutral-700"}>
 								여성 {femaleCount.toLocaleString()}명
-							</Typography>
-						</Box>
-						<Box sx={{ display: 'flex', height: 12, borderRadius: 1, overflow: 'hidden' }}>
-							<Box sx={{ width: `${malePercent}%`, bgcolor: '#3b82f6' }} />
-							<Box sx={{ width: `${100 - malePercent}%`, bgcolor: '#ec4899' }} />
-						</Box>
-						<Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+							</p>
+						</div>
+						<div
+							style={{
+								display: "flex",
+								height: 12,
+								borderRadius: 8,
+								overflow: "hidden",
+							}}
+						>
+							<div
+								style={{ width: `${malePercent}%`, backgroundColor: "#3b82f6" }}
+							></div>
+							<div
+								style={{
+									width: `${100 - malePercent}%`,
+									backgroundColor: "#ec4899",
+								}}
+							></div>
+						</div>
+						<span
+							style={{ marginTop: 4, display: "block" }}
+							className={"text-sm text-neutral-700"}
+						>
 							성비 {pool.genderRatio}
-						</Typography>
-					</Box>
-
-					<Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+						</span>
+					</div>
+					<div
+						style={{
+							display: "flex",
+							gap: 8,
+							flexWrap: "wrap",
+							marginBottom: 16,
+						}}
+					>
 						{Object.entries(pool.byRank).map(([rank, count]) => (
-							<Chip
-								key={rank}
-								label={`${formatRankLabel(rank)}: ${count.toLocaleString()}`}
-								size="small"
-								variant="outlined"
-							/>
+							<Chip key={rank} size={"sm"} variant={"soft"}>
+								<Chip.Label>{`${formatRankLabel(rank)}: ${count.toLocaleString()}`}</Chip.Label>
+							</Chip>
 						))}
-					</Box>
-
+					</div>
 					{pool.prefOptionZeroCount > 0 && (
-						<Typography variant="body2" color="warning.main">
+						<p className={"text-sm text-neutral-700"}>
 							온보딩 미완료 (선호 0개): {pool.prefOptionZeroCount}명
-						</Typography>
+						</p>
 					)}
-				</CardContent>
+				</Card.Content>
 			</Card>
-
-			<Card sx={{ flex: 1, minWidth: 340 }}>
-				<CardContent>
-					<Typography variant="subtitle1" fontWeight={700} gutterBottom>
-						랭크별 성별 분포
-					</Typography>
-					<TableContainer>
-						<Table size="small">
-							<TableHead>
-								<TableRow>
-									<TableCell>랭크</TableCell>
-									<TableCell align="right">남성</TableCell>
-									<TableCell align="right">여성</TableCell>
-									<TableCell align="right">합계</TableCell>
-									<TableCell sx={{ width: 120 }}>비율</TableCell>
-								</TableRow>
-							</TableHead>
-							<TableBody>
+			<Card className="w-full lg:flex-1 min-w-0">
+				<Card.Content>
+					<p className={"text-sm text-neutral-700"}>랭크별 성별 분포</p>
+					<div className={"overflow-x-auto"}>
+						<table
+							className={
+								"w-full text-sm text-left [&_td]:p-3 [&_thead]:bg-neutral-50 [&_tr]:border-b"
+							}
+						>
+							<thead>
+								<tr>
+									<th scope="col">랭크</th>
+									<th scope="col">남성</th>
+									<th scope="col">여성</th>
+									<th scope="col">합계</th>
+									<th style={{ width: 120 }} scope="col">
+										비율
+									</th>
+								</tr>
+							</thead>
+							<tbody>
 								{segments.map((seg) => {
 									const segTotal = seg.maleCount + seg.femaleCount;
-									const malePct = segTotal > 0 ? (seg.maleCount / segTotal) * 100 : 50;
+									const malePct =
+										segTotal > 0 ? (seg.maleCount / segTotal) * 100 : 50;
 									return (
-										<TableRow key={seg.rank}>
-											<TableCell>
-												<Chip label={formatRankLabel(seg.rank)} size="small" />
-											</TableCell>
-											<TableCell align="right">{seg.maleCount.toLocaleString()}</TableCell>
-											<TableCell align="right">{seg.femaleCount.toLocaleString()}</TableCell>
-											<TableCell align="right">{segTotal.toLocaleString()}</TableCell>
-											<TableCell>
-												<LinearProgress
-													variant="determinate"
-													value={malePct}
-													sx={PROGRESS_SX}
-												/>
-											</TableCell>
-										</TableRow>
+										<tr key={seg.rank}>
+											<td>
+												<Chip size={"sm"} variant={"soft"}>
+													<Chip.Label>{formatRankLabel(seg.rank)}</Chip.Label>
+												</Chip>
+											</td>
+											<td>{seg.maleCount.toLocaleString()}</td>
+											<td>{seg.femaleCount.toLocaleString()}</td>
+											<td>{segTotal.toLocaleString()}</td>
+											<td>
+												<ProgressBar value={malePct} aria-label="진행률">
+													<ProgressBar.Track>
+														<ProgressBar.Fill />
+													</ProgressBar.Track>
+												</ProgressBar>
+											</td>
+										</tr>
 									);
 								})}
-							</TableBody>
-						</Table>
-					</TableContainer>
-				</CardContent>
+							</tbody>
+						</table>
+					</div>
+				</Card.Content>
 			</Card>
-		</Box>
+		</div>
 	);
 }

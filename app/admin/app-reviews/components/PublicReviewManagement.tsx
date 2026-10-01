@@ -1,51 +1,75 @@
-'use client';
-
-import { useState, useCallback, useEffect, useMemo } from 'react';
+"use client";
 import {
-	Box,
-	Card,
-	CardContent,
-	Typography,
-	Chip,
 	Alert,
+	Button,
+	ButtonGroup,
+	Card,
+	Chip,
 	Skeleton,
-	Rating,
-	ToggleButton,
-	ToggleButtonGroup,
-} from '@mui/material';
-import AppleIcon from '@mui/icons-material/Apple';
-import ShopIcon from '@mui/icons-material/Shop';
-import ForumIcon from '@mui/icons-material/Forum';
-import WhatshotIcon from '@mui/icons-material/Whatshot';
-import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
-import PublicIcon from '@mui/icons-material/Public';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { SvgIconComponent } from '@mui/icons-material';
+} from "@heroui/react";
+import {
+	Apple,
+	CircleCheck,
+	Flame,
+	Globe,
+	LucideIcon,
+	MessagesSquare,
+	Smartphone,
+	Store,
+} from "lucide-react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import AdminService, {
 	type PublicReviewItem,
 	type PublicReviewSource,
-} from '@/app/services/admin';
-import { RATING_COLORS } from './ReviewList';
-import { formatSimpleDate } from '@/app/utils/formatters';
-
-type PublicSourceFilter = 'ALL' | 'app' | 'community' | 'inapp' | 'hot' | 'review';
-
+} from "@/app/services/admin";
+import { RATING_COLORS } from "./ReviewList";
+import { formatSimpleDate } from "@/app/utils/formatters";
+type PublicSourceFilter =
+	| "ALL"
+	| "app"
+	| "community"
+	| "inapp"
+	| "hot"
+	| "review";
 const SOURCE_CONFIG: Record<
-	'APP_STORE' | 'PLAY_STORE' | 'COMMUNITY' | 'HOT',
-	{ label: string; color: string; bg: string; Icon: SvgIconComponent }
+	"APP_STORE" | "PLAY_STORE" | "COMMUNITY" | "HOT",
+	{
+		label: string;
+		color: string;
+		bg: string;
+		Icon: LucideIcon;
+	}
 > = {
-	APP_STORE: { label: 'App Store', color: '#007AFF', bg: '#f0f4ff', Icon: AppleIcon },
-	PLAY_STORE: { label: 'Play Store', color: '#34A853', bg: '#f0fdf4', Icon: ShopIcon },
-	COMMUNITY: { label: '커뮤니티', color: '#8b5cf6', bg: '#f5f3ff', Icon: ForumIcon },
-	HOT: { label: '인기 게시글', color: '#ef4444', bg: '#fef2f2', Icon: WhatshotIcon },
+	APP_STORE: {
+		label: "App Store",
+		color: "#007AFF",
+		bg: "#f0f4ff",
+		Icon: Apple,
+	},
+	PLAY_STORE: {
+		label: "Play Store",
+		color: "#34A853",
+		bg: "#f0fdf4",
+		Icon: Store,
+	},
+	COMMUNITY: {
+		label: "커뮤니티",
+		color: "#8b5cf6",
+		bg: "#f5f3ff",
+		Icon: MessagesSquare,
+	},
+	HOT: {
+		label: "인기 게시글",
+		color: "#ef4444",
+		bg: "#fef2f2",
+		Icon: Flame,
+	},
 };
-
 export default function PublicReviewManagement() {
 	const [reviews, setReviews] = useState<PublicReviewItem[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [sourceFilter, setSourceFilter] = useState<PublicSourceFilter>('ALL');
-
+	const [sourceFilter, setSourceFilter] = useState<PublicSourceFilter>("ALL");
 	const fetchPublicReviews = useCallback(async (type?: string) => {
 		try {
 			setLoading(true);
@@ -56,39 +80,38 @@ export default function PublicReviewManagement() {
 			});
 			setReviews(res?.items ?? []);
 		} catch (err: any) {
-			setError(err.message || '공개 리뷰를 불러오는데 실패했습니다.');
+			setError(err.message || "공개 리뷰를 불러오는데 실패했습니다.");
 			setReviews([]);
 		} finally {
 			setLoading(false);
 		}
 	}, []);
-
 	useEffect(() => {
-		fetchPublicReviews(sourceFilter === 'ALL' ? undefined : sourceFilter);
+		fetchPublicReviews(sourceFilter === "ALL" ? undefined : sourceFilter);
 	}, [fetchPublicReviews, sourceFilter]);
-
 	const sourceCounts = useMemo(
 		() =>
-			(reviews ?? []).reduce<Partial<Record<PublicReviewSource, number>>>((acc, r) => {
-				acc[r.source] = (acc[r.source] || 0) + 1;
-				return acc;
-			}, {}),
+			(reviews ?? []).reduce<Partial<Record<PublicReviewSource, number>>>(
+				(acc, r) => {
+					acc[r.source] = (acc[r.source] || 0) + 1;
+					return acc;
+				},
+				{},
+			),
 		[reviews],
 	);
-
 	if (error) {
 		return (
-			<Alert severity="error" sx={{ mb: 2 }}>
-				{error}
+			<Alert style={{ marginBottom: 16 }} status={"danger"}>
+				<Alert.Content>{error}</Alert.Content>
 			</Alert>
 		);
 	}
-
 	return (
-		<Box className="space-y-4">
+		<div className="space-y-4">
 			{/* 공개 현황 요약 */}
 			{!loading && (
-				<Box className="flex gap-3 flex-wrap">
+				<div className="flex gap-3 flex-wrap">
 					<SummaryBadge
 						label="전체 공개 리뷰"
 						count={reviews.length}
@@ -107,76 +130,146 @@ export default function PublicReviewManagement() {
 							) : null;
 						},
 					)}
-				</Box>
+				</div>
 			)}
-
 			{/* 필터 */}
 			<Card>
-				<CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-					<Box className="flex items-center gap-3 flex-wrap">
-						<Typography variant="body2" color="text.secondary" fontWeight={500}>
-							소스 필터:
-						</Typography>
-						<ToggleButtonGroup
-							value={sourceFilter}
-							exclusive
-							onChange={(_, val) => val && setSourceFilter(val)}
-							size="small"
-						>
-							<ToggleButton value="ALL" sx={{ px: 2, py: 0.5 }}>
+				<Card.Content style={{ padding: 16 }}>
+					<div className="flex items-center gap-3 flex-wrap">
+						<p className={"text-sm text-neutral-700"}>소스 필터:</p>
+						<ButtonGroup aria-label={"지표 필터"} className={"flex flex-wrap"}>
+							<Button
+								style={{
+									paddingLeft: 16,
+									paddingRight: 16,
+									paddingTop: 4,
+									paddingBottom: 4,
+								}}
+								variant={sourceFilter === "ALL" ? "primary" : "secondary"}
+								aria-pressed={sourceFilter === "ALL"}
+								onPress={() => setSourceFilter("ALL")}
+							>
 								전체
-							</ToggleButton>
-							<ToggleButton value="app" sx={{ px: 2, py: 0.5 }}>
-								<PhoneAndroidIcon sx={{ fontSize: 18, mr: 0.5 }} />
+							</Button>
+							<Button
+								style={{
+									paddingLeft: 16,
+									paddingRight: 16,
+									paddingTop: 4,
+									paddingBottom: 4,
+								}}
+								variant={sourceFilter === "app" ? "primary" : "secondary"}
+								aria-pressed={sourceFilter === "app"}
+								onPress={() => setSourceFilter("app")}
+							>
+								<Smartphone
+									style={{ fontSize: 18, marginRight: 4 }}
+									size={18}
+								/>
 								스토어 + 인기글
-							</ToggleButton>
-							<ToggleButton value="inapp" sx={{ px: 2, py: 0.5 }}>
-								<WhatshotIcon sx={{ fontSize: 18, mr: 0.5 }} />
+							</Button>
+							<Button
+								style={{
+									paddingLeft: 16,
+									paddingRight: 16,
+									paddingTop: 4,
+									paddingBottom: 4,
+								}}
+								variant={sourceFilter === "inapp" ? "primary" : "secondary"}
+								aria-pressed={sourceFilter === "inapp"}
+								onPress={() => setSourceFilter("inapp")}
+							>
+								<Flame style={{ fontSize: 18, marginRight: 4 }} size={18} />
 								인앱 리뷰
-							</ToggleButton>
-							<ToggleButton value="hot" sx={{ px: 2, py: 0.5 }}>
-								<WhatshotIcon sx={{ fontSize: 18, mr: 0.5 }} />
+							</Button>
+							<Button
+								style={{
+									paddingLeft: 16,
+									paddingRight: 16,
+									paddingTop: 4,
+									paddingBottom: 4,
+								}}
+								variant={sourceFilter === "hot" ? "primary" : "secondary"}
+								aria-pressed={sourceFilter === "hot"}
+								onPress={() => setSourceFilter("hot")}
+							>
+								<Flame style={{ fontSize: 18, marginRight: 4 }} size={18} />
 								인기글만
-							</ToggleButton>
-							<ToggleButton value="review" sx={{ px: 2, py: 0.5 }}>
-								<ForumIcon sx={{ fontSize: 18, mr: 0.5 }} />
+							</Button>
+							<Button
+								style={{
+									paddingLeft: 16,
+									paddingRight: 16,
+									paddingTop: 4,
+									paddingBottom: 4,
+								}}
+								variant={sourceFilter === "review" ? "primary" : "secondary"}
+								aria-pressed={sourceFilter === "review"}
+								onPress={() => setSourceFilter("review")}
+							>
+								<MessagesSquare
+									style={{ fontSize: 18, marginRight: 4 }}
+									size={18}
+								/>
 								리뷰만
-							</ToggleButton>
-							<ToggleButton value="community" sx={{ px: 2, py: 0.5 }}>
-								<ForumIcon sx={{ fontSize: 18, mr: 0.5 }} />
+							</Button>
+							<Button
+								style={{
+									paddingLeft: 16,
+									paddingRight: 16,
+									paddingTop: 4,
+									paddingBottom: 4,
+								}}
+								variant={sourceFilter === "community" ? "primary" : "secondary"}
+								aria-pressed={sourceFilter === "community"}
+								onPress={() => setSourceFilter("community")}
+							>
+								<MessagesSquare
+									style={{ fontSize: 18, marginRight: 4 }}
+									size={18}
+								/>
 								커뮤니티
-							</ToggleButton>
-						</ToggleButtonGroup>
-					</Box>
-				</CardContent>
+							</Button>
+						</ButtonGroup>
+					</div>
+				</Card.Content>
 			</Card>
-
 			{/* 리뷰 목록 */}
 			{loading ? (
-				<Box className="space-y-3">
+				<div className="space-y-3">
 					{Array.from({ length: 6 }).map((_, i) => (
-						<Skeleton key={i} variant="rectangular" height={130} sx={{ borderRadius: 2 }} />
+						<Skeleton
+							key={i}
+							style={{
+								...{ borderRadius: 16 },
+								...{ width: "100%", height: 130 },
+							}}
+							className="rounded-xl"
+						/>
 					))}
-				</Box>
+				</div>
 			) : reviews.length === 0 ? (
 				<Card>
-					<CardContent>
-						<Typography variant="body2" color="text.secondary" className="text-center py-8">
+					<Card.Content>
+						<p
+							className={["text-center py-8", "text-sm text-neutral-700"]
+								.filter(Boolean)
+								.join(" ")}
+						>
 							공개 처리된 리뷰가 없습니다
-						</Typography>
-					</CardContent>
+						</p>
+					</Card.Content>
 				</Card>
 			) : (
-				<Box className="space-y-3">
+				<div className="space-y-3">
 					{reviews.map((review) => (
 						<PublicReviewCard key={review.id} review={review} />
 					))}
-				</Box>
+				</div>
 			)}
-		</Box>
+		</div>
 	);
 }
-
 // ─── 공개 현황 배지 ───────────────────────────────────
 function SummaryBadge({
 	label,
@@ -188,137 +281,134 @@ function SummaryBadge({
 	color: string;
 }) {
 	return (
-		<Box
-			sx={{
-				display: 'flex',
-				alignItems: 'center',
-				gap: 1.5,
-				px: 2,
-				py: 1,
-				borderRadius: 2,
-				backgroundColor: '#fff',
-				border: '1px solid #e5e7eb',
-				boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+		<div
+			style={{
+				display: "flex",
+				alignItems: "center",
+				gap: 12,
+				paddingLeft: 16,
+				paddingRight: 16,
+				paddingTop: 8,
+				paddingBottom: 8,
+				borderRadius: 16,
+				backgroundColor: "#fff",
+				border: "1px solid #e5e7eb",
 			}}
 		>
-			<CheckCircleIcon sx={{ color, fontSize: 20 }} />
-			<Box>
-				<Typography variant="caption" color="text.secondary">
-					{label}
-				</Typography>
-				<Typography variant="body2" fontWeight={700}>
-					{count}건
-				</Typography>
-			</Box>
-		</Box>
+			<CircleCheck style={{ fontSize: 20 }} size={18} />
+			<div>
+				<span className={"text-sm text-neutral-700"}>{label}</span>
+				<p className={"text-sm text-neutral-700"}>{count}건</p>
+			</div>
+		</div>
 	);
 }
-
 // ─── 공개 리뷰 카드 ──────────────────────────────────
-function PublicReviewCard({ review }: { review: PublicReviewItem }) {
+function PublicReviewCard({
+	review,
+}: {
+	review: PublicReviewItem;
+}) {
 	const cfg = SOURCE_CONFIG[review.source];
 	const Icon = cfg?.Icon;
-
 	return (
-		<Card sx={{ borderLeft: `4px solid ${cfg?.color ?? '#9ca3af'}` }}>
-			<CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-				<Box className="flex items-start justify-between gap-3">
-					<Box className="flex-1 min-w-0">
-						<Box className="flex items-center gap-2 mb-1.5 flex-wrap">
+		<Card style={{ borderLeft: `4px solid ${cfg?.color ?? "#9ca3af"}` }}>
+			<Card.Content style={{ padding: 20 }}>
+				<div className="flex items-start justify-between gap-3">
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2 mb-1.5 flex-wrap">
 							{review.rating != null && (
-								<Rating
-									value={review.rating}
-									readOnly
-									size="small"
-									sx={{
-										'& .MuiRating-iconFilled': {
-											color: RATING_COLORS[review.rating] ?? '#eab308',
-										},
-									}}
-								/>
+								<span
+									role="img"
+									aria-label={"별점 " + review.rating + "점"}
+									className="text-amber-500"
+								>
+									{"★".repeat(Math.round(review.rating ?? 0))}
+									{"☆".repeat(5 - Math.round(review.rating ?? 0))}
+								</span>
 							)}
 							{review.title && (
-								<Typography variant="subtitle2" fontWeight={600} noWrap>
-									{review.title}
-								</Typography>
+								<p className={"text-sm text-neutral-700"}>{review.title}</p>
 							)}
 							{cfg && Icon && (
 								<Chip
-									label={cfg.label}
-									size="small"
-									icon={<Icon />}
-									sx={{
+									style={{
 										backgroundColor: cfg.bg,
 										color: cfg.color,
 										fontWeight: 500,
-										'& .MuiChip-icon': { color: cfg.color },
 									}}
-								/>
+									size={"sm"}
+									variant={"soft"}
+								>
+									{<Icon />}
+									<Chip.Label>{cfg.label}</Chip.Label>
+								</Chip>
 							)}
-						</Box>
-
-						<Typography
-							variant="body2"
-							color="text.primary"
-							sx={{
-								mb: 1.5,
+						</div>
+						<p
+							style={{
+								marginBottom: 12,
 								lineHeight: 1.6,
-								display: '-webkit-box',
+								display: "-webkit-box",
 								WebkitLineClamp: 3,
-								WebkitBoxOrient: 'vertical',
-								overflow: 'hidden',
+								WebkitBoxOrient: "vertical",
+								overflow: "hidden",
 							}}
+							className={"text-sm text-neutral-700"}
 						>
 							{review.body}
-						</Typography>
-
-						<Box className="flex items-center gap-2 flex-wrap">
-							<Typography variant="caption" color="text.secondary">
-								{review.author?.nickname ?? '익명'}
-							</Typography>
+						</p>
+						<div className="flex items-center gap-2 flex-wrap">
+							<span className={"text-sm text-neutral-700"}>
+								{review.author?.nickname ?? "익명"}
+							</span>
 							{review.author?.university && (
 								<>
-									<Typography variant="caption" color="text.disabled">·</Typography>
-									<Typography variant="caption" color="text.secondary">
+									<span className={"text-sm text-neutral-700"}>·</span>
+									<span className={"text-sm text-neutral-700"}>
 										{review.author.university.name}
-									</Typography>
+									</span>
 								</>
 							)}
-							<Typography variant="caption" color="text.disabled">·</Typography>
-							<Typography variant="caption" color="text.secondary">
+							<span className={"text-sm text-neutral-700"}>·</span>
+							<span className={"text-sm text-neutral-700"}>
 								{formatSimpleDate(review.createdAt)}
-							</Typography>
-						</Box>
-
-						<Box
-							sx={{
-								mt: 1,
-								px: 1.5,
-								py: 0.75,
-								borderRadius: 1.5,
-								backgroundColor: '#f0fdf4',
-								border: '1px solid #bbf7d0',
-								display: 'inline-flex',
-								alignItems: 'center',
-								gap: 1,
+							</span>
+						</div>
+						<div
+							style={{
+								marginTop: 8,
+								paddingLeft: 12,
+								paddingRight: 12,
+								paddingTop: 6,
+								paddingBottom: 6,
+								borderRadius: 12,
+								backgroundColor: "#f0fdf4",
+								border: "1px solid #bbf7d0",
+								display: "inline-flex",
+								alignItems: "center",
+								gap: 8,
 							}}
 						>
-							<CheckCircleIcon sx={{ fontSize: 14, color: '#22c55e' }} />
-							<Typography variant="caption" color="success.main">
+							<CircleCheck
+								style={{ fontSize: 14, color: "#22c55e" }}
+								size={18}
+							/>
+							<span className={"text-sm text-neutral-700"}>
 								공개일: {formatSimpleDate(review.featuredAt)}
-							</Typography>
-						</Box>
-					</Box>
-
+							</span>
+						</div>
+					</div>
 					<Chip
-						label="공개 중"
-						icon={<PublicIcon />}
-						size="small"
-						color="success"
-						sx={{ fontWeight: 600, flexShrink: 0 }}
-					/>
-				</Box>
-			</CardContent>
+						style={{ fontWeight: 600, flexShrink: 0 }}
+						size={"sm"}
+						variant={"soft"}
+					>
+						{<Globe size={18} />}
+						<Chip.Label>{"공개 중"}</Chip.Label>
+					</Chip>
+				</div>
+			</Card.Content>
 		</Card>
 	);
 }

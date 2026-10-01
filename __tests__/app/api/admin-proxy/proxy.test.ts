@@ -86,6 +86,35 @@ describe('admin-proxy route handlers', () => {
     (getAdminRefreshToken as jest.Mock).mockResolvedValue(null);
   });
 
+  it('forwards HTML preview using server Bearer authentication without browser cookies', async () => {
+    (getAdminAccessToken as jest.Mock).mockResolvedValue(futureAccessToken);
+    (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+    mockFetch.mockResolvedValueOnce(makeBackendResponse({ data: { previewDigest: 'digest' } }));
+    const path = 'admin/v2/content/card-news/html-preview';
+    const response = await POST(createRequest(path, {
+      method: 'POST',
+      body: JSON.stringify({ noticeHtmlInput: { html: '<p>공지</p>' } }),
+      headers: { origin: 'http://localhost:3000', cookie: 'admin_access_token=secret; accessToken=other' },
+    }), makeParams(path.split('/')));
+    expect(response.status).toBe(200);
+    const upstream = mockFetch.mock.calls[0][1];
+    expect(upstream.headers.Authorization).toBe(`Bearer ${futureAccessToken}`);
+    expect(upstream.headers['x-country']).toBe('kr');
+    expect(upstream.headers.cookie).toBeUndefined();
+    expect(upstream.headers.Cookie).toBeUndefined();
+  });
+
+  it('rejects cross-origin HTML writes before calling the backend', async () => {
+    (getAdminAccessToken as jest.Mock).mockResolvedValue(futureAccessToken);
+    (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+    const path = 'admin/v2/content/card-news/html-preview';
+    const response = await POST(createRequest(path, {
+      method: 'POST', body: '{}', headers: { origin: 'https://untrusted.example' },
+    }), makeParams(path.split('/')));
+    expect(response.status).toBe(403);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   describe('authentication guard', () => {
     it('returns 401 when no access or refresh token is stored', async () => {
       (getAdminAccessToken as jest.Mock).mockResolvedValue(null);

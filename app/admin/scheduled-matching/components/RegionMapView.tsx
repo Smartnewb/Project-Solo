@@ -1,36 +1,20 @@
 'use client';
-
+import { Spinner } from '@heroui/react';
 import dynamic from 'next/dynamic';
-import { Box, CircularProgress } from '@mui/material';
 import type { MatchingPoolCountry, MatchingPoolRegionStats } from '@/types/admin';
-
 const RegionMapCore = dynamic(() => import('./RegionMapCore'), {
-  ssr: false,
-  loading: () => (
-    <Box
-      sx={{
-        height: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'grey.100',
-        borderRadius: 2,
-      }}
-    >
-      <CircularProgress />
-    </Box>
-  ),
+    ssr: false,
+    loading: () => (<div style={{ height: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: "#f3f4f6", borderRadius: 2 }}>
+      <Spinner size="sm"></Spinner>
+    </div>),
 });
-
 export interface RegionMapData {
-  country: MatchingPoolCountry;
-  regions: MatchingPoolRegionStats[];
+    country: MatchingPoolCountry;
+    regions: MatchingPoolRegionStats[];
 }
-
 interface RegionMapViewProps {
-  data: RegionMapData;
+    data: RegionMapData;
 }
-
 export default function RegionMapView({ data }: RegionMapViewProps) {
-  return <RegionMapCore data={data} />;
+    return <RegionMapCore data={data}></RegionMapCore>;
 }

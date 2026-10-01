@@ -1,18 +1,21 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import { Button } from "@heroui/react";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { aiProfileGenerator } from "@/app/services/admin/ai-profile-generator";
 import {
   CONTENT_TIERS,
   CONTENT_TIER_LABEL,
   type AiProfileContentTier,
   type AiProfileDraftScope,
-} from '@/app/types/ai-profile-generator';
-import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-import { useToast } from '@/shared/ui/admin/toast';
-import { Button } from '@/shared/ui/button';
+} from "@/app/types/ai-profile-generator";
+import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
+import { useToast } from "@/shared/ui/admin/toast";
+
 import {
   Dialog,
   DialogContent,
@@ -20,26 +23,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Label } from '@/shared/ui/label';
+} from "@/shared/ui/dialog";
+import { Label } from "@/shared/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui/select';
-import { Switch } from '@/shared/ui/switch';
-import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../_shared/query-keys';
-import { SourceDataPicker } from './_shared/source-data-picker';
+} from "@/shared/ui/select";
+import { Switch } from "@/shared/ui/switch";
+import { Textarea } from "@/shared/ui/textarea";
+import { aiProfileGeneratorKeys } from "../_shared/query-keys";
+import { SourceDataPicker } from "./_shared/source-data-picker";
 
 interface DraftCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const TEMPLATE_NONE = 'none';
+const TEMPLATE_NONE = "none";
 
 export function DraftCreateDialog({
   open,
@@ -49,21 +52,21 @@ export function DraftCreateDialog({
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [scope, setScope] = useState<AiProfileDraftScope>('admin_curated');
+  const [scope, setScope] = useState<AiProfileDraftScope>("admin_curated");
   const [contentTier, setContentTier] =
-    useState<AiProfileContentTier>('family');
+    useState<AiProfileContentTier>("family");
   const [templateId, setTemplateId] = useState<string>(TEMPLATE_NONE);
-  const [initialInstruction, setInitialInstruction] = useState('');
+  const [initialInstruction, setInitialInstruction] = useState("");
   const [useSourceLock, setUseSourceLock] = useState(false);
   const [universityId, setUniversityId] = useState<string | null>(null);
   const [departmentId, setDepartmentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setScope('admin_curated');
-      setContentTier('family');
+      setScope("admin_curated");
+      setContentTier("family");
       setTemplateId(TEMPLATE_NONE);
-      setInitialInstruction('');
+      setInitialInstruction("");
       setUseSourceLock(false);
       setUniversityId(null);
       setDepartmentId(null);
@@ -71,7 +74,12 @@ export function DraftCreateDialog({
   }, [open]);
 
   const templatesQuery = useQuery({
-    queryKey: ['admin', 'ai-profile-generator', 'generation-templates', 'active'],
+    queryKey: [
+      "admin",
+      "ai-profile-generator",
+      "generation-templates",
+      "active",
+    ],
     queryFn: () =>
       aiProfileGenerator.listGenerationTemplates({
         isActive: true,
@@ -93,7 +101,7 @@ export function DraftCreateDialog({
             : undefined,
       }),
     onSuccess: (draft) => {
-      toast.success('Draft가 생성되었습니다.');
+      toast.success("Draft가 생성되었습니다.");
       queryClient.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.drafts(),
       });
@@ -132,11 +140,13 @@ export function DraftCreateDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="draft-scope">Scope</Label>
               <Select
                 value={scope}
-                onValueChange={(value) => setScope(value as AiProfileDraftScope)}
+                onValueChange={(value) =>
+                  setScope(value as AiProfileDraftScope)
+                }
               >
+                <HeroSelectLabel>Scope</HeroSelectLabel>
                 <SelectTrigger id="draft-scope">
                   <SelectValue />
                 </SelectTrigger>
@@ -147,13 +157,13 @@ export function DraftCreateDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="draft-content-tier">콘텐츠 등급</Label>
               <Select
                 value={contentTier}
                 onValueChange={(value) =>
                   setContentTier(value as AiProfileContentTier)
                 }
               >
+                <HeroSelectLabel>콘텐츠 등급</HeroSelectLabel>
                 <SelectTrigger id="draft-content-tier">
                   <SelectValue />
                 </SelectTrigger>
@@ -169,15 +179,15 @@ export function DraftCreateDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="draft-template">템플릿 (선택)</Label>
             <Select value={templateId} onValueChange={setTemplateId}>
+              <HeroSelectLabel>템플릿 (선택)</HeroSelectLabel>
               <SelectTrigger id="draft-template">
                 <SelectValue placeholder="템플릿을 선택하세요" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={TEMPLATE_NONE}>사용 안 함</SelectItem>
                 {(templatesQuery.data?.items ?? [])
-                  .filter((t) => t.status === 'active')
+                  .filter((t) => t.status === "active")
                   .map((template) => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.name} (v{template.version})
@@ -221,14 +231,20 @@ export function DraftCreateDialog({
 
         <DialogFooter>
           <Button
-            variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={mutation.isPending}
+            isDisabled={mutation.isPending}
+            variant={"outline"}
+            size={"md"}
           >
             취소
           </Button>
-          <Button onClick={() => mutation.mutate()} disabled={!canSubmit}>
-            {mutation.isPending ? '생성 중…' : '생성'}
+          <Button
+            onClick={() => mutation.mutate()}
+            isDisabled={!canSubmit}
+            variant={"primary"}
+            size={"md"}
+          >
+            {mutation.isPending ? "생성 중…" : "생성"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,28 +1,24 @@
-'use client';
-
-import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDebounce } from '@/shared/hooks/use-debounce';
+"use client";
 import {
-  Box,
-  Typography,
-  TextField,
-  Pagination,
-  Stack,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
-} from '@mui/material';
-import { ShieldBan } from 'lucide-react';
-import { blacklist, type BlacklistItem } from '@/app/services/admin';
-import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-import { BlacklistTable } from './components/BlacklistTable';
-import { BlacklistReleaseDialog } from './components/BlacklistReleaseDialog';
-import { BlacklistHistoryTimeline } from './components/BlacklistHistoryTimeline';
+  Input,
+  Modal,
+  Pagination,
+  TextField,
+} from "@heroui/react";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDebounce } from "@/shared/hooks/use-debounce";
+
+import { ShieldBan } from "lucide-react";
+import { blacklist, type BlacklistItem } from "@/app/services/admin";
+import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
+import { BlacklistTable } from "./components/BlacklistTable";
+import { BlacklistReleaseDialog } from "./components/BlacklistReleaseDialog";
+import { BlacklistHistoryTimeline } from "./components/BlacklistHistoryTimeline";
 
 const PAGE_SIZE = 20;
 const DEBOUNCE_MS = 400;
@@ -32,8 +28,8 @@ export default function BlacklistPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const initialPage = Number(searchParams?.get('page') ?? '1') || 1;
-  const initialSearch = searchParams?.get('search') ?? '';
+  const initialPage = Number(searchParams?.get("page") ?? "1") || 1;
+  const initialSearch = searchParams?.get("search") ?? "";
 
   const [page, setPage] = useState<number>(initialPage);
   const [searchInput, setSearchInput] = useState<string>(initialSearch);
@@ -45,15 +41,15 @@ export default function BlacklistPage() {
 
   useEffect(() => {
     const sp = new URLSearchParams();
-    if (debouncedSearch) sp.set('search', debouncedSearch);
-    if (page > 1) sp.set('page', String(page));
+    if (debouncedSearch) sp.set("search", debouncedSearch);
+    if (page > 1) sp.set("page", String(page));
     const qs = sp.toString();
-    router.replace(qs ? `/admin/blacklist?${qs}` : '/admin/blacklist');
+    router.replace(qs ? `/admin/blacklist?${qs}` : "/admin/blacklist");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, page]);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['blacklist', { page, search: debouncedSearch }],
+    queryKey: ["blacklist", { page, search: debouncedSearch }],
     queryFn: () =>
       blacklist.getList({
         page,
@@ -68,67 +64,92 @@ export default function BlacklistPage() {
   const total = meta?.total ?? 0;
   const totalPages = meta?.totalPages ?? 1;
 
-  const [releaseTarget, setReleaseTarget] = useState<BlacklistItem | null>(null);
+  const [releaseTarget, setReleaseTarget] = useState<BlacklistItem | null>(
+    null,
+  );
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const handleReleaseSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['blacklist', { page, search: debouncedSearch }] });
+    queryClient.invalidateQueries({
+      queryKey: ["blacklist", { page, search: debouncedSearch }],
+    });
     if (historyUserId) {
-      queryClient.invalidateQueries({ queryKey: ['blacklist-history', historyUserId] });
+      queryClient.invalidateQueries({
+        queryKey: ["blacklist-history", historyUserId],
+      });
     }
   };
 
   const errorMessage = useMemo(
-    () => (isError ? getAdminErrorMessage(error, '블랙리스트 목록 조회 실패') : null),
+    () =>
+      isError ? getAdminErrorMessage(error, "블랙리스트 목록 조회 실패") : null,
     [isError, error],
   );
 
   return (
-    <Box p={3}>
-      <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-        <ShieldBan size={24} color="#dc2626" />
-        <Typography variant="h5" fontWeight={700}>
+    <div>
+      <div className={"flex flex-wrap items-center gap-2"}>
+        <ShieldBan size={24} />
+        <div className={"text-lg font-semibold text-neutral-900"}>
           블랙리스트
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+        </div>
+        <div className={"text-sm text-neutral-700"}>
           · 총 {total.toLocaleString()}건
-        </Typography>
-      </Stack>
-
-      <Box mb={2}>
+        </div>
+      </div>
+      <div>
         <TextField
-          size="small"
-          placeholder="이름 또는 전화번호 검색"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          sx={{ width: 320 }}
-        />
-      </Box>
-
+          className="w-full"
+          isDisabled={undefined}
+          isInvalid={undefined}
+        >
+          <Input
+            placeholder="이름 또는 전화번호 검색"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            style={{ width: 320 }}
+            aria-label={"이름 또는 전화번호 검색"}
+          />
+        </TextField>
+      </div>
       {errorMessage && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {errorMessage}
+        <Alert style={{ marginBottom: 8 }} status="danger" role="alert">
+          <Alert.Content>{errorMessage}</Alert.Content>
         </Alert>
       )}
-
       <BlacklistTable
         data={items}
         loading={isLoading}
         onRelease={(item) => setReleaseTarget(item)}
         onViewHistory={(userId) => setHistoryUserId(userId)}
       />
-
       {totalPages > 1 && (
-        <Box mt={2} display="flex" justifyContent="center">
-          <Pagination
-            page={page}
-            count={totalPages}
-            onChange={(_, p) => setPage(p)}
-            color="primary"
-          />
-        </Box>
+        <div>
+          <Pagination aria-label="페이지 이동">
+            <Pagination.Summary>
+              {page} / {Math.max(1, totalPages)}
+            </Pagination.Summary>
+            <Pagination.Content>
+              <Pagination.Item>
+                <Pagination.Previous
+                  isDisabled={page <= 1}
+                  onPress={() => ((_, p) => setPage(p))(null, page - 1)}
+                >
+                  이전
+                </Pagination.Previous>
+              </Pagination.Item>
+              <Pagination.Item>
+                <Pagination.Next
+                  isDisabled={page >= totalPages}
+                  onPress={() => ((_, p) => setPage(p))(null, page + 1)}
+                >
+                  다음
+                </Pagination.Next>
+              </Pagination.Item>
+            </Pagination.Content>
+          </Pagination>
+        </div>
       )}
-
       {releaseTarget && (
         <BlacklistReleaseDialog
           open={!!releaseTarget}
@@ -140,32 +161,46 @@ export default function BlacklistPage() {
           onSuccess={handleReleaseSuccess}
         />
       )}
-
-      <Dialog
-        open={!!historyUserId}
-        onClose={() => setHistoryUserId(null)}
-        maxWidth="md"
-        fullWidth
+      <Modal.Backdrop
+        isOpen={!!historyUserId}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) (() => setHistoryUserId(null))?.();
+        }}
+        isDismissable={(() => setHistoryUserId(null)) !== undefined}
       >
-        <DialogTitle>블랙리스트 이력</DialogTitle>
-        <DialogContent dividers>
-          {historyUserId && (
-            <BlacklistHistoryTimeline
-              userId={historyUserId}
-              onRelease={(entry) => {
-                const found = items.find((i) => i.userId === entry.userId);
-                if (found) {
-                  setHistoryUserId(null);
-                  setReleaseTarget(found);
-                }
-              }}
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setHistoryUserId(null)}>닫기</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+        <Modal.Container size="md" scroll="inside">
+          <Modal.Dialog>
+            <Modal.Header>
+              <Modal.Heading>블랙리스트 이력</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
+              {historyUserId && (
+                <BlacklistHistoryTimeline
+                  userId={historyUserId}
+                  onRelease={(entry) => {
+                    const found = items.find((i) => i.userId === entry.userId);
+                    if (found) {
+                      setHistoryUserId(null);
+                      setReleaseTarget(found);
+                    }
+                  }}
+                />
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                onClick={() => setHistoryUserId(null)}
+                variant={"ghost"}
+                isDisabled={undefined}
+                size={"md"}
+                className="rounded-xl"
+              >
+                닫기
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </div>
   );
 }

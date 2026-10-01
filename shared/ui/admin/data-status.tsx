@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
+import { ReactNode } from "react";
+import { Button } from "@heroui/react";
 
 interface DataStatusProps {
 	isLoading: boolean;
@@ -20,17 +21,19 @@ export function DataStatus({
 	error,
 	isEmpty,
 	isStale,
-	staleMessage = 'API 미연동, 추정치입니다',
+	staleMessage = "API 미연동, 추정치입니다",
 	onRetry,
 	children,
 	skeleton,
 }: DataStatusProps) {
 	if (isLoading) {
-		return skeleton ?? (
-			<div className="animate-pulse space-y-2">
-				<div className="h-4 w-3/4 rounded bg-[#f2f2f2]" />
-				<div className="h-4 w-1/2 rounded bg-[#f2f2f2]" />
-			</div>
+		return (
+			skeleton ?? (
+				<div className="animate-pulse space-y-2">
+					<div className="h-4 w-3/4 rounded bg-[#f2f2f2]" />
+					<div className="h-4 w-1/2 rounded bg-[#f2f2f2]" />
+				</div>
+			)
 		);
 	}
 
@@ -38,18 +41,20 @@ export function DataStatus({
 		return (
 			<div className="rounded-[14px] border border-[#ffd1da] bg-[#fff5f7] p-4">
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium text-[#c13515]">데이터 로드 실패</span>
+					<span className="text-sm font-medium text-[#c13515]">
+						데이터 로드 실패
+					</span>
 				</div>
 				{error?.message && (
 					<p className="mt-1 text-xs text-[#c13515]">{error.message}</p>
 				)}
 				{onRetry && (
-					<button
+					<Button
 						onClick={onRetry}
 						className="mt-2 text-xs text-[#c13515] underline hover:text-[#b32505]"
 					>
 						재시도
-					</button>
+					</Button>
 				)}
 			</div>
 		);

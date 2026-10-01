@@ -1,0 +1,170 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>공지 업로드 UI 변경 전후 · Project Solo</title><style>
+  /* ACCENT 를 대상 저장소의 브랜드 색으로 교체한다. 나머지는 중립이라 그대로 둔다. */
+  :root{
+    --accent:#ff385c; --ink:#111114; --sub:#6B6B76; --line:#E7E7EC;
+    --bg:#F6F6F8; --card:#FFFFFF; --surface:#F2F2F5; --danger:#D9534F;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:56px 24px 96px}
+  header h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:0 0 10px}
+  header p{color:var(--sub);margin:0 0 6px;max-width:760px}
+  .meta{font-size:13px;color:var(--sub);margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+  .meta code{background:var(--surface);padding:2px 6px;border-radius:5px;font-size:12px}
+
+  section{margin-top:56px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .sec-head h2{font-size:21px;font-weight:750;margin:0;letter-spacing:-.3px}
+  .status{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+    background:var(--ink);color:#fff;padding:3px 9px;border-radius:6px;letter-spacing:.3px}
+  .sec-desc{color:var(--sub);margin:0 0 22px;max-width:820px;font-size:15px}
+  .row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+
+  /* ---------- 모바일 프레임 ---------- */
+  .phone{width:300px;flex:0 0 300px;background:var(--card);border:1px solid var(--line);
+    border-radius:26px;overflow:hidden;box-shadow:0 8px 28px rgba(17,17,20,.07)}
+  .phone .cap{font-size:12px;font-weight:650;color:var(--sub);padding:10px 14px;
+    border-bottom:1px solid var(--line);background:var(--surface)}
+  .scr{height:452px;display:flex;flex-direction:column;position:relative;background:var(--card)}
+  .nav{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav .ava{width:28px;height:28px;border-radius:50%;background:#DCD6F2}
+  .nav .nm{font-size:13.5px;font-weight:700}
+  .body{flex:1;padding:14px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+
+  /* 채팅 말풍선 (해당될 때만) */
+  .b{max-width:78%;padding:8px 12px;border-radius:15px;font-size:12.5px;line-height:1.5}
+  .b.them{background:var(--surface);align-self:flex-start;border-bottom-left-radius:5px}
+  .b.me{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:5px}
+
+  /* 하단 입력창 */
+  .composer{border-top:1px solid var(--line);padding:9px 12px;display:flex;align-items:center;gap:9px}
+  .plus{width:26px;height:26px;border-radius:50%;background:var(--surface);flex:0 0 26px;
+    display:grid;place-items:center;font-size:15px;color:var(--sub);line-height:1}
+  .field{flex:1;height:32px;border-radius:16px;background:var(--surface)}
+
+  /* ---------- 액션 메뉴 ---------- */
+  .menu{border-top:1px solid var(--line);background:var(--card);padding:6px 0 10px}
+  .mi{display:flex;align-items:center;gap:11px;padding:9px 14px}
+  .mi .ic{width:30px;height:30px;border-radius:9px;flex:0 0 30px;background:var(--surface)}
+  .mi .tx{min-width:0}
+  .mi .l{font-size:13px;font-weight:650}
+  .mi .d{font-size:11.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mi.dis{opacity:.5}
+  .divider{height:1px;background:var(--line);margin:6px 14px}
+
+  /* ---------- 바텀시트 ---------- */
+  .scrim{position:absolute;inset:0;background:rgba(17,17,20,.34)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);
+    border-radius:20px 20px 0 0;padding:8px 18px 20px;box-shadow:0 -8px 30px rgba(17,17,20,.14)}
+  .grab{width:34px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 13px}
+  .sheet h3{font-size:15px;font-weight:750;margin:0 0 8px;letter-spacing:-.2px}
+  .sheet p{font-size:12.5px;color:var(--sub);margin:0 0 13px}
+  .info{background:var(--surface);border-radius:11px;padding:11px 13px;margin-bottom:13px}
+  .info .k{font-size:10.5px;font-weight:700;color:var(--sub);margin-bottom:3px;letter-spacing:.2px}
+  .info .v{font-size:12.5px}
+
+  /* 버튼 — p=primary(강조) s=subtle(보조) d=disabled */
+  .btn{display:block;width:100%;text-align:center;padding:11px;border-radius:11px;
+    font-size:13px;font-weight:700;margin-top:8px}
+  .btn.p{background:var(--accent);color:#fff}
+  .btn.s{background:var(--surface);color:var(--ink)}
+  .btn.d{background:var(--surface);color:#9A9AA4}
+
+  /* 입력 필드 */
+  .inp{display:flex;align-items:center;gap:7px;border:1px solid var(--line);
+    border-radius:11px;padding:10px 12px;margin-bottom:9px}
+  .inp .pre{color:var(--sub);font-size:15px}
+  .inp .ph{color:#B3B3BC;font-size:13px}
+  .inp .val{font-size:13px;font-weight:600}
+  .note{font-size:10.5px;color:var(--sub);margin:0 0 4px}
+
+  /* ---------- 인라인 배너 / 카드 ---------- */
+  .banner{margin:10px 12px 4px;border:1px solid var(--line);border-radius:14px;
+    padding:9px 11px;display:flex;align-items:center;gap:9px;background:var(--card)}
+  .banner .ic{width:32px;height:32px;border-radius:10px;flex:0 0 32px;background:var(--surface)}
+  .banner .t{font-size:11.5px;font-weight:700}
+  .banner .s{font-size:10.5px;color:var(--sub);line-height:1.4}
+  .banner .x{margin-left:auto;background:var(--surface);border-radius:9px;
+    padding:6px 9px;font-size:10.5px;font-weight:650;color:var(--sub);flex:0 0 auto}
+
+  .rcard{margin:8px 12px;border:1px solid var(--line);border-radius:17px;padding:13px}
+  .rc-top{display:flex;gap:10px;align-items:flex-start}
+  .rc-top .ic{width:34px;height:34px;border-radius:11px;flex:0 0 34px;background:var(--surface)}
+  .rc-top .t{font-size:12.5px;font-weight:750}
+  .rc-top .s{font-size:11px;color:var(--sub);line-height:1.4}
+  .rc-top .more{margin-left:auto;font-size:10.5px;font-weight:650;color:var(--sub);flex:0 0 auto}
+
+  /* 값 + 액션 묶음 */
+  .tgt{margin-top:10px;background:var(--surface);border-radius:12px;padding:10px 11px}
+  .tgt .th{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .tgt .tl{font-size:11.5px;font-weight:700}
+  .tgt .ti{font-size:11.5px;color:var(--sub)}
+  .tgt .ta{display:flex;gap:7px}
+  .tgt .ta span{flex:1;text-align:center;padding:7px;border-radius:9px;font-size:11.5px;font-weight:650}
+  .tgt .ta .c{background:var(--card);color:var(--ink)}
+  .tgt .ta .o{background:var(--accent);color:#fff}
+  .ro{background:var(--surface);border-radius:11px;padding:10px 12px;margin-bottom:9px;
+    display:flex;justify-content:space-between;align-items:center}
+  .ro .l{font-size:11.5px;font-weight:700}
+  .ro .v{font-size:11.5px;color:var(--sub)}
+
+  /* ---------- 잠금화면 푸시 ---------- */
+  .lock{width:300px;flex:0 0 300px;border-radius:26px;padding:22px 14px;
+    background:linear-gradient(160deg,#3B3350,#232131 65%);box-shadow:0 8px 28px rgba(17,17,20,.14)}
+  .lock .time{color:#fff;text-align:center;font-size:38px;font-weight:250;letter-spacing:-1px;margin-bottom:2px}
+  .lock .date{color:rgba(255,255,255,.62);text-align:center;font-size:11.5px;margin-bottom:20px}
+  .push{background:rgba(255,255,255,.94);border-radius:15px;padding:11px 12px;display:flex;gap:10px}
+  .push+.push{margin-top:11px}
+  .push .ic{width:30px;height:30px;border-radius:8px;flex:0 0 30px;background:var(--accent)}
+  .push .ap{font-size:10px;color:var(--sub);margin-bottom:2px}
+  .push .t{font-size:12px;font-weight:750}
+  .push .b2{font-size:11.5px;color:#3A3A44;line-height:1.42}
+
+  /* ---------- 화면 옆 주석 ---------- */
+  .notes{flex:1;min-width:290px}
+  .notes h4{font-size:13px;font-weight:750;margin:0 0 9px;letter-spacing:-.2px}
+  .notes ul{margin:0 0 16px;padding-left:17px}
+  .notes li{font-size:13.5px;color:#3A3A44;margin-bottom:7px}
+  .notes code{background:var(--surface);padding:1.5px 5px;border-radius:5px;
+    font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  /* .flag = 관찰/설계의도, .flag.warn = 확인이 필요한 결함 */
+  .flag{border-left:3px solid var(--accent);background:#FAF8FF;padding:11px 13px;
+    border-radius:0 9px 9px 0;margin-bottom:13px}
+  .flag .h{font-size:12px;font-weight:750;margin-bottom:3px}
+  .flag p{margin:0;font-size:13px;color:#3A3A44}
+  .flag.warn{border-left-color:var(--danger);background:#FFF6F5}
+
+  /* 미구현 화면을 섞어 그릴 때 — i18n 실값과 새로 쓴 제안 문구를 가른다 */
+  .draft{border-bottom:1px dashed #B39DE8;background:#FBF9FF}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--sub)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .swatch{width:15px;height:15px;border-radius:4px;display:inline-block}
+  .swatch.real{background:var(--surface);border:1px solid var(--line)}
+  .swatch.draft{background:#FBF9FF;border-bottom:1px dashed #B39DE8;border-radius:0}
+
+*{box-sizing:border-box}body{background:#f6f7f9;color:#222;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1540px;margin:auto;padding:32px}header{padding-bottom:24px}h1{font-size:32px;margin:0 0 12px}p{line-height:1.65}.sub{color:#666;font-size:13px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}button,a.button{font:inherit;cursor:pointer;border:1px solid #ccc;border-radius:6px;padding:10px 16px;color:#333;background:white;text-decoration:none}button[aria-pressed=true]{background:#222;color:white;border-color:#222}button:focus-visible{outline:3px solid #ff385c;outline-offset:3px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}.panel{min-width:0}.caption{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-weight:700}.badge{font-size:11px;letter-spacing:.07em;padding:5px 8px;border-radius:4px;background:#e9ebef}.screen{background:#fafafa;border:1px solid #d7dce1;border-radius:10px;overflow:hidden}.browserbar{padding:12px 20px;border-bottom:1px solid #ddd;font:11px ui-monospace,monospace;color:#69717c;background:white}.page{padding:24px}.pagehead{display:flex;align-items:center;gap:16px;margin-bottom:24px}.pagehead h3{font-size:21px;margin:0}.back{font-size:13px;color:#1976d2}.paper{background:white;box-shadow:0 1px 3px #0002;padding:24px;border-radius:4px;margin-bottom:20px}.paper h4{margin:0 0 22px;font-size:17px}.field{position:relative;border:1px solid #bbb;border-radius:4px;min-height:47px;padding:14px 12px;font-size:13px;margin:20px 0 4px;background:white}.field label{position:absolute;top:-9px;left:9px;background:white;padding:0 4px;font-size:11px;color:#666}.help{font-size:11px;color:#666;margin:4px 12px 20px}.area{min-height:135px;white-space:pre-wrap;line-height:1.55;font-family:ui-monospace,monospace;font-size:11px}.radio{display:flex;gap:25px;font-size:13px;margin:14px 0 25px}.dot{display:inline-block;border:2px solid #aaa;border-radius:50%;height:16px;width:16px;vertical-align:middle;margin-right:6px}.dot.on{border-color:#1976d2;box-shadow:inset 0 0 0 3px white;background:#1976d2}.switch{width:30px;height:17px;border-radius:15px;background:#ccc;display:inline-block;margin-right:12px;vertical-align:middle;position:relative}.switch:before{content:'';position:absolute;left:-2px;top:-1px;width:19px;height:19px;border-radius:50%;background:#eee;box-shadow:0 1px 3px #0003}.actions{display:flex;gap:8px;justify-content:flex-end;margin:22px 0}.mui{background:#1976d2;color:white;border-color:#1976d2}.alert{background:#e5f6fd;color:#164b63;border-radius:4px;padding:13px 14px;font-size:12px;margin-bottom:20px;line-height:1.7}.alert button{color:#164b63;background:transparent;border:0;padding:5px 0;font-size:12px;font-weight:600}.notes{width:auto;margin:18px 0;font-size:13px;color:#555}.notes code{font-size:11px;overflow-wrap:anywhere}.flag{background:#f3f4f6;border-left-color:#69717c}.flag.warn{background:#fff5ee;border-left-color:#c46620}.flag .h{font-size:13px}.editor{background:white;border:1px solid #ddd;border-radius:8px;padding:20px}.editor h4{margin:0 0 12px}.nativefile{display:flex;gap:10px;align-items:center;font-size:12px;margin:8px 0 24px}.nativefile span:first-child{padding:5px 9px;border:1px solid #aaa;border-radius:3px;background:#eee}.smallbuttons{display:flex;gap:7px;flex-wrap:wrap;margin:16px 0}.smallbuttons button{font-size:12px;padding:8px 11px}.notice-preview{max-width:390px;border:1px solid #ddd;margin-top:14px;padding:24px 16px;background:white;min-height:210px}.notice-preview h4{font-size:20px}.notice-preview p{font-size:13px}.tiny{font-size:11px;color:#777}.split{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}.draft{background:#fffdf7;border-bottom-color:#d7aa42}.proposal{border-top:4px solid #d7aa42}.proposal .mui{background:#ff385c;border-color:#ff385c}.proposal .back{color:#333}.proposal .paper{box-shadow:none;border:1px solid #ddd}.progress{background:#f5f6f7;padding:18px;border:1px solid #e1e3e6;border-radius:7px}.progress .line{display:flex;justify-content:space-between;margin:10px 0;font-size:13px}.chip{padding:3px 8px;border-radius:4px;font-size:11px;background:#e8f4ea;color:#2f683a}.chip.pending{background:#fff0d5;color:#8d610c}.foot{font-size:12px;color:#666;padding:20px 0;border-top:1px solid #ddd}.section-title{font-size:21px;margin:35px 0 18px}.mockhint{background:#efefef;padding:10px 14px;font-size:12px;border-radius:6px}.warnlabel{color:#91641d}.readonly{color:#666;background:#fafafa}.hidden,[hidden]{display:none!important}section{margin:0;padding:0;border:0}.lock{max-width:350px;background:#e3e5e8;border-radius:20px;padding:25px;margin:15px 0}.notification{background:#ffffffb5;padding:16px;border-radius:12px}.notification strong{font-size:13px}.notification p{font-size:12px;margin-bottom:0}.sticky{position:sticky;top:10px;background:#f6f7f9;z-index:2;padding:8px 0}
+@media(max-width:1000px){.grid,.split{grid-template-columns:1fr}.wrap{padding:20px}.page{padding:16px}.paper{padding:18px}h1{font-size:25px}}@media print{.toolbar{display:none}.grid{grid-template-columns:1fr 1fr}.wrap{padding:0}}
+</style></head><body><div class="wrap"><header><div class="sub">PROJECT SOLO / NOTICE ADMIN / 2026.10.02</div><h1>공지 업로드 UI · 변경 전 / 후</h1><p>기존 공지 작성 화면을 바꾸려던 요청과, 현재 별도 롱폼으로 연결된 구현의 차이를 확인합니다.</p><div class="mockhint">코드 기반 재현 시안입니다. 실제 앱 캡처나 서버 연동 화면이 아닙니다. 입력·공지 예시와 상태 값은 데모 데이터입니다.</div><div class="legend"><span>변경 전: Git HEAD</span><span>현재 구현: 작업 중 코드</span><span class="draft">수정안: 미구현 제안</span></div></header>
+<nav class="toolbar sticky" aria-label="시안 보기"><button id="compareBtn" aria-pressed="true" onclick="switchView('compare')">전 / 후 비교</button><button id="proposalBtn" aria-pressed="false" onclick="switchView('proposal')">기존 UI 안에 통합하는 수정안</button></nav>
+<div id="compare"><div class="grid"><section class="panel"><div class="caption"><span class="badge">BEFORE</span>기존 공지 작성</div><div class="screen"><div class="browserbar">/admin/content/notice/create</div><div class="page"><div class="pagehead"><span class="back">← 목록으로</span><h3>새 공지 작성</h3></div><div class="paper"><h4>기본 정보</h4><div class="field "><label>제목 *</label>&nbsp;</div><div class="help">0/50자</div><div class="field "><label>부제목</label>&nbsp;</div><div class="help">0/100자</div><div class="field area"><label>본문 *</label>&nbsp;</div><div class="help">공지 본문을 입력해주세요 (HTML 또는 텍스트)</div></div><div class="paper"><h4>게시 설정</h4><div class="tiny">우선순위</div><div class="radio"><span><i class="dot on"></i>일반</span><span><i class="dot"></i>긴급</span></div><div class="field "><label>만료 일시 (선택)</label>YYYY / MM / DD hh:mm</div><div class="field "><label>외부 링크 (선택)</label>https://…</div><div class="help">유저 앱에서 배너 클릭 시 이동할 URL</div></div><div class="paper"><h4>푸시 알림</h4><span class="switch"></span><span class="tiny">푸시 알림 발송</span></div><div class="paper"><h4>보상</h4><span class="switch"></span><span class="tiny">리워드 지급</span></div><div class="actions"><button>취소</button><button class="mui">저장</button></div></div></div><div class="notes"><div class="flag"><div class="h">원래 화면은 그대로 존재합니다</div><p>제목·부제목·본문 → 게시 설정 → 푸시 알림 → 보상 → 취소 / 저장. HEAD의 NoticeForm.tsx 기준입니다.</p></div></div></section>
+<section class="panel"><div class="caption"><span class="badge">AFTER · 현재 구현</span>기존 화면에 링크를 추가</div><div class="smallbuttons"><button onclick="showNotice()">일반 공지 화면</button><button onclick="showEditor()">링크로 이동한 HTML 편집기</button></div><div class="screen"><div class="browserbar" id="afterPath">/admin/content/notice/create</div><div class="page" id="afterNotice"><div class="pagehead"><span class="back">← 목록으로</span><h3>새 공지 작성</h3></div><div class="alert">HTML 파일 업로드·직접 편집과 한국어/일본어 게시본 관리는 HTML 공지 편집기를 사용하세요.<br><button onclick="showEditor()">HTML 공지 작성 →</button></div><div class="paper"><h4>기본 정보</h4><div class="field "><label>제목 *</label>&nbsp;</div><div class="help">0/50자</div><div class="field "><label>부제목</label>&nbsp;</div><div class="help">0/100자</div><div class="field area"><label>본문 *</label>&nbsp;</div><div class="help">일반 공지 본문을 입력해주세요. HTML 공지는 전용 편집기를 사용하세요.</div></div><div class="paper"><h4>게시 설정</h4><div class="tiny">우선순위</div><div class="radio"><span><i class="dot on"></i>일반</span><span><i class="dot"></i>긴급</span></div><div class="field "><label>만료 일시 (선택)</label>YYYY / MM / DD hh:mm</div><div class="field "><label>외부 링크 (선택)</label>https://…</div><div class="help">유저 앱에서 배너 클릭 시 이동할 URL</div></div><div class="paper"><h4>푸시 알림</h4><span class="switch"></span><span class="tiny">푸시 알림 발송</span></div><div class="paper"><h4>보상</h4><span class="switch"></span><span class="tiny">리워드 지급</span></div><div class="actions"><button>취소</button><button class="mui">저장</button></div></div><div class="page" id="afterEditor" hidden><div class="pagehead"><span class="back">← 목록으로</span><h3>HTML 공지 작성</h3></div><div class="paper"><h4>기본 정보</h4><div class="field "><label>제목 *</label>&nbsp;</div><div class="help">0/50자</div><div class="field "><label>앱 홈 노출 제목 (선택)</label>&nbsp;</div><div class="help">0/40자</div><div class="field "><label>부제목 (선택 사항)</label>&nbsp;</div><div class="help">0/100자</div><div class="field "><label>설명 *</label>&nbsp;</div><div class="help">0/100자</div><div class="field "><label>카테고리</label>공지</div><p class="tiny"><input type="checkbox" checked disabled aria-label="HTML 공지 활성"> HTML 공지 · JP 자동 번역</p></div><div class="editor"><p class="sub">KR HTML을 저장하면 GPT Luna가 JP를 비동기로 번역합니다. 업로드 화면에서 기다리지 않아도 됩니다. JavaScript·폼·외부 스타일은 지원하지 않습니다.</p><p class="sub" id="actualStatus">저장 후 JP 번역이 자동으로 시작됩니다</p><div class="tiny">HTML 파일 선택</div><div class="nativefile"><span>파일 선택</span><span>선택된 파일 없음</span></div><div class="field area"><label>HTML</label>&lt;section&gt;
+  &lt;h1&gt;서비스 이용 안내&lt;/h1&gt;
+  &lt;p&gt;더 나은 서비스를 위해 안내드립니다.&lt;/p&gt;
+&lt;/section&gt;</div><div class="help">HTML 148 / 262144 bytes · CSS 0 / 12288 bytes</div><div class="field area"><label>CSS</label>&nbsp;</div><div class="tiny">승인 이미지 업로드</div><div class="nativefile"><span>파일 선택</span><span>선택된 파일 없음</span></div><p class="tiny">이미지 업로드 후 추가된 img의 alt에 설명을 입력해주세요. 이미지 안의 한국어는 자동 번역되지 않습니다.</p><div class="smallbuttons"><button onclick="demoPreview()">검증 및 미리보기</button><button id="demoSave" disabled onclick="demoSave()">저장</button><button id="demoPublish" disabled onclick="demoSave()">저장 후 발행</button></div><p class="tiny">모바일 폭 미리보기 (최대 390px) · 서버 검증 결과 기준</p><div id="actualPreview" hidden><div class="mockhint">미리보기 문구 편집 · 로컬 데모 (서버 검증·저장 없음)</div><div class="notice-preview"><h4>서비스 이용 안내</h4><p>더 나은 서비스를 위해 안내드립니다.</p><hr><p>변경된 서비스 내용을 확인해주세요.</p><div class="tiny">설명용 샘플 공지 · 운영 콘텐츠 아님</div></div></div><div id="copyDemo" hidden style="margin:16px 0;padding:16px;background:#f7f7f7;border:1px solid #ddd;border-radius:6px"><h4>문구 수정</h4><p class="tiny">HTML 구조와 스타일을 유지하고 텍스트만 수정합니다. 실제 편집기에서는 문구 반영 후 서버 검증을 다시 진행합니다.</p><label class="tiny" for="copyTitle">문구 1 · 제목</label><input id="copyTitle" value="서비스 이용 안내" style="display:block;width:100%;padding:10px;margin:6px 0 14px;border:1px solid #bbb;border-radius:4px"><label class="tiny" for="copyBody">문구 2 · 본문</label><textarea id="copyBody" rows="3" style="display:block;width:100%;padding:10px;margin:6px 0 14px;border:1px solid #bbb;border-radius:4px">더 나은 서비스를 위해 안내드립니다.</textarea><button onclick="applyCopyDemo()">문구 반영 및 재검증 (데모)</button><p id="copyDemoMessage" class="tiny">문구를 바꾼 뒤 버튼을 눌러보세요.</p></div><p id="notValidated" class="tiny">입력 원본은 실행하지 않습니다. 변경 후에는 서버 검증을 다시 진행해주세요.</p></div><div class="paper" style="margin-top:20px"><h4>푸시 알림 (선택 사항)</h4><div class="field "><label>푸시 알림 제목 (선택 사항)</label>&nbsp;</div><div class="help">0/50자</div><div class="field area"><label>푸시 알림 메시지 (선택 사항)</label>&nbsp;</div><div class="help">0/100자</div></div></div></div><div class="notes"><div class="flag warn"><div class="h">요청한 기존 UI 통합이 이루어지지 않았습니다</div><p>NoticeForm.tsx:178의 링크는 /longform/create?format=html로 이동합니다. 기존 본문 입력은 그대로이고 HTML은 다른 편집기에 추가되었습니다.</p></div><div class="flag"><div class="h">미리보기와 JP 생성 상태는 별도 화면에 있습니다</div><p>HtmlNoticeEditor.tsx:132–155. 버튼을 누르면 데모 미리보기·상태만 바뀝니다. 네트워크 요청은 하지 않습니다.</p></div></div></section></div>
+<h2 class="section-title">목록의 변경</h2><div class="grid"><div class="paper"><h4>변경 전 · 공지사항 탭</h4><div class="field">일반 공지 목록 한 개</div></div><div class="paper"><h4>현재 · 공지사항 탭</h4><div class="field">HTML·롱폼 공지</div><div class="field">일반 공지</div><p class="tiny">content/page.tsx:101–107 — 두 목록으로 분리해 표시합니다.</p></div></div></div>
+<div id="proposal" hidden><section class="proposal"><div class="caption"><span class="badge draft">수정안 · 미구현</span>기존 공지 작성 화면 안에서 본문 형식만 선택</div><p class="sub">별도 작성 버튼·별도 롱폼 이동을 없애고 기존 공지 업로드 / 수정 화면에 HTML 편집과 JP 상태를 배치하는 제안입니다. 아래 점선 표시 영역의 문구와 레이아웃은 새 제안입니다.</p><div class="screen draft"><div class="browserbar">/admin/content/notice/create · 기존 진입 유지 제안</div><div class="page"><div class="pagehead"><span class="back">← 목록으로</span><h3>새 공지 작성</h3></div><div class="split"><div><div class="paper"><h4>기본 정보</h4><div class="field "><label>제목 *</label>서비스 이용 안내</div><div class="help">10/50자</div><div class="field "><label>부제목</label>&nbsp;</div><div class="help">0/100자</div><div class="tiny">본문 형식 <span class="warnlabel">· 신규 제안</span></div><div class="smallbuttons"><button>일반 텍스트</button><button aria-pressed="true">HTML</button></div><div class="nativefile"><span>HTML 파일 선택</span><span>notice.html · 예시</span></div><div class="field area"><label>HTML</label>&lt;section&gt;
+  &lt;h1&gt;서비스 이용 안내&lt;/h1&gt;
+  &lt;p&gt;더 나은 서비스를 위해 안내드립니다.&lt;/p&gt;
+&lt;/section&gt;</div><div class="help">HTML 148 / 262144 bytes</div><details><summary class="sub">CSS 직접 수정</summary><div class="field area"><label>CSS</label>&nbsp;</div></details><div class="smallbuttons"><button>승인 이미지 업로드</button><button>검증 및 미리보기</button></div></div><div class="paper"><h4>푸시 알림</h4><span class="switch"></span><span class="tiny">푸시 알림 발송</span></div><div class="actions"><button>취소</button><button class="mui">저장</button></div></div><div><div class="paper"><h4>모바일 미리보기 <span class="warnlabel tiny">· 신규 제안</span></h4><div class="smallbuttons"><button aria-pressed="true">KR</button><button>JP</button></div><div id="proposalNoticePreview" class="notice-preview"><h4>서비스 이용 안내</h4><p>더 나은 서비스를 위해 안내드립니다.</p><hr><p>변경된 서비스 내용을 확인해주세요.</p><div class="tiny">설명용 샘플 공지 · 운영 콘텐츠 아님</div></div></div><div class="paper"><h4>문구 수정 <span class="warnlabel tiny">· 데모</span></h4><label class="tiny" for="proposalCopyTitle">문구 1 · 제목</label><input id="proposalCopyTitle" value="서비스 이용 안내" style="display:block;width:100%;padding:10px;margin:6px 0 14px;border:1px solid #bbb;border-radius:4px"><label class="tiny" for="proposalCopyBody">문구 2 · 본문</label><textarea id="proposalCopyBody" rows="3" style="display:block;width:100%;padding:10px;margin:6px 0 14px;border:1px solid #bbb;border-radius:4px">더 나은 서비스를 위해 안내드립니다.</textarea><button onclick="applyProposalCopy()">문구 반영 및 재검증 (데모)</button><p class="tiny">텍스트만 반영하는 로컬 시안입니다. 실제 서버 요청과 저장은 실행하지 않습니다.</p></div><div class="progress"><strong>국가별 게시본 <span class="warnlabel tiny">· 신규 제안</span></strong><div class="line"><span>KR · 리비전 2</span><span class="chip">저장 완료</span></div><div class="line"><span>JP · 리비전 1 유지</span><span class="chip pending" id="proposedState">생성 대기·처리 중</span></div><p class="tiny">JP 생성은 비동기로 진행됩니다. 현재 화면을 나가도 계속됩니다.</p><button onclick="changeState()">진행 / 완료 / 실패 시안 전환</button></div><p class="tiny">HTML 공지는 보상을 지급하지 않습니다.</p></div></div></div></div><div class="notes"><div class="flag"><div class="h">수정 범위</div><p>기존 NoticeForm의 본문 영역을 텍스트 / HTML 선택으로 확장하고, 검증·파일 업로드·직접 편집을 그 안에 배치합니다. 동일 공지 수정 화면에서 KR / JP 상태를 확인하는 구조로 바꿉니다.</p></div><div class="flag warn"><div class="h">HTML 수정안에서는 일반 공지 게시 설정을 제외합니다</div><p>긴급·만료·배너 외부 링크는 기존 일반 공지의 설정입니다. 현재 HTML API에 연결되어 있지 않아 수정안에서 제거했습니다. HTML 내용의 승인 링크는 별도로 검증합니다.</p></div><div class="flag"><div class="h">통합 목록도 함께 바꿔야 합니다</div><p>두 개로 나뉜 목록 대신 공지 목록에서 형식과 JP 상태를 구분하고 같은 수정 진입을 사용하도록 정리하는 제안입니다. 기존 공지 ID 변환은 자동으로 가정하지 않습니다.</p></div></div></section></div>
+<section><h2 class="section-title">푸시가 사용자에게 보이는 위치</h2><p class="sub">발행 경로가 제공하는 알림의 설명용 예시입니다. 실제 발송이나 문구 생성이 아닙니다.</p><div class="lock"><div class="notification"><strong>썸타임 · 예시</strong><p><b>서비스 이용 안내</b><br>공지사항을 확인해주세요.</p></div></div><p class="tiny">현재 HTML 발행은 국가별 게시본 준비 후 푸시를 발송합니다. 관리자 미리보기를 여는 동작은 발행·푸시를 실행하지 않습니다.</p></section>
+<div class="foot">기존: 공지 작성 → 본문 입력 → 저장<br>현재: 공지 작성 → HTML 공지 작성 링크 → 별도 롱폼 편집기 → 검증 → KR 저장 → JP 비동기 생성<br>수정안: 기존 공지 작성 / 수정 → HTML 본문 선택 → 검증 → 저장 → 같은 화면에서 JP 상태 확인</div></div>
+<script>
+function switchView(view){document.getElementById('compare').hidden=view!=='compare';document.getElementById('proposal').hidden=view!=='proposal';document.getElementById('compareBtn').setAttribute('aria-pressed',view==='compare');document.getElementById('proposalBtn').setAttribute('aria-pressed',view==='proposal')}
+function showEditor(){document.getElementById('afterNotice').hidden=true;document.getElementById('afterEditor').hidden=false;document.getElementById('afterPath').textContent='/admin/content/longform/create?format=html'}
+function showNotice(){document.getElementById('afterNotice').hidden=false;document.getElementById('afterEditor').hidden=true;document.getElementById('afterPath').textContent='/admin/content/notice/create'}
+function demoPreview(){document.getElementById('actualPreview').hidden=false;document.getElementById('copyDemo').hidden=false;document.getElementById('notValidated').hidden=true;document.getElementById('demoSave').disabled=false;document.getElementById('demoPublish').disabled=false}
+function demoSave(){document.getElementById('actualStatus').textContent='JP 생성 대기·처리 중 · KR 리비전 1 · JP 아직 없음'}
+function applyCopyDemo(){const target=document.getElementById('actualPreview');target.querySelector('.notice-preview h4').textContent=document.getElementById('copyTitle').value;target.querySelector('.notice-preview p').textContent=document.getElementById('copyBody').value;document.getElementById('copyDemoMessage').textContent='데모 미리보기에 반영했습니다. 실제 편집기는 서버 재검증 성공 후 저장할 수 있습니다.'}function applyProposalCopy(){const target=document.getElementById('proposalNoticePreview');target.querySelector('h4').textContent=document.getElementById('proposalCopyTitle').value;target.querySelector('p').textContent=document.getElementById('proposalCopyBody').value}let demoState=0;function changeState(){demoState=(demoState+1)%3;document.getElementById('proposedState').textContent=['생성 대기·처리 중','준비 완료 · 리비전 2','생성 실패 · 리비전 1 유지'][demoState]}
+if(location.hash==='#proposal')switchView('proposal');</script></body></html>

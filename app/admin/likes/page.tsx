@@ -1,5 +1,4 @@
-import LikesManagementPageV2 from './likes-v2';
-
+import LikesManagementPageV2 from "./likes-v2";
 export default function LikesManagementPagePage() {
-  return <LikesManagementPageV2 />;
+	return <LikesManagementPageV2 />;
 }

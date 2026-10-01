@@ -1,18 +1,7 @@
 'use client';
 
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Button,
-  CircularProgress,
-} from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { Link, Spinner } from '@heroui/react';
+import { ExternalLink } from 'lucide-react';
 import { useSitemapLocCount } from '@/app/admin/hooks/use-seo';
 import AdminService from '@/app/services/admin';
 import type { SitemapKind } from '@/app/services/admin/seo';
@@ -37,72 +26,9 @@ const ROWS: SitemapRowConfig[] = [
 function SitemapRow({ kind, country, label }: SitemapRowConfig) {
   const url = AdminService.seo.getSitemapUrl(kind, country);
   const { data, isLoading, isError } = useSitemapLocCount(url);
-  return (
-    <TableRow>
-      <TableCell>{label}</TableCell>
-      <TableCell>
-        <Box component="code" sx={{ fontSize: '0.85em' }}>
-          {url}
-        </Box>
-      </TableCell>
-      <TableCell align="center">
-        {isLoading ? (
-          <CircularProgress size={16} />
-        ) : isError ? (
-          <Typography variant="caption" color="error">
-            오류
-          </Typography>
-        ) : (
-          (data ?? '-')
-        )}
-      </TableCell>
-      <TableCell align="center">
-        <Button
-          size="small"
-          startIcon={<OpenInNewIcon />}
-          component="a"
-          href={`/api/admin-proxy${url}`}
-          target="_blank"
-          rel="noopener"
-        >
-          XML 보기
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
+  return <tr className="border-b last:border-0"><th scope="row" className="p-3 text-left font-normal">{label}</th><td className="p-3"><code className="break-all text-xs">{url}</code></td><td className="p-3 text-center">{isLoading ? <Spinner size="sm" aria-label={`${label} URL 수 조회 중`}/> : isError ? <span className="text-xs text-danger">오류</span> : (data ?? '-')}</td><td className="p-3 text-center"><Link className="button button--secondary button--sm whitespace-nowrap" href={`/api/admin-proxy${url}`} target="_blank" rel="noopener noreferrer" aria-label={`${label} XML 보기`}><ExternalLink size={16}/>XML 보기</Link></td></tr>;
 }
 
-export default function SeoPage() {
-  return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
-        SEO 상태
-      </Typography>
-      <Paper>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>구분</TableCell>
-              <TableCell>경로</TableCell>
-              <TableCell align="center">loc 수</TableCell>
-              <TableCell align="center">작업</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {ROWS.map((r) => (
-              <SitemapRow key={`${r.kind}-${r.country ?? 'global'}`} {...r} />
-            ))}
-          </TableBody>
-        </Table>
-      </Paper>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ mt: 2, display: 'block' }}
-      >
-        sitemap 캐시는 서버에서 1h(static 24h) 주기로 갱신됩니다. 캐시 무효화 API는 서버 추가 후
-        연결 예정.
-      </Typography>
-    </Box>
-  );
+export default function SeoPage(){
+  return <main className="space-y-4 p-6"><h1 className="text-2xl font-bold">SEO 상태</h1><div className="overflow-x-auto rounded-xl border bg-white"><table className="w-full text-sm"><caption className="sr-only">국가별 사이트맵 상태</caption><thead className="bg-gray-50"><tr>{['구분','경로','loc 수','작업'].map((title,index)=><th key={title} scope="col" className={`border-b p-3 ${index>1?'text-center':'text-left'}`}>{title}</th>)}</tr></thead><tbody>{ROWS.map(row=><SitemapRow key={`${row.kind}-${row.country ?? 'global'}`} {...row}/>)}</tbody></table></div><p className="text-xs text-gray-600">sitemap 캐시는 서버에서 1h(static 24h) 주기로 갱신됩니다.</p></main>;
 }

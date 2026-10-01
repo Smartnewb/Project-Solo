@@ -1,90 +1,75 @@
-import React, { useEffect, useState } from 'react';
+import { Button as HeroActionButton } from "@heroui/react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  IconButton,
-  Typography,
-  Box,
-  Grid,
-  Avatar,
-  Chip,
-  Divider,
-  Link,
-  CircularProgress,
-  Button,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Tooltip,
   Alert,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
-  ToggleButtonGroup,
-  ToggleButton,
-  FormControlLabel,
+  Button,
   Checkbox,
-  TextField,
-  FormControl,
-  InputLabel,
+  Chip,
+  Input,
+  Label,
+  ListBox,
+  Modal,
   Select,
+  Separator,
+  Spinner,
   Tabs,
-  Tab
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import InstagramIcon from '@mui/icons-material/Instagram';
-import SchoolIcon from '@mui/icons-material/School';
-import PhoneIcon from '@mui/icons-material/Phone';
-import PersonIcon from '@mui/icons-material/Person';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import BlockIcon from '@mui/icons-material/Block';
-import EditIcon from '@mui/icons-material/Edit';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import EmailIcon from '@mui/icons-material/Email';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
-import DiamondIcon from '@mui/icons-material/Diamond';
-import LockResetIcon from '@mui/icons-material/LockReset';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import AdminService, { blacklist as blacklistApi } from '@/app/services/admin';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShieldBan, RotateCcw } from 'lucide-react';
-import { BlacklistRegisterModal } from '@/app/admin/blacklist/components/BlacklistRegisterModal';
-import { BlacklistReleaseDialog } from '@/app/admin/blacklist/components/BlacklistReleaseDialog';
-import { BlacklistHistoryTimeline } from '@/app/admin/blacklist/components/BlacklistHistoryTimeline';
-import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
+  TextArea,
+  TextField,
+  Tooltip,
+} from "@heroui/react";
+import {
+  Ban,
+  Calendar,
+  Clock,
+  Copy,
+  Diamond,
+  Edit,
+  EllipsisVertical,
+  ExternalLink,
+  GraduationCap,
+  Instagram,
+  KeyRound,
+  Mail,
+  Phone,
+  Ticket,
+  User,
+  X,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
+
+import AdminService, { blacklist as blacklistApi } from "@/app/services/admin";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ShieldBan, RotateCcw } from "lucide-react";
+import { BlacklistRegisterModal } from "@/app/admin/blacklist/components/BlacklistRegisterModal";
+import { BlacklistReleaseDialog } from "@/app/admin/blacklist/components/BlacklistReleaseDialog";
+import { BlacklistHistoryTimeline } from "@/app/admin/blacklist/components/BlacklistHistoryTimeline";
+import {
+  formatDateWithoutTimezoneConversion,
+  formatDateTimeWithoutTimezoneConversion,
+} from "@/app/utils/formatters";
 
 // 관리 기능 모달 컴포넌트들
-import EditProfileModal from './modals/EditProfileModal';
-import EmailNotificationModal from './modals/EmailNotificationModal';
-import SmsNotificationModal from './modals/SmsNotificationModal';
-import UniversityTransferModal from './modals/UniversityTransferModal';
-import BirthdayEditModal from './modals/BirthdayEditModal';
-import AccountStatusModal from './modals/AccountStatusModal';
-import { ReferralPostSignupSection } from './referral/ReferralPostSignupSection';
-import { sanitizeUrl } from '@/shared/lib/safe-url';
+import EditProfileModal from "./modals/EditProfileModal";
+import EmailNotificationModal from "./modals/EmailNotificationModal";
+import SmsNotificationModal from "./modals/SmsNotificationModal";
+import UniversityTransferModal from "./modals/UniversityTransferModal";
+import BirthdayEditModal from "./modals/BirthdayEditModal";
+import AccountStatusModal from "./modals/AccountStatusModal";
+import { ReferralPostSignupSection } from "./referral/ReferralPostSignupSection";
+import { sanitizeUrl } from "@/shared/lib/safe-url";
 
 const SHOW_REMATCH_TICKET_ADMIN = false;
 
 // 성별 레이블
 const GENDER_LABELS = {
-  MALE: '남성',
-  FEMALE: '여성'
+  MALE: "남성",
+  FEMALE: "여성",
 };
 
 // 회원가입 루트 레이블
 const SIGNUP_ROUTE_LABELS = {
-  PASS: 'PASS',
-  KAKAO: '카카오',
-  APPLE: '애플'
+  PASS: "PASS",
+  KAKAO: "카카오",
+  APPLE: "애플",
 };
 
 // 선호도 옵션 타입
@@ -111,7 +96,7 @@ export interface UserDetail {
   name: string;
   age: number;
   birthday?: string;
-  gender: 'MALE' | 'FEMALE';
+  gender: "MALE" | "FEMALE";
   profileImages: {
     id: string;
     order: number;
@@ -134,14 +119,14 @@ export interface UserDetail {
   createdAt?: string;
   updatedAt?: string;
   lastActiveAt?: string | null;
-  appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
+  appearanceGrade?: "S" | "A" | "B" | "C" | "UNKNOWN";
   isUniversityVerified?: boolean; // 대학교 인증 여부
-  accountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  accountStatus?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   suspendedAt?: string | null;
   suspendedUntil?: string | null;
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'; // 승인 상태
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED"; // 승인 상태
   preferences?: UserPreferences;
-  signupRoute?: 'PASS' | 'KAKAO' | 'APPLE'; // 회원가입 루트
+  signupRoute?: "PASS" | "KAKAO" | "APPLE"; // 회원가입 루트
   // 추가 필드
   [key: string]: any;
 }
@@ -169,7 +154,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   onRefresh,
   showApprovalActions = false,
   onApproval,
-  onRejection
+  onRejection,
 }) => {
   // 내부 상태로 사용자 상세 정보 관리
   const [userDetail, setUserDetail] = useState(initialUserDetail);
@@ -183,38 +168,51 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [selectedImage, setSelectedImage] = useState<string>(
     (() => {
       if (userDetail.profileImages && userDetail.profileImages.length > 0) {
-        const mainImage = userDetail.profileImages.find(img => img.isMain === true);
+        const mainImage = userDetail.profileImages.find(
+          (img) => img.isMain === true,
+        );
         return mainImage ? mainImage.url : userDetail.profileImages[0].url;
       }
       if (userDetail.profileImageUrl) {
         return userDetail.profileImageUrl;
       }
-      return '';
-    })()
+      return "";
+    })(),
   );
 
   // 외모 등급 상태
-  const [appearanceGrade, setAppearanceGrade] = useState<'S' | 'A' | 'B' | 'C' | 'UNKNOWN'>(
-    userDetail.appearanceGrade || userDetail.appearanceRank || 'UNKNOWN'
-  );
+  const [appearanceGrade, setAppearanceGrade] = useState<
+    "S" | "A" | "B" | "C" | "UNKNOWN"
+  >(userDetail.appearanceGrade || userDetail.appearanceRank || "UNKNOWN");
 
   // props가 변경되면 내부 상태 업데이트
   useEffect(() => {
     setUserDetail(initialUserDetail);
     // 외모 등급도 함께 초기화
-    setAppearanceGrade(initialUserDetail.appearanceGrade || initialUserDetail.appearanceRank || 'UNKNOWN');
+    setAppearanceGrade(
+      initialUserDetail.appearanceGrade ||
+        initialUserDetail.appearanceRank ||
+        "UNKNOWN",
+    );
     setLoading(initialLoading);
     setError(initialError);
 
     if (initialUserDetail) {
-      if (initialUserDetail.profileImages && initialUserDetail.profileImages.length > 0) {
-        const mainImage = initialUserDetail.profileImages.find(img => img.isMain === true);
-        const imageUrl = mainImage ? mainImage.url : initialUserDetail.profileImages[0].url;
+      if (
+        initialUserDetail.profileImages &&
+        initialUserDetail.profileImages.length > 0
+      ) {
+        const mainImage = initialUserDetail.profileImages.find(
+          (img) => img.isMain === true,
+        );
+        const imageUrl = mainImage
+          ? mainImage.url
+          : initialUserDetail.profileImages[0].url;
         setSelectedImage(imageUrl);
       } else if (initialUserDetail.profileImageUrl) {
         setSelectedImage(initialUserDetail.profileImageUrl);
       } else {
-        setSelectedImage('');
+        setSelectedImage("");
       }
     }
   }, [initialUserDetail, initialLoading, initialError]);
@@ -222,7 +220,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 모달이 열릴 때마다 외모 등급 초기화
   useEffect(() => {
     if (open) {
-      setAppearanceGrade(userDetail.appearanceGrade || userDetail.appearanceRank || 'UNKNOWN');
+      setAppearanceGrade(
+        userDetail.appearanceGrade || userDetail.appearanceRank || "UNKNOWN",
+      );
     }
   }, [open, userDetail.appearanceGrade, userDetail.appearanceRank]);
 
@@ -246,17 +246,20 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 모달이 닫힐 때 상태 초기화
   useEffect(() => {
     if (!open) {
-      setSelectedImage('');
+      setSelectedImage("");
     }
   }, [open]);
   const [savingGrade, setSavingGrade] = useState(false);
 
   // 모달 상태
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
-  const [universityTransferModalOpen, setUniversityTransferModalOpen] = useState(false);
+  const [universityTransferModalOpen, setUniversityTransferModalOpen] =
+    useState(false);
   const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
-  const [emailNotificationModalOpen, setEmailNotificationModalOpen] = useState(false);
-  const [smsNotificationModalOpen, setSmsNotificationModalOpen] = useState(false);
+  const [emailNotificationModalOpen, setEmailNotificationModalOpen] =
+    useState(false);
+  const [smsNotificationModalOpen, setSmsNotificationModalOpen] =
+    useState(false);
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
   const [revokeApprovalModalOpen, setRevokeApprovalModalOpen] = useState(false);
 
@@ -269,27 +272,33 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [sendEmailOnDelete, setSendEmailOnDelete] = useState(false);
 
   // 블랙리스트 관련 상태
-  const [blacklistRegisterModalOpen, setBlacklistRegisterModalOpen] = useState(false);
-  const [blacklistReleaseDialogOpen, setBlacklistReleaseDialogOpen] = useState(false);
+  const [blacklistRegisterModalOpen, setBlacklistRegisterModalOpen] =
+    useState(false);
+  const [blacklistReleaseDialogOpen, setBlacklistReleaseDialogOpen] =
+    useState(false);
   // 계정 정지/해제 모달
   const [accountStatusModalOpen, setAccountStatusModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'blacklist'>('profile');
+  const [activeTab, setActiveTab] = useState<"profile" | "blacklist">(
+    "profile",
+  );
   const queryClient = useQueryClient();
 
   const blacklistHistoryQuery = useQuery({
-    queryKey: ['blacklist-history', userId],
+    queryKey: ["blacklist-history", userId],
     queryFn: () => blacklistApi.getHistory(userId as string),
     enabled: !!userId && open,
     staleTime: 60_000,
   });
 
   const blacklistHistory = blacklistHistoryQuery.data?.data?.history ?? [];
-  const activeBlacklistEntry = blacklistHistory.find((h) => h.releasedAt === null);
+  const activeBlacklistEntry = blacklistHistory.find(
+    (h) => h.releasedAt === null,
+  );
   const isBlacklisted = !!activeBlacklistEntry;
 
   const handleBlacklistSuccess = (message?: string) => {
-    queryClient.invalidateQueries({ queryKey: ['blacklist-history', userId] });
-    queryClient.invalidateQueries({ queryKey: ['blacklist'] });
+    queryClient.invalidateQueries({ queryKey: ["blacklist-history", userId] });
+    queryClient.invalidateQueries({ queryKey: ["blacklist"] });
     if (message) {
       setActionSuccess(message);
     }
@@ -316,59 +325,112 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [gemsRemoveModalOpen, setGemsRemoveModalOpen] = useState(false);
 
   // 승인 취소 관련 상태
-  const [revokeReason, setRevokeReason] = useState<string>('');
-  const [customRevokeReason, setCustomRevokeReason] = useState<string>('');
+  const [revokeReason, setRevokeReason] = useState<string>("");
+  const [customRevokeReason, setCustomRevokeReason] = useState<string>("");
   const [revokeActionLoading, setRevokeActionLoading] = useState(false);
 
   // 비밀번호 초기화 관련 상태
-  const [resetPasswordConfirmOpen, setResetPasswordConfirmOpen] = useState(false);
+  const [resetPasswordConfirmOpen, setResetPasswordConfirmOpen] =
+    useState(false);
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [resetPasswordResultOpen, setResetPasswordResultOpen] = useState(false);
-  const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [temporaryPassword, setTemporaryPassword] = useState("");
 
   const rejectionReasons = [
-    { value: 'LONG_TERM_INACTIVE_REAPPLY', label: '[장기 미접속]-재심사를 요청해주세요' },
-    { value: 'PROFILE_PHOTO_CLEAR_FACE', label: '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요' },
-    { value: 'PROFILE_PHOTO_SELF', label: '본인 사진으로 프로필을 변경해주세요' },
-    { value: 'PROFILE_PHOTO_NATURAL', label: '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요' },
-    { value: 'PROFILE_PHOTO_FORMAT_UNSUPPORTED', label: '프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)' },
-    { value: 'INSTAGRAM_ID_CORRECT', label: '인스타그램 ID를 정확히 입력해주세요' },
-    { value: 'INSTAGRAM_ID_MAIN_ACCOUNT', label: '인스타그램 본계정으로 변경해주세요' },
-    { value: 'INSTAGRAM_ID_PUBLIC', label: '인스타그램을 공개계정으로 설정해주세요' },
-    { value: 'INSTAGRAM_ID_ACTIVE', label: '활동 내역이 있는 인스타그램 계정으로 변경해주세요' },
-    { value: 'INSTAGRAM_ID_VERIFIABLE', label: '본인 확인이 가능한 인스타그램 계정으로 변경해주세요' },
-    { value: 'BOTH_PROFILE_AND_INSTAGRAM', label: '프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요' },
-    { value: 'NOT_ELIGIBLE', label: '현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다' },
-    { value: 'FOREIGN_STUDENT_NOT_ACCEPTED', label: '죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다' },
-    { value: 'IDENTITY_VERIFICATION_DIFFICULT', label: '본인 확인이 어려워 승인이 어렵습니다' },
-    { value: 'RELIABLE_PROFILE_REQUIRED', label: '신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요' },
-    { value: 'OTHER', label: '기타 (직접 입력)' }
+    {
+      value: "LONG_TERM_INACTIVE_REAPPLY",
+      label: "[장기 미접속]-재심사를 요청해주세요",
+    },
+    {
+      value: "PROFILE_PHOTO_CLEAR_FACE",
+      label: "프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요",
+    },
+    {
+      value: "PROFILE_PHOTO_SELF",
+      label: "본인 사진으로 프로필을 변경해주세요",
+    },
+    {
+      value: "PROFILE_PHOTO_NATURAL",
+      label: "상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요",
+    },
+    {
+      value: "PROFILE_PHOTO_FORMAT_UNSUPPORTED",
+      label: "프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)",
+    },
+    {
+      value: "INSTAGRAM_ID_CORRECT",
+      label: "인스타그램 ID를 정확히 입력해주세요",
+    },
+    {
+      value: "INSTAGRAM_ID_MAIN_ACCOUNT",
+      label: "인스타그램 본계정으로 변경해주세요",
+    },
+    {
+      value: "INSTAGRAM_ID_PUBLIC",
+      label: "인스타그램을 공개계정으로 설정해주세요",
+    },
+    {
+      value: "INSTAGRAM_ID_ACTIVE",
+      label: "활동 내역이 있는 인스타그램 계정으로 변경해주세요",
+    },
+    {
+      value: "INSTAGRAM_ID_VERIFIABLE",
+      label: "본인 확인이 가능한 인스타그램 계정으로 변경해주세요",
+    },
+    {
+      value: "BOTH_PROFILE_AND_INSTAGRAM",
+      label: "프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요",
+    },
+    {
+      value: "NOT_ELIGIBLE",
+      label: "현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다",
+    },
+    {
+      value: "FOREIGN_STUDENT_NOT_ACCEPTED",
+      label: "죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다",
+    },
+    {
+      value: "IDENTITY_VERIFICATION_DIFFICULT",
+      label: "본인 확인이 어려워 승인이 어렵습니다",
+    },
+    {
+      value: "RELIABLE_PROFILE_REQUIRED",
+      label: "신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요",
+    },
+    { value: "OTHER", label: "기타 (직접 입력)" },
   ];
   const getRejectionReasonLabel = (reason: string) => {
     const reasonMap: Record<string, string> = {
-      'PROFILE_PHOTO_CLEAR_FACE': '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요',
-      'PROFILE_PHOTO_SELF': '본인 사진으로 프로필을 변경해주세요',
-      'PROFILE_PHOTO_NATURAL': '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요',
-      'PROFILE_PHOTO_FORMAT_UNSUPPORTED': '프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)',
-      'INSTAGRAM_ID_CORRECT': '인스타그램 ID를 정확히 입력해주세요',
-      'INSTAGRAM_ID_MAIN_ACCOUNT': '인스타그램 본계정으로 변경해주세요',
-      'INSTAGRAM_ID_PUBLIC': '인스타그램을 공개계정으로 설정해주세요',
-      'INSTAGRAM_ID_ACTIVE': '활동 내역이 있는 인스타그램 계정으로 변경해주세요',
-      'INSTAGRAM_ID_VERIFIABLE': '본인 확인이 가능한 인스타그램 계정으로 변경해주세요',
-      'BOTH_PROFILE_AND_INSTAGRAM': '프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요',
-      'NOT_ELIGIBLE': '현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다',
-      'LONG_TERM_INACTIVE_REAPPLY': '[장기 미접속]-재심사를 요청해주세요',
-      'FOREIGN_STUDENT_NOT_ACCEPTED': '죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다',
-      'IDENTITY_VERIFICATION_DIFFICULT': '본인 확인이 어려워 승인이 어렵습니다',
-      'RELIABLE_PROFILE_REQUIRED': '신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요',
-      'OTHER': '기타'
+      PROFILE_PHOTO_CLEAR_FACE:
+        "프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요",
+      PROFILE_PHOTO_SELF: "본인 사진으로 프로필을 변경해주세요",
+      PROFILE_PHOTO_NATURAL:
+        "상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요",
+      PROFILE_PHOTO_FORMAT_UNSUPPORTED:
+        "프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)",
+      INSTAGRAM_ID_CORRECT: "인스타그램 ID를 정확히 입력해주세요",
+      INSTAGRAM_ID_MAIN_ACCOUNT: "인스타그램 본계정으로 변경해주세요",
+      INSTAGRAM_ID_PUBLIC: "인스타그램을 공개계정으로 설정해주세요",
+      INSTAGRAM_ID_ACTIVE: "활동 내역이 있는 인스타그램 계정으로 변경해주세요",
+      INSTAGRAM_ID_VERIFIABLE:
+        "본인 확인이 가능한 인스타그램 계정으로 변경해주세요",
+      BOTH_PROFILE_AND_INSTAGRAM:
+        "프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요",
+      NOT_ELIGIBLE: "현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다",
+      LONG_TERM_INACTIVE_REAPPLY: "[장기 미접속]-재심사를 요청해주세요",
+      FOREIGN_STUDENT_NOT_ACCEPTED:
+        "죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다",
+      IDENTITY_VERIFICATION_DIFFICULT: "본인 확인이 어려워 승인이 어렵습니다",
+      RELIABLE_PROFILE_REQUIRED:
+        "신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요",
+      OTHER: "기타",
     };
     return reasonMap[reason] || reason;
   };
 
   // 메뉴 열기
-  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchorEl(event.currentTarget);
+  const handleOpenMenu = (event: React.MouseEvent<Element>) => {
+    setMenuAnchorEl(event.currentTarget as HTMLElement);
   };
 
   // 메뉴 닫기
@@ -377,18 +439,17 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   };
 
   const handleOpenProfileCuration = () => {
-    if (!userId || userDetail?.gender !== 'MALE') return;
+    if (!userId || userDetail?.gender !== "MALE") return;
 
     window.open(
       `/admin/profile-curation?userId=${encodeURIComponent(userId)}`,
-      '_blank',
-      'noopener,noreferrer'
+      "_blank",
+      "noopener,noreferrer",
     );
   };
 
   const isAccountSuspended =
-    userDetail?.accountStatus === 'SUSPENDED' ||
-    !!userDetail?.suspendedAt;
+    userDetail?.accountStatus === "SUSPENDED" || !!userDetail?.suspendedAt;
 
   const handleOpenAccountStatusModal = () => {
     handleCloseMenu();
@@ -419,8 +480,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 외모 등급 변경 처리
   const handleAppearanceGradeChange = async (
-    event: React.MouseEvent<HTMLElement>,
-    newGrade: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN'
+    event: React.MouseEvent<Element> | null,
+    newGrade: "S" | "A" | "B" | "C" | "UNKNOWN",
   ) => {
     if (!userId || !newGrade || newGrade === appearanceGrade) return;
 
@@ -428,7 +489,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setSavingGrade(true);
       setActionError(null);
 
-      await AdminService.userAppearance.setUserAppearanceGrade(userId, newGrade);
+      await AdminService.userAppearance.setUserAppearanceGrade(
+        userId,
+        newGrade,
+      );
 
       setAppearanceGrade(newGrade);
       setActionSuccess(`외모 등급이 ${newGrade}로 변경되었습니다.`);
@@ -436,8 +500,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       // 부모 컴포넌트에 변경 알림
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      setActionError(error.message || '외모 등급 변경 중 오류가 발생했습니다.');
-      console.error('외모 등급 변경 중 오류:', error);
+      setActionError(error.message || "외모 등급 변경 중 오류가 발생했습니다.");
+      console.error("외모 등급 변경 중 오류:", error);
     } finally {
       setSavingGrade(false);
     }
@@ -453,11 +517,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       await AdminService.userAppearance.setInstagramError(userId);
 
-      setUserDetail(prev => prev ? { ...prev, statusAt: 'instagramerror' } : prev);
-      setActionSuccess('인스타그램 오류 상태가 설정되었습니다.');
+      setUserDetail((prev) =>
+        prev ? { ...prev, statusAt: "instagramerror" } : prev,
+      );
+      setActionSuccess("인스타그램 오류 상태가 설정되었습니다.");
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      setActionError(error.message ?? '인스타그램 오류 상태 설정 중 오류가 발생했습니다.');
+      setActionError(
+        error.message ?? "인스타그램 오류 상태 설정 중 오류가 발생했습니다.",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -471,14 +539,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketLoading(true);
       setTicketError(null);
 
-      console.log('재매칭 티켓 정보 조회 요청:', userId);
+      console.log("재매칭 티켓 정보 조회 요청:", userId);
       const data = await AdminService.userAppearance.getUserTickets(userId);
-      console.log('재매칭 티켓 정보 응답:', data);
+      console.log("재매칭 티켓 정보 응답:", data);
 
       setTicketInfo(data);
     } catch (error: any) {
-      console.error('재매칭 티켓 정보 조회 중 오류:', error);
-      setTicketError(error.message || '재매칭 티켓 정보를 조회하는 중 오류가 발생했습니다.');
+      console.error("재매칭 티켓 정보 조회 중 오류:", error);
+      setTicketError(
+        error.message || "재매칭 티켓 정보를 조회하는 중 오류가 발생했습니다.",
+      );
     } finally {
       setTicketLoading(false);
     }
@@ -492,7 +562,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketActionLoading(true);
       setTicketError(null);
 
-      console.log('재매칭 티켓 추가 요청:', { userId, count: ticketCount });
+      console.log("재매칭 티켓 추가 요청:", { userId, count: ticketCount });
       await AdminService.userAppearance.createUserTickets(userId, ticketCount);
 
       // 성공 메시지 표시
@@ -505,8 +575,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketAddModalOpen(false);
       setTicketCount(1);
     } catch (error: any) {
-      console.error('재매칭 티켓 추가 중 오류:', error);
-      setTicketError(error.message || '재매칭 티켓 추가 중 오류가 발생했습니다.');
+      console.error("재매칭 티켓 추가 중 오류:", error);
+      setTicketError(
+        error.message || "재매칭 티켓 추가 중 오류가 발생했습니다.",
+      );
     } finally {
       setTicketActionLoading(false);
     }
@@ -520,7 +592,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketActionLoading(true);
       setTicketError(null);
 
-      console.log('재매칭 티켓 제거 요청:', { userId, count: ticketCount });
+      console.log("재매칭 티켓 제거 요청:", { userId, count: ticketCount });
       await AdminService.userAppearance.deleteUserTickets(userId, ticketCount);
 
       // 성공 메시지 표시
@@ -533,8 +605,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketRemoveModalOpen(false);
       setTicketCount(1);
     } catch (error: any) {
-      console.error('재매칭 티켓 제거 중 오류:', error);
-      setTicketError(error.message || '재매칭 티켓 제거 중 오류가 발생했습니다.');
+      console.error("재매칭 티켓 제거 중 오류:", error);
+      setTicketError(
+        error.message || "재매칭 티켓 제거 중 오류가 발생했습니다.",
+      );
     } finally {
       setTicketActionLoading(false);
     }
@@ -548,14 +622,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsLoading(true);
       setGemsError(null);
 
-      console.log('구슬 정보 조회 요청:', userId);
+      console.log("구슬 정보 조회 요청:", userId);
       const response = await AdminService.userAppearance.getUserGems(userId);
-      console.log('구슬 정보 조회 응답:', response);
+      console.log("구슬 정보 조회 응답:", response);
 
       setGemsInfo(response);
     } catch (error: any) {
-      console.error('구슬 정보 조회 중 오류:', error);
-      setGemsError(error.message || '구슬 정보 조회 중 오류가 발생했습니다.');
+      console.error("구슬 정보 조회 중 오류:", error);
+      setGemsError(error.message || "구슬 정보 조회 중 오류가 발생했습니다.");
     } finally {
       setGemsLoading(false);
     }
@@ -569,7 +643,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsActionLoading(true);
       setGemsError(null);
 
-      console.log('구슬 추가 요청:', { userId, count: gemsCount });
+      console.log("구슬 추가 요청:", { userId, count: gemsCount });
       await AdminService.userAppearance.addUserGems(userId, gemsCount);
 
       // 성공 메시지 표시
@@ -582,8 +656,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsAddModalOpen(false);
       setGemsCount(1);
     } catch (error: any) {
-      console.error('구슬 추가 중 오류:', error);
-      setGemsError(error.message || '구슬 추가 중 오류가 발생했습니다.');
+      console.error("구슬 추가 중 오류:", error);
+      setGemsError(error.message || "구슬 추가 중 오류가 발생했습니다.");
     } finally {
       setGemsActionLoading(false);
     }
@@ -597,7 +671,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsActionLoading(true);
       setGemsError(null);
 
-      console.log('구슬 제거 요청:', { userId, count: gemsCount });
+      console.log("구슬 제거 요청:", { userId, count: gemsCount });
       await AdminService.userAppearance.removeUserGems(userId, gemsCount);
 
       // 성공 메시지 표시
@@ -610,8 +684,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsRemoveModalOpen(false);
       setGemsCount(1);
     } catch (error: any) {
-      console.error('구슬 제거 중 오류:', error);
-      setGemsError(error.message || '구슬 제거 중 오류가 발생했습니다.');
+      console.error("구슬 제거 중 오류:", error);
+      setGemsError(error.message || "구슬 제거 중 오류가 발생했습니다.");
     } finally {
       setGemsActionLoading(false);
     }
@@ -625,29 +699,35 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setLoading(true);
       setError(null);
 
-      console.log('사용자 상세 정보 새로고침 요청:', userId);
+      console.log("사용자 상세 정보 새로고침 요청:", userId);
       const data = await AdminService.userAppearance.getUserDetails(userId);
-      console.log('사용자 상세 정보 새로고침 응답:', data);
+      console.log("사용자 상세 정보 새로고침 응답:", data);
 
       setUserDetail(data);
 
       // 이미지 선택 상태 업데이트
       if (data.profileImages && data.profileImages.length > 0) {
-        const mainImage = data.profileImages.find((img: any) => img.isMain === true);
+        const mainImage = data.profileImages.find(
+          (img: any) => img.isMain === true,
+        );
         const imageUrl = mainImage ? mainImage.url : data.profileImages[0].url;
         setSelectedImage(imageUrl);
       } else if (data.profileImageUrl) {
         setSelectedImage(data.profileImageUrl);
       } else {
-        setSelectedImage('');
+        setSelectedImage("");
       }
 
       // 외모 등급 상태 업데이트
-      setAppearanceGrade(data.appearanceGrade || data.appearanceRank || 'UNKNOWN');
-
+      setAppearanceGrade(
+        data.appearanceGrade || data.appearanceRank || "UNKNOWN",
+      );
     } catch (error: any) {
-      console.error('사용자 상세 정보 새로고침 중 오류:', error);
-      setError(error.message || '사용자 상세 정보를 새로고침하는 중 오류가 발생했습니다.');
+      console.error("사용자 상세 정보 새로고침 중 오류:", error);
+      setError(
+        error.message ||
+          "사용자 상세 정보를 새로고침하는 중 오류가 발생했습니다.",
+      );
     } finally {
       setLoading(false);
     }
@@ -656,7 +736,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleAccountStatusSuccess = async (message: string) => {
     setActionSuccess(message);
     await refreshUserDetail();
-    queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     if (onRefresh) onRefresh();
   };
 
@@ -670,11 +750,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       await AdminService.userAppearance.resetInstagramError(userId);
 
-      setUserDetail(prev => prev ? { ...prev, statusAt: null } : prev);
-      setActionSuccess('인스타그램 오류 상태가 해제되었습니다.');
+      setUserDetail((prev) => (prev ? { ...prev, statusAt: null } : prev));
+      setActionSuccess("인스타그램 오류 상태가 해제되었습니다.");
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      setActionError(error.message ?? '인스타그램 오류 상태 해제 중 오류가 발생했습니다.');
+      setActionError(
+        error.message ?? "인스타그램 오류 상태 해제 중 오류가 발생했습니다.",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -696,17 +778,21 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setActionError(null);
       setDeleteConfirmModalOpen(false);
 
-      await AdminService.userAppearance.deleteUser(userId, sendEmailOnDelete, false);
+      await AdminService.userAppearance.deleteUser(
+        userId,
+        sendEmailOnDelete,
+        false,
+      );
 
       const successMessages = [];
-      successMessages.push('회원이 성공적으로 탈퇴되었습니다.');
-      if (sendEmailOnDelete) successMessages.push('이메일 발송됨');
+      successMessages.push("회원이 성공적으로 탈퇴되었습니다.");
+      if (sendEmailOnDelete) successMessages.push("이메일 발송됨");
 
-      setActionSuccess(successMessages.join(' / '));
+      setActionSuccess(successMessages.join(" / "));
       if (onRefresh) onRefresh();
       onClose();
     } catch (error: any) {
-      setActionError(error.message || '회원 탈퇴 중 오류가 발생했습니다.');
+      setActionError(error.message || "회원 탈퇴 중 오류가 발생했습니다.");
     } finally {
       setActionLoading(false);
     }
@@ -720,13 +806,19 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setActionLoading(true);
       setActionError(null);
 
-      await AdminService.userAppearance.approveUniversityVerification(userDetail.id);
-      setUserDetail(prev => prev ? { ...prev, isUniversityVerified: true } : prev);
+      await AdminService.userAppearance.approveUniversityVerification(
+        userDetail.id,
+      );
+      setUserDetail((prev) =>
+        prev ? { ...prev, isUniversityVerified: true } : prev,
+      );
 
-      setActionSuccess('대학교 인증이 승인되었습니다.');
+      setActionSuccess("대학교 인증이 승인되었습니다.");
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      setActionError(error.message || '대학교 인증 승인 중 오류가 발생했습니다.');
+      setActionError(
+        error.message || "대학교 인증 승인 중 오류가 발생했습니다.",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -736,35 +828,41 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleRevokeApproval = async () => {
     if (!userId) return;
 
-    if (revokeReason === 'OTHER' && !customRevokeReason.trim()) return;
-    if (revokeReason !== 'OTHER' && !revokeReason.trim()) return;
+    if (revokeReason === "OTHER" && !customRevokeReason.trim()) return;
+    if (revokeReason !== "OTHER" && !revokeReason.trim()) return;
 
     try {
       setRevokeActionLoading(true);
       setActionError(null);
 
-      const finalRevokeReason = revokeReason === 'OTHER'
-        ? customRevokeReason.trim()
-        : getRejectionReasonLabel(revokeReason);
+      const finalRevokeReason =
+        revokeReason === "OTHER"
+          ? customRevokeReason.trim()
+          : getRejectionReasonLabel(revokeReason);
 
-      await AdminService.userAppearance.revokeUserApproval(userId, finalRevokeReason);
+      await AdminService.userAppearance.revokeUserApproval(
+        userId,
+        finalRevokeReason,
+      );
 
       // 사용자 상태 업데이트
-      setUserDetail(prev => prev ? { ...prev, approvalStatus: 'REJECTED' } : prev);
+      setUserDetail((prev) =>
+        prev ? { ...prev, approvalStatus: "REJECTED" } : prev,
+      );
 
       // 성공 메시지 표시
-      setActionSuccess('사용자의 승인이 취소되었습니다.');
+      setActionSuccess("사용자의 승인이 취소되었습니다.");
 
       // 모달 닫기 및 상태 초기화
       setRevokeApprovalModalOpen(false);
-      setRevokeReason('');
-      setCustomRevokeReason('');
+      setRevokeReason("");
+      setCustomRevokeReason("");
 
       // 부모 컴포넌트에 변경 알림
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      console.error('승인 취소 중 오류:', error);
-      setActionError(error.message || '승인 취소 중 오류가 발생했습니다.');
+      console.error("승인 취소 중 오류:", error);
+      setActionError(error.message || "승인 취소 중 오류가 발생했습니다.");
     } finally {
       setRevokeActionLoading(false);
     }
@@ -774,8 +872,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleOpenRevokeApprovalModal = () => {
     handleCloseMenu();
     setRevokeApprovalModalOpen(true);
-    setRevokeReason('');
-    setCustomRevokeReason('');
+    setRevokeReason("");
+    setCustomRevokeReason("");
   };
 
   // 비밀번호 초기화 메뉴 클릭
@@ -791,12 +889,18 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     try {
       setResetPasswordLoading(true);
       const result = await AdminService.userAppearance.resetPassword(userId);
-      setTemporaryPassword(result.temporaryPassword || result.data?.temporaryPassword || '');
+      setTemporaryPassword(
+        result.temporaryPassword || result.data?.temporaryPassword || "",
+      );
       setResetPasswordConfirmOpen(false);
       setResetPasswordResultOpen(true);
     } catch (error: any) {
-      console.error('비밀번호 초기화 중 오류:', error);
-      setActionError(error.response?.data?.message || error.message || '비밀번호 초기화에 실패했습니다.');
+      console.error("비밀번호 초기화 중 오류:", error);
+      setActionError(
+        error.response?.data?.message ||
+          error.message ||
+          "비밀번호 초기화에 실패했습니다.",
+      );
       setResetPasswordConfirmOpen(false);
     } finally {
       setResetPasswordLoading(false);
@@ -807,1602 +911,2478 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleCopyTemporaryPassword = () => {
     if (temporaryPassword) {
       navigator.clipboard.writeText(temporaryPassword);
-      setActionSuccess('임시 비밀번호가 복사되었습니다.');
+      setActionSuccess("임시 비밀번호가 복사되었습니다.");
     }
   };
 
   // 비밀번호 결과 다이얼로그 닫기
   const handleResetPasswordResultClose = () => {
     setResetPasswordResultOpen(false);
-    setTemporaryPassword('');
+    setTemporaryPassword("");
   };
 
   const rawUniversity = userDetail?.university as any;
   const currentUniversityName =
     userDetail?.universityDetails?.name ??
     userDetail?.universityName ??
-    (typeof rawUniversity === 'string' ? rawUniversity : rawUniversity?.name) ??
+    (typeof rawUniversity === "string" ? rawUniversity : rawUniversity?.name) ??
     null;
   const currentDepartmentName =
-    userDetail?.universityDetails?.department ?? userDetail?.departmentName ?? null;
-  const currentUniversityGrade = userDetail?.universityDetails?.grade ?? userDetail?.grade ?? null;
+    userDetail?.universityDetails?.department ??
+    userDetail?.departmentName ??
+    null;
+  const currentUniversityGrade =
+    userDetail?.universityDetails?.grade ?? userDetail?.grade ?? null;
   const isUniversityVerified =
     userDetail?.isUniversityVerified ??
-    Boolean(userDetail?.universityDetails?.authentication ?? userDetail?.verifiedAt);
+    Boolean(
+      userDetail?.universityDetails?.authentication ?? userDetail?.verifiedAt,
+    );
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
-        }
+    <Modal.Backdrop
+      isOpen={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose?.();
       }}
+      isDismissable={onClose !== undefined}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
-        <Typography variant="h6" component="div">
-          사용자 상세 정보
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {!loading && userDetail?.gender === 'MALE' && userId && (
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<OpenInNewIcon fontSize="small" />}
-              onClick={handleOpenProfileCuration}
-              disabled={actionLoading}
-            >
-              프로필 큐레이팅
-            </Button>
-          )}
-          {/* 계정 정지 상태 빠른 액션 */}
-          {!loading && userDetail && userId && (
-            <Button
-              variant="outlined"
-              color={isAccountSuspended ? 'primary' : 'warning'}
-              size="small"
-              startIcon={<BlockIcon fontSize="small" />}
-              onClick={() => setAccountStatusModalOpen(true)}
-              disabled={actionLoading}
-            >
-              {isAccountSuspended ? '정지 해제' : '계정 정지'}
-            </Button>
-          )}
-          {/* 블랙리스트 액션 버튼 */}
-          {!loading && userDetail && userId && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25 }}>
-              {isBlacklisted ? (
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  size="small"
-                  startIcon={<RotateCcw size={16} />}
-                  onClick={() => setBlacklistReleaseDialogOpen(true)}
-                  disabled={actionLoading}
-                >
-                  블랙리스트 해제
-                </Button>
-              ) : (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  size="small"
-                  startIcon={<ShieldBan size={16} />}
-                  onClick={() => setBlacklistRegisterModalOpen(true)}
-                  disabled={actionLoading}
-                >
-                  블랙리스트 등록
-                </Button>
-              )}
-              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, maxWidth: 160, textAlign: 'right' }}>
-                영구 차단(블랙리스트). 기본 고지 발송
-              </Typography>
-            </Box>
-          )}
-          {/* 관리 메뉴 버튼 */}
-          {!loading && userDetail && (
-            <Tooltip title="관리 메뉴">
-              <IconButton
-                color="primary"
-                onClick={handleOpenMenu}
-                sx={{ mr: 1 }}
-                disabled={actionLoading}
-              >
-                <MoreVertIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <Divider />
-
-      {/* 관리 메뉴 */}
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={menuOpen}
-        onClose={handleCloseMenu}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-      >
-        <MenuItem onClick={handleOpenEditProfileModal}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>프로필 직접 수정</ListItemText>
-        </MenuItem>
-        <Divider />
-        <MenuItem onClick={handleOpenEmailNotificationModal}>
-          <ListItemIcon>
-            <EmailIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>이메일 발송</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleOpenSmsNotificationModal}>
-          <ListItemIcon>
-            <PhoneIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>SMS 발송</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleResetPasswordClick} disabled={actionLoading}>
-          <ListItemIcon>
-            <LockResetIcon fontSize="small" color="warning" />
-          </ListItemIcon>
-          <ListItemText primary="비밀번호 초기화" primaryTypographyProps={{ color: 'warning.main' }} />
-        </MenuItem>
-        <Divider />
-        <MenuItem onClick={handleOpenAccountStatusModal} disabled={actionLoading}>
-          <ListItemIcon>
-            <BlockIcon fontSize="small" color={isAccountSuspended ? 'primary' : 'warning'} />
-          </ListItemIcon>
-          <ListItemText
-            primary={isAccountSuspended ? '정지 해제' : '계정 정지'}
-            secondary={isAccountSuspended ? '로그인 가능 상태로 복구' : '약관 고지(알림+SMS) 발송'}
-            primaryTypographyProps={{ color: isAccountSuspended ? 'primary.main' : 'warning.main' }}
-          />
-        </MenuItem>
-        <MenuItem onClick={handleDeleteUser} disabled={actionLoading}>
-          <ListItemIcon>
-            <BlockIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText primary="회원 탈퇴" primaryTypographyProps={{ color: 'error' }} />
-        </MenuItem>
-        {showApprovalActions && (
-          <>
-            <Divider />
-            <MenuItem onClick={onApproval} disabled={actionLoading}>
-              <ListItemIcon>
-                <PersonIcon fontSize="small" color="primary" />
-              </ListItemIcon>
-              <ListItemText primary="가입 승인" primaryTypographyProps={{ color: 'primary' }} />
-            </MenuItem>
-            <MenuItem onClick={onRejection} disabled={actionLoading}>
-              <ListItemIcon>
-                <BlockIcon fontSize="small" color="error" />
-              </ListItemIcon>
-              <ListItemText primary="가입 거부" primaryTypographyProps={{ color: 'error' }} />
-            </MenuItem>
-          </>
-        )}
-        {/* 승인 취소 메뉴 - 모든 사용자에게 표시 */}
-        <Divider />
-        <MenuItem onClick={handleOpenRevokeApprovalModal} disabled={actionLoading}>
-          <ListItemIcon>
-            <BlockIcon fontSize="small" color="warning" />
-          </ListItemIcon>
-          <ListItemText primary="승인 취소" primaryTypographyProps={{ color: 'warning.main' }} />
-        </MenuItem>
-      </Menu>
-      {!loading && !error && userDetail && (
-        <Tabs
-          value={activeTab}
-          onChange={(_, v) => setActiveTab(v)}
-          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
-        >
-          <Tab value="profile" label="기본 정보" />
-          <Tab value="blacklist" label="블랙리스트 이력" />
-        </Tabs>
-      )}
-      <DialogContent sx={{ p: 3 }}>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-            <Typography color="error">{error}</Typography>
-          </Box>
-        ) : !userDetail ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-            <Typography>사용자 정보를 찾을 수 없습니다.</Typography>
-          </Box>
-        ) : activeTab === 'blacklist' ? (
-          userId ? (
-            <BlacklistHistoryTimeline
-              userId={userId}
-              onRelease={() => setBlacklistReleaseDialogOpen(true)}
-            />
-          ) : null
-        ) : (
-          <Grid container spacing={3}>
-            {/* 프로필 이미지 섹션 */}
-            <Grid item xs={12} md={5}>
-              <Box sx={{ position: 'relative', mb: 2 }}>
-                {/* 프로필 이미지 표시 */}
-                {userDetail.profileImages && userDetail.profileImages.length > 0 ? (
-                  // 메인 이미지 표시
-                  <Box sx={{ position: 'relative' }}>
-                    <Box
-                      component="img"
-                      src={selectedImage}
-                      alt={userDetail.name}
-                      sx={{
-                        width: '100%',
-                        height: 400,
-                        objectFit: 'contain',
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                        backgroundColor: '#f5f5f5'
-                      }}
-                    />
-                    {/* 메인 이미지 표시 */}
-                    <Chip
-                      label="선택 이미지"
-                      color="primary"
-                      size="small"
-                      sx={{
-                        position: 'absolute',
-                        top: 10,
-                        left: 10,
-                        backgroundColor: 'rgba(25, 118, 210, 0.8)',
-                      }}
-                    />
-                  </Box>
-                ) : userDetail.profileImageUrl ? (
-                  // 단일 profileImageUrl이 있는 경우
-                  <Box
-                    component="img"
-                    src={selectedImage}
-                    alt={userDetail.name}
-                    sx={{
-                      width: '100%',
-                      height: 400,
-                      objectFit: 'contain',
-                      borderRadius: 2,
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      backgroundColor: '#f5f5f5'
-                    }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      width: '100%',
-                      height: 400,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      backgroundColor: '#f5f5f5',
-                      color: '#9e9e9e'
+      <Modal.Container size="md" scroll="inside">
+        <Modal.Dialog>
+          <Modal.Header
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingBottom: 4,
+            }}
+          >
+            <Modal.Heading>
+              <div className={"text-lg font-semibold text-neutral-900"}>
+                사용자 상세 정보
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {!loading && userDetail?.gender === "MALE" && userId && (
+                  <Button
+                    onClick={handleOpenProfileCuration}
+                    variant={"secondary"}
+                    isDisabled={actionLoading}
+                    size={"sm"}
+                    className="rounded-xl"
+                  >
+                    {<ExternalLink />}프로필 큐레이팅
+                  </Button>
+                )}
+                {/* 계정 정지 상태 빠른 액션 */}
+                {!loading && userDetail && userId && (
+                  <Button
+                    onClick={() => setAccountStatusModalOpen(true)}
+                    variant={"secondary"}
+                    isDisabled={actionLoading}
+                    size={"sm"}
+                    className="rounded-xl"
+                  >
+                    {<Ban />}
+                    {isAccountSuspended ? "정지 해제" : "계정 정지"}
+                  </Button>
+                )}
+                {/* 블랙리스트 액션 버튼 */}
+                {!loading && userDetail && userId && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 1,
                     }}
                   >
-                    <PersonIcon sx={{ fontSize: 120 }} />
-                  </Box>
+                    {isBlacklisted ? (
+                      <Button
+                        onClick={() => setBlacklistReleaseDialogOpen(true)}
+                        variant={"secondary"}
+                        isDisabled={actionLoading}
+                        size={"sm"}
+                        className="rounded-xl"
+                      >
+                        {<RotateCcw size={16} />}블랙리스트 해제
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => setBlacklistRegisterModalOpen(true)}
+                        variant={"secondary"}
+                        isDisabled={actionLoading}
+                        size={"sm"}
+                        className="rounded-xl"
+                      >
+                        {<ShieldBan size={16} />}블랙리스트 등록
+                      </Button>
+                    )}
+                    <div
+                      style={{
+                        lineHeight: 1.2,
+                        maxWidth: 160,
+                        textAlign: "right",
+                      }}
+                      className={"text-sm text-neutral-700"}
+                    >
+                      영구 차단(블랙리스트). 기본 고지 발송
+                    </div>
+                  </div>
                 )}
-              </Box>
-
-              {/* 추가 이미지 썸네일 - 실제 데이터 또는 임의 생성 */}
-              {(() => {
-                // 실제 추가 이미지가 있는 경우
-                if (userDetail.profileImages && userDetail.profileImages.length > 1) {
-                  return (
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        전체 이미지 ({userDetail.profileImages.length}장)
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                        {userDetail.profileImages.map((image, index) => (
-                          <Box
-                            key={image.id}
-                            sx={{ position: 'relative' }}
+                {/* 관리 메뉴 버튼 */}
+                {!loading && userDetail && (
+                  <Tooltip>
+                    <Tooltip.Trigger>
+                      <Button
+                        onClick={handleOpenMenu}
+                        style={{ marginRight: 4 }}
+                        variant={"ghost"}
+                        isDisabled={actionLoading}
+                        isIconOnly={true}
+                        size={"md"}
+                        className="rounded-lg"
+                      >
+                        <EllipsisVertical />
+                      </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>{"관리 메뉴"}</Tooltip.Content>
+                  </Tooltip>
+                )}
+                <Button
+                  onClick={onClose}
+                  aria-label="close"
+                  variant={"ghost"}
+                  isDisabled={undefined}
+                  isIconOnly={true}
+                  size={"md"}
+                  className="rounded-lg"
+                >
+                  <X />
+                </Button>
+              </div>
+            </Modal.Heading>
+          </Modal.Header>
+          <Separator></Separator>
+          {/* 관리 메뉴 */}
+          <Modal.Backdrop
+            isOpen={menuOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) handleCloseMenu?.();
+            }}
+            isDismissable={handleCloseMenu !== undefined}
+          >
+            <Modal.Container size="md" scroll="inside">
+              <Modal.Dialog>
+                <Button
+                  onClick={handleOpenEditProfileModal}
+                  variant={"ghost"}
+                  isDisabled={undefined}
+                  className="w-full justify-start"
+                >
+                  <span>
+                    <Edit />
+                  </span>
+                  <span>프로필 직접 수정</span>
+                </Button>
+                <Separator></Separator>
+                <Button
+                  onClick={handleOpenEmailNotificationModal}
+                  variant={"ghost"}
+                  isDisabled={undefined}
+                  className="w-full justify-start"
+                >
+                  <span>
+                    <Mail />
+                  </span>
+                  <span>이메일 발송</span>
+                </Button>
+                <Button
+                  onClick={handleOpenSmsNotificationModal}
+                  variant={"ghost"}
+                  isDisabled={undefined}
+                  className="w-full justify-start"
+                >
+                  <span>
+                    <Phone />
+                  </span>
+                  <span>SMS 발송</span>
+                </Button>
+                <Button
+                  onClick={handleResetPasswordClick}
+                  variant={"ghost"}
+                  isDisabled={actionLoading}
+                  className="w-full justify-start"
+                >
+                  <span>
+                    <KeyRound />
+                  </span>
+                  <span>{"비밀번호 초기화"}</span>
+                </Button>
+                <Separator></Separator>
+                <Button
+                  onClick={handleOpenAccountStatusModal}
+                  variant={"ghost"}
+                  isDisabled={actionLoading}
+                  className="w-full justify-start"
+                >
+                  <span>
+                    <Ban />
+                  </span>
+                  <span>
+                    {isAccountSuspended ? "정지 해제" : "계정 정지"}
+                    <small className="block text-neutral-600">
+                      {isAccountSuspended
+                        ? "로그인 가능 상태로 복구"
+                        : "약관 고지(알림+SMS) 발송"}
+                    </small>
+                  </span>
+                </Button>
+                <Button
+                  onClick={handleDeleteUser}
+                  variant={"ghost"}
+                  isDisabled={actionLoading}
+                  className="w-full justify-start"
+                >
+                  <span>
+                    <Ban />
+                  </span>
+                  <span>{"회원 탈퇴"}</span>
+                </Button>
+                {showApprovalActions && (
+                  <>
+                    <Separator></Separator>
+                    <Button
+                      onClick={onApproval}
+                      variant={"ghost"}
+                      isDisabled={actionLoading}
+                      className="w-full justify-start"
+                    >
+                      <span>
+                        <User />
+                      </span>
+                      <span>{"가입 승인"}</span>
+                    </Button>
+                    <Button
+                      onClick={onRejection}
+                      variant={"ghost"}
+                      isDisabled={actionLoading}
+                      className="w-full justify-start"
+                    >
+                      <span>
+                        <Ban />
+                      </span>
+                      <span>{"가입 거부"}</span>
+                    </Button>
+                  </>
+                )}
+                {/* 승인 취소 메뉴 - 모든 사용자에게 표시 */}
+                <Separator></Separator>
+                <Button
+                  onClick={handleOpenRevokeApprovalModal}
+                  variant={"ghost"}
+                  isDisabled={actionLoading}
+                  className="w-full justify-start"
+                >
+                  <span>
+                    <Ban />
+                  </span>
+                  <span>{"승인 취소"}</span>
+                </Button>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+          {!loading && !error && userDetail && (
+            <Tabs
+              selectedKey={activeTab}
+              onSelectionChange={(key) =>
+                setActiveTab(String(key) as typeof activeTab)
+              }
+            >
+              <Tabs.List aria-label="목록 보기">
+                <Tabs.Tab id={"profile"}>{"기본 정보"}</Tabs.Tab>
+                <Tabs.Tab id={"blacklist"}>{"블랙리스트 이력"}</Tabs.Tab>
+              </Tabs.List>
+            </Tabs>
+          )}
+          <Modal.Body style={{ padding: 12 }}>
+            {loading ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 400,
+                }}
+              >
+                <Spinner aria-label="불러오는 중" size="sm" />
+              </div>
+            ) : error ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 200,
+                }}
+              >
+                <div className={"text-sm text-neutral-700"}>{error}</div>
+              </div>
+            ) : !userDetail ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 200,
+                }}
+              >
+                <div className={"text-sm text-neutral-700"}>
+                  사용자 정보를 찾을 수 없습니다.
+                </div>
+              </div>
+            ) : activeTab === "blacklist" ? (
+              userId ? (
+                <BlacklistHistoryTimeline
+                  userId={userId}
+                  onRelease={() => setBlacklistReleaseDialogOpen(true)}
+                />
+              ) : null
+            ) : (
+              <div className={"grid grid-cols-1 gap-4 md:grid-cols-2"}>
+                {/* 프로필 이미지 섹션 */}
+                <div className={"min-w-0"}>
+                  <div style={{ position: "relative", marginBottom: 8 }}>
+                    {/* 프로필 이미지 표시 */}
+                    {userDetail.profileImages &&
+                    userDetail.profileImages.length > 0 ? (
+                      // 메인 이미지 표시
+                      <div style={{ position: "relative" }}>
+                        <img
+                          src={selectedImage}
+                          alt={userDetail.name}
+                          style={{
+                            width: "100%",
+                            height: 400,
+                            objectFit: "contain",
+                            borderRadius: 8,
+                            backgroundColor: "#f5f5f5",
+                          }}
+                        ></img>
+                        {/* 메인 이미지 표시 */}
+                        <Chip
+                          style={{
+                            position: "absolute",
+                            top: 10,
+                            left: 10,
+                            backgroundColor: "rgba(25, 118, 210, 0.8)",
+                          }}
+                          size={"sm"}
+                          variant={"soft"}
+                        >
+                          {"선택 이미지"}
+                        </Chip>
+                      </div>
+                    ) : userDetail.profileImageUrl ? (
+                      // 단일 profileImageUrl이 있는 경우
+                      <img
+                        src={selectedImage}
+                        alt={userDetail.name}
+                        style={{
+                          width: "100%",
+                          height: 400,
+                          objectFit: "contain",
+                          borderRadius: 8,
+                          backgroundColor: "#f5f5f5",
+                        }}
+                      ></img>
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: 400,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: 8,
+                          backgroundColor: "#f5f5f5",
+                          color: "#9e9e9e",
+                        }}
+                      >
+                        <User />
+                      </div>
+                    )}
+                  </div>
+                  {/* 추가 이미지 썸네일 - 실제 데이터 또는 임의 생성 */}
+                  {(() => {
+                    // 실제 추가 이미지가 있는 경우
+                    if (
+                      userDetail.profileImages &&
+                      userDetail.profileImages.length > 1
+                    ) {
+                      return (
+                        <div>
+                          <div
+                            style={{ marginBottom: 4 }}
+                            className={"text-sm text-neutral-700"}
                           >
-                            <Box
-                              component="img"
-                              onClick={() => setSelectedImage(image.url)}
-                              src={image.url}
-                              alt={`${userDetail.name} 프로필 이미지 ${index + 2}`}
-                              sx={{
-                                width: 100,
-                                height: 100,
-                                objectFit: 'cover',
-                                borderRadius: 1,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                  opacity: 0.8,
-                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
-                                }
-                              }}
-                            />
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                backgroundColor: 'rgba(0,0,0,0.6)',
-                                color: 'white',
-                                textAlign: 'center',
-                                padding: '2px 0'
+                            전체 이미지 ({userDetail.profileImages.length}장)
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 4,
+                              flexWrap: "wrap",
+                              marginBottom: 8,
+                            }}
+                          >
+                            {userDetail.profileImages.map((image, index) => (
+                              <div
+                                key={image.id}
+                                style={{ position: "relative" }}
+                              >
+                                <HeroActionButton
+                                  variant="ghost"
+                                  className="h-auto min-w-0 p-0"
+                                  onClick={() => setSelectedImage(image.url)}
+                                  aria-label={`${userDetail.name} 프로필 이미지 ${index + 2}`}
+                                >
+                                  <img
+                                    src={image.url}
+                                    alt={`${userDetail.name} 프로필 이미지 ${index + 2}`}
+                                    style={{
+                                      width: 100,
+                                      height: 100,
+                                      objectFit: "cover",
+                                      borderRadius: 4,
+                                      cursor: "pointer",
+                                    }}
+                                  ></img>
+                                </HeroActionButton>
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    backgroundColor: "rgba(0,0,0,0.6)",
+                                    color: "white",
+                                    textAlign: "center",
+                                    padding: "2px 0",
+                                  }}
+                                  className={"text-sm text-neutral-700"}
+                                >
+                                  {index + 1}번째
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      return null;
+                    }
+                  })()}
+                </div>
+                {/* 사용자 정보 섹션 */}
+                <div className={"min-w-0"}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ marginBottom: 4 }}>
+                      {/* 이름과 외모 등급을 같은 줄에 표시 */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          marginBottom: 4,
+                        }}
+                      >
+                        <div
+                          style={{ fontWeight: "bold", marginRight: 8 }}
+                          className={"text-lg font-semibold text-neutral-900"}
+                        >
+                          {userDetail.name}
+                        </div>
+                        {/* 외모 등급 토글 버튼 */}
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <div
+                            style={{ marginRight: 4, fontWeight: "bold" }}
+                            className={"text-sm text-neutral-700"}
+                          >
+                            외모 등급:
+                          </div>
+                          <div
+                            aria-label="외모 등급"
+                            className="flex flex-wrap gap-2"
+                          >
+                            <Button
+                              variant={
+                                appearanceGrade === "S"
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                              isDisabled={savingGrade || actionLoading}
+                              onPress={() =>
+                                handleAppearanceGradeChange(null, "S")
+                              }
+                              aria-label="S등급"
+                              style={{
+                                backgroundColor:
+                                  appearanceGrade === "S"
+                                    ? "#8E44AD"
+                                    : "transparent",
+                                color:
+                                  appearanceGrade === "S" ? "white" : "#8E44AD",
+                                fontWeight: "bold",
+                                minWidth: "36px",
+                                paddingLeft: 4,
+                                paddingRight: 4,
                               }}
                             >
-                              {index + 1}번째
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    </Box>
-                  );
-                }
-                else {
-                  return null;
-                }
-              })()}
-            </Grid>
-
-            {/* 사용자 정보 섹션 */}
-            <Grid item xs={12} md={7}>
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ mb: 1 }}>
-                  {/* 이름과 외모 등급을 같은 줄에 표시 */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', mr: 2 }}>
-                      {userDetail.name}
-                    </Typography>
-
-                    {/* 외모 등급 토글 버튼 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Typography variant="body2" sx={{ mr: 1, fontWeight: 'bold' }}>
-                        외모 등급:
-                      </Typography>
-                      <ToggleButtonGroup
-                        value={appearanceGrade}
-                        exclusive
-                        onChange={handleAppearanceGradeChange}
-                        size="small"
-                        disabled={savingGrade || actionLoading}
-                        aria-label="외모 등급"
-                      >
-                        <ToggleButton value="S" aria-label="S등급" sx={{
-                          bgcolor: appearanceGrade === 'S' ? '#8E44AD' : 'transparent',
-                          color: appearanceGrade === 'S' ? 'white' : '#8E44AD',
-                          '&:hover': { bgcolor: appearanceGrade === 'S' ? '#8E44AD' : 'rgba(142, 68, 173, 0.1)' },
-                          fontWeight: 'bold',
-                          minWidth: '36px',
-                          px: 1
-                        }}>
-                          S
-                        </ToggleButton>
-                        <ToggleButton value="A" aria-label="A등급" sx={{
-                          bgcolor: appearanceGrade === 'A' ? '#3498DB' : 'transparent',
-                          color: appearanceGrade === 'A' ? 'white' : '#3498DB',
-                          '&:hover': { bgcolor: appearanceGrade === 'A' ? '#3498DB' : 'rgba(52, 152, 219, 0.1)' },
-                          fontWeight: 'bold',
-                          minWidth: '36px',
-                          px: 1
-                        }}>
-                          A
-                        </ToggleButton>
-                        <ToggleButton value="B" aria-label="B등급" sx={{
-                          bgcolor: appearanceGrade === 'B' ? '#2ECC71' : 'transparent',
-                          color: appearanceGrade === 'B' ? 'white' : '#2ECC71',
-                          '&:hover': { bgcolor: appearanceGrade === 'B' ? '#2ECC71' : 'rgba(46, 204, 113, 0.1)' },
-                          fontWeight: 'bold',
-                          minWidth: '36px',
-                          px: 1
-                        }}>
-                          B
-                        </ToggleButton>
-                        <ToggleButton value="C" aria-label="C등급" sx={{
-                          bgcolor: appearanceGrade === 'C' ? '#F39C12' : 'transparent',
-                          color: appearanceGrade === 'C' ? 'white' : '#F39C12',
-                          '&:hover': { bgcolor: appearanceGrade === 'C' ? '#F39C12' : 'rgba(243, 156, 18, 0.1)' },
-                          fontWeight: 'bold',
-                          minWidth: '36px',
-                          px: 1
-                        }}>
-                          C
-                        </ToggleButton>
-                        <ToggleButton value="UNKNOWN" aria-label="미분류" sx={{
-                          bgcolor: appearanceGrade === 'UNKNOWN' ? '#95A5A6' : 'transparent',
-                          color: appearanceGrade === 'UNKNOWN' ? 'white' : '#95A5A6',
-                          '&:hover': { bgcolor: appearanceGrade === 'UNKNOWN' ? '#95A5A6' : 'rgba(149, 165, 166, 0.1)' },
-                          fontWeight: 'bold',
-                          minWidth: '36px',
-                          px: 1
-                        }}>
-                          미분류
-                        </ToggleButton>
-                      </ToggleButtonGroup>
-                      {savingGrade && (
-                        <CircularProgress size={16} sx={{ ml: 1 }} />
-                      )}
-                    </Box>
-                  </Box>
-
-                  {/* 나이, 성별 및 계정 상태 표시 */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                    <Chip
-                      label={`${userDetail.age}세 / ${GENDER_LABELS[userDetail.gender]}`}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-
-                    {userDetail.birthday && (
-                      <Chip
-                        label={`생년월일: ${formatDateWithoutTimezoneConversion(userDetail.birthday)}`}
-                        size="small"
-                        color="info"
-                        variant="outlined"
-                      />
-                    )}
-
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => setBirthdayModalOpen(true)}
-                      disabled={actionLoading}
-                    >
-                      나이 변경
-                    </Button>
-
-                    {userDetail.signupRoute && (
-                      <Chip
-                        label={`가입: ${SIGNUP_ROUTE_LABELS[userDetail.signupRoute] || userDetail.signupRoute}`}
-                        size="small"
-                        color="secondary"
-                        variant="outlined"
-                      />
-                    )}
-
-                    {userDetail.accountStatus === 'INACTIVE' && (
-                      <Chip
-                        label="비활성화"
-                        size="small"
-                        color="error"
-                      />
-                    )}
-                    {isAccountSuspended && (
-                      <Chip
-                        label={
-                          userDetail.suspendedUntil
-                            ? `정지됨 (~${formatDateWithoutTimezoneConversion(userDetail.suspendedUntil)})`
-                            : '정지됨'
-                        }
-                        size="small"
-                        color="warning"
-                        onClick={() => setAccountStatusModalOpen(true)}
-                        sx={{ cursor: 'pointer' }}
-                      />
-                    )}
-                  </Box>
-                </Box>
-
-                {/* 대학 정보 */}
-                {(currentUniversityName || currentDepartmentName) && (
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <SchoolIcon sx={{ mr: 1, color: 'primary.main' }} />
-                      <Box sx={{ flex: 1 }}>
-                        {userDetail.universityDetails ? (
-                          <>
-                            <Typography variant="body1">
-                              {userDetail.universityDetails.name}{' '}
-                              {userDetail.universityDetails.authentication && (
-                                <span style={{ color: '#2ECC71', marginLeft: '4px' }}>✓</span>
-                              )}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {userDetail.universityDetails.department} {userDetail.universityDetails.grade}학년
-                              {userDetail.universityDetails.studentNumber && ` (${userDetail.universityDetails.studentNumber})`}
-                            </Typography>
-                          </>
-                        ) : (
-                          <>
-                            <Typography variant="body1">{currentUniversityName}</Typography>
-                            {currentDepartmentName && (
-                              <Typography variant="body2" color="text.secondary">
-                                {currentDepartmentName}
-                                {currentUniversityGrade && ` ${currentUniversityGrade}학년`}
-                              </Typography>
-                            )}
-                          </>
-                        )}
-                      </Box>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={handleOpenUniversityTransferModal}
-                        disabled={actionLoading}
-                      >
-                        변경
-                      </Button>
-                    </Box>
-
-                    {/* 대학교 인증 상태 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 4 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        인증 상태:
-                      </Typography>
-                      {isUniversityVerified ? (
-                        <Chip
-                          label="✓ 인증됨"
-                          size="small"
-                          sx={{
-                            bgcolor: '#e8f5e8',
-                            color: '#2e7d32',
-                            fontWeight: 'medium'
-                          }}
-                        />
-                      ) : (
-                        <>
-                          <Chip
-                            label="미인증"
-                            size="small"
-                            sx={{
-                              bgcolor: '#fff3cd',
-                              color: '#856404',
-                              fontWeight: 'medium'
-                            }}
-                          />
-                          <Button
-                            size="small"
-                            variant="contained"
-                            sx={{
-                              minWidth: 'auto',
-                              px: 2,
-                              py: 0.5,
-                              fontSize: '0.75rem'
-                            }}
-                            onClick={() => {
-                              if (window.confirm(`${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`)) {
-                                handleUniversityApproval();
+                              S
+                            </Button>
+                            <Button
+                              variant={
+                                appearanceGrade === "A"
+                                  ? "primary"
+                                  : "secondary"
                               }
-                            }}
+                              isDisabled={savingGrade || actionLoading}
+                              onPress={() =>
+                                handleAppearanceGradeChange(null, "A")
+                              }
+                              aria-label="A등급"
+                              style={{
+                                backgroundColor:
+                                  appearanceGrade === "A"
+                                    ? "#3498DB"
+                                    : "transparent",
+                                color:
+                                  appearanceGrade === "A" ? "white" : "#3498DB",
+                                fontWeight: "bold",
+                                minWidth: "36px",
+                                paddingLeft: 4,
+                                paddingRight: 4,
+                              }}
+                            >
+                              A
+                            </Button>
+                            <Button
+                              variant={
+                                appearanceGrade === "B"
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                              isDisabled={savingGrade || actionLoading}
+                              onPress={() =>
+                                handleAppearanceGradeChange(null, "B")
+                              }
+                              aria-label="B등급"
+                              style={{
+                                backgroundColor:
+                                  appearanceGrade === "B"
+                                    ? "#2ECC71"
+                                    : "transparent",
+                                color:
+                                  appearanceGrade === "B" ? "white" : "#2ECC71",
+                                fontWeight: "bold",
+                                minWidth: "36px",
+                                paddingLeft: 4,
+                                paddingRight: 4,
+                              }}
+                            >
+                              B
+                            </Button>
+                            <Button
+                              variant={
+                                appearanceGrade === "C"
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                              isDisabled={savingGrade || actionLoading}
+                              onPress={() =>
+                                handleAppearanceGradeChange(null, "C")
+                              }
+                              aria-label="C등급"
+                              style={{
+                                backgroundColor:
+                                  appearanceGrade === "C"
+                                    ? "#F39C12"
+                                    : "transparent",
+                                color:
+                                  appearanceGrade === "C" ? "white" : "#F39C12",
+                                fontWeight: "bold",
+                                minWidth: "36px",
+                                paddingLeft: 4,
+                                paddingRight: 4,
+                              }}
+                            >
+                              C
+                            </Button>
+                            <Button
+                              variant={
+                                appearanceGrade === "UNKNOWN"
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                              isDisabled={savingGrade || actionLoading}
+                              onPress={() =>
+                                handleAppearanceGradeChange(null, "UNKNOWN")
+                              }
+                              aria-label="미분류"
+                              style={{
+                                backgroundColor:
+                                  appearanceGrade === "UNKNOWN"
+                                    ? "#95A5A6"
+                                    : "transparent",
+                                color:
+                                  appearanceGrade === "UNKNOWN"
+                                    ? "white"
+                                    : "#95A5A6",
+                                fontWeight: "bold",
+                                minWidth: "36px",
+                                paddingLeft: 4,
+                                paddingRight: 4,
+                              }}
+                            >
+                              미분류
+                            </Button>
+                          </div>
+                          {savingGrade && (
+                            <Spinner aria-label="불러오는 중" size="sm" />
+                          )}
+                        </div>
+                      </div>
+                      {/* 나이, 성별 및 계정 상태 표시 */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 4,
+                        }}
+                      >
+                        <Chip
+                          size={"sm"}
+                          variant={"soft"}
+                        >{`${userDetail.age}세 / ${GENDER_LABELS[userDetail.gender]}`}</Chip>
+                        {userDetail.birthday && (
+                          <Chip
+                            size={"sm"}
+                            variant={"soft"}
+                          >{`생년월일: ${formatDateWithoutTimezoneConversion(userDetail.birthday)}`}</Chip>
+                        )}
+                        <Button
+                          onClick={() => setBirthdayModalOpen(true)}
+                          variant={"secondary"}
+                          isDisabled={actionLoading}
+                          size={"sm"}
+                          className="rounded-xl"
+                        >
+                          나이 변경
+                        </Button>
+                        {userDetail.signupRoute && (
+                          <Chip
+                            size={"sm"}
+                            variant={"soft"}
+                          >{`가입: ${SIGNUP_ROUTE_LABELS[userDetail.signupRoute] || userDetail.signupRoute}`}</Chip>
+                        )}
+                        {userDetail.accountStatus === "INACTIVE" && (
+                          <Chip size={"sm"} variant={"soft"}>
+                            {"비활성화"}
+                          </Chip>
+                        )}
+                        {isAccountSuspended && (
+                          <HeroActionButton
+                            variant="ghost"
+                            className="h-auto min-w-0 p-0"
+                            onClick={() => setAccountStatusModalOpen(true)}
                           >
-                            인증 승인
-                          </Button>
-                        </>
-                      )}
-                    </Box>
-                  </Box>
-                )}
-
-                {/* 연락처 정보 */}
-                {userDetail.phoneNumber && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <PhoneIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    <Typography variant="body1">{userDetail.phoneNumber}</Typography>
-                  </Box>
-                )}
-
-                {/* 이메일 정보 */}
-                {userDetail.email && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <EmailIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    <Typography variant="body1">{userDetail.email}</Typography>
-                  </Box>
-                )}
-
-                {/* 인스타그램 정보 */}
-                {(userDetail.instagramId || userDetail.instagramUrl) && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <InstagramIcon sx={{ mr: 1, color: '#E1306C' }} />
-                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Link
-                          href={sanitizeUrl(userDetail.instagramUrl, { allowRelative: false }) ?? `https://instagram.com/${userDetail.instagramId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            textDecoration: 'none',
-                            color: 'primary.main',
-                            '&:hover': { textDecoration: 'underline' }
+                            <Chip
+                              style={{ cursor: "pointer" }}
+                              size={"sm"}
+                              variant={"soft"}
+                            >
+                              {userDetail.suspendedUntil
+                                ? `정지됨 (~${formatDateWithoutTimezoneConversion(userDetail.suspendedUntil)})`
+                                : "정지됨"}
+                            </Chip>
+                          </HeroActionButton>
+                        )}
+                      </div>
+                    </div>
+                    {/* 대학 정보 */}
+                    {(currentUniversityName || currentDepartmentName) && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: 4,
                           }}
                         >
-                          {userDetail.instagramId || userDetail.instagramUrl?.split('/').pop()}
-                          <OpenInNewIcon sx={{ ml: 0.5, fontSize: 16 }} />
-                        </Link>
-
-                        {/* 인스타그램 오류 상태 표시 */}
-                        {userDetail.statusAt === 'instagramerror' && (
-                          <Chip
-                            label="인스타그램 오류"
-                            size="small"
-                            color="error"
-                            sx={{ ml: 1 }}
-                          />
-                        )}
-                      </Box>
-
-                      {/* 인스타그램 오류 설정/해제 버튼 */}
-                      <Box sx={{ mt: 1 }}>
-                        {userDetail.statusAt === null || userDetail.statusAt !== 'instagramerror' ? (
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            onClick={handleSetInstagramError}
-                            disabled={actionLoading}
-                            sx={{ fontSize: '0.75rem' }}
-                          >
-                            인스타그램 오류 설정
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outlined"
-                            color="success"
-                            size="small"
-                            onClick={handleResetInstagramError}
-                            disabled={actionLoading}
-                            sx={{ fontSize: '0.75rem' }}
-                          >
-                            인스타그램 오류 해제
-                          </Button>
-                        )}
-                      </Box>
-                    </Box>
-                  </Box>
-                )}
-
-                {/* 자기소개 정보 */}
-                {(userDetail.title || userDetail.introduction) && (
-                  <Box sx={{ mt: 3, mb: 3 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      자기소개 정보
-                    </Typography>
-                    <Divider sx={{ mb: 2 }} />
-
-                    {userDetail.title && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                          한 줄 소개
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                          {userDetail.title}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {userDetail.introduction && (
-                      <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                          자기소개
-                        </Typography>
-                        <Typography variant="body1">
-                          {userDetail.introduction}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                )}
-
-                {/* 날짜 정보 */}
-                <Box sx={{ mt: 3, mb: 3 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    활동 정보
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {userDetail.createdAt && (
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CalendarTodayIcon sx={{ mr: 1, fontSize: 18, color: 'text.secondary' }} />
-                        <Typography variant="body2">
-                          가입일: {formatDateWithoutTimezoneConversion(userDetail.createdAt)}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {userDetail.lastActiveAt && (
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <AccessTimeIcon sx={{ mr: 1, fontSize: 18, color: 'text.secondary' }} />
-                        <Typography variant="body2">
-                          마지막 활동: {formatDateTimeWithoutTimezoneConversion(userDetail.lastActiveAt)}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </Box>
-
-                {userId && (
-                  <ReferralPostSignupSection
-                    userId={userId}
-                    createdAt={userDetail.createdAt}
-                    onCompleted={onRefresh}
-                  />
-                )}
-
-                {/* 추가 정보 섹션 */}
-                <Box sx={{ mt: 4 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    시스템 정보
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <Typography variant="body2" color="text.secondary">
-                        사용자 ID
-                      </Typography>
-                      <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
-                        {userDetail.id || userId || '-'}
-                      </Typography>
-                    </Grid>
-
-                    {/* 재매칭 티켓 정보 */}
-                    {SHOW_REMATCH_TICKET_ADMIN && (
-                    <Grid item xs={12}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <ConfirmationNumberIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          재매칭 티켓
-                        </Typography>
-                      </Box>
-                      {ticketLoading ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CircularProgress size={16} />
-                          <Typography variant="body2" color="text.secondary">
-                            조회 중...
-                          </Typography>
-                        </Box>
-                      ) : ticketError ? (
-                        <Typography variant="body2" color="error">
-                          {ticketError}
-                        </Typography>
-                      ) : ticketInfo ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip
-                              label={`${ticketInfo.stats?.available || 0}장`}
-                              color={ticketInfo.stats?.available > 0 ? 'primary' : 'default'}
-                              size="small"
-                              variant="outlined"
-                              icon={<ConfirmationNumberIcon />}
-                            />
-                            {ticketInfo.stats?.available > 0 && (
-                              <Typography variant="body2" color="text.secondary">
-                                보유 중
-                              </Typography>
+                          <GraduationCap />
+                          <div style={{ flex: 1 }}>
+                            {userDetail.universityDetails ? (
+                              <>
+                                <div className={"text-sm text-neutral-700"}>
+                                  {userDetail.universityDetails.name}{" "}
+                                  {userDetail.universityDetails
+                                    .authentication && (
+                                    <span
+                                      style={{
+                                        color: "#2ECC71",
+                                        marginLeft: "4px",
+                                      }}
+                                    >
+                                      ✓
+                                    </span>
+                                  )}
+                                </div>
+                                <div className={"text-sm text-neutral-700"}>
+                                  {userDetail.universityDetails.department}
+                                  {userDetail.universityDetails.grade}학년
+                                  {userDetail.universityDetails.studentNumber &&
+                                    ` (${userDetail.universityDetails.studentNumber})`}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className={"text-sm text-neutral-700"}>
+                                  {currentUniversityName}
+                                </div>
+                                {currentDepartmentName && (
+                                  <div className={"text-sm text-neutral-700"}>
+                                    {currentDepartmentName}
+                                    {currentUniversityGrade &&
+                                      ` ${currentUniversityGrade}학년`}
+                                  </div>
+                                )}
+                              </>
                             )}
-                          </Box>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="primary"
-                              onClick={() => setTicketAddModalOpen(true)}
-                              sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                          </div>
+                          <Button
+                            onClick={handleOpenUniversityTransferModal}
+                            variant={"secondary"}
+                            isDisabled={actionLoading}
+                            size={"sm"}
+                            className="rounded-xl"
+                          >
+                            변경
+                          </Button>
+                        </div>
+                        {/* 대학교 인증 상태 */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            marginLeft: 16,
+                          }}
+                        >
+                          <div className={"text-sm text-neutral-700"}>
+                            인증 상태:
+                          </div>
+                          {isUniversityVerified ? (
+                            <Chip
+                              style={{
+                                backgroundColor: "#e8f5e8",
+                                color: "#2e7d32",
+                                fontWeight: "medium",
+                              }}
+                              size={"sm"}
+                              variant={"soft"}
                             >
-                              추가
-                            </Button>
-                            {ticketInfo.stats?.available > 0 && (
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                color="error"
-                                onClick={() => setTicketRemoveModalOpen(true)}
-                                sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                              {"✓ 인증됨"}
+                            </Chip>
+                          ) : (
+                            <>
+                              <Chip
+                                style={{
+                                  backgroundColor: "#fff3cd",
+                                  color: "#856404",
+                                  fontWeight: "medium",
+                                }}
+                                size={"sm"}
+                                variant={"soft"}
                               >
-                                제거
+                                {"미인증"}
+                              </Chip>
+                              <Button
+                                style={{
+                                  minWidth: "auto",
+                                  paddingLeft: 8,
+                                  paddingRight: 8,
+                                  paddingTop: 2,
+                                  paddingBottom: 2,
+                                  fontSize: "0.75rem",
+                                }}
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`,
+                                    )
+                                  ) {
+                                    handleUniversityApproval();
+                                  }
+                                }}
+                                variant={"primary"}
+                                isDisabled={undefined}
+                                size={"sm"}
+                                className="rounded-xl"
+                              >
+                                인증 승인
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {/* 연락처 정보 */}
+                    {userDetail.phoneNumber && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Phone />
+                        <div className={"text-sm text-neutral-700"}>
+                          {userDetail.phoneNumber}
+                        </div>
+                      </div>
+                    )}
+                    {/* 이메일 정보 */}
+                    {userDetail.email && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Mail />
+                        <div className={"text-sm text-neutral-700"}>
+                          {userDetail.email}
+                        </div>
+                      </div>
+                    )}
+                    {/* 인스타그램 정보 */}
+                    {(userDetail.instagramId || userDetail.instagramUrl) && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Instagram />
+                        <div
+                          style={{ display: "flex", flexDirection: "column" }}
+                        >
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            <a
+                              href={
+                                sanitizeUrl(userDetail.instagramUrl, {
+                                  allowRelative: false,
+                                }) ??
+                                `https://instagram.com/${userDetail.instagramId}`
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                textDecoration: "none",
+                                color: "#7A4AE2",
+                              }}
+                            >
+                              {userDetail.instagramId ||
+                                userDetail.instagramUrl?.split("/").pop()}
+                              <ExternalLink />
+                            </a>
+                            {/* 인스타그램 오류 상태 표시 */}
+                            {userDetail.statusAt === "instagramerror" && (
+                              <Chip
+                                style={{ marginLeft: 4 }}
+                                size={"sm"}
+                                variant={"soft"}
+                              >
+                                {"인스타그램 오류"}
+                              </Chip>
+                            )}
+                          </div>
+                          {/* 인스타그램 오류 설정/해제 버튼 */}
+                          <div style={{ marginTop: 4 }}>
+                            {userDetail.statusAt === null ||
+                            userDetail.statusAt !== "instagramerror" ? (
+                              <Button
+                                onClick={handleSetInstagramError}
+                                style={{ fontSize: "0.75rem" }}
+                                variant={"secondary"}
+                                isDisabled={actionLoading}
+                                size={"sm"}
+                                className="rounded-xl"
+                              >
+                                인스타그램 오류 설정
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={handleResetInstagramError}
+                                style={{ fontSize: "0.75rem" }}
+                                variant={"secondary"}
+                                isDisabled={actionLoading}
+                                size={"sm"}
+                                className="rounded-xl"
+                              >
+                                인스타그램 오류 해제
                               </Button>
                             )}
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip
-                              label="0장"
-                              color="default"
-                              size="small"
-                              variant="outlined"
-                              icon={<ConfirmationNumberIcon />}
-                            />
-                            <Typography variant="body2" color="text.secondary">
-                              보유 없음
-                            </Typography>
-                          </Box>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                            onClick={() => setTicketAddModalOpen(true)}
-                            sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
-                          >
-                            추가
-                          </Button>
-                        </Box>
-                      )}
-                    </Grid>
+                          </div>
+                        </div>
+                      </div>
                     )}
-
-                    {/* 구슬 정보 */}
-                    <Grid item xs={12}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <DiamondIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          구슬
-                        </Typography>
-                      </Box>
-                      {gemsLoading ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CircularProgress size={16} />
-                          <Typography variant="body2" color="text.secondary">
-                            조회 중...
-                          </Typography>
-                        </Box>
-                      ) : gemsError ? (
-                        <Typography variant="body2" color="error">
-                          {gemsError}
-                        </Typography>
-                      ) : gemsInfo ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip
-                              label={`${gemsInfo.gemBalance || 0}개`}
-                              color={gemsInfo.gemBalance > 0 ? 'primary' : 'default'}
-                              size="small"
-                              variant="outlined"
-                              icon={<DiamondIcon />}
-                            />
-                            {gemsInfo.gemBalance > 0 && (
-                              <Typography variant="body2" color="text.secondary">
-                                보유 중
-                              </Typography>
-                            )}
-                          </Box>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="primary"
-                              onClick={() => setGemsAddModalOpen(true)}
-                              sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                    {/* 자기소개 정보 */}
+                    {(userDetail.title || userDetail.introduction) && (
+                      <div style={{ marginTop: 12, marginBottom: 12 }}>
+                        <div
+                          style={{ fontWeight: "bold", marginBottom: 4 }}
+                          className={"text-sm text-neutral-700"}
+                        >
+                          자기소개 정보
+                        </div>
+                        <Separator style={{ marginBottom: 8 }}></Separator>
+                        {userDetail.title && (
+                          <div style={{ marginBottom: 8 }}>
+                            <div
+                              style={{ marginBottom: 2 }}
+                              className={"text-sm text-neutral-700"}
                             >
-                              추가
-                            </Button>
-                            {gemsInfo.gemBalance > 0 && (
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                color="error"
-                                onClick={() => setGemsRemoveModalOpen(true)}
-                                sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
-                              >
-                                제거
-                              </Button>
-                            )}
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip
-                              label="0개"
-                              color="default"
-                              size="small"
-                              variant="outlined"
-                              icon={<DiamondIcon />}
-                            />
-                            <Typography variant="body2" color="text.secondary">
-                              보유 없음
-                            </Typography>
-                          </Box>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                            onClick={() => setGemsAddModalOpen(true)}
-                            sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
-                          >
-                            추가
-                          </Button>
-                        </Box>
-                      )}
-                    </Grid>
-
-                    {/* 선호도 정보 표시 */}
-                    {userDetail.preferences && (
-                      <Grid item xs={12}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                          선호도 정보
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-
-                        {/* 프로필 정보 */}
-                        {userDetail.preferences.self && Array.isArray(userDetail.preferences.self) && userDetail.preferences.self.length > 0 && (
-                          <Box sx={{ mb: 4 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'secondary.main', mb: 2 }}>
-                              프로필 정보
-                            </Typography>
-                            <Box>
-                              {userDetail.preferences.self.map((pref: any, index: number) => (
-                                <Box key={index} sx={{ mb: 3 }}>
-                                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
-                                    {pref.typeName}
-                                  </Typography>
-                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 0.5 }}>
-                                    {pref.selectedOptions?.map((option: any, optIndex: number) => (
-                                      <Chip
-                                        key={optIndex}
-                                        label={option.displayName}
-                                        size="small"
-                                        color="secondary"
-                                        variant="outlined"
-                                        sx={{ fontWeight: 'medium' }}
-                                      />
-                                    ))}
-                                  </Box>
-                                </Box>
-                              ))}
-                            </Box>
-                          </Box>
+                              한 줄 소개
+                            </div>
+                            <div
+                              style={{ fontWeight: "medium" }}
+                              className={"text-sm text-neutral-700"}
+                            >
+                              {userDetail.title}
+                            </div>
+                          </div>
                         )}
-
-                        {/* 이상형 정보 */}
-                        {userDetail.preferences.partner && Array.isArray(userDetail.preferences.partner) && userDetail.preferences.partner.length > 0 && (
-                          <Box>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 2 }}>
-                              이상형 정보
-                            </Typography>
-                            <Box>
-                              {userDetail.preferences.partner.map((pref: any, index: number) => (
-                                <Box key={index} sx={{ mb: 3 }}>
-                                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
-                                    {pref.typeName}
-                                  </Typography>
-                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 0.5 }}>
-                                    {pref.selectedOptions?.map((option: any, optIndex: number) => (
-                                      <Chip
-                                        key={optIndex}
-                                        label={option.displayName}
-                                        size="small"
-                                        color="primary"
-                                        variant="outlined"
-                                        sx={{ fontWeight: 'medium' }}
-                                      />
-                                    ))}
-                                  </Box>
-                                </Box>
-                              ))}
-                            </Box>
-                          </Box>
+                        {userDetail.introduction && (
+                          <div>
+                            <div
+                              style={{ marginBottom: 2 }}
+                              className={"text-sm text-neutral-700"}
+                            >
+                              자기소개
+                            </div>
+                            <div className={"text-sm text-neutral-700"}>
+                              {userDetail.introduction}
+                            </div>
+                          </div>
                         )}
-
-                        {/* 선호도 정보가 없는 경우 */}
-                        {(!userDetail.preferences.self || userDetail.preferences.self.length === 0) &&
-                         (!userDetail.preferences.partner || userDetail.preferences.partner.length === 0) && (
-                          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                            등록된 선호도 정보가 없습니다.
-                          </Typography>
-                        )}
-                      </Grid>
+                      </div>
                     )}
+                    {/* 날짜 정보 */}
+                    <div style={{ marginTop: 12, marginBottom: 12 }}>
+                      <div
+                        style={{ fontWeight: "bold", marginBottom: 4 }}
+                        className={"text-sm text-neutral-700"}
+                      >
+                        활동 정보
+                      </div>
+                      <Separator style={{ marginBottom: 8 }}></Separator>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                        }}
+                      >
+                        {userDetail.createdAt && (
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            <Calendar />
+                            <div className={"text-sm text-neutral-700"}>
+                              가입일:{" "}
+                              {formatDateWithoutTimezoneConversion(
+                                userDetail.createdAt,
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {userDetail.lastActiveAt && (
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            <Clock />
+                            <div className={"text-sm text-neutral-700"}>
+                              마지막 활동:{" "}
+                              {formatDateTimeWithoutTimezoneConversion(
+                                userDetail.lastActiveAt,
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {userId && (
+                      <ReferralPostSignupSection
+                        userId={userId}
+                        createdAt={userDetail.createdAt}
+                        onCompleted={onRefresh}
+                      />
+                    )}
+                    {/* 추가 정보 섹션 */}
+                    <div style={{ marginTop: 16 }}>
+                      <div
+                        style={{ fontWeight: "bold", marginBottom: 4 }}
+                        className={"text-sm text-neutral-700"}
+                      >
+                        시스템 정보
+                      </div>
+                      <Separator style={{ marginBottom: 8 }}></Separator>
+                      <div className={"grid grid-cols-1 gap-4 md:grid-cols-2"}>
+                        <div className={"min-w-0"}>
+                          <div className={"text-sm text-neutral-700"}>
+                            사용자 ID
+                          </div>
+                          <div
+                            style={{ wordBreak: "break-all" }}
+                            className={"text-sm text-neutral-700"}
+                          >
+                            {userDetail.id || userId || "-"}
+                          </div>
+                        </div>
+                        {/* 재매칭 티켓 정보 */}
+                        {SHOW_REMATCH_TICKET_ADMIN && (
+                          <div className={"min-w-0"}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                marginBottom: 2,
+                              }}
+                            >
+                              <Ticket />
+                              <div className={"text-sm text-neutral-700"}>
+                                재매칭 티켓
+                              </div>
+                            </div>
+                            {ticketLoading ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <Spinner aria-label="불러오는 중" size="sm" />
+                                <div className={"text-sm text-neutral-700"}>
+                                  조회 중...
+                                </div>
+                              </div>
+                            ) : ticketError ? (
+                              <div className={"text-sm text-neutral-700"}>
+                                {ticketError}
+                              </div>
+                            ) : ticketInfo ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                  }}
+                                >
+                                  <Chip
+                                    size={"sm"}
+                                    variant={"soft"}
+                                  >{`${ticketInfo.stats?.available || 0}장`}</Chip>
+                                  {ticketInfo.stats?.available > 0 && (
+                                    <div className={"text-sm text-neutral-700"}>
+                                      보유 중
+                                    </div>
+                                  )}
+                                </div>
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  <Button
+                                    onClick={() => setTicketAddModalOpen(true)}
+                                    style={{
+                                      minWidth: "auto",
+                                      paddingLeft: 6,
+                                      paddingRight: 6,
+                                      paddingTop: 2,
+                                      paddingBottom: 2,
+                                      fontSize: "0.75rem",
+                                    }}
+                                    variant={"secondary"}
+                                    isDisabled={undefined}
+                                    size={"sm"}
+                                    className="rounded-xl"
+                                  >
+                                    추가
+                                  </Button>
+                                  {ticketInfo.stats?.available > 0 && (
+                                    <Button
+                                      onClick={() =>
+                                        setTicketRemoveModalOpen(true)
+                                      }
+                                      style={{
+                                        minWidth: "auto",
+                                        paddingLeft: 6,
+                                        paddingRight: 6,
+                                        paddingTop: 2,
+                                        paddingBottom: 2,
+                                        fontSize: "0.75rem",
+                                      }}
+                                      variant={"secondary"}
+                                      isDisabled={undefined}
+                                      size={"sm"}
+                                      className="rounded-xl"
+                                    >
+                                      제거
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                  }}
+                                >
+                                  <Chip size={"sm"} variant={"soft"}>
+                                    {"0장"}
+                                  </Chip>
+                                  <div className={"text-sm text-neutral-700"}>
+                                    보유 없음
+                                  </div>
+                                </div>
+                                <Button
+                                  onClick={() => setTicketAddModalOpen(true)}
+                                  style={{
+                                    minWidth: "auto",
+                                    paddingLeft: 6,
+                                    paddingRight: 6,
+                                    paddingTop: 2,
+                                    paddingBottom: 2,
+                                    fontSize: "0.75rem",
+                                  }}
+                                  variant={"secondary"}
+                                  isDisabled={undefined}
+                                  size={"sm"}
+                                  className="rounded-xl"
+                                >
+                                  추가
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {/* 구슬 정보 */}
+                        <div className={"min-w-0"}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              marginBottom: 2,
+                            }}
+                          >
+                            <Diamond />
+                            <div className={"text-sm text-neutral-700"}>
+                              구슬
+                            </div>
+                          </div>
+                          {gemsLoading ? (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <Spinner aria-label="불러오는 중" size="sm" />
+                              <div className={"text-sm text-neutral-700"}>
+                                조회 중...
+                              </div>
+                            </div>
+                          ) : gemsError ? (
+                            <div className={"text-sm text-neutral-700"}>
+                              {gemsError}
+                            </div>
+                          ) : gemsInfo ? (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                justifyContent: "space-between",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <Chip
+                                  size={"sm"}
+                                  variant={"soft"}
+                                >{`${gemsInfo.gemBalance || 0}개`}</Chip>
+                                {gemsInfo.gemBalance > 0 && (
+                                  <div className={"text-sm text-neutral-700"}>
+                                    보유 중
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ display: "flex", gap: 4 }}>
+                                <Button
+                                  onClick={() => setGemsAddModalOpen(true)}
+                                  style={{
+                                    minWidth: "auto",
+                                    paddingLeft: 6,
+                                    paddingRight: 6,
+                                    paddingTop: 2,
+                                    paddingBottom: 2,
+                                    fontSize: "0.75rem",
+                                  }}
+                                  variant={"secondary"}
+                                  isDisabled={undefined}
+                                  size={"sm"}
+                                  className="rounded-xl"
+                                >
+                                  추가
+                                </Button>
+                                {gemsInfo.gemBalance > 0 && (
+                                  <Button
+                                    onClick={() => setGemsRemoveModalOpen(true)}
+                                    style={{
+                                      minWidth: "auto",
+                                      paddingLeft: 6,
+                                      paddingRight: 6,
+                                      paddingTop: 2,
+                                      paddingBottom: 2,
+                                      fontSize: "0.75rem",
+                                    }}
+                                    variant={"secondary"}
+                                    isDisabled={undefined}
+                                    size={"sm"}
+                                    className="rounded-xl"
+                                  >
+                                    제거
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                justifyContent: "space-between",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <Chip size={"sm"} variant={"soft"}>
+                                  {"0개"}
+                                </Chip>
+                                <div className={"text-sm text-neutral-700"}>
+                                  보유 없음
+                                </div>
+                              </div>
+                              <Button
+                                onClick={() => setGemsAddModalOpen(true)}
+                                style={{
+                                  minWidth: "auto",
+                                  paddingLeft: 6,
+                                  paddingRight: 6,
+                                  paddingTop: 2,
+                                  paddingBottom: 2,
+                                  fontSize: "0.75rem",
+                                }}
+                                variant={"secondary"}
+                                isDisabled={undefined}
+                                size={"sm"}
+                                className="rounded-xl"
+                              >
+                                추가
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        {/* 선호도 정보 표시 */}
+                        {userDetail.preferences && (
+                          <div className={"min-w-0"}>
+                            <div
+                              style={{ fontWeight: "bold", marginBottom: 4 }}
+                              className={"text-sm text-neutral-700"}
+                            >
+                              선호도 정보
+                            </div>
+                            <Separator style={{ marginBottom: 8 }}></Separator>
+                            {/* 프로필 정보 */}
+                            {userDetail.preferences.self &&
+                              Array.isArray(userDetail.preferences.self) &&
+                              userDetail.preferences.self.length > 0 && (
+                                <div style={{ marginBottom: 16 }}>
+                                  <div
+                                    style={{
+                                      fontWeight: "bold",
+                                      color: "secondary.main",
+                                      marginBottom: 8,
+                                    }}
+                                    className={
+                                      "text-lg font-semibold text-neutral-900"
+                                    }
+                                  >
+                                    프로필 정보
+                                  </div>
+                                  <div>
+                                    {userDetail.preferences.self.map(
+                                      (pref: any, index: number) => (
+                                        <div
+                                          key={index}
+                                          style={{ marginBottom: 12 }}
+                                        >
+                                          <div
+                                            style={{
+                                              fontWeight: "bold",
+                                              color: "#7A4AE2",
+                                              marginBottom: 4,
+                                            }}
+                                            className={
+                                              "text-sm text-neutral-700"
+                                            }
+                                          >
+                                            {pref.typeName}
+                                          </div>
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              flexWrap: "wrap",
+                                              gap: 3.2,
+                                              marginTop: 2,
+                                            }}
+                                          >
+                                            {pref.selectedOptions?.map(
+                                              (
+                                                option: any,
+                                                optIndex: number,
+                                              ) => (
+                                                <Chip
+                                                  key={optIndex}
+                                                  style={{
+                                                    fontWeight: "medium",
+                                                  }}
+                                                  size={"sm"}
+                                                  variant={"soft"}
+                                                >
+                                                  {option.displayName}
+                                                </Chip>
+                                              ),
+                                            )}
+                                          </div>
+                                        </div>
+                                      ),
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            {/* 이상형 정보 */}
+                            {userDetail.preferences.partner &&
+                              Array.isArray(userDetail.preferences.partner) &&
+                              userDetail.preferences.partner.length > 0 && (
+                                <div>
+                                  <div
+                                    style={{
+                                      fontWeight: "bold",
+                                      color: "#7A4AE2",
+                                      marginBottom: 8,
+                                    }}
+                                    className={
+                                      "text-lg font-semibold text-neutral-900"
+                                    }
+                                  >
+                                    이상형 정보
+                                  </div>
+                                  <div>
+                                    {userDetail.preferences.partner.map(
+                                      (pref: any, index: number) => (
+                                        <div
+                                          key={index}
+                                          style={{ marginBottom: 12 }}
+                                        >
+                                          <div
+                                            style={{
+                                              fontWeight: "bold",
+                                              color: "#7A4AE2",
+                                              marginBottom: 4,
+                                            }}
+                                            className={
+                                              "text-sm text-neutral-700"
+                                            }
+                                          >
+                                            {pref.typeName}
+                                          </div>
+                                          <div
+                                            style={{
+                                              display: "flex",
+                                              flexWrap: "wrap",
+                                              gap: 3.2,
+                                              marginTop: 2,
+                                            }}
+                                          >
+                                            {pref.selectedOptions?.map(
+                                              (
+                                                option: any,
+                                                optIndex: number,
+                                              ) => (
+                                                <Chip
+                                                  key={optIndex}
+                                                  style={{
+                                                    fontWeight: "medium",
+                                                  }}
+                                                  size={"sm"}
+                                                  variant={"soft"}
+                                                >
+                                                  {option.displayName}
+                                                </Chip>
+                                              ),
+                                            )}
+                                          </div>
+                                        </div>
+                                      ),
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            {/* 선호도 정보가 없는 경우 */}
+                            {(!userDetail.preferences.self ||
+                              userDetail.preferences.self.length === 0) &&
+                              (!userDetail.preferences.partner ||
+                                userDetail.preferences.partner.length ===
+                                  0) && (
+                                <div
+                                  style={{ fontStyle: "italic" }}
+                                  className={"text-sm text-neutral-700"}
+                                >
+                                  등록된 선호도 정보가 없습니다.
+                                </div>
+                              )}
+                          </div>
+                        )}
+                        {/* 추가 필드 표시 - 가독성 개선 (불필요한 필드만 제외) */}
+                        {Object.entries(userDetail)
+                          .filter(
+                            ([key]) =>
+                              ![
+                                "id",
+                                "name",
+                                "age",
+                                "gender",
+                                "profileImages",
+                                "profileImageUrl",
+                                "phoneNumber",
+                                "instagramId",
+                                "instagramUrl",
+                                "universityDetails",
+                                "university",
+                                "email",
+                                "createdAt",
+                                "updatedAt",
+                                "lastActiveAt",
+                                "appearanceGrade",
+                                "accountStatus",
+                                "role",
+                                "preferences",
+                                "appearanceRank",
+                                "oauthProvider",
+                                "deletedAt",
+                              ].includes(key),
+                          )
+                          .map(([key, value]) => {
+                            // 이미 별도로 표시된 필드는 제외
+                            if (key === "title" || key === "introduction") {
+                              return null;
+                            }
 
-                    {/* 추가 필드 표시 - 가독성 개선 (불필요한 필드만 제외) */}
-                    {Object.entries(userDetail)
-                      .filter(([key]) => !['id', 'name', 'age', 'gender', 'profileImages', 'profileImageUrl',
-                                          'phoneNumber', 'instagramId', 'instagramUrl', 'universityDetails',
-                                          'university', 'email', 'createdAt', 'updatedAt', 'lastActiveAt',
-                                          'appearanceGrade', 'accountStatus', 'role', 'preferences',
-                                          'appearanceRank', 'oauthProvider', 'deletedAt'].includes(key))
-                      .map(([key, value]) => {
-                        // 이미 별도로 표시된 필드는 제외
-                        if (key === 'title' || key === 'introduction') {
-                          return null;
-                        }
-
-                        // 기본 필드 처리
-                        return (
-                          <Grid item xs={12} key={key}>
-                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                              {key === 'height' ? '키' :
-                               key === 'bodyType' ? '체형' :
-                               key === 'religion' ? '종교' :
-                               key === 'drinking' ? '음주' :
-                               key === 'smoking' ? '흡연' :
-                               key === 'mbti' ? 'MBTI' :
-                               key === 'hobby' ? '취미' :
-                               key === 'job' ? '직업' :
-                               key === 'company' ? '회사' :
-                               key === 'school' ? '학교' :
-                               key === 'major' ? '전공' :
-                               key}
-                            </Typography>
-                            <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
-                              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                            </Typography>
-                          </Grid>
-                        );
-                      })
-                    }
-                  </Grid>
-                </Box>
-              </Box>
-            </Grid>
-          </Grid>
-        )}
-      </DialogContent>
-      {/* 성공/오류 메시지 */}
-      {actionSuccess && (
-        <Alert
-          severity="success"
-          sx={{ position: 'absolute', bottom: 16, left: 16, right: 16, zIndex: 1000 }}
-          onClose={() => setActionSuccess(null)}
-        >
-          {actionSuccess}
-        </Alert>
-      )}
-
-      {actionError && (
-        <Alert
-          severity="error"
-          sx={{ position: 'absolute', bottom: 16, left: 16, right: 16, zIndex: 1000 }}
-          onClose={() => setActionError(null)}
-        >
-          {actionError}
-        </Alert>
-      )}
-
-      {/* 관리 기능 모달들 */}
-      <EditProfileModal
-        open={editProfileModalOpen}
-        onClose={() => setEditProfileModalOpen(false)}
-        userId={userId || ''}
-        userDetail={userDetail}
-        onSuccess={() => {
-          setActionSuccess('프로필이 수정되었습니다.');
-          // 사용자 상세 정보 새로고침
-          refreshUserDetail();
-          // 부모 컴포넌트의 목록 새로고침
-          if (onRefresh) onRefresh();
-        }}
-      />
-
-      <EmailNotificationModal
-        open={emailNotificationModalOpen}
-        onClose={() => setEmailNotificationModalOpen(false)}
-        userId={userId || ''}
-        userEmail={userDetail?.email}
-        userName={userDetail?.name}
-        onSuccess={() => {
-          setActionSuccess('이메일이 발송되었습니다.');
-          if (onRefresh) onRefresh();
-        }}
-      />
-
-      <SmsNotificationModal
-        open={smsNotificationModalOpen}
-        onClose={() => setSmsNotificationModalOpen(false)}
-        userId={userId || ''}
-        phoneNumber={userDetail?.phoneNumber}
-        userName={userDetail?.name}
-        onSuccess={() => {
-          setActionSuccess('SMS가 발송되었습니다.');
-          if (onRefresh) onRefresh();
-        }}
-      />
-
-      <BirthdayEditModal
-        open={birthdayModalOpen}
-        onClose={() => setBirthdayModalOpen(false)}
-        userId={userId || ''}
-        userName={userDetail?.name}
-        currentBirthday={userDetail?.birthday}
-        currentAge={userDetail?.age}
-        onSuccess={({ birthday, age }) => {
-          setActionSuccess(`생년월일이 ${birthday}(만 ${age}세)(으)로 변경되었습니다.`);
-          setUserDetail(prev => prev ? { ...prev, birthday, age } : prev);
-          if (onRefresh) onRefresh();
-        }}
-      />
-
-      <UniversityTransferModal
-        open={universityTransferModalOpen}
-        onClose={() => setUniversityTransferModalOpen(false)}
-        userId={userId || ''}
-        userName={userDetail?.name}
-        currentUniversityName={currentUniversityName}
-        currentDepartmentName={currentDepartmentName}
-        currentGrade={currentUniversityGrade}
-        isVerified={isUniversityVerified}
-        onSuccess={({ universityName, departmentName }) => {
-          setActionSuccess(`학교/학과가 ${universityName} ${departmentName}(으)로 변경되었습니다.`);
-          setUserDetail(prev => prev ? {
-            ...prev,
-            universityName,
-            departmentName,
-            universityDetails: prev.universityDetails
-              ? { ...prev.universityDetails, name: universityName, department: departmentName }
-              : {
-                  name: universityName,
-                  authentication: isUniversityVerified,
-                  department: departmentName,
-                  grade: currentUniversityGrade || '',
-                  studentNumber: '',
-                },
-          } : prev);
-          refreshUserDetail();
-          if (onRefresh) onRefresh();
-        }}
-      />
-
-      {/* 회원 탈퇴 확인 다이얼로그 */}
-      <Dialog
-        open={deleteConfirmModalOpen}
-        onClose={() => setDeleteConfirmModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Typography variant="h6" color="error">
-            회원 탈퇴 확인
-          </Typography>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            정말로 <strong>{userDetail?.name}</strong> 사용자를 탈퇴시키겠습니까?
-          </Typography>
-
-          {/* 재매칭 티켓 경고 메시지 */}
-          {SHOW_REMATCH_TICKET_ADMIN && ticketInfo?.stats?.available > 0 && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              <Typography variant="body2">
-                <strong>주의:</strong> 이 사용자는 재매칭 티켓을 <strong>{ticketInfo.stats.available}장</strong> 보유하고 있습니다.
-                탈퇴 처리 시 보유 중인 티켓이 모두 소멸됩니다.
-              </Typography>
-            </Alert>
-          )}
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            이 작업은 되돌릴 수 없습니다.
-          </Typography>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={sendEmailOnDelete}
-                onChange={(e) => setSendEmailOnDelete(e.target.checked)}
-                color="primary"
-              />
-            }
-            label="탈퇴 처리 시 사용자에게 이메일 발송"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setDeleteConfirmModalOpen(false)}
-            color="inherit"
-          >
-            취소
-          </Button>
-          <Button
-            onClick={handleConfirmDeleteUser}
-            color="error"
-            variant="contained"
-            disabled={actionLoading}
-          >
-            {actionLoading ? '처리 중...' : '탈퇴 처리'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 재매칭 티켓 추가 모달 */}
-      {SHOW_REMATCH_TICKET_ADMIN && (
-      <Dialog
-        open={ticketAddModalOpen}
-        onClose={() => setTicketAddModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>재매칭 티켓 추가</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>{userDetail?.name}</strong>님에게 재매칭 티켓을 추가합니다.
-          </Typography>
-
-          <TextField
-            fullWidth
-            type="number"
-            label="추가할 티켓 개수"
-            value={ticketCount}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTicketCount(Math.max(1, parseInt(e.target.value) || 1))}
-            inputProps={{ min: 1, max: 100 }}
-            sx={{ mb: 2 }}
-          />
-
-          {ticketError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {ticketError}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setTicketAddModalOpen(false)}
-            disabled={ticketActionLoading}
-          >
-            취소
-          </Button>
-          <Button
-            onClick={handleAddTickets}
-            variant="contained"
-            disabled={ticketActionLoading}
-          >
-            {ticketActionLoading ? <CircularProgress size={20} /> : '티켓 추가'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-      )}
-
-      {/* 재매칭 티켓 제거 모달 */}
-      {SHOW_REMATCH_TICKET_ADMIN && (
-      <Dialog
-        open={ticketRemoveModalOpen}
-        onClose={() => setTicketRemoveModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>재매칭 티켓 제거</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>{userDetail?.name}</strong>님의 재매칭 티켓을 제거합니다.
-          </Typography>
-
-          {ticketInfo && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              현재 보유 티켓: <strong>{ticketInfo.stats?.available || 0}장</strong>
-            </Alert>
-          )}
-
-          <TextField
-            fullWidth
-            type="number"
-            label="제거할 티켓 개수"
-            value={ticketCount}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTicketCount(Math.max(1, parseInt(e.target.value) || 1))}
-            inputProps={{
-              min: 1,
-              max: ticketInfo?.stats?.available || 1
-            }}
-            sx={{ mb: 2 }}
-          />
-
-          {ticketError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {ticketError}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setTicketRemoveModalOpen(false)}
-            disabled={ticketActionLoading}
-          >
-            취소
-          </Button>
-          <Button
-            onClick={handleRemoveTickets}
-            variant="contained"
-            color="error"
-            disabled={ticketActionLoading}
-          >
-            {ticketActionLoading ? <CircularProgress size={20} /> : '티켓 제거'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-      )}
-
-      {/* 구슬 추가 모달 */}
-      <Dialog
-        open={gemsAddModalOpen}
-        onClose={() => setGemsAddModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>구슬 추가</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>{userDetail?.name}</strong>님에게 구슬을 추가합니다.
-          </Typography>
-
-          <TextField
-            fullWidth
-            type="number"
-            label="추가할 구슬 개수"
-            value={gemsCount}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGemsCount(Math.max(1, parseInt(e.target.value) || 1))}
-            inputProps={{ min: 1, max: 1000 }}
-            sx={{ mb: 2 }}
-          />
-
-          {gemsError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {gemsError}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setGemsAddModalOpen(false)}>
-            취소
-          </Button>
-          <Button
-            onClick={handleAddGems}
-            variant="contained"
-            disabled={gemsActionLoading}
-          >
-            {gemsActionLoading ? <CircularProgress size={20} /> : '구슬 추가'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 구슬 제거 모달 */}
-      <Dialog
-        open={gemsRemoveModalOpen}
-        onClose={() => setGemsRemoveModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>구슬 제거</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>{userDetail?.name}</strong>님의 구슬을 제거합니다.
-          </Typography>
-
-          {gemsInfo && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              현재 보유 구슬: <strong>{gemsInfo.gemBalance || 0}개</strong>
-            </Alert>
-          )}
-
-          <TextField
-            fullWidth
-            type="number"
-            label="제거할 구슬 개수"
-            value={gemsCount}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGemsCount(Math.max(1, parseInt(e.target.value) || 1))}
-            inputProps={{
-              min: 1,
-              max: gemsInfo?.gemBalance || 1
-            }}
-            sx={{ mb: 2 }}
-          />
-
-          {gemsError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {gemsError}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setGemsRemoveModalOpen(false)}>
-            취소
-          </Button>
-          <Button
-            onClick={handleRemoveGems}
-            variant="contained"
-            color="error"
-            disabled={gemsActionLoading}
-          >
-            {gemsActionLoading ? <CircularProgress size={20} /> : '구슬 제거'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 승인 취소 확인 모달 */}
-      <Dialog
-        open={revokeApprovalModalOpen}
-        onClose={() => setRevokeApprovalModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Typography variant="h6" color="warning.main">
-            승인 취소 확인
-          </Typography>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>{userDetail?.name}</strong>님의 승인을 취소하시겠습니까?
-          </Typography>
-
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              <strong>경고:</strong> 승인을 취소하면 사용자 상태가 &apos;미승인&apos;으로 변경되며,
-              다시 가입 승인을 받아야 합니다. 또한 자동으로 SMS가 발송됩니다.
-            </Typography>
-          </Alert>
-
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>승인 취소 사유</InputLabel>
-            <Select
-              value={revokeReason}
-              onChange={(e) => {
-                setRevokeReason(e.target.value);
-                if (e.target.value !== 'OTHER') {
-                  setCustomRevokeReason('');
-                }
+                            // 기본 필드 처리
+                            return (
+                              <div key={key} className={"min-w-0"}>
+                                <div
+                                  style={{
+                                    fontWeight: "bold",
+                                    marginBottom: 2,
+                                  }}
+                                  className={"text-sm text-neutral-700"}
+                                >
+                                  {key === "height"
+                                    ? "키"
+                                    : key === "bodyType"
+                                      ? "체형"
+                                      : key === "religion"
+                                        ? "종교"
+                                        : key === "drinking"
+                                          ? "음주"
+                                          : key === "smoking"
+                                            ? "흡연"
+                                            : key === "mbti"
+                                              ? "MBTI"
+                                              : key === "hobby"
+                                                ? "취미"
+                                                : key === "job"
+                                                  ? "직업"
+                                                  : key === "company"
+                                                    ? "회사"
+                                                    : key === "school"
+                                                      ? "학교"
+                                                      : key === "major"
+                                                        ? "전공"
+                                                        : key}
+                                </div>
+                                <div
+                                  style={{ wordBreak: "break-all" }}
+                                  className={"text-sm text-neutral-700"}
+                                >
+                                  {typeof value === "object"
+                                    ? JSON.stringify(value)
+                                    : String(value)}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Modal.Body>
+          {/* 성공/오류 메시지 */}
+          {actionSuccess && (
+            <Alert
+              style={{
+                position: "absolute",
+                bottom: 16,
+                left: 16,
+                right: 16,
+                zIndex: 1000,
               }}
-              label="승인 취소 사유"
+              status={"success"}
+              role="alert"
             >
-              {rejectionReasons.map((reason, index) => (
-                <MenuItem key={index} value={reason.value}>
-                  {reason.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {revokeReason === 'OTHER' && (
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="기타 승인 취소 사유"
-              placeholder="승인 취소 사유를 직접 입력해주세요"
-              value={customRevokeReason}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomRevokeReason(e.target.value)}
-              sx={{ mb: 2 }}
-              required
-            />
-          )}
-
-          {actionError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {actionError}
+              <Alert.Content>{actionSuccess}</Alert.Content>
+              <Button
+                variant="ghost"
+                isIconOnly
+                aria-label="알림 닫기"
+                onPress={() => setActionSuccess(null)}
+              >
+                닫기
+              </Button>
             </Alert>
           )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setRevokeApprovalModalOpen(false);
-              setRevokeReason('');
-              setCustomRevokeReason('');
+          {actionError && (
+            <Alert
+              style={{
+                position: "absolute",
+                bottom: 16,
+                left: 16,
+                right: 16,
+                zIndex: 1000,
+              }}
+              status="danger"
+              role="alert"
+            >
+              <Alert.Content>{actionError}</Alert.Content>
+              <Button
+                variant="ghost"
+                isIconOnly
+                aria-label="알림 닫기"
+                onPress={() => setActionError(null)}
+              >
+                닫기
+              </Button>
+            </Alert>
+          )}
+          {/* 관리 기능 모달들 */}
+          <EditProfileModal
+            open={editProfileModalOpen}
+            onClose={() => setEditProfileModalOpen(false)}
+            userId={userId || ""}
+            userDetail={userDetail}
+            onSuccess={() => {
+              setActionSuccess("프로필이 수정되었습니다.");
+              // 사용자 상세 정보 새로고침
+              refreshUserDetail();
+              // 부모 컴포넌트의 목록 새로고침
+              if (onRefresh) onRefresh();
             }}
-            disabled={revokeActionLoading}
-          >
-            취소
-          </Button>
-          <Button
-            onClick={handleRevokeApproval}
-            variant="contained"
-            color="warning"
-            disabled={
-              revokeActionLoading ||
-              !revokeReason.trim() ||
-              (revokeReason === 'OTHER' && !customRevokeReason.trim())
+          />
+          <EmailNotificationModal
+            open={emailNotificationModalOpen}
+            onClose={() => setEmailNotificationModalOpen(false)}
+            userId={userId || ""}
+            userEmail={userDetail?.email}
+            userName={userDetail?.name}
+            onSuccess={() => {
+              setActionSuccess("이메일이 발송되었습니다.");
+              if (onRefresh) onRefresh();
+            }}
+          />
+          <SmsNotificationModal
+            open={smsNotificationModalOpen}
+            onClose={() => setSmsNotificationModalOpen(false)}
+            userId={userId || ""}
+            phoneNumber={userDetail?.phoneNumber}
+            userName={userDetail?.name}
+            onSuccess={() => {
+              setActionSuccess("SMS가 발송되었습니다.");
+              if (onRefresh) onRefresh();
+            }}
+          />
+          <BirthdayEditModal
+            open={birthdayModalOpen}
+            onClose={() => setBirthdayModalOpen(false)}
+            userId={userId || ""}
+            userName={userDetail?.name}
+            currentBirthday={userDetail?.birthday}
+            currentAge={userDetail?.age}
+            onSuccess={({ birthday, age }) => {
+              setActionSuccess(
+                `생년월일이 ${birthday}(만 ${age}세)(으)로 변경되었습니다.`,
+              );
+              setUserDetail((prev) =>
+                prev ? { ...prev, birthday, age } : prev,
+              );
+              if (onRefresh) onRefresh();
+            }}
+          />
+          <UniversityTransferModal
+            open={universityTransferModalOpen}
+            onClose={() => setUniversityTransferModalOpen(false)}
+            userId={userId || ""}
+            userName={userDetail?.name}
+            currentUniversityName={currentUniversityName}
+            currentDepartmentName={currentDepartmentName}
+            currentGrade={currentUniversityGrade}
+            isVerified={isUniversityVerified}
+            onSuccess={({ universityName, departmentName }) => {
+              setActionSuccess(
+                `학교/학과가 ${universityName} ${departmentName}(으)로 변경되었습니다.`,
+              );
+              setUserDetail((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      universityName,
+                      departmentName,
+                      universityDetails: prev.universityDetails
+                        ? {
+                            ...prev.universityDetails,
+                            name: universityName,
+                            department: departmentName,
+                          }
+                        : {
+                            name: universityName,
+                            authentication: isUniversityVerified,
+                            department: departmentName,
+                            grade: currentUniversityGrade || "",
+                            studentNumber: "",
+                          },
+                    }
+                  : prev,
+              );
+              refreshUserDetail();
+              if (onRefresh) onRefresh();
+            }}
+          />
+          {/* 회원 탈퇴 확인 다이얼로그 */}
+          <Modal.Backdrop
+            isOpen={deleteConfirmModalOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) (() => setDeleteConfirmModalOpen(false))?.();
+            }}
+            isDismissable={
+              (() => setDeleteConfirmModalOpen(false)) !== undefined
             }
           >
-            {revokeActionLoading ? <CircularProgress size={20} /> : '승인 취소'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 비밀번호 초기화 확인 다이얼로그 */}
-      <Dialog open={resetPasswordConfirmOpen} onClose={() => setResetPasswordConfirmOpen(false)}>
-        <DialogTitle>비밀번호 초기화</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            <strong>{userDetail?.name}</strong>님의 비밀번호를 초기화하시겠습니까?
-            <br />
-            <br />
-            초기화 시 임시 비밀번호가 발급되며, 기존 비밀번호는 사용할 수 없게 됩니다.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setResetPasswordConfirmOpen(false)} disabled={resetPasswordLoading}>
-            취소
-          </Button>
-          <Button
-            onClick={handleConfirmResetPassword}
-            color="warning"
-            variant="contained"
-            disabled={resetPasswordLoading}
-          >
-            {resetPasswordLoading ? <CircularProgress size={20} /> : '초기화'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 임시 비밀번호 결과 다이얼로그 */}
-      <Dialog open={resetPasswordResultOpen} onClose={handleResetPasswordResultClose}>
-        <DialogTitle>비밀번호 초기화 완료</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            비밀번호가 성공적으로 초기화되었습니다.
-            <br />
-            아래 임시 비밀번호를 회원에게 전달해주세요.
-          </DialogContentText>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TextField
-              fullWidth
-              label="임시 비밀번호"
-              value={temporaryPassword}
-              InputProps={{
-                readOnly: true,
+            <Modal.Container size="md" scroll="inside">
+              <Modal.Dialog>
+                <Modal.Header>
+                  <Modal.Heading>
+                    <div className={"text-lg font-semibold text-neutral-900"}>
+                      회원 탈퇴 확인
+                    </div>
+                  </Modal.Heading>
+                </Modal.Header>
+                <Modal.Body>
+                  <div
+                    style={{ marginBottom: 8 }}
+                    className={"text-sm text-neutral-700"}
+                  >
+                    정말로 <strong>{userDetail?.name}</strong>사용자를
+                    탈퇴시키겠습니까?
+                  </div>
+                  {/* 재매칭 티켓 경고 메시지 */}
+                  {SHOW_REMATCH_TICKET_ADMIN &&
+                    ticketInfo?.stats?.available > 0 && (
+                      <Alert
+                        style={{ marginBottom: 8 }}
+                        status={"warning"}
+                        role="alert"
+                      >
+                        <Alert.Content>
+                          <div className={"text-sm text-neutral-700"}>
+                            <strong>주의:</strong>이 사용자는 재매칭 티켓을{" "}
+                            <strong>{ticketInfo.stats.available}장</strong>
+                            보유하고 있습니다. 탈퇴 처리 시 보유 중인 티켓이
+                            모두 소멸됩니다.
+                          </div>
+                        </Alert.Content>
+                      </Alert>
+                    )}
+                  <div
+                    style={{ marginBottom: 12 }}
+                    className={"text-sm text-neutral-700"}
+                  >
+                    이 작업은 되돌릴 수 없습니다.
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      isSelected={sendEmailOnDelete}
+                      isDisabled={undefined}
+                      isIndeterminate={undefined}
+                      onChange={(isSelected) =>
+                        setSendEmailOnDelete(isSelected)
+                      }
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                        <Label>{"탈퇴 처리 시 사용자에게 이메일 발송"}</Label>
+                      </Checkbox.Content>
+                    </Checkbox>
+                  </div>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    onClick={() => setDeleteConfirmModalOpen(false)}
+                    variant={"ghost"}
+                    isDisabled={undefined}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    onClick={handleConfirmDeleteUser}
+                    variant={"primary"}
+                    isDisabled={actionLoading}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    {actionLoading ? "처리 중..." : "탈퇴 처리"}
+                  </Button>
+                </Modal.Footer>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+          {/* 재매칭 티켓 추가 모달 */}
+          {SHOW_REMATCH_TICKET_ADMIN && (
+            <Modal.Backdrop
+              isOpen={ticketAddModalOpen}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) (() => setTicketAddModalOpen(false))?.();
               }}
+              isDismissable={(() => setTicketAddModalOpen(false)) !== undefined}
+            >
+              <Modal.Container size="md" scroll="inside">
+                <Modal.Dialog>
+                  <Modal.Header>
+                    <Modal.Heading>재매칭 티켓 추가</Modal.Heading>
+                  </Modal.Header>
+                  <Modal.Body>
+                    <div
+                      style={{ marginBottom: 8 }}
+                      className={"text-sm text-neutral-700"}
+                    >
+                      <strong>{userDetail?.name}</strong>님에게 재매칭 티켓을
+                      추가합니다.
+                    </div>
+                    <TextField
+                      className="w-full"
+                      isDisabled={undefined}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"추가할 티켓 개수"}</Label>
+                      <Input
+                        type="number"
+                        value={ticketCount}
+                        onChange={(
+                          e: React.ChangeEvent<
+                            | HTMLInputElement
+                            | HTMLTextAreaElement
+                            | HTMLSelectElement
+                          >,
+                        ) =>
+                          setTicketCount(
+                            Math.max(1, parseInt(e.target.value) || 1),
+                          )
+                        }
+                        style={{ marginBottom: 8 }}
+                        aria-label={"추가할 티켓 개수"}
+                        {...{ min: 1, max: 100 }}
+                      />
+                    </TextField>
+                    {ticketError && (
+                      <Alert
+                        style={{ marginBottom: 8 }}
+                        status="danger"
+                        role="alert"
+                      >
+                        <Alert.Content>{ticketError}</Alert.Content>
+                      </Alert>
+                    )}
+                  </Modal.Body>
+                  <Modal.Footer>
+                    <Button
+                      onClick={() => setTicketAddModalOpen(false)}
+                      variant={"ghost"}
+                      isDisabled={ticketActionLoading}
+                      size={"md"}
+                      className="rounded-xl"
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      onClick={handleAddTickets}
+                      variant={"primary"}
+                      isDisabled={ticketActionLoading}
+                      size={"md"}
+                      className="rounded-xl"
+                    >
+                      {ticketActionLoading ? (
+                        <Spinner aria-label="불러오는 중" size="sm" />
+                      ) : (
+                        "티켓 추가"
+                      )}
+                    </Button>
+                  </Modal.Footer>
+                </Modal.Dialog>
+              </Modal.Container>
+            </Modal.Backdrop>
+          )}
+          {/* 재매칭 티켓 제거 모달 */}
+          {SHOW_REMATCH_TICKET_ADMIN && (
+            <Modal.Backdrop
+              isOpen={ticketRemoveModalOpen}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) (() => setTicketRemoveModalOpen(false))?.();
+              }}
+              isDismissable={
+                (() => setTicketRemoveModalOpen(false)) !== undefined
+              }
+            >
+              <Modal.Container size="md" scroll="inside">
+                <Modal.Dialog>
+                  <Modal.Header>
+                    <Modal.Heading>재매칭 티켓 제거</Modal.Heading>
+                  </Modal.Header>
+                  <Modal.Body>
+                    <div
+                      style={{ marginBottom: 8 }}
+                      className={"text-sm text-neutral-700"}
+                    >
+                      <strong>{userDetail?.name}</strong>님의 재매칭 티켓을
+                      제거합니다.
+                    </div>
+                    {ticketInfo && (
+                      <Alert
+                        style={{ marginBottom: 8 }}
+                        status={"default"}
+                        role="alert"
+                      >
+                        <Alert.Content>
+                          현재 보유 티켓:{" "}
+                          <strong>{ticketInfo.stats?.available || 0}장</strong>
+                        </Alert.Content>
+                      </Alert>
+                    )}
+                    <TextField
+                      className="w-full"
+                      isDisabled={undefined}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"제거할 티켓 개수"}</Label>
+                      <Input
+                        type="number"
+                        value={ticketCount}
+                        onChange={(
+                          e: React.ChangeEvent<
+                            | HTMLInputElement
+                            | HTMLTextAreaElement
+                            | HTMLSelectElement
+                          >,
+                        ) =>
+                          setTicketCount(
+                            Math.max(1, parseInt(e.target.value) || 1),
+                          )
+                        }
+                        style={{ marginBottom: 8 }}
+                        aria-label={"제거할 티켓 개수"}
+                        {...{
+                          min: 1,
+                          max: ticketInfo?.stats?.available || 1,
+                        }}
+                      />
+                    </TextField>
+                    {ticketError && (
+                      <Alert
+                        style={{ marginBottom: 8 }}
+                        status="danger"
+                        role="alert"
+                      >
+                        <Alert.Content>{ticketError}</Alert.Content>
+                      </Alert>
+                    )}
+                  </Modal.Body>
+                  <Modal.Footer>
+                    <Button
+                      onClick={() => setTicketRemoveModalOpen(false)}
+                      variant={"ghost"}
+                      isDisabled={ticketActionLoading}
+                      size={"md"}
+                      className="rounded-xl"
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      onClick={handleRemoveTickets}
+                      variant={"primary"}
+                      isDisabled={ticketActionLoading}
+                      size={"md"}
+                      className="rounded-xl"
+                    >
+                      {ticketActionLoading ? (
+                        <Spinner aria-label="불러오는 중" size="sm" />
+                      ) : (
+                        "티켓 제거"
+                      )}
+                    </Button>
+                  </Modal.Footer>
+                </Modal.Dialog>
+              </Modal.Container>
+            </Modal.Backdrop>
+          )}
+          {/* 구슬 추가 모달 */}
+          <Modal.Backdrop
+            isOpen={gemsAddModalOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) (() => setGemsAddModalOpen(false))?.();
+            }}
+            isDismissable={(() => setGemsAddModalOpen(false)) !== undefined}
+          >
+            <Modal.Container size="md" scroll="inside">
+              <Modal.Dialog>
+                <Modal.Header>
+                  <Modal.Heading>구슬 추가</Modal.Heading>
+                </Modal.Header>
+                <Modal.Body>
+                  <div
+                    style={{ marginBottom: 8 }}
+                    className={"text-sm text-neutral-700"}
+                  >
+                    <strong>{userDetail?.name}</strong>님에게 구슬을 추가합니다.
+                  </div>
+                  <TextField
+                    className="w-full"
+                    isDisabled={undefined}
+                    isInvalid={undefined}
+                  >
+                    <Label>{"추가할 구슬 개수"}</Label>
+                    <Input
+                      type="number"
+                      value={gemsCount}
+                      onChange={(
+                        e: React.ChangeEvent<
+                          | HTMLInputElement
+                          | HTMLTextAreaElement
+                          | HTMLSelectElement
+                        >,
+                      ) =>
+                        setGemsCount(Math.max(1, parseInt(e.target.value) || 1))
+                      }
+                      style={{ marginBottom: 8 }}
+                      aria-label={"추가할 구슬 개수"}
+                      {...{ min: 1, max: 1000 }}
+                    />
+                  </TextField>
+                  {gemsError && (
+                    <Alert
+                      style={{ marginBottom: 8 }}
+                      status="danger"
+                      role="alert"
+                    >
+                      <Alert.Content>{gemsError}</Alert.Content>
+                    </Alert>
+                  )}
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    onClick={() => setGemsAddModalOpen(false)}
+                    variant={"ghost"}
+                    isDisabled={undefined}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    onClick={handleAddGems}
+                    variant={"primary"}
+                    isDisabled={gemsActionLoading}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    {gemsActionLoading ? (
+                      <Spinner aria-label="불러오는 중" size="sm" />
+                    ) : (
+                      "구슬 추가"
+                    )}
+                  </Button>
+                </Modal.Footer>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+          {/* 구슬 제거 모달 */}
+          <Modal.Backdrop
+            isOpen={gemsRemoveModalOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) (() => setGemsRemoveModalOpen(false))?.();
+            }}
+            isDismissable={(() => setGemsRemoveModalOpen(false)) !== undefined}
+          >
+            <Modal.Container size="md" scroll="inside">
+              <Modal.Dialog>
+                <Modal.Header>
+                  <Modal.Heading>구슬 제거</Modal.Heading>
+                </Modal.Header>
+                <Modal.Body>
+                  <div
+                    style={{ marginBottom: 8 }}
+                    className={"text-sm text-neutral-700"}
+                  >
+                    <strong>{userDetail?.name}</strong>님의 구슬을 제거합니다.
+                  </div>
+                  {gemsInfo && (
+                    <Alert
+                      style={{ marginBottom: 8 }}
+                      status={"default"}
+                      role="alert"
+                    >
+                      <Alert.Content>
+                        현재 보유 구슬:{" "}
+                        <strong>{gemsInfo.gemBalance || 0}개</strong>
+                      </Alert.Content>
+                    </Alert>
+                  )}
+                  <TextField
+                    className="w-full"
+                    isDisabled={undefined}
+                    isInvalid={undefined}
+                  >
+                    <Label>{"제거할 구슬 개수"}</Label>
+                    <Input
+                      type="number"
+                      value={gemsCount}
+                      onChange={(
+                        e: React.ChangeEvent<
+                          | HTMLInputElement
+                          | HTMLTextAreaElement
+                          | HTMLSelectElement
+                        >,
+                      ) =>
+                        setGemsCount(Math.max(1, parseInt(e.target.value) || 1))
+                      }
+                      style={{ marginBottom: 8 }}
+                      aria-label={"제거할 구슬 개수"}
+                      {...{
+                        min: 1,
+                        max: gemsInfo?.gemBalance || 1,
+                      }}
+                    />
+                  </TextField>
+                  {gemsError && (
+                    <Alert
+                      style={{ marginBottom: 8 }}
+                      status="danger"
+                      role="alert"
+                    >
+                      <Alert.Content>{gemsError}</Alert.Content>
+                    </Alert>
+                  )}
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    onClick={() => setGemsRemoveModalOpen(false)}
+                    variant={"ghost"}
+                    isDisabled={undefined}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    onClick={handleRemoveGems}
+                    variant={"primary"}
+                    isDisabled={gemsActionLoading}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    {gemsActionLoading ? (
+                      <Spinner aria-label="불러오는 중" size="sm" />
+                    ) : (
+                      "구슬 제거"
+                    )}
+                  </Button>
+                </Modal.Footer>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+          {/* 승인 취소 확인 모달 */}
+          <Modal.Backdrop
+            isOpen={revokeApprovalModalOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) (() => setRevokeApprovalModalOpen(false))?.();
+            }}
+            isDismissable={
+              (() => setRevokeApprovalModalOpen(false)) !== undefined
+            }
+          >
+            <Modal.Container size="md" scroll="inside">
+              <Modal.Dialog>
+                <Modal.Header>
+                  <Modal.Heading>
+                    <div className={"text-lg font-semibold text-neutral-900"}>
+                      승인 취소 확인
+                    </div>
+                  </Modal.Heading>
+                </Modal.Header>
+                <Modal.Body>
+                  <div
+                    style={{ marginBottom: 8 }}
+                    className={"text-sm text-neutral-700"}
+                  >
+                    <strong>{userDetail?.name}</strong>님의 승인을
+                    취소하시겠습니까?
+                  </div>
+                  <Alert
+                    style={{ marginBottom: 8 }}
+                    status={"warning"}
+                    role="alert"
+                  >
+                    <Alert.Content>
+                      <div className={"text-sm text-neutral-700"}>
+                        <strong>경고:</strong>승인을 취소하면 사용자 상태가
+                        &apos;미승인&apos;으로 변경되며, 다시 가입 승인을 받아야
+                        합니다. 또한 자동으로 SMS가 발송됩니다.
+                      </div>
+                    </Alert.Content>
+                  </Alert>
+                  <div style={{ marginBottom: 8 }}>
+                    <Label>승인 취소 사유</Label>
+                    <Select
+                      selectedKey={revokeReason}
+                      onSelectionChange={(value) =>
+                        ((e) => {
+                          setRevokeReason(e.target.value);
+                          if (e.target.value !== "OTHER") {
+                            setCustomRevokeReason("");
+                          }
+                        })({
+                          target: { value },
+                        } as React.ChangeEvent<HTMLSelectElement>)
+                      }
+                      isDisabled={undefined}
+                      aria-label={"승인 취소 사유"}
+                      className="w-full"
+                    >
+                      <Label>{"승인 취소 사유"}</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {rejectionReasons.map((reason, index) => (
+                            <ListBox.Item
+                              key={reason.value}
+                              id={reason.value}
+                              textValue={"reason.label"}
+                            >
+                              {reason.label}
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+                  {revokeReason === "OTHER" && (
+                    <TextField
+                      className="w-full"
+                      isDisabled={undefined}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"기타 승인 취소 사유"}</Label>
+                      <TextArea
+                        placeholder="승인 취소 사유를 직접 입력해주세요"
+                        value={customRevokeReason}
+                        onChange={(
+                          e: React.ChangeEvent<
+                            | HTMLInputElement
+                            | HTMLTextAreaElement
+                            | HTMLSelectElement
+                          >,
+                        ) => setCustomRevokeReason(e.target.value)}
+                        style={{ marginBottom: 8 }}
+                        required
+                        rows={3}
+                        aria-label={"기타 승인 취소 사유"}
+                      />
+                    </TextField>
+                  )}
+                  {actionError && (
+                    <Alert
+                      style={{ marginBottom: 8 }}
+                      status="danger"
+                      role="alert"
+                    >
+                      <Alert.Content>{actionError}</Alert.Content>
+                    </Alert>
+                  )}
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    onClick={() => {
+                      setRevokeApprovalModalOpen(false);
+                      setRevokeReason("");
+                      setCustomRevokeReason("");
+                    }}
+                    variant={"ghost"}
+                    isDisabled={revokeActionLoading}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    onClick={handleRevokeApproval}
+                    variant={"primary"}
+                    isDisabled={
+                      revokeActionLoading ||
+                      !revokeReason.trim() ||
+                      (revokeReason === "OTHER" && !customRevokeReason.trim())
+                    }
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    {revokeActionLoading ? (
+                      <Spinner aria-label="불러오는 중" size="sm" />
+                    ) : (
+                      "승인 취소"
+                    )}
+                  </Button>
+                </Modal.Footer>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+          {/* 비밀번호 초기화 확인 다이얼로그 */}
+          <Modal.Backdrop
+            isOpen={resetPasswordConfirmOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) (() => setResetPasswordConfirmOpen(false))?.();
+            }}
+            isDismissable={
+              (() => setResetPasswordConfirmOpen(false)) !== undefined
+            }
+          >
+            <Modal.Container size="md" scroll="inside">
+              <Modal.Dialog>
+                <Modal.Header>
+                  <Modal.Heading>비밀번호 초기화</Modal.Heading>
+                </Modal.Header>
+                <Modal.Body>
+                  <div>
+                    <strong>{userDetail?.name}</strong>님의 비밀번호를
+                    초기화하시겠습니까?
+                    <br />
+                    <br />
+                    초기화 시 임시 비밀번호가 발급되며, 기존 비밀번호는 사용할
+                    수 없게 됩니다.
+                  </div>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    onClick={() => setResetPasswordConfirmOpen(false)}
+                    variant={"ghost"}
+                    isDisabled={resetPasswordLoading}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    onClick={handleConfirmResetPassword}
+                    variant={"primary"}
+                    isDisabled={resetPasswordLoading}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    {resetPasswordLoading ? (
+                      <Spinner aria-label="불러오는 중" size="sm" />
+                    ) : (
+                      "초기화"
+                    )}
+                  </Button>
+                </Modal.Footer>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+          {/* 임시 비밀번호 결과 다이얼로그 */}
+          <Modal.Backdrop
+            isOpen={resetPasswordResultOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) handleResetPasswordResultClose?.();
+            }}
+            isDismissable={handleResetPasswordResultClose !== undefined}
+          >
+            <Modal.Container size="md" scroll="inside">
+              <Modal.Dialog>
+                <Modal.Header>
+                  <Modal.Heading>비밀번호 초기화 완료</Modal.Heading>
+                </Modal.Header>
+                <Modal.Body>
+                  <div style={{ marginBottom: 8 }}>
+                    비밀번호가 성공적으로 초기화되었습니다.
+                    <br />
+                    아래 임시 비밀번호를 회원에게 전달해주세요.
+                  </div>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 4 }}
+                  >
+                    <TextField
+                      className="w-full"
+                      isDisabled={undefined}
+                      isInvalid={undefined}
+                    >
+                      <Label>{"임시 비밀번호"}</Label>
+                      <Input
+                        value={temporaryPassword}
+                        readOnly
+                        aria-label={"임시 비밀번호"}
+                      />
+                    </TextField>
+                    <Button
+                      onClick={handleCopyTemporaryPassword}
+                      variant={"ghost"}
+                      isDisabled={undefined}
+                      isIconOnly={true}
+                      size={"md"}
+                      className="rounded-lg"
+                    >
+                      <Copy />
+                    </Button>
+                  </div>
+                </Modal.Body>
+                <Modal.Footer>
+                  <Button
+                    onClick={handleResetPasswordResultClose}
+                    variant={"primary"}
+                    isDisabled={undefined}
+                    size={"md"}
+                    className="rounded-xl"
+                  >
+                    확인
+                  </Button>
+                </Modal.Footer>
+              </Modal.Dialog>
+            </Modal.Container>
+          </Modal.Backdrop>
+          {/* 계정 정지 / 정지 해제 모달 */}
+          {userId && userDetail && (
+            <AccountStatusModal
+              open={accountStatusModalOpen}
+              onClose={() => setAccountStatusModalOpen(false)}
+              userId={userId}
+              isSuspended={isAccountSuspended}
+              userName={userDetail.name}
+              onSuccess={handleAccountStatusSuccess}
             />
-            <IconButton onClick={handleCopyTemporaryPassword} color="primary">
-              <ContentCopyIcon />
-            </IconButton>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleResetPasswordResultClose} variant="contained">
-            확인
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 계정 정지 / 정지 해제 모달 */}
-      {userId && userDetail && (
-        <AccountStatusModal
-          open={accountStatusModalOpen}
-          onClose={() => setAccountStatusModalOpen(false)}
-          userId={userId}
-          isSuspended={isAccountSuspended}
-          userName={userDetail.name}
-          onSuccess={handleAccountStatusSuccess}
-        />
-      )}
-
-      {/* 블랙리스트 등록 모달 */}
-      {userId && userDetail && (
-        <BlacklistRegisterModal
-          open={blacklistRegisterModalOpen}
-          onClose={() => setBlacklistRegisterModalOpen(false)}
-          user={{
-            id: userId,
-            name: userDetail.name,
-            phoneNumber: userDetail.phoneNumber,
-            age: userDetail.age,
-            gender: userDetail.gender,
-            universityName: userDetail.universityDetails?.name ?? userDetail.university,
-          }}
-          onSuccess={handleBlacklistSuccess}
-        />
-      )}
-
-      {/* 블랙리스트 해제 다이얼로그 */}
-      {userId && userDetail && (
-        <BlacklistReleaseDialog
-          open={blacklistReleaseDialogOpen}
-          onClose={() => setBlacklistReleaseDialogOpen(false)}
-          userId={userId}
-          userName={userDetail.name}
-          currentReason={activeBlacklistEntry?.reason ?? null}
-          blacklistedAt={activeBlacklistEntry?.blacklistedAt ?? null}
-          onSuccess={handleBlacklistSuccess}
-        />
-      )}
-
-    </Dialog>
+          )}
+          {/* 블랙리스트 등록 모달 */}
+          {userId && userDetail && (
+            <BlacklistRegisterModal
+              open={blacklistRegisterModalOpen}
+              onClose={() => setBlacklistRegisterModalOpen(false)}
+              user={{
+                id: userId,
+                name: userDetail.name,
+                phoneNumber: userDetail.phoneNumber,
+                age: userDetail.age,
+                gender: userDetail.gender,
+                universityName:
+                  userDetail.universityDetails?.name ?? userDetail.university,
+              }}
+              onSuccess={handleBlacklistSuccess}
+            />
+          )}
+          {/* 블랙리스트 해제 다이얼로그 */}
+          {userId && userDetail && (
+            <BlacklistReleaseDialog
+              open={blacklistReleaseDialogOpen}
+              onClose={() => setBlacklistReleaseDialogOpen(false)}
+              userId={userId}
+              userName={userDetail.name}
+              currentReason={activeBlacklistEntry?.reason ?? null}
+              blacklistedAt={activeBlacklistEntry?.blacklistedAt ?? null}
+              onSuccess={handleBlacklistSuccess}
+            />
+          )}
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 };
 

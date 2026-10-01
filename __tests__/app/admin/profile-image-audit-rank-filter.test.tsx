@@ -1,3 +1,4 @@
+import {selectHeroValue,heroSelectTrigger} from '@/app/admin/content/test-utils/hero-select';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -27,9 +28,8 @@ describe('profile image audit rank filter', () => {
       const user = userEvent.setup();
       render(<ProfileImageAuditPage />);
       await screen.findByTestId('profile-image-audit-card');
-      await user.click(screen.getByRole('combobox', { name: '성별' }));
-      await user.click(screen.getByRole('option', { name: '여성' }));
-      await user.click(screen.getByRole('button', { name: 'Go to page 2' }));
+      await selectHeroValue('성별','FEMALE');
+      await user.click(screen.getByRole('button', { name: '다음' }));
       expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
       const requested = new Promise<void>((resolve) => {
         listMock.mockImplementationOnce(async (params) => {
@@ -42,8 +42,7 @@ describe('profile image audit rank filter', () => {
       });
 
       // When: an appearance rank is selected.
-      await user.click(screen.getByRole('combobox', { name: '외모 등급' }));
-      await user.click(screen.getByRole('option', { name: rank, exact: true }));
+      await selectHeroValue('외모 등급',rank);
 
       // Then: the request contains the rank and resets pagination.
       await requested;
@@ -55,12 +54,10 @@ describe('profile image audit rank filter', () => {
     const user = userEvent.setup();
     render(<ProfileImageAuditPage />);
     await screen.findByTestId('profile-image-audit-card');
-    await user.click(screen.getByRole('combobox', { name: '외모 등급' }));
-    await user.click(screen.getByRole('option', { name: 'S', exact: true }));
+    await selectHeroValue('외모 등급','S');
 
     // When: all ranks are selected again.
-    await user.click(screen.getByRole('combobox', { name: '외모 등급' }));
-    await user.click(screen.getByRole('option', { name: '전체', exact: true }));
+    await selectHeroValue('외모 등급','');
 
     // Then: the rank no longer constrains the request.
     expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({

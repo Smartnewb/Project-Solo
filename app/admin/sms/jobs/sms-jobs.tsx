@@ -1,84 +1,75 @@
 // TITLE: - SMS 대량 발송 이력 조회 (읽기 전용)
 'use client';
-
+import { Button, Input, Select, ListBox } from '@heroui/react';
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import type {
-	RecipientFilterSummary,
-	SmsJobListItem,
-	SmsJobStatus,
-} from '@/app/services/sms';
+import type { RecipientFilterSummary, SmsJobListItem, SmsJobStatus, } from '@/app/services/sms';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useSmsJobFailures, useSmsJobs } from '../hooks/useSmsJobs';
-
 const PAGE_LIMIT = 20;
 const FAILURES_PAGE_LIMIT = 20;
-
-const STATUS_OPTIONS: Array<{ value: '' | SmsJobStatus; label: string }> = [
-	{ value: '', label: '전체 상태' },
-	{ value: 'QUEUED', label: '대기중' },
-	{ value: 'RUNNING', label: '발송중' },
-	{ value: 'COMPLETED', label: '완료' },
-	{ value: 'FAILED', label: '실패' },
+const STATUS_OPTIONS: Array<{
+    value: '' | SmsJobStatus;
+    label: string;
+}> = [
+    { value: '', label: '전체 상태' },
+    { value: 'QUEUED', label: '대기중' },
+    { value: 'RUNNING', label: '발송중' },
+    { value: 'COMPLETED', label: '완료' },
+    { value: 'FAILED', label: '실패' },
 ];
-
 const STATUS_LABEL: Record<SmsJobStatus, string> = {
-	QUEUED: '대기중',
-	RUNNING: '발송중',
-	COMPLETED: '완료',
-	FAILED: '실패',
+    QUEUED: '대기중',
+    RUNNING: '발송중',
+    COMPLETED: '완료',
+    FAILED: '실패',
 };
-
 const STATUS_STYLE: Record<SmsJobStatus, string> = {
-	QUEUED: 'text-[#1F2937] bg-[#F3F4F6] border border-[#D1D5DB]',
-	RUNNING: 'text-white bg-[#3B82F6]',
-	COMPLETED: 'text-white bg-[#885AEB]',
-	FAILED: 'text-white bg-red-500',
+    QUEUED: 'text-[#1F2937] bg-[#F3F4F6] border border-[#D1D5DB]',
+    RUNNING: 'text-white bg-[#3B82F6]',
+    COMPLETED: 'text-white bg-[#885AEB]',
+    FAILED: 'text-white bg-red-500',
 };
-
 // UTC ISO 문자열 → KST 'YYYY-MM-DD HH:mm'
 function formatKstDateTime(iso: string | null): string {
-	if (!iso) return '-';
-	const date = new Date(iso);
-	if (Number.isNaN(date.getTime())) return iso;
-	return date.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 16);
+    if (!iso)
+        return '-';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime()))
+        return iso;
+    return date.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 16);
 }
-
 function summarizeFilter(summary: RecipientFilterSummary): string {
-	if (summary.userIdCount) return `지정 유저 ${summary.userIdCount}명`;
-	const parts: string[] = [];
-	if (summary.regionCodeCount) parts.push(`지역 ${summary.regionCodeCount}개`);
-	if (summary.universityIdCount) parts.push(`학교 ${summary.universityIdCount}개`);
-	if (summary.gender) parts.push(summary.gender === 'MALE' ? '남성' : '여성');
-	if (summary.excludeUserIdCount) parts.push(`제외 ${summary.excludeUserIdCount}명`);
-	return parts.length ? parts.join(' · ') : '전체 대상';
+    if (summary.userIdCount)
+        return `지정 유저 ${summary.userIdCount}명`;
+    const parts: string[] = [];
+    if (summary.regionCodeCount)
+        parts.push(`지역 ${summary.regionCodeCount}개`);
+    if (summary.universityIdCount)
+        parts.push(`학교 ${summary.universityIdCount}개`);
+    if (summary.gender)
+        parts.push(summary.gender === 'MALE' ? '남성' : '여성');
+    if (summary.excludeUserIdCount)
+        parts.push(`제외 ${summary.excludeUserIdCount}명`);
+    return parts.length ? parts.join(' · ') : '전체 대상';
 }
-
-function StatusBadge({ status }: { status: SmsJobStatus }) {
-	return (
-		<span
-			className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${STATUS_STYLE[status] ?? STATUS_STYLE.QUEUED}`}
-		>
+function StatusBadge({ status }: {
+    status: SmsJobStatus;
+}) {
+    return (<span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${STATUS_STYLE[status] ?? STATUS_STYLE.QUEUED}`}>
 			{STATUS_LABEL[status] ?? status}
-		</span>
-	);
+		</span>);
 }
-
 // MARK: - 실패 사유 모달
-function JobDetailModal({ job, onClose }: { job: SmsJobListItem; onClose: () => void }) {
-	const [page, setPage] = useState(1);
-	const { data, isLoading, error } = useSmsJobFailures(job.id, page, FAILURES_PAGE_LIMIT);
-
-	const failures = data?.data ?? [];
-	const meta = data?.meta;
-
-	return (
-		<div
-			className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'
-			role='dialog'
-			aria-modal='true'
-			aria-label='대량 발송 잡 상세'
-		>
+function JobDetailModal({ job, onClose }: {
+    job: SmsJobListItem;
+    onClose: () => void;
+}) {
+    const [page, setPage] = useState(1);
+    const { data, isLoading, error } = useSmsJobFailures(job.id, page, FAILURES_PAGE_LIMIT);
+    const failures = data?.data ?? [];
+    const meta = data?.meta;
+    return (<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4' role='dialog' aria-modal='true' aria-label='대량 발송 잡 상세'>
 			<div className='bg-white rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col'>
 				{/* 헤더 */}
 				<div className='flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]'>
@@ -86,14 +77,9 @@ function JobDetailModal({ job, onClose }: { job: SmsJobListItem; onClose: () => 
 						<h3 className='text-base font-medium text-[#111827]'>발송 잡 상세</h3>
 						<p className='text-xs text-[#6B7280] mt-0.5'>{job.id}</p>
 					</div>
-					<button
-						type='button'
-						onClick={onClose}
-						aria-label='닫기'
-						className='p-1.5 rounded-md text-[#6B7280] hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]'
-					>
-						<X size={18} />
-					</button>
+					<Button type='button' onPress={onClose} aria-label='닫기' className='p-1.5 rounded-md text-[#6B7280] hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]' variant="secondary">
+						<X size={18}></X>
+					</Button>
 				</div>
 
 				<div className='overflow-y-auto px-5 py-4 space-y-4'>
@@ -105,7 +91,7 @@ function JobDetailModal({ job, onClose }: { job: SmsJobListItem; onClose: () => 
 						</div>
 						<div>
 							<div className='text-xs text-[#6B7280]'>상태</div>
-							<StatusBadge status={job.status} />
+							<StatusBadge status={job.status}></StatusBadge>
 						</div>
 						<div>
 							<div className='text-xs text-[#6B7280]'>대상 / 성공 / 실패</div>
@@ -152,45 +138,24 @@ function JobDetailModal({ job, onClose }: { job: SmsJobListItem; onClose: () => 
 							<h4 className='text-sm font-medium text-[#111827]'>
 								실패 사유 목록{meta ? ` (총 ${meta.total}건)` : ''}
 							</h4>
-							{meta && meta.totalPages > 1 && (
-								<div className='flex items-center gap-2 text-sm'>
-									<button
-										type='button'
-										onClick={() => setPage((p) => Math.max(1, p - 1))}
-										disabled={page <= 1}
-										aria-label='이전 페이지'
-										className='p-1 rounded border border-[#D1D5DB] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]'
-									>
-										<ChevronLeft size={16} />
-									</button>
+							{meta && meta.totalPages > 1 && (<div className='flex items-center gap-2 text-sm'>
+									<Button type='button' onPress={() => setPage((p) => Math.max(1, p - 1))} isDisabled={page <= 1} aria-label='이전 페이지' className='p-1 rounded border border-[#D1D5DB] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]' variant="secondary">
+										<ChevronLeft size={16}></ChevronLeft>
+									</Button>
 									<span className='text-xs text-[#6B7280]'>
 										{page} / {meta.totalPages}
 									</span>
-									<button
-										type='button'
-										onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-										disabled={page >= meta.totalPages}
-										aria-label='다음 페이지'
-										className='p-1 rounded border border-[#D1D5DB] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]'
-									>
-										<ChevronRight size={16} />
-									</button>
-								</div>
-							)}
+									<Button type='button' onPress={() => setPage((p) => Math.min(meta.totalPages, p + 1))} isDisabled={page >= meta.totalPages} aria-label='다음 페이지' className='p-1 rounded border border-[#D1D5DB] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]' variant="secondary">
+										<ChevronRight size={16}></ChevronRight>
+									</Button>
+								</div>)}
 						</div>
 
-						{isLoading ? (
-							<div className='flex justify-center py-8'>
-								<div className='animate-spin rounded-full h-6 w-6 border-b-2 border-[#885AEB]' />
-							</div>
-						) : error ? (
-							<p className='text-sm text-red-600 py-4'>
+						{isLoading ? (<div className='flex justify-center py-8'>
+								<div className='animate-spin rounded-full h-6 w-6 border-b-2 border-[#885AEB]'></div>
+							</div>) : error ? (<p className='text-sm text-red-600 py-4'>
 								{getAdminErrorMessage(error, '실패 목록을 불러오지 못했습니다.')}
-							</p>
-						) : failures.length === 0 ? (
-							<p className='text-sm text-[#6B7280] py-4'>실패 건이 없습니다.</p>
-						) : (
-							<div className='overflow-x-auto border border-[#E5E7EB] rounded-md'>
+							</p>) : failures.length === 0 ? (<p className='text-sm text-[#6B7280] py-4'>실패 건이 없습니다.</p>) : (<div className='overflow-x-auto border border-[#E5E7EB] rounded-md'>
 								<table className='w-full text-sm'>
 									<thead>
 										<tr className='bg-[#F9FAFB] text-left text-xs text-[#6B7280]'>
@@ -201,8 +166,7 @@ function JobDetailModal({ job, onClose }: { job: SmsJobListItem; onClose: () => 
 										</tr>
 									</thead>
 									<tbody>
-										{failures.map((failure) => (
-											<tr key={failure.id} className='border-t border-[#F3F4F6]'>
+										{failures.map((failure) => (<tr key={failure.id} className='border-t border-[#F3F4F6]'>
 												<td className='px-3 py-2 whitespace-nowrap text-[#374151]'>
 													{formatKstDateTime(failure.createdAt)}
 												</td>
@@ -215,42 +179,33 @@ function JobDetailModal({ job, onClose }: { job: SmsJobListItem; onClose: () => 
 												<td className='px-3 py-2 text-red-600'>
 													{failure.errorMessage ?? '-'}
 												</td>
-											</tr>
-										))}
+											</tr>))}
 									</tbody>
 								</table>
-							</div>
-						)}
+							</div>)}
 					</div>
 				</div>
 			</div>
-		</div>
-	);
+		</div>);
 }
-
 // MARK: - 대량 발송 이력 화면
 function SmsJobsContent() {
-	const [page, setPage] = useState(1);
-	const [status, setStatus] = useState<'' | SmsJobStatus>('');
-	const [startDate, setStartDate] = useState('');
-	const [endDate, setEndDate] = useState('');
-	const [selectedJob, setSelectedJob] = useState<SmsJobListItem | null>(null);
-
-	const { data, isLoading, error } = useSmsJobs({
-		page,
-		limit: PAGE_LIMIT,
-		status: status || undefined,
-		startDate: startDate || undefined,
-		endDate: endDate || undefined,
-	});
-
-	const jobs = data?.data ?? [];
-	const meta = data?.meta;
-
-	const resetToFirstPage = () => setPage(1);
-
-	return (
-		<div className='bg-[#F9FAFB] min-h-screen px-4 sm:px-6 md:px-8 lg:px-20 xl:px-25 py-6'>
+    const [page, setPage] = useState(1);
+    const [status, setStatus] = useState<'' | SmsJobStatus>('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [selectedJob, setSelectedJob] = useState<SmsJobListItem | null>(null);
+    const { data, isLoading, error } = useSmsJobs({
+        page,
+        limit: PAGE_LIMIT,
+        status: status || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+    });
+    const jobs = data?.data ?? [];
+    const meta = data?.meta;
+    const resetToFirstPage = () => setPage(1);
+    return (<div className='bg-[#F9FAFB] min-h-screen px-4 sm:px-6 md:px-8 lg:px-20 xl:px-25 py-6'>
 			<div className='mb-4'>
 				<h2 className='text-lg font-medium text-[#111827]'>대량 발송 이력</h2>
 				<p className='text-sm text-[#6B7280]'>
@@ -265,82 +220,51 @@ function SmsJobsContent() {
 					<label htmlFor='sms-jobs-start-date' className='block text-xs text-[#6B7280] mb-1'>
 						시작일
 					</label>
-					<input
-						id='sms-jobs-start-date'
-						type='date'
-						value={startDate}
-						onChange={(e) => {
-							setStartDate(e.target.value);
-							resetToFirstPage();
-						}}
-						className='border border-[#D1D5DB] rounded-md px-3 py-2 text-sm'
-					/>
+					<Input id='sms-jobs-start-date' type='date' value={startDate} onChange={(e) => {
+            setStartDate(e.target.value);
+            resetToFirstPage();
+        }} className='border border-[#D1D5DB] rounded-md px-3 py-2 text-sm'></Input>
 				</div>
 				<div>
 					<label htmlFor='sms-jobs-end-date' className='block text-xs text-[#6B7280] mb-1'>
 						종료일
 					</label>
-					<input
-						id='sms-jobs-end-date'
-						type='date'
-						value={endDate}
-						onChange={(e) => {
-							setEndDate(e.target.value);
-							resetToFirstPage();
-						}}
-						className='border border-[#D1D5DB] rounded-md px-3 py-2 text-sm'
-					/>
+					<Input id='sms-jobs-end-date' type='date' value={endDate} onChange={(e) => {
+            setEndDate(e.target.value);
+            resetToFirstPage();
+        }} className='border border-[#D1D5DB] rounded-md px-3 py-2 text-sm'></Input>
 				</div>
 				<div>
 					<label htmlFor='sms-jobs-status' className='block text-xs text-[#6B7280] mb-1'>
 						상태
 					</label>
-					<select
-						id='sms-jobs-status'
-						value={status}
-						onChange={(e) => {
-							setStatus(e.target.value as '' | SmsJobStatus);
-							resetToFirstPage();
-						}}
-						className='border border-[#D1D5DB] rounded-md px-3 py-2 text-sm'
-					>
-						{STATUS_OPTIONS.map((option) => (
-							<option key={option.value} value={option.value}>
+					<Select id='sms-jobs-status' value={status} onChange={(key) => {
+            const value = String(key ?? "");
+            setStatus(value as '' | SmsJobStatus);
+            resetToFirstPage();
+        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+						{STATUS_OPTIONS.map((option) => (<ListBox.Item key={option.value} id={option.value} textValue={String(option.label)}>
 								{option.label}
-							</option>
-						))}
-					</select>
+							</ListBox.Item>))}
+					</ListBox></Select.Popover></Select>
 				</div>
-				{(startDate || endDate || status) && (
-					<button
-						type='button'
-						onClick={() => {
-							setStartDate('');
-							setEndDate('');
-							setStatus('');
-							resetToFirstPage();
-						}}
-						className='px-3 py-2 rounded-md border border-[#D1D5DB] text-sm text-[#374151] hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]'
-					>
+				{(startDate || endDate || status) && (<Button type='button' onPress={() => {
+                setStartDate('');
+                setEndDate('');
+                setStatus('');
+                resetToFirstPage();
+            }} className='px-3 py-2 rounded-md border border-[#D1D5DB] text-sm text-[#374151] hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]' variant="secondary">
 						필터 초기화
-					</button>
-				)}
+					</Button>)}
 			</div>
 
 			{/* MARK: - 잡 목록 */}
 			<div className='bg-white border border-[#D1D5DB] rounded-lg overflow-hidden'>
-				{isLoading ? (
-					<div className='flex justify-center items-center py-16'>
-						<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-[#885AEB]' />
-					</div>
-				) : error ? (
-					<p className='text-sm text-red-600 text-center py-12'>
+				{isLoading ? (<div className='flex justify-center items-center py-16'>
+						<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-[#885AEB]'></div>
+					</div>) : error ? (<p className='text-sm text-red-600 text-center py-12'>
 						{getAdminErrorMessage(error, '이력을 불러오지 못했습니다.')}
-					</p>
-				) : jobs.length === 0 ? (
-					<p className='text-sm text-[#6B7280] text-center py-12'>발송 이력이 없습니다.</p>
-				) : (
-					<div className='overflow-x-auto'>
+					</p>) : jobs.length === 0 ? (<p className='text-sm text-[#6B7280] text-center py-12'>발송 이력이 없습니다.</p>) : (<div className='overflow-x-auto'>
 						<table className='w-full text-sm'>
 							<thead>
 								<tr className='bg-[#F9FAFB] text-left text-xs text-[#6B7280] border-b border-[#E5E7EB]'>
@@ -354,23 +278,9 @@ function SmsJobsContent() {
 								</tr>
 							</thead>
 							<tbody>
-								{jobs.map((job) => (
-									<tr
-										key={job.id}
-										onClick={() => setSelectedJob(job)}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter' || e.key === ' ') {
-												e.preventDefault();
-												setSelectedJob(job);
-											}
-										}}
-										tabIndex={0}
-										role='button'
-										aria-label={`${formatKstDateTime(job.createdAt)} 발송 잡 상세 보기`}
-										className='border-b border-[#F3F4F6] cursor-pointer hover:bg-[#F9FAFB] focus:outline-none focus-visible:bg-[#F3F0FC]'
-									>
+								{jobs.map((job) => (<tr key={job.id} className='border-b border-[#F3F4F6] cursor-pointer hover:bg-[#F9FAFB] focus:outline-none focus-visible:bg-[#F3F0FC]'>
 										<td className='px-4 py-3 whitespace-nowrap text-[#374151]'>
-											{formatKstDateTime(job.createdAt)}
+											<Button variant="tertiary" aria-label={`${formatKstDateTime(job.createdAt)} 발송 잡 상세 보기`} onPress={() => setSelectedJob(job)}>{formatKstDateTime(job.createdAt)}</Button>
 										</td>
 										<td className='px-4 py-3 max-w-[320px]'>
 											<div className='truncate text-[#111827]'>{job.messagePreview}</div>
@@ -379,57 +289,37 @@ function SmsJobsContent() {
 										<td className='px-4 py-3 whitespace-nowrap text-[#374151]'>{job.type}</td>
 										<td className='px-4 py-3 text-right text-[#374151]'>{job.totalCount}</td>
 										<td className='px-4 py-3 text-right text-[#374151]'>{job.sentCount}</td>
-										<td
-											className={`px-4 py-3 text-right ${job.failedCount > 0 ? 'text-red-600 font-medium' : 'text-[#374151]'}`}
-										>
+										<td className={`px-4 py-3 text-right ${job.failedCount > 0 ? 'text-red-600 font-medium' : 'text-[#374151]'}`}>
 											{job.failedCount}
 										</td>
 										<td className='px-4 py-3'>
-											<StatusBadge status={job.status} />
+											<StatusBadge status={job.status}></StatusBadge>
 										</td>
-									</tr>
-								))}
+									</tr>))}
 							</tbody>
 						</table>
-					</div>
-				)}
+					</div>)}
 
 				{/* MARK: - 페이지네이션 */}
-				{meta && meta.total > 0 && (
-					<div className='flex items-center justify-between px-4 py-3 border-t border-[#E5E7EB] text-sm'>
+				{meta && meta.total > 0 && (<div className='flex items-center justify-between px-4 py-3 border-t border-[#E5E7EB] text-sm'>
 						<span className='text-xs text-[#6B7280]'>총 {meta.total}건</span>
 						<div className='flex items-center gap-2'>
-							<button
-								type='button'
-								onClick={() => setPage((p) => Math.max(1, p - 1))}
-								disabled={page <= 1}
-								aria-label='이전 페이지'
-								className='p-1.5 rounded border border-[#D1D5DB] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]'
-							>
-								<ChevronLeft size={16} />
-							</button>
+							<Button type='button' onPress={() => setPage((p) => Math.max(1, p - 1))} isDisabled={page <= 1} aria-label='이전 페이지' className='p-1.5 rounded border border-[#D1D5DB] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]' variant="secondary">
+								<ChevronLeft size={16}></ChevronLeft>
+							</Button>
 							<span className='text-xs text-[#6B7280]'>
 								{meta.page} / {Math.max(1, meta.totalPages)}
 							</span>
-							<button
-								type='button'
-								onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-								disabled={page >= meta.totalPages}
-								aria-label='다음 페이지'
-								className='p-1.5 rounded border border-[#D1D5DB] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]'
-							>
-								<ChevronRight size={16} />
-							</button>
+							<Button type='button' onPress={() => setPage((p) => Math.min(meta.totalPages, p + 1))} isDisabled={page >= meta.totalPages} aria-label='다음 페이지' className='p-1.5 rounded border border-[#D1D5DB] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#885AEB]' variant="secondary">
+								<ChevronRight size={16}></ChevronRight>
+							</Button>
 						</div>
-					</div>
-				)}
+					</div>)}
 			</div>
 
-			{selectedJob && <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />}
-		</div>
-	);
+			{selectedJob && <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)}></JobDetailModal>}
+		</div>);
 }
-
 export default function SmsJobsScreen() {
-	return <SmsJobsContent />;
+    return <SmsJobsContent></SmsJobsContent>;
 }

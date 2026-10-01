@@ -5,31 +5,6 @@ import ChatManagementTab from '@/app/admin/chat/components/ChatManagementTab';
 
 const mockGetChatRooms = jest.fn();
 
-jest.mock('@mui/material', () => {
-  const actual = jest.requireActual('@mui/material');
-
-  return {
-    ...actual,
-    TablePagination: ({ count, page, rowsPerPage, onPageChange, labelDisplayedRows }: any) => {
-      const from = count === 0 ? 0 : page * rowsPerPage + 1;
-      const to = Math.min((page + 1) * rowsPerPage, count);
-
-      return (
-        <div>
-          <button
-            type="button"
-            onClick={(event) => onPageChange(event, page + 1)}
-            disabled={(page + 1) * rowsPerPage >= count}
-          >
-            next-page
-          </button>
-          <span>{labelDisplayedRows({ from, to, count, page })}</span>
-        </div>
-      );
-    },
-  };
-});
-
 const buildChatRoom = (id: string) => ({
   id,
   male: { id: 'm', name: 'M', profileImage: '' },
@@ -96,7 +71,7 @@ describe('ChatManagementTab preset pagination bug', () => {
       expect(screen.getAllByText('M · F').length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'next-page' }));
+    fireEvent.click(screen.getByRole('button', { name: '다음 페이지' }));
 
     await waitFor(() => {
       expect(mockGetChatRooms.mock.calls.some((call) => call[0].page === 2)).toBe(true);

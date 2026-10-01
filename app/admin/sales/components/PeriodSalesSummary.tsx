@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState, useEffect } from "react";
 import { salesService } from "@/app/services/sales";
@@ -15,10 +16,10 @@ export function PeriodSalesSummary({
   endDate,
 }: PeriodSalesSummaryProps) {
   const [weeklyData, setWeeklyData] = useState<WeeklySalesResponse | null>(
-    null
+    null,
   );
   const [monthlyData, setMonthlyData] = useState<MonthlySalesResponse | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -98,12 +99,14 @@ export function PeriodSalesSummary({
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
         <p>{error}</p>
-        <button
+        <Button
           onClick={handleRefresh}
           className="mt-2 text-sm text-red-600 underline hover:text-red-800"
+          variant={"secondary"}
+          size={"md"}
         >
           다시 시도
-        </button>
+        </Button>
       </div>
     );
   }
@@ -114,18 +117,22 @@ export function PeriodSalesSummary({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-gray-500">이번 주 매출</h3>
-          <button
+          <Button
             onClick={handleRefresh}
             className="text-xs text-gray-400 hover:text-gray-600"
+            variant={"secondary"}
+            size={"md"}
           >
             새로고침
-          </button>
+          </Button>
         </div>
-        <div className="text-2xl font-bold text-[#ff385c] mb-1">
+        <div className="text-2xl font-bold text-[#7A4AE2] mb-1">
           {weeklyData ? formatCurrency(weeklyData.weeklySales ?? 0) : "-"}
         </div>
         <div className="text-sm text-gray-500 mb-2">
-          {weeklyData ? `${(weeklyData.weeklyCount ?? 0).toLocaleString()}건` : "-"}
+          {weeklyData
+            ? `${(weeklyData.weeklyCount ?? 0).toLocaleString()}건`
+            : "-"}
         </div>
 
         {/* 예측치 표시 */}
@@ -145,7 +152,8 @@ export function PeriodSalesSummary({
               </div>
               {weeklyData.projectedWeeklyCount !== undefined && (
                 <div className="text-xs text-gray-400">
-                  예상 건수: {weeklyData.projectedWeeklyCount.toLocaleString()}건
+                  예상 건수: {weeklyData.projectedWeeklyCount.toLocaleString()}
+                  건
                 </div>
               )}
             </div>
@@ -157,11 +165,13 @@ export function PeriodSalesSummary({
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-gray-500">이번 달 매출</h3>
         </div>
-        <div className="text-2xl font-bold text-[#ff385c] mb-1">
+        <div className="text-2xl font-bold text-[#7A4AE2] mb-1">
           {monthlyData ? formatCurrency(monthlyData.monthlySales ?? 0) : "-"}
         </div>
         <div className="text-sm text-gray-500 mb-2">
-          {monthlyData ? `${(monthlyData.monthlyCount ?? 0).toLocaleString()}건` : "-"}
+          {monthlyData
+            ? `${(monthlyData.monthlyCount ?? 0).toLocaleString()}건`
+            : "-"}
         </div>
 
         {/* 예측치 표시 */}
@@ -183,8 +193,8 @@ export function PeriodSalesSummary({
               </div>
               {monthlyData.projectedMonthlyCount !== undefined && (
                 <div className="text-xs text-gray-400">
-                  예상 건수: {monthlyData.projectedMonthlyCount.toLocaleString()}
-                  건
+                  예상 건수:{" "}
+                  {monthlyData.projectedMonthlyCount.toLocaleString()}건
                 </div>
               )}
             </div>

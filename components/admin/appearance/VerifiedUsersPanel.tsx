@@ -1,29 +1,27 @@
-'use client';
+"use client";
+import { Label as HeroSelectLabel } from "@heroui/react";
 
-import React, { useState, useEffect } from 'react';
+import { Button as HeroActionButton } from "@heroui/react";
 import {
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  TextField,
-  Button,
-  Typography,
-  CircularProgress,
+  ListBox,
+  Select,
   Alert,
   Avatar,
+  Button,
   Chip,
-  Grid,
-  InputAdornment
-} from '@mui/material';
-import { Search } from '@mui/icons-material';
-import AdminService from '@/app/services/admin';
-import UserDetailModal, { UserDetail } from './UserDetailModal';
+  Input,
+  Label,
+  Pagination,
+  Spinner,
+  TextField,
+} from "@heroui/react";
+
+import { Search } from "lucide-react";
+
+import React, { useState, useEffect } from "react";
+
+import AdminService from "@/app/services/admin";
+import UserDetailModal, { UserDetail } from "./UserDetailModal";
 
 // 대학교 인증 사용자 타입
 interface VerifiedUser {
@@ -37,7 +35,7 @@ interface VerifiedUser {
   studentNumber: string;
   verifiedAt: string;
   createdAt: string;
-  gender?: 'MALE' | 'FEMALE';
+  gender?: "MALE" | "FEMALE";
   profileImageUrl?: string;
   profileImages?: {
     id: string;
@@ -67,8 +65,8 @@ const VerifiedUsersPanel: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
-  const [nameFilter, setNameFilter] = useState('');
-  const [universityFilter, setUniversityFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState("");
+  const [universityFilter, setUniversityFilter] = useState("");
 
   // 사용자 상세 모달 상태
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
@@ -83,18 +81,22 @@ const VerifiedUsersPanel: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response: VerifiedUsersResponse = await AdminService.userAppearance.getVerifiedUsers({
-        page: page + 1, // API는 1부터 시작
-        limit: rowsPerPage,
-        name: nameFilter || undefined,
-        university: universityFilter || undefined
-      });
+      const response: VerifiedUsersResponse =
+        await AdminService.userAppearance.getVerifiedUsers({
+          page: page + 1, // API는 1부터 시작
+          limit: rowsPerPage,
+          name: nameFilter || undefined,
+          university: universityFilter || undefined,
+        });
 
       setUsers(response.data);
       setTotalItems(response.meta?.total ?? 0);
     } catch (err: any) {
-      console.error('대학교 인증 사용자 조회 중 오류:', err);
-      setError(err.message || '대학교 인증 사용자 목록을 불러오는 중 오류가 발생했습니다.');
+      console.error("대학교 인증 사용자 조회 중 오류:", err);
+      setError(
+        err.message ||
+          "대학교 인증 사용자 목록을 불러오는 중 오류가 발생했습니다.",
+      );
     } finally {
       setLoading(false);
     }
@@ -111,7 +113,11 @@ const VerifiedUsersPanel: React.FC = () => {
   };
 
   // 페이지당 행 수 변경 핸들러
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
@@ -124,7 +130,7 @@ const VerifiedUsersPanel: React.FC = () => {
 
   // 엔터 키 검색
   const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
+    if (event.key === "Enter") {
       handleSearch();
     }
   };
@@ -138,14 +144,16 @@ const VerifiedUsersPanel: React.FC = () => {
       setUserDetailError(null);
       setUserDetail(null);
 
-      console.log('유저 상세 정보 조회 요청:', userId);
+      console.log("유저 상세 정보 조회 요청:", userId);
       const data = await AdminService.userAppearance.getUserDetails(userId);
-      console.log('유저 상세 정보 응답:', data);
+      console.log("유저 상세 정보 응답:", data);
 
       setUserDetail(data);
     } catch (error: any) {
-      console.error('유저 상세 정보 조회 중 오류:', error);
-      setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+      console.error("유저 상세 정보 조회 중 오류:", error);
+      setUserDetailError(
+        error.message || "유저 상세 정보를 불러오는 중 오류가 발생했습니다.",
+      );
     } finally {
       setLoadingUserDetail(false);
     }
@@ -159,181 +167,241 @@ const VerifiedUsersPanel: React.FC = () => {
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    <div>
+      <div className={"text-lg font-semibold text-neutral-900"}>
         대학교 인증 사용자 ({totalItems}명)
-      </Typography>
-
+      </div>
       {/* 검색 필터 */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={4}>
+      <section style={{ padding: 8, marginBottom: 8 }}>
+        <div className={"grid grid-cols-1 gap-4 md:grid-cols-2"}>
+          <div className={"min-w-0"}>
             <TextField
-              fullWidth
-              label="이름 검색"
-              value={nameFilter}
-              onChange={(e) => setNameFilter(e.target.value)}
-              onKeyPress={handleKeyPress}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
+              className="w-full"
+              isDisabled={undefined}
+              isInvalid={undefined}
+            >
+              <Label>{"이름 검색"}</Label>
+              {
+                <span>
+                  <Search />
+                </span>
+              }
+              <Input
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                aria-label={"이름 검색"}
+              />
+            </TextField>
+          </div>
+          <div className={"min-w-0"}>
             <TextField
-              fullWidth
-              label="대학교 검색"
-              value={universityFilter}
-              onChange={(e) => setUniversityFilter(e.target.value)}
-              onKeyPress={handleKeyPress}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
+              className="w-full"
+              isDisabled={undefined}
+              isInvalid={undefined}
+            >
+              <Label>{"대학교 검색"}</Label>
+              {
+                <span>
+                  <Search />
+                </span>
+              }
+              <Input
+                value={universityFilter}
+                onChange={(e) => setUniversityFilter(e.target.value)}
+                aria-label={"대학교 검색"}
+              />
+            </TextField>
+          </div>
+          <div className={"min-w-0"}>
             <Button
-              variant="contained"
               onClick={handleSearch}
-              disabled={loading}
-              fullWidth
+              variant={"primary"}
+              isDisabled={loading}
+              size={"md"}
+              className="rounded-xl"
             >
               검색
             </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-
+          </div>
+        </div>
+      </section>
       {/* 오류 메시지 */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+        <Alert style={{ marginBottom: 8 }} status="danger" role="alert">
+          <Alert.Content>{error}</Alert.Content>
         </Alert>
       )}
-
       {/* 테이블 */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>프로필</TableCell>
-              <TableCell>이름</TableCell>
-              <TableCell>이메일</TableCell>
-              <TableCell>전화번호</TableCell>
-              <TableCell>대학교</TableCell>
-              <TableCell>학과</TableCell>
-              <TableCell>학년</TableCell>
-              <TableCell>학번</TableCell>
-              <TableCell>프로필 정보</TableCell>
-              <TableCell>접속 상태</TableCell>
-              <TableCell>인증일시</TableCell>
-              <TableCell>가입일시</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+      <div className={"overflow-x-auto"}>
+        <table
+          className={
+            "w-full text-sm text-left [&_td]:p-3 [&_thead]:bg-neutral-50 [&_tr]:border-b"
+          }
+        >
+          <thead>
+            <tr>
+              <th>프로필</th>
+              <th>이름</th>
+              <th>이메일</th>
+              <th>전화번호</th>
+              <th>대학교</th>
+              <th>학과</th>
+              <th>학년</th>
+              <th>학번</th>
+              <th>프로필 정보</th>
+              <th>접속 상태</th>
+              <th>인증일시</th>
+              <th>가입일시</th>
+            </tr>
+          </thead>
+          <tbody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
+              <tr>
+                <td colSpan={12} style={{ paddingTop: 16, paddingBottom: 16 }}>
+                  <Spinner aria-label="불러오는 중" size="sm" />
+                </td>
+              </tr>
             ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
+              <tr>
+                <td colSpan={12} style={{ paddingTop: 16, paddingBottom: 16 }}>
                   대학교 인증 사용자가 없습니다.
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ) : (
               users.map((user) => (
-                <TableRow key={user.id} hover>
-                  <TableCell>
-                    <Avatar
-                      src={user.profileImageUrl || user.profileImages?.[0]?.url}
-                      alt={user.name}
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        cursor: 'pointer',
-                        '&:hover': {
-                          boxShadow: '0 0 0 2px #3f51b5'
-                        }
-                      }}
+                <tr key={user.id}>
+                  <td>
+                    <HeroActionButton
+                      variant="ghost"
+                      className="h-auto min-w-0 p-0"
                       onClick={() => handleOpenUserDetailModal(user.id)}
+                      aria-label="프로필 상세 보기"
                     >
-                      {user.name?.charAt(0) || '?'}
-                    </Avatar>
-                  </TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.phoneNumber}</TableCell>
-                  <TableCell>{user.universityName}</TableCell>
-                  <TableCell>{user.departmentName}</TableCell>
-                  <TableCell>{user.grade}</TableCell>
-                  <TableCell>{user.studentNumber}</TableCell>
-                  <TableCell>
+                      <Avatar
+                        style={{ width: 40, height: 40, cursor: "pointer" }}
+                      >
+                        <Avatar.Image
+                          src={
+                            user.profileImageUrl || user.profileImages?.[0]?.url
+                          }
+                          alt={user.name}
+                        />
+                        <Avatar.Fallback>
+                          {user.name?.charAt(0) || "?"}
+                        </Avatar.Fallback>
+                      </Avatar>
+                    </HeroActionButton>
+                  </td>
+                  <td>{user.name}</td>
+                  <td>{user.email}</td>
+                  <td>{user.phoneNumber}</td>
+                  <td>{user.universityName}</td>
+                  <td>{user.departmentName}</td>
+                  <td>{user.grade}</td>
+                  <td>{user.studentNumber}</td>
+                  <td>
                     <Chip
-                      label={user.hasPreferences ? "입력 완료" : "미입력"}
-                      size="small"
-                      sx={{
-                        bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
-                        color: user.hasPreferences ? '#2e7d32' : '#c62828',
-                        fontWeight: 'medium'
+                      style={{
+                        backgroundColor: user.hasPreferences
+                          ? "#e8f5e8"
+                          : "#ffebee",
+                        color: user.hasPreferences ? "#2e7d32" : "#c62828",
+                        fontWeight: "medium",
                       }}
-                    />
-                  </TableCell>
-                  <TableCell>
+                      size={"sm"}
+                      variant={"soft"}
+                    >
+                      {user.hasPreferences ? "입력 완료" : "미입력"}
+                    </Chip>
+                  </td>
+                  <td>
                     <Chip
-                      label={user.isLongTermInactive ? "장기 미접속" : "정상"}
-                      size="small"
-                      sx={{
-                        bgcolor: user.isLongTermInactive ? '#ffebee' : '#e8f5e8',
-                        color: user.isLongTermInactive ? '#c62828' : '#2e7d32',
-                        fontWeight: 'medium'
+                      style={{
+                        backgroundColor: user.isLongTermInactive
+                          ? "#ffebee"
+                          : "#e8f5e8",
+                        color: user.isLongTermInactive ? "#c62828" : "#2e7d32",
+                        fontWeight: "medium",
                       }}
-                    />
-                  </TableCell>
-                  <TableCell>{formatDate(user.verifiedAt)}</TableCell>
-                  <TableCell>{formatDate(user.createdAt)}</TableCell>
-                </TableRow>
+                      size={"sm"}
+                      variant={"soft"}
+                    >
+                      {user.isLongTermInactive ? "장기 미접속" : "정상"}
+                    </Chip>
+                  </td>
+                  <td>{formatDate(user.verifiedAt)}</td>
+                  <td>{formatDate(user.createdAt)}</td>
+                </tr>
               ))
             )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
+          </tbody>
+        </table>
+      </div>
       {/* 페이지네이션 */}
-      <TablePagination
-        rowsPerPageOptions={[10, 20, 50]}
-        component="div"
-        count={totalItems}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="페이지당 행 수:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} / ${count !== -1 ? count : `${to}개 이상`}`
-        }
-      />
-
+      <Pagination aria-label="페이지 이동">
+        <Pagination.Summary>
+          {page + 1} / {Math.max(1, Math.ceil(totalItems / rowsPerPage))}
+        </Pagination.Summary>
+        <Pagination.Content>
+          <Pagination.Item>
+            <Pagination.Previous
+              isDisabled={page <= 0}
+              onPress={() => handleChangePage(null, page - 1)}
+            >
+              이전
+            </Pagination.Previous>
+          </Pagination.Item>
+          <Pagination.Item>
+            <Pagination.Next
+              isDisabled={page + 1 >= Math.ceil(totalItems / rowsPerPage)}
+              onPress={() => handleChangePage(null, page + 1)}
+            >
+              다음
+            </Pagination.Next>
+          </Pagination.Item>
+        </Pagination.Content>
+        <div className="flex items-center gap-2">
+          <Select
+            aria-label="행 수"
+            selectedKey={String(rowsPerPage ?? "")}
+            isDisabled={undefined}
+            onSelectionChange={(key) =>
+              handleChangeRowsPerPage({
+                target: { value: String(key ?? "") },
+              } as React.ChangeEvent<HTMLSelectElement>)
+            }
+          >
+            <HeroSelectLabel>행 수 </HeroSelectLabel>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {[10, 20, 50].map((size) => (
+                  <ListBox.Item
+                    key={size}
+                    id={String(size)}
+                    textValue={String(size)}
+                  >
+                    {size}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
+        </div>
+      </Pagination>
       {/* 사용자 상세 정보 모달 */}
       {!!userDetail && (
         <UserDetailModal
@@ -349,7 +417,7 @@ const VerifiedUsersPanel: React.FC = () => {
           }}
         />
       )}
-    </Box>
+    </div>
   );
 };
 

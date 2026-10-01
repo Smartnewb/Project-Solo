@@ -1,168 +1,101 @@
 'use client';
-
+import { Button, Chip, Checkbox } from '@heroui/react';
+import { Pencil as EditIcon, Trash2 as DeleteIcon, GripVertical as DragIndicatorIcon } from 'lucide-react';
 import { forwardRef } from 'react';
-import {
-  Card,
-  CardMedia,
-  CardContent,
-  Box,
-  Typography,
-  Switch,
-  IconButton,
-  Chip,
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import type { Banner } from '@/types/admin';
 import { safeToLocaleDateString } from '@/app/utils/formatters';
-
 type BannerStatus = 'active' | 'scheduled' | 'expired' | 'inactive';
-
 function getBannerStatus(banner: Banner): BannerStatus {
-  if (!banner.isActive) return 'inactive';
-  const now = new Date();
-  if (banner.endDate && now > new Date(banner.endDate)) return 'expired';
-  if (banner.startDate && now < new Date(banner.startDate)) return 'scheduled';
-  return 'active';
+    if (!banner.isActive)
+        return 'inactive';
+    const now = new Date();
+    if (banner.endDate && now > new Date(banner.endDate))
+        return 'expired';
+    if (banner.startDate && now < new Date(banner.startDate))
+        return 'scheduled';
+    return 'active';
 }
-
 function getStatusLabel(status: BannerStatus): string {
-  switch (status) {
-    case 'active': return '게시 중';
-    case 'scheduled': return '예약됨';
-    case 'expired': return '만료됨';
-    case 'inactive': return '비활성';
-  }
+    switch (status) {
+        case 'active': return '게시 중';
+        case 'scheduled': return '예약됨';
+        case 'expired': return '만료됨';
+        case 'inactive': return '비활성';
+    }
 }
-
 function getStatusColor(status: BannerStatus): 'success' | 'info' | 'default' | 'error' {
-  switch (status) {
-    case 'active': return 'success';
-    case 'scheduled': return 'info';
-    case 'expired': return 'default';
-    case 'inactive': return 'error';
-  }
+    switch (status) {
+        case 'active': return 'success';
+        case 'scheduled': return 'info';
+        case 'expired': return 'default';
+        case 'inactive': return 'error';
+    }
 }
-
 function formatDate(dateString: string | null): string {
-  if (!dateString) return '무제한';
-  return safeToLocaleDateString(dateString, 'ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+    if (!dateString)
+        return '무제한';
+    return safeToLocaleDateString(dateString, 'ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
-
 function getPositionLabel(position: string): string {
-  switch (position) {
-    case 'home': return '홈';
-    case 'moment': return '모먼트';
-    default: return position;
-  }
+    switch (position) {
+        case 'home': return '홈';
+        case 'moment': return '모먼트';
+        default: return position;
+    }
 }
-
 interface BannerCardProps {
-  banner: Banner;
-  onToggleActive: (id: string, isActive: boolean) => void;
-  onEdit: (banner: Banner) => void;
-  onDelete: (id: string) => void;
-  isDragging?: boolean;
-  dragHandleProps?: any;
+    banner: Banner;
+    onToggleActive: (id: string, isActive: boolean) => void;
+    onEdit: (banner: Banner) => void;
+    onDelete: (id: string) => void;
+    isDragging?: boolean;
+    dragHandleProps?: any;
 }
-
-const BannerCard = forwardRef<HTMLDivElement, BannerCardProps>(
-  ({ banner, onToggleActive, onEdit, onDelete, isDragging, dragHandleProps, ...props }, ref) => {
+const BannerCard = forwardRef<HTMLDivElement, BannerCardProps>(({ banner, onToggleActive, onEdit, onDelete, isDragging, dragHandleProps, ...props }, ref) => {
     const status = getBannerStatus(banner);
+    return (<div ref={ref} {...props} style={{ display: 'flex', marginBottom: 16, opacity: isDragging ? 0.8 : 1, boxShadow: isDragging ? '0 4px 12px rgba(0,0,0,0.2)' : '0 1px 4px rgba(0,0,0,0.1)', transition: 'box-shadow 0.2s ease' }} className="rounded-xl border p-4">
+        <div {...dragHandleProps} style={{ display: 'flex', alignItems: 'center', paddingInline: 8, cursor: 'grab', backgroundColor: "#f3f4f6" }}>
+          <DragIndicatorIcon></DragIndicatorIcon>
+        </div>
 
-    return (
-      <Card
-        ref={ref}
-        {...props}
-        sx={{
-          display: 'flex',
-          mb: 2,
-          opacity: isDragging ? 0.8 : 1,
-          boxShadow: isDragging ? 4 : 1,
-          transition: 'box-shadow 0.2s ease',
-        }}
-      >
-        <Box
-          {...dragHandleProps}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            px: 1,
-            cursor: 'grab',
-            bgcolor: 'grey.100',
-            '&:active': { cursor: 'grabbing' },
-          }}
-        >
-          <DragIndicatorIcon color="action" />
-        </Box>
+        <img alt="배너 이미지" style={{ width: 200, height: 120, objectFit: 'cover' }} src={banner.imageUrl}/>
 
-        <CardMedia
-          component="img"
-          sx={{ width: 200, height: 120, objectFit: 'cover' }}
-          image={banner.imageUrl}
-          alt="배너 이미지"
-        />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', paddingBlock: 8 }} className="p-4">
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Chip size="sm">{getPositionLabel(banner.position)}</Chip>
+              <Chip size="sm">{getStatusLabel(status)}</Chip>
+              {banner.actionType && (<Chip size="sm">{banner.actionType === 'internal' ? '앱 내 이동' : '외부 링크'}</Chip>)}
+            </div>
 
-        <CardContent sx={{ flex: 1, display: 'flex', alignItems: 'center', py: 1 }}>
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Chip
-                label={getPositionLabel(banner.position)}
-                size="small"
-                variant="outlined"
-              />
-              <Chip
-                label={getStatusLabel(status)}
-                size="small"
-                color={getStatusColor(status)}
-              />
-              {banner.actionType && (
-                <Chip
-                  label={banner.actionType === 'internal' ? '앱 내 이동' : '외부 링크'}
-                  size="small"
-                  variant="outlined"
-                  color="secondary"
-                />
-              )}
-            </Box>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            <p style={{ marginBottom: 4 }}>
               {banner.actionUrl || '액션 없음'}
-            </Typography>
+            </p>
 
-            <Typography variant="caption" color="text.secondary">
+            <p>
               {banner.startDate || banner.endDate
-                ? `${formatDate(banner.startDate)} ~ ${formatDate(banner.endDate)}`
-                : '상시 게시'}
-            </Typography>
-          </Box>
+            ? `${formatDate(banner.startDate)} ~ ${formatDate(banner.endDate)}`
+            : '상시 게시'}
+            </p>
+          </div>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Switch
-              checked={banner.isActive}
-              onChange={(e) => onToggleActive(banner.id, e.target.checked)}
-              size="small"
-            />
-            <IconButton size="small" onClick={() => onEdit(banner)}>
-              <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton size="small" color="error" onClick={() => onDelete(banner.id)}>
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  }
-);
-
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Checkbox aria-label="배너 활성화" isSelected={banner.isActive} onChange={checked => onToggleActive(banner.id, checked)}><Checkbox.Content aria-label="배너 활성화"><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>
+            <Button aria-label="배너 수정" onPress={() => onEdit(banner)} variant="tertiary" isIconOnly={true}>
+              <EditIcon></EditIcon>
+            </Button>
+            <Button aria-label="배너 삭제" onPress={() => onDelete(banner.id)} variant="tertiary" isIconOnly={true}>
+              <DeleteIcon></DeleteIcon>
+            </Button>
+          </div>
+        </div>
+      </div>);
+});
 BannerCard.displayName = 'BannerCard';
-
 export default BannerCard;
