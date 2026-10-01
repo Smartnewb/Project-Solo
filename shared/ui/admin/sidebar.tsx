@@ -61,6 +61,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/profile-review', label: '프로필 심사' },
       { href: '/admin/profile-image-audit', label: '프로필 이미지 전수검사' },
       { href: '/admin/eta-mission-review', label: '에타 미션 인증 심사' },
+      { href: '/admin/jp-identity', label: '일본 신분증 심사' },
       { href: '/admin/reports', label: '프로필 신고 관리' },
       { href: '/admin/blacklist', label: '블랙리스트' },
       { href: '/admin/review-inbox', label: '검토 인박스' },

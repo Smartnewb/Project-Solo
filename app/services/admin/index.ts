@@ -73,6 +73,16 @@ export type { PolicyDocumentListParams } from './content';
 export { notices } from './notices';
 export type { NoticeListParams } from './notices';
 export { etaMission } from './eta-mission';
+export { jpIdentity } from './jp-identity';
+export type {
+	JpIdentityAccount,
+	JpIdentityActionResponse,
+	JpIdentityChecks,
+	JpIdentityExtracted,
+	JpIdentityGender,
+	JpIdentityStatus,
+	JpIdentitySubmission,
+} from './jp-identity';
 export { pixelCampus } from './pixel-campus';
 export type {
 	EtaSubmission,
@@ -334,6 +344,7 @@ import {
 } from './content';
 import { notices } from './notices';
 import { etaMission } from './eta-mission';
+import { jpIdentity } from './jp-identity';
 import { videos } from './video';
 import { seo } from './seo';
 import { cardNewsGeneration } from './card-news-generation';
@@ -442,6 +453,7 @@ const AdminService = {
 	communitySettings,
 	targetPosts,
 	etaMission,
+	jpIdentity,
 	pixelCampus,
 	xMarketing: XMarketingAdminService,
 };
