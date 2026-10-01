@@ -92,6 +92,11 @@ export const universities = {
 		return result.data;
 	},
 
+	getAssociations: async (id: string) => {
+		const result = await adminGet<{ data: any }>(`/admin/v2/universities/${id}/associations`);
+		return result.data;
+	},
+
 	create: async (data: import('@/types/admin').CreateUniversityRequest) => {
 		const result = await adminPost<{ data: any }>('/admin/v2/universities', data);
 		return result.data;

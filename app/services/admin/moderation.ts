@@ -110,6 +110,9 @@ type UpdateReportStatusOptions =
 			type?: ReportTargetType;
 			action?: ReportAction;
 			note?: string | null;
+			suspendDays?: 3 | 7 | 14 | 30;
+			suspendPermanent?: boolean;
+			approverId?: string;
 	  };
 
 function normalizeFrontendReportStatus(status?: string | null): 'pending' | 'reviewing' | 'resolved' | 'rejected' {
@@ -145,6 +148,46 @@ function normalizeReportUpdateOptions(options?: UpdateReportStatusOptions) {
 		type: options?.type ?? 'profile',
 		action: options?.action,
 		note: options?.note ?? null,
+		suspendDays: options?.suspendDays,
+		suspendPermanent: options?.suspendPermanent,
+		approverId: options?.approverId?.trim() || undefined,
+	};
+}
+
+/** 목록·상세 공통: 백엔드 행(camelCase)을 화면 Report/ReportDetail 형태로 정규화. */
+function transformReportItem(item: any) {
+	return {
+		id: item.id,
+		reporter: {
+			id: item.reporter?.id || item.reporterId,
+			name: item.reporter?.name || item.reporterName || '알 수 없음',
+			email: item.reporter?.email || '',
+			phoneNumber: item.reporter?.phoneNumber || '',
+			age: item.reporter?.age || item.reporterAge || 0,
+			gender: (item.reporter?.gender || item.reporterGender || 'MALE') as 'MALE' | 'FEMALE',
+			profileImageUrl: item.reporter?.profileImageUrl || '',
+		},
+		reported: {
+			id: item.reported?.id || item.reportedId,
+			name: item.reported?.name || item.reportedName || '알 수 없음',
+			email: item.reported?.email || '',
+			phoneNumber: item.reported?.phoneNumber || '',
+			age: item.reported?.age || item.reportedAge || 0,
+			gender: (item.reported?.gender || item.reportedGender || 'MALE') as 'MALE' | 'FEMALE',
+			profileImageUrl: item.reported?.profileImageUrl || '',
+		},
+		reason: item.reason || '',
+		description: item.description || null,
+		evidenceImages: item.evidenceImages || item.evidence_images || [],
+		status: normalizeFrontendReportStatus(item.status),
+		severity: item.severity || null,
+		category: item.category || null,
+		slackDelivered: item.slackDelivered === true || item.slack_delivered_at != null,
+		reportCount: typeof item.reportCount === 'number' ? item.reportCount : undefined,
+		chatRoomId: item.chatRoomId || item.chat_room_id || undefined,
+		matchId: item.matchId || item.match_id || undefined,
+		createdAt: item.createdAt || item.created_at,
+		updatedAt: item.updatedAt || item.updated_at || null,
 	};
 }
 
@@ -192,39 +235,16 @@ export const reports = {
 			const reportedName = params.get('reportedName');
 			if (reporterName) queryParams.append('reporterName', reporterName);
 			if (reportedName) queryParams.append('reportedName', reportedName);
+			if (params.get('urgent') === 'true') queryParams.append('urgent', 'true');
+			if (params.get('slackUndelivered') === 'true')
+				queryParams.append('slackUndelivered', 'true');
 
 			const endpoint = `/admin/v2/reports?${queryParams.toString()}`;
 			;
 
 			const response = await adminGet<{ data: any[]; meta: any }>(endpoint);
 
-			const transformedItems = (response.data || []).map((item: any) => ({
-				id: item.id,
-				reporter: {
-					id: item.reporter?.id || item.reporterId,
-					name: item.reporter?.name || item.reporterName || '알 수 없음',
-					email: item.reporter?.email || '',
-					phoneNumber: item.reporter?.phoneNumber || '',
-					age: item.reporter?.age || item.reporterAge || 0,
-					gender: (item.reporter?.gender || item.reporterGender || 'MALE') as 'MALE' | 'FEMALE',
-					profileImageUrl: item.reporter?.profileImageUrl || '',
-				},
-				reported: {
-					id: item.reported?.id || item.reportedId,
-					name: item.reported?.name || item.reportedName || '알 수 없음',
-					email: item.reported?.email || '',
-					phoneNumber: item.reported?.phoneNumber || '',
-					age: item.reported?.age || item.reportedAge || 0,
-					gender: (item.reported?.gender || item.reportedGender || 'MALE') as 'MALE' | 'FEMALE',
-					profileImageUrl: item.reported?.profileImageUrl || '',
-				},
-				reason: item.reason || '',
-				description: item.description || null,
-				evidenceImages: item.evidenceImages || [],
-				status: normalizeFrontendReportStatus(item.status),
-				createdAt: item.createdAt,
-				updatedAt: null,
-			}));
+			const transformedItems = (response.data || []).map(transformReportItem);
 
 			return {
 				items: transformedItems,
@@ -240,10 +260,7 @@ export const reports = {
 			const result = await adminGet<{ data: any }>(
 				`/admin/v2/reports/${reportId}`,
 			);
-			return {
-				...result.data,
-				status: normalizeFrontendReportStatus(result.data?.status),
-			};
+			return transformReportItem(result.data ?? {});
 		} catch (error: any) {
 			throw error;
 		}
@@ -264,6 +281,9 @@ export const reports = {
 					status: backendStatus,
 					action: normalizedOptions.action ?? toDefaultReportAction(backendStatus),
 					note: normalizedOptions.note,
+					suspendDays: normalizedOptions.suspendDays,
+					suspendPermanent: normalizedOptions.suspendPermanent,
+					approverId: normalizedOptions.approverId,
 				},
 			);
 			return result.data;

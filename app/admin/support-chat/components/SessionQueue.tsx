@@ -1,9 +1,8 @@
 "use client";
-import { Button as HeroActionButton } from "@heroui/react";
 import {
-  Select,
-  ListBox,
   Button,
+  Link as HeroLink,
+  Checkbox,
   Chip,
   FieldError,
   Input,
@@ -24,8 +23,15 @@ import type {
   SupportSessionSummary,
   SupportDomain,
 } from "@/app/types/support-chat";
-import { DOMAIN_LABELS, DOMAIN_COLORS } from "@/app/types/support-chat";
+import {
+  DOMAIN_LABELS,
+  DOMAIN_COLORS,
+  SESSION_STATUS_LABELS,
+} from "@/app/types/support-chat";
 import { useAdminSession } from "@/shared/contexts/admin-session-context";
+import { useSessionMessages } from "../hooks/useSessionMessages";
+import { useReadState } from "../lib/read-state";
+import BulkResolveToolbar, { useSessionSelection } from "./BulkResolveToolbar";
 
 interface SessionQueueProps {
   activeSessions: SupportSessionSummary[];
@@ -38,7 +44,7 @@ interface SessionQueueProps {
   onDomainFilterChange: (domain: SupportDomain | "all") => void;
   newSessionIds: Set<string>;
   onClearNewSessionIds: () => void;
-  unreadMap: Record<string, number>;
+  onSessionUpdated: () => void;
 }
 
 const statusDotColor: Record<string, string> = {
@@ -74,8 +80,6 @@ const slaBlinkKeyframes = {
 
 /** SLA 임계(분) */
 /** SLA 임계(분) */
-/** SLA 임계(분) */
-/** SLA 임계(분) */
 const SLA_WARN_MINUTES = 10;
 const SLA_CRITICAL_MINUTES = 30;
 
@@ -94,6 +98,9 @@ function SessionCard({
   unreadCount,
   assignedToMe,
   onClick,
+  checked,
+  onToggle,
+  messageError,
 }: {
   session: SupportSessionSummary;
   selected: boolean;
@@ -101,6 +108,9 @@ function SessionCard({
   unreadCount: number;
   assignedToMe: boolean;
   onClick: () => void;
+  checked: boolean;
+  onToggle?: () => void;
+  messageError?: string;
 }) {
   const [highlight, setHighlight] = useState(isNew);
 
@@ -123,67 +133,97 @@ function SessionCard({
           : "normal";
 
   return (
-    <HeroActionButton
-      variant="ghost"
-      className="h-auto w-full justify-start whitespace-normal text-left"
+    <div
+      className="relative"
       style={{
         padding: 12,
-        display: "block",
         cursor: "pointer",
-        border: selected ? "2px solid" : "1px solid",
+        border: "1px solid",
         borderColor: "#e4e4e7",
+        backgroundColor: selected || checked ? "#f4f4f5" : "#ffffff",
         borderRadius: 12,
         transition: "all 0.15s ease",
       }}
-      onClick={onClick}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 4,
-        }}
+      {onToggle && (
+        <Checkbox
+          className="absolute left-3 top-3 z-10"
+          aria-label={`${session.userNickname || session.userId} 선택`}
+          isSelected={checked}
+          onChange={onToggle}
+        >
+          <Checkbox.Content>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+          </Checkbox.Content>
+        </Checkbox>
+      )}
+      <Button
+        variant="ghost"
+        className="h-auto w-full block whitespace-normal p-0 text-left"
+        aria-label={`${session.userNickname || session.userId} 상담 열기`}
+        onPress={onClick}
       >
-        <DotIcon size={16} />
-        <p style={{ fontWeight: 600, flex: 1 }}>
-          {session.userNickname || session.userId.substring(0, 8)}
-        </p>
-        {assignedToMe && <Chip size="sm">{"내 담당"}</Chip>}
-        {session.assignedAdminId && !assignedToMe && (
-          <Chip size="sm">{"배정됨"}</Chip>
-        )}
-        {unreadCount > 0 && (
-          <span className="inline-flex rounded-full bg-danger px-1.5 text-xs text-white">
-            {unreadCount}
-          </span>
-        )}
-        {waitingMinutes !== null && (
-          <p
+        <div className={onToggle ? "pl-8" : ""}>
+          <div
             style={{
-              fontWeight: slaLevel === "normal" ? 600 : 700,
-              color:
-                slaLevel === "normal"
-                  ? "#dc2626"
-                  : slaLevel === "warn"
-                    ? "#e65100"
-                    : "#b71c1c",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 4,
             }}
           >
-            {waitingMinutes < 1 ? "방금" : `${waitingMinutes}분`}
-            {slaLevel === "critical" ? " ⚠" : ""}
+            <DotIcon size={16} />
+            <p style={{ fontWeight: 600, flex: 1 }}>
+              {session.userNickname || session.userId.substring(0, 8)}
+            </p>
+            {assignedToMe && <Chip size="sm">{"내 담당"}</Chip>}
+            {session.assignedAdminId && !assignedToMe && (
+              <Chip size="sm">{"배정됨"}</Chip>
+            )}
+            {waitingMinutes !== null && (
+              <p
+                style={{
+                  fontWeight: slaLevel === "normal" ? 600 : 700,
+                  color:
+                    slaLevel === "normal"
+                      ? "error.main"
+                      : slaLevel === "warn"
+                        ? "#e65100"
+                        : "#b71c1c",
+                }}
+              >
+                {waitingMinutes < 1 ? "방금" : `${waitingMinutes}분`}
+                {slaLevel === "critical" ? " ⚠" : ""}
+              </p>
+            )}
+          </div>
+          <p style={{ marginBottom: 4, paddingLeft: 2.5 }}>
+            {session.lastMessage || "메시지 없음"}
           </p>
-        )}
-      </div>
-      <p style={{ marginBottom: 4, paddingLeft: 2.5 }}>
-        {session.lastMessage || "메시지 없음"}
-      </p>
-      <div style={{ display: "flex", gap: 4, paddingLeft: 2.5 }}>
-        {session.domain && (
-          <Chip size="sm">{DOMAIN_LABELS[session.domain]}</Chip>
-        )}
-      </div>
-    </HeroActionButton>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 4,
+              paddingLeft: 2.5,
+            }}
+          >
+            <Chip size="sm">{SESSION_STATUS_LABELS[session.status]}</Chip>
+            {unreadCount > 0 && <Chip size="sm">{"사용자 답변 미확인"}</Chip>}
+            {messageError && (
+              <Chip title={messageError} size="sm">
+                {"답변 확인 실패"}
+              </Chip>
+            )}
+            {session.domain && (
+              <Chip size="sm">{DOMAIN_LABELS[session.domain]}</Chip>
+            )}
+          </div>
+        </div>
+      </Button>
+    </div>
   );
 }
 
@@ -198,7 +238,7 @@ export default function SessionQueue({
   onDomainFilterChange,
   newSessionIds,
   onClearNewSessionIds,
-  unreadMap,
+  onSessionUpdated,
 }: SessionQueueProps) {
   const [search, setSearch] = useState("");
   const [myOnly, setMyOnly] = useState(false);
@@ -228,25 +268,20 @@ export default function SessionQueue({
         )
       : byDomain;
 
-    if (activeTab !== "active") return bySearch;
+    return [...bySearch].sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() ||
+        a.sessionId.localeCompare(b.sessionId),
+    );
+  }, [sessions, domainFilter, search, myOnly, myAdminId]);
 
-    // 활성 탭: 대기(가장 오래 기다린 순) → AI 응대 → 어드민 응대
-    const statusRank: Record<string, number> = {
-      waiting_admin: 0,
-      bot_handling: 1,
-      admin_handling: 2,
-    };
-    const waitingStart = (s: SupportSessionSummary) =>
-      new Date(s.waitingSince ?? s.createdAt).getTime();
-
-    return [...bySearch].sort((a, b) => {
-      const rankDiff =
-        (statusRank[a.status] ?? 3) - (statusRank[b.status] ?? 3);
-      if (rankDiff !== 0) return rankDiff;
-      // 같은 상태면 오래된(작은 timestamp) 순 우선
-      return waitingStart(a) - waitingStart(b);
-    });
-  }, [sessions, domainFilter, search, activeTab, myOnly, myAdminId]);
+  const scope = `${activeTab}:${domainFilter}:${search}:${myOnly}:${myAdminId}`;
+  const { selected, toggle, setSelectedIds } = useSessionSelection(
+    filtered,
+    scope,
+  );
+  const { messagesBySession, errorsBySession } = useSessionMessages(filtered);
+  const { isUnread } = useReadState();
 
   const newCount = newSessionIds.size;
   const hasOtherTabItems =
@@ -267,8 +302,6 @@ export default function SessionQueue({
   return (
     <div
       style={{
-        width: 380,
-        minWidth: 380,
         height: "calc(100vh - 200px)",
         display: "flex",
         flexDirection: "column",
@@ -284,10 +317,7 @@ export default function SessionQueue({
           borderColor: "#e4e4e7",
         }}
       >
-        <TextField
-          style={{ marginBottom: 8 }}
-          aria-label={"닉네임 · 유저ID · 메시지 검색"}
-        >
+        <TextField style={{ marginBottom: 8 }}>
           <Input
             placeholder="닉네임 · 유저ID · 메시지 검색"
             value={search}
@@ -295,7 +325,7 @@ export default function SessionQueue({
             aria-label={"닉네임 · 유저ID · 메시지 검색"}
           />
         </TextField>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           <Button onClick={() => onTabChange("active")} variant={"secondary"}>
             활성
           </Button>
@@ -304,13 +334,9 @@ export default function SessionQueue({
           </Button>
         </div>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onDomainFilterChange("all")}
-          >
+          <Chip onClick={() => onDomainFilterChange("all")} size="sm">
             {"전체"}
-          </Button>
+          </Chip>
           {(
             [
               "payment",
@@ -320,24 +346,30 @@ export default function SessionQueue({
               "other",
             ] as SupportDomain[]
           ).map((domain) => (
-            <Button
-              variant="secondary"
-              size="sm"
+            <Chip
               key={domain}
               onClick={() => onDomainFilterChange(domain)}
+              size="sm"
             >
               {DOMAIN_LABELS[domain]}
-            </Button>
+            </Chip>
           ))}
         </div>
         {myAdminId && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setMyOnly((v) => !v)}
-          >
+          <Chip onClick={() => setMyOnly((v) => !v)} size="sm">
             {"내 문의만"}
-          </Button>
+          </Chip>
+        )}
+        <p style={{ display: "block", marginBlock: 8 }}>
+          접수순 · 먼저 들어온 상담부터
+        </p>
+        {activeTab === "active" && (
+          <BulkResolveToolbar
+            selected={selected}
+            setSelectedIds={setSelectedIds}
+            onSessionUpdated={onSessionUpdated}
+            scope={scope}
+          />
         )}
       </div>
       {/* New session alert */}
@@ -345,14 +377,13 @@ export default function SessionQueue({
         <div
           role="alert"
           className="rounded-lg border border-default p-3 text-sm"
-          style={{ marginInline: 12, marginTop: 8, borderRadius: 12 }}
+          style={{ marginInline: 12, marginTop: 8, borderRadius: 2 }}
         >
           새 문의 {newCount}건 도착
           <Button
             variant="secondary"
-            size="sm"
             aria-label="알림 닫기"
-            onClick={onClearNewSessionIds}
+            onPress={onClearNewSessionIds}
           >
             닫기
           </Button>
@@ -414,12 +445,12 @@ export default function SessionQueue({
                 </Button>
               ) : null}
               {activeTab === "active" ? (
-                <a
+                <HeroLink
                   href="/admin/review-inbox"
                   className="button button--primary"
                 >
                   {<ReviewInboxIcon size={16} />}검토 인박스 보기
-                </a>
+                </HeroLink>
               ) : null}
             </div>
           </div>
@@ -430,7 +461,23 @@ export default function SessionQueue({
               session={session}
               selected={selectedSessionId === session.sessionId}
               isNew={newSessionIds.has(session.sessionId)}
-              unreadCount={unreadMap[session.sessionId] || 0}
+              unreadCount={
+                isUnread(
+                  session.sessionId,
+                  messagesBySession[session.sessionId] ?? [],
+                )
+                  ? 1
+                  : 0
+              }
+              checked={selected.some(
+                (item) => item.sessionId === session.sessionId,
+              )}
+              messageError={errorsBySession[session.sessionId]}
+              onToggle={
+                activeTab === "active"
+                  ? () => toggle(session.sessionId)
+                  : undefined
+              }
               assignedToMe={
                 !!myAdminId && session.assignedAdminId === myAdminId
               }

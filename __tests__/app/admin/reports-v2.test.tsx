@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import {useSearchParams} from 'next/navigation';
 import ReportsV2 from '@/app/admin/reports/reports-v2';
 import AdminService from '@/app/services/admin';
 
@@ -74,8 +75,14 @@ const mockedGetProfileReportHistory =
   >;
 
 describe('ReportsV2 deep link', () => {
+  it('retains urgent and failed-notification filters in public admin requests',async()=>{
+    (useSearchParams as jest.Mock).mockReturnValue({get:()=>null});
+    render(<ReportsV2/>);await screen.findByRole('checkbox',{name:'긴급 신고만'});fireEvent.click(screen.getByRole('checkbox',{name:'긴급 신고만'}));await waitFor(()=>expect((mockedAdminService.getProfileReports.mock.calls.at(-1)?.[0] as URLSearchParams).get('urgent')).toBe('true'));fireEvent.click(screen.getByRole('checkbox',{name:'슬랙 미전달만'}));await waitFor(()=>expect((mockedAdminService.getProfileReports.mock.calls.at(-1)?.[0] as URLSearchParams).get('slackUndelivered')).toBe('true'));
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+    (useSearchParams as jest.Mock).mockReturnValue({get:(key:string)=>key==='reportId'?'profile-pending-1':null});
     mockedAdminService.getProfileReports.mockResolvedValue({
       items: [],
       meta: { total: 0 },

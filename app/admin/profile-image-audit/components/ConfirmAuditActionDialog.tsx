@@ -9,10 +9,11 @@ type Props = {
     readonly action: AuditAction | null;
     readonly selectedCount: number;
     readonly busy: boolean;
+    readonly removesLastApprovedImage?: boolean;
     readonly onClose: () => void;
     readonly onConfirm: (rejectReason?: string) => void;
 };
-export function ConfirmAuditActionDialog({ action, selectedCount, busy, onClose, onConfirm, }: Props) {
+export function ConfirmAuditActionDialog({ action, selectedCount, busy, removesLastApprovedImage = false, onClose, onConfirm, }: Props) {
     const open = action != null;
     const tone = action ? getActionTone(action) : 'primary';
     const [selectedRejectReason, setSelectedRejectReason] = useState(SIMPLE_REJECT_REASON);
@@ -35,7 +36,6 @@ export function ConfirmAuditActionDialog({ action, selectedCount, busy, onClose,
         </p>
         {action === 'reject' && (<div style={{ marginTop: 16 }}>
             <div>
-              <label id="profile-image-reject-reason-label">사진 변경 요청 사유</label>
               <Select value={selectedRejectReason} aria-label={"사진 변경 요청 사유"} onChange={(key) => {
                 const value = String(key ?? "");
                 const nextReason = value;
@@ -43,7 +43,7 @@ export function ConfirmAuditActionDialog({ action, selectedCount, busy, onClose,
                 if (nextReason !== CUSTOM_REJECT_REASON_VALUE) {
                     setRejectReason(nextReason);
                 }
-            }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+            }} className="min-w-[120px]"><Label>사진 변경 요청 사유</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
                 {REJECT_REASON_OPTIONS.map((reason) => (<ListBox.Item key={reason} id={reason} textValue={String(reason)}>
                     {reason}
                   </ListBox.Item>))}
@@ -55,10 +55,11 @@ export function ConfirmAuditActionDialog({ action, selectedCount, busy, onClose,
                 setRejectReason(event.target.value);
             }} {...{ maxLength: 255 }}></TextArea><Description>{`${normalizedRejectReason.length}/255`}</Description></TextField>
             <aside role="alert" className="rounded-lg border p-3">
-              입력한 사유가 사진 변경 요청 사유로 기록됩니다.
+              선택한 사진의 승인을 취소하고 앱 푸시로 변경을 요청합니다. 문자(SMS)는 발송하지 않습니다.
             </aside>
           </div>)}
-        {action === 'delete' && (<aside role="alert" className="rounded-lg border p-3" style={{ marginTop: 16 }}>
+        {(action === 'delete' || action === 'reject') && removesLastApprovedImage && <aside role="alert" className="rounded-lg border p-3">승인된 사진이 모두 없어지는 회원이 있습니다. 처리하면 사진 재업로드가 필요합니다.</aside>}
+        {action === 'delete'  && (<aside role="alert" className="rounded-lg border p-3" style={{ marginTop: 16 }}>
             삭제는 되돌리기 어려운 조치입니다. 명백히 부적절한 이미지만 선택하세요.
           </aside>)}
       </Modal.Body>

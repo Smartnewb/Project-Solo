@@ -1,5 +1,6 @@
 'use client';
-import { Modal, Checkbox, Select, ListBox, Button, Input, TextArea } from '@heroui/react';
+import { RadioGroup, Radio, Label, Modal, Checkbox, Select, ListBox, Button, Input, TextArea } from '@heroui/react';
+import type { PushLegalClass } from '@/app/services/admin';
 import { useState, useEffect } from 'react';
 import { Controller } from 'react-hook-form';
 import { safeToLocaleDateString } from '@/app/utils/formatters';
@@ -40,6 +41,7 @@ interface UserProfile {
     createdAt: string;
 }
 export function PushSendTab() {
+    const [legalClass, setLegalClass] = useState<PushLegalClass>('advertising');
     const toast = useToast();
     const confirmAction = useConfirm();
     const { control, reset, handleFormSubmit, formState: { isSubmitting } } = useAdminForm<PushNotificationFormData>({
@@ -190,6 +192,7 @@ export function PushSendTab() {
         setLoading(true);
         try {
             const payload = {
+                legalClass,
                 userIds: targetUsers.map(u => u.id),
                 title: data.title,
                 message: data.message,
@@ -546,7 +549,7 @@ export function PushSendTab() {
 
         <div className="space-y-4">
           <div>
-            <label className="block mb-2 font-medium">제목</label>
+            <RadioGroup value={legalClass} onChange={value => setLegalClass(value as PushLegalClass)} orientation="horizontal" isRequired><Label>발송 분류</Label><Radio value="advertising"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control><Label>광고성 (이벤트·혜택·재방문 유도)</Label></Radio.Content></Radio><Radio value="informational"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control><Label>정보성 (공지·거래·서비스 안내)</Label></Radio.Content></Radio></RadioGroup><p className="text-sm text-gray-600">광고성은 수신 동의한 회원에게만 발송되고 제목 앞에 (광고)가 붙습니다. 21시~08시에는 야간 동의 회원에게만 갑니다.</p><label className="block mb-2 font-medium">제목</label>
             <Controller name="title" control={control} render={({ field, fieldState }) => (<>
                   <Input {...field} type="text" placeholder="푸시 알림 제목" className={`border rounded px-3 py-2 w-full ${fieldState.error ? 'border-red-500' : ''}`}></Input>
                   {fieldState.error && (<p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>)}

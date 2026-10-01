@@ -66,6 +66,7 @@ export function useSupportChatSocket({
 }: UseSupportChatSocketOptions): UseSupportChatSocketReturn {
   const socketRef = useRef<Socket | null>(null);
   const tokenRef = useRef<string | null>(null);
+  const connectionGenerationRef = useRef(0);
   const [state, setState] = useState<SocketState>({
     connected: false,
     sessionJoined: false,
@@ -93,15 +94,29 @@ export function useSupportChatSocket({
       return;
     }
 
+    const generation = ++connectionGenerationRef.current;
     const token = await getAccessToken();
+    if (generation !== connectionGenerationRef.current) return;
     if (!token) {
       setState((prev) => ({ ...prev, error: "인증 토큰이 없습니다." }));
       return;
     }
 
+    let deviceId: string;
+    try {
+      deviceId = localStorage.getItem("admin_device_id") || crypto.randomUUID();
+      localStorage.setItem("admin_device_id", deviceId);
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error: `기기 ID 초기화 실패: ${error instanceof Error ? error.message : String(error)}`,
+      }));
+      return;
+    }
+
     const socket = io(`${SOCKET_URL}/support-chat`, {
       auth: (cb) => {
-        cb({ token: `Bearer ${token}` });
+        cb({ token: `Bearer ${token}`, deviceId });
       },
       transports: ["websocket"],
       reconnection: true,
@@ -172,6 +187,7 @@ export function useSupportChatSocket({
   ]);
 
   const disconnect = useCallback(() => {
+    connectionGenerationRef.current += 1;
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;

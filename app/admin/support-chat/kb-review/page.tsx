@@ -1,4 +1,3 @@
-
 import KbReviewClient from "./kb-review-client";
 
 export const metadata = {

@@ -50,6 +50,8 @@ it('keeps both country copies and group lookup in detail', async () => {
 it('preserves country copies and explicit confirmation before scheduling with real HeroUI controls', async () => {
   (AdminService.pushBroadcast.schedule as jest.Mock).mockResolvedValue({ id: 'new-schedule', targetPreviewCount: 42, scheduledAt: '2099-10-03T01:00:00Z' });
   render(<BroadcastFormClient />);
+  expect((screen.getByRole('radio', {name: '광고성 (이벤트·혜택·재방문 유도)'}) as HTMLInputElement).checked).toBe(true);
+  fireEvent.click(screen.getByRole('radio', {name: '정보성 (공지·거래·서비스 안내)'}));
   const register = screen.getByRole('button', { name: '예약 등록' }) as HTMLButtonElement;
   expect(register.disabled).toBe(true);
   for (const [label, value] of [['KR 제목','KR title'], ['KR 본문','KR body'], ['JP 제목','JP title'], ['JP 본문','JP body']]) {
@@ -63,7 +65,7 @@ it('preserves country copies and explicit confirmation before scheduling with re
   const confirm = await screen.findByRole('button', { name: '예약 등록 진행' });
   fireEvent.click(confirm);
   await waitFor(() => expect(AdminService.pushBroadcast.schedule).toHaveBeenCalledWith({
-    krTitle: 'KR title', krBody: 'KR body', jpTitle: 'JP title', jpBody: 'JP body',
+    krTitle: 'KR title', krBody: 'KR body', jpTitle: 'JP title', jpBody: 'JP body', legalClass: 'informational',
     deepLink: undefined, scheduledAt: new Date('2099-10-03T10:00').toISOString(),
   }));
   await screen.findByRole('heading', { name: '예약 등록 완료' });

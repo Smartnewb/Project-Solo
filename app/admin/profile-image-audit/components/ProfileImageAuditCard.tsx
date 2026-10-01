@@ -37,6 +37,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
       </div>
       <div style={{ padding: 12 }} className="p-4">
         <div>
+          <p className="font-bold" title={item.userName || '이름 미등록'}>{item.userName || '이름 미등록'}</p><p className="text-sm text-gray-600" title={item.userId}>회원 ID: {item.userId}</p>
           <p title={item.universityName ?? '학교 미상'}>
             {item.universityName ?? '학교 미상'}
           </p>

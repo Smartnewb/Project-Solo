@@ -7,6 +7,7 @@ import {
   Chip,
   Description,
   Label,
+  Input,
   Modal,
   TextArea,
   TextField,
@@ -60,6 +61,7 @@ export function BlacklistRegisterModal({
 }: Props) {
   const [reason, setReason] = useState(initialReason);
   const [memo, setMemo] = useState(initialMemo);
+  const [approverId, setApproverId] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [sendNotice, setSendNotice] = useState(true);
 
@@ -67,6 +69,7 @@ export function BlacklistRegisterModal({
     if (!open) return;
     setReason(initialReason);
     setMemo(initialMemo);
+    setApproverId('');
     setConfirmed(false);
     setSendNotice(true);
   }, [open, initialReason, initialMemo, user.id]);
@@ -77,6 +80,7 @@ export function BlacklistRegisterModal({
         reason: reason.trim(),
         memo: memo.trim() ? memo.trim() : undefined,
         sendNotice,
+        approverId: approverId.trim(),
       }),
     onSuccess: () => {
       const message = sendNotice
@@ -94,6 +98,7 @@ export function BlacklistRegisterModal({
   const resetAndClose = () => {
     setReason(initialReason);
     setMemo(initialMemo);
+    setApproverId('');
     setConfirmed(false);
     setSendNotice(true);
     mutation.reset();
@@ -118,6 +123,7 @@ export function BlacklistRegisterModal({
   const submitDisabled =
     submitting ||
     !confirmed ||
+    approverId.trim().length === 0 ||
     reason.trim().length === 0 ||
     reasonOver ||
     memoOver;
@@ -254,6 +260,11 @@ export function BlacklistRegisterModal({
                 aria-label={"메모 (선택)"}
               />
               <Description>{`${memo.length}/${MEMO_MAX}`}</Description>
+            </TextField>
+            <TextField isRequired isInvalid={approverId.trim().length === 0}>
+              <Label>승인자 관리자 ID (2인 승인, 필수)</Label>
+              <Input value={approverId} onChange={e => setApproverId(e.target.value)} placeholder="본인이 아닌 다른 관리자의 user id" />
+              <Description>영구 차단은 집행자 외 다른 관리자의 승인이 필요합니다. 승인자의 users.id 를 입력하세요.</Description>
             </TextField>
             <div className="flex items-center gap-2">
               <Checkbox

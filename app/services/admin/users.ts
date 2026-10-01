@@ -1,4 +1,5 @@
 import { adminGet, adminPost, adminPatch, adminPut, adminRequest } from '@/shared/lib/http/admin-fetch';
+import { universities } from './system';
 import type {
 	DeletedFemalesListResponse,
 	RestoreFemaleResponse,
@@ -854,6 +855,55 @@ export const userAppearance = {
 			return result.data;
 		} catch (error: any) {
 			throw error;
+		}
+	},
+
+	// 대학교 인증 상태 조회 — 사용자 상세 응답에 인증 상태가 없어
+	// 인증 대기 목록(학생증 제출 여부) + 대학 소속 목록(인증 일시)을 조합해 판정한다.
+	getUniversityVerificationStatus: async (params: {
+		userId: string;
+		name?: string;
+		universityName?: string;
+	}): Promise<{
+		status: 'verified' | 'pending' | 'unverified' | 'unknown';
+		certificateImageUrl?: string;
+	}> => {
+		try {
+			const pending = await adminGet<{ data: any }>(
+				'/admin/v2/profile-review/university-verification/pending',
+				{
+					page: 1,
+					limit: 100,
+					name: params.name,
+					university: params.universityName,
+				},
+			);
+			const pendingUser = pending.data?.users?.find((u: any) => u.id === params.userId);
+			if (pendingUser) {
+				return {
+					status: 'pending',
+					certificateImageUrl: pendingUser.certificateImageUrl,
+				};
+			}
+
+			if (params.universityName) {
+				const uniList = await universities.getList({ name: params.universityName, limit: 100 });
+				const university = (uniList?.items ?? []).find(
+					(u: any) => u.name === params.universityName,
+				);
+				if (university?.id) {
+					const associations = await universities.getAssociations(university.id);
+					const me = (associations?.users ?? []).find(
+						(u: any) => u.userId === params.userId,
+					);
+					if (me) {
+						return { status: me.verifiedAt ? 'verified' : 'unverified' };
+					}
+				}
+			}
+			return { status: 'unknown' };
+		} catch {
+			return { status: 'unknown' };
 		}
 	},
 

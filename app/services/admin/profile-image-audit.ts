@@ -75,6 +75,7 @@ export type ProfileImageAuditRejectedImage = {
 };
 
 export type ProfileImageAuditItem = {
+  readonly userName?: string | null;
   readonly profileImageId: string;
   readonly imageId: string;
   readonly imageUrl: string;

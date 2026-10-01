@@ -8,6 +8,7 @@ import type {
   PushTargetGroup,
   CreateBroadcastScheduleRequest,
   ScheduleCreatedResult,
+  PushLegalClass,
 } from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
@@ -44,6 +45,7 @@ export default function BroadcastFormClient() {
   const [jpBody, setJpBody] = useState('');
   const [deepLink, setDeepLink] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
+  const [legalClass, setLegalClass] = useState<PushLegalClass>('advertising');
 
   const [testUserId, setTestUserId] = useState('');
   const [testSendingCountry, setTestSendingCountry] = useState<'kr' | 'jp' | null>(null);
@@ -123,6 +125,7 @@ export default function BroadcastFormClient() {
         title: title.trim(),
         body: body.trim(),
         deepLink: deepLink.trim() || undefined,
+        legalClass,
       });
       if (res.success) {
         toast.success(`${country.toUpperCase()} 테스트 푸시를 발송했습니다.`);
@@ -173,6 +176,7 @@ export default function BroadcastFormClient() {
         ...(needJp ? { jpTitle: jpTitle.trim(), jpBody: jpBody.trim() } : {}),
         deepLink: deepLink.trim() || undefined,
         scheduledAt: new Date(scheduledAt).toISOString(),
+        legalClass,
         ...(targetType === 'group' && selectedGroup ? { targetGroupId: selectedGroup.id } : {}),
       };
       const created = await AdminService.pushBroadcast.schedule(body);
@@ -210,7 +214,7 @@ export default function BroadcastFormClient() {
         </>}
       </section>
       <section className="space-y-4 rounded-xl border border-border bg-white p-6">
-        <h2 className="text-base font-semibold">문구</h2>
+        <RadioGroup value={legalClass} onChange={value => setLegalClass(value as PushLegalClass)} orientation="horizontal" isRequired><Label>발송 분류</Label><Radio value="advertising"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control><Label>광고성 (이벤트·혜택·재방문 유도)</Label></Radio.Content></Radio><Radio value="informational"><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control><Label>정보성 (공지·거래·서비스 안내)</Label></Radio.Content></Radio></RadioGroup><p className="text-sm text-gray-600">광고성은 수신 동의한 회원에게만 발송되고 제목 앞에 (광고)가 붙습니다. 21시~08시에는 야간 동의 회원에게만 갑니다.</p><h2 className="text-base font-semibold">문구</h2>
         {targetType === 'group' && !selectedGroup ? <p role="status">먼저 발송 대상 그룹을 선택하면 필요한 국가 문구만 표시됩니다.</p> : <>
           {needKr && <><CopyField label="KR 제목" value={krTitle} onChange={setKrTitle} maxLength={MAX_TITLE} /><CopyField label="KR 본문" value={krBody} onChange={setKrBody} maxLength={MAX_BODY} multiline /></>}
           {needJp && <><CopyField label="JP 제목" value={jpTitle} onChange={setJpTitle} maxLength={MAX_TITLE} /><CopyField label="JP 본문" value={jpBody} onChange={setJpBody} maxLength={MAX_BODY} multiline /></>}
@@ -234,7 +238,7 @@ export default function BroadcastFormClient() {
       <div className="flex justify-end"><Button isDisabled={!canSubmit || submitting} onPress={handleOpenConfirm}>예약 등록</Button></div>
       <Modal.Backdrop isOpen={confirmOpen} onOpenChange={open => !submitting && setConfirmOpen(open)} isDismissable={!submitting} isKeyboardDismissDisabled={submitting}><Modal.Container size="md"><Modal.Dialog><Modal.Header><Modal.Heading>예약 발송 최종 확인</Modal.Heading></Modal.Header>
           <Modal.Body><p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">주의: 예약 등록 후에는 취소할 수 없습니다. 등록 즉시 예약이 확정됩니다.</p>
-            <dl className="space-y-3"><SummaryRow label="발송 대상" value={targetSummary} /><SummaryRow label="예정 시각" value={formatDateTimeKR(scheduledAt)} />{needKr && <SummaryRow label="KR 제목" value={krTitle} />}{needJp && <SummaryRow label="JP 제목" value={jpTitle} />}<SummaryRow label="딥링크" value={deepLink || '-'} /></dl>
+            <dl className="space-y-3"><SummaryRow label="발송 분류" value={legalClass === 'advertising' ? '광고성' : '정보성'} /><SummaryRow label="발송 대상" value={targetSummary} /><SummaryRow label="예정 시각" value={formatDateTimeKR(scheduledAt)} />{needKr && <SummaryRow label="KR 제목" value={krTitle} />}{needJp && <SummaryRow label="JP 제목" value={jpTitle} />}<SummaryRow label="딥링크" value={deepLink || '-'} /></dl>
           </Modal.Body><Modal.Footer><Button variant="secondary" onPress={() => setConfirmOpen(false)} isDisabled={submitting}>취소</Button><Button onPress={handleConfirmSubmit} isDisabled={submitting}>예약 등록 진행{submitting && <Spinner size="sm" />}</Button></Modal.Footer>
         </Modal.Dialog></Modal.Container></Modal.Backdrop>
       <Modal.Backdrop isOpen={Boolean(result)} isDismissable={false} isKeyboardDismissDisabled><Modal.Container size="sm"><Modal.Dialog><Modal.Header><Modal.Heading>예약 등록 완료</Modal.Heading></Modal.Header><Modal.Body>

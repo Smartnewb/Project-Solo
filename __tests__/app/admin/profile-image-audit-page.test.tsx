@@ -181,6 +181,46 @@ describe('ProfileImageAuditPage', () => {
     });
   });
 
+  it('sends the server confirmation when deleting a photo and refreshes the list', async () => {
+    const user = userEvent.setup();
+    render(<ProfileImageAuditPage />);
+    await user.click(await screen.findByRole('checkbox', { name: 'profile-image-1 선택' }));
+    await user.click(screen.getByRole('button', { name: '즉시 삭제' }));
+    await user.click(await screen.findByRole('button', { name: '처리' }));
+    await waitFor(() => expect(mockedAudit.bulkDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ profileImageIds: ['profile-image-1'], confirmationPhrase: '삭제' }),
+    ));
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenCalledTimes(2));
+  });
+
+  it('warns and confirms reupload when a bulk selection removes all approved photos', async () => {
+    const user = userEvent.setup();
+    render(<ProfileImageAuditPage />);
+    await screen.findByRole('checkbox', { name: 'profile-image-1 선택' });
+    await user.click(screen.getByRole('button', { name: '전체선택' }));
+    await user.click(screen.getByRole('button', { name: '즉시 삭제' }));
+    expect(await screen.findByText(/승인된 사진이 모두 없어지는 회원/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '처리' }));
+    await waitFor(() => expect(mockedAudit.bulkDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ profileImageIds: ['profile-image-1', 'profile-image-2'], confirmationPhrase: '재업로드 필요' }),
+    ));
+  });
+
+  it.each(['김테스트', '서울대'])('searches reviewed photos by name or school: %s', async (search) => {
+    const user = userEvent.setup();
+    render(<ProfileImageAuditPage />);
+    expect((await screen.findAllByText('김테스트')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('회원 ID: user-1').length).toBeGreaterThan(0);
+    await user.type(screen.getByRole('textbox', { name: '이름 · 학교 · 회원 ID 검색' }), `  ${search}  {Enter}`);
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, search, auditStatus: undefined, includeAlreadyAudited: true }),
+    ));
+    await user.click(screen.getByRole('button', { name: '검색 지우기' }));
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, search: undefined }),
+    ));
+  });
+
   it('surfaces per-image reject failures instead of reporting success', async () => {
     const user = userEvent.setup();
     mockedAudit.bulkReject.mockResolvedValueOnce({

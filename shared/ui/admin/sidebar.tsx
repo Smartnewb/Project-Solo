@@ -62,6 +62,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
 			{ href: "/admin/profile-review", label: "프로필 심사" },
 			{ href: "/admin/profile-image-audit", label: "프로필 이미지 전수검사" },
 			{ href: "/admin/eta-mission-review", label: "에타 미션 인증 심사" },
+			{ href: "/admin/jp-identity", label: "일본 신분증 심사" },
 			{ href: "/admin/reports", label: "프로필 신고 관리" },
 			{ href: "/admin/blacklist", label: "블랙리스트" },
 			{ href: "/admin/review-inbox", label: "검토 인박스" },
@@ -114,6 +115,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
 			{ href: "/admin/keywords", label: "키워드 관리" },
 			{ href: "/admin/moment", label: "모먼트" },
 			{ href: "/admin/pixel-campus", label: "픽셀 캠퍼스" },
+			{ href: "/admin/meeting", label: "2:2 미팅" },
 		],
 	},
 	{
@@ -148,6 +150,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
 			{ href: "/admin/content", label: "운영 콘텐츠 관리" },
 			{ href: "/admin/seo", label: "SEO 상태" },
 			{ href: "/admin/banners", label: "배너 관리" },
+			{ href: "/admin/policy-documents", label: "정책 개정 등록" },
 			{
 				id: "utm-management",
 				label: "UTM 추적 관리",
@@ -209,6 +212,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
 		label: "설정",
 		items: [
 			{ href: "/admin/version-management", label: "버전 관리" },
+			{ href: "/admin/access-logs", label: "개인정보 접속기록" },
 			{ href: "/admin/feature-flags", label: "Feature Flags" },
 			{ href: "/admin/lab", label: "실험실" },
 			{ href: "/admin/app-preview", label: "앱 UI 시연" },

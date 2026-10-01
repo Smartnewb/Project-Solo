@@ -43,7 +43,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
 }) => {
   const [reason, setReason] = useState("");
   const [suspendType, setSuspendType] = useState<"permanent" | "temporary">(
-    "permanent",
+    "temporary",
   );
   const [durationDays, setDurationDays] = useState<SuspendDurationDays>(7);
   const [localNote, setLocalNote] = useState("");
@@ -56,7 +56,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
   useEffect(() => {
     if (!open) return;
     setReason("");
-    setSuspendType("permanent");
+    setSuspendType("temporary");
     setDurationDays(7);
     setLocalNote("");
     setSendNotice(true);
@@ -123,7 +123,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
   const handleClose = () => {
     if (loading) return;
     setReason("");
-    setSuspendType("permanent");
+    setSuspendType("temporary");
     setDurationDays(7);
     setLocalNote("");
     setSendNotice(true);
@@ -249,20 +249,20 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
                           )
                         }
                       >
-                        <Radio value={"permanent"}>
-                          <Radio.Content>
-                            <Radio.Control>
-                              <Radio.Indicator />
-                            </Radio.Control>
-                            <Label>{"영구 정지"}</Label>
-                          </Radio.Content>
-                        </Radio>
                         <Radio value={"temporary"}>
                           <Radio.Content>
                             <Radio.Control>
                               <Radio.Indicator />
                             </Radio.Control>
                             <Label>{"기간 정지"}</Label>
+                          </Radio.Content>
+                        </Radio>
+                        <Radio value={"permanent"}>
+                          <Radio.Content>
+                            <Radio.Control>
+                              <Radio.Indicator />
+                            </Radio.Control>
+                            <Label>{"영구 정지"}</Label>
                           </Radio.Content>
                         </Radio>
                       </RadioGroup>

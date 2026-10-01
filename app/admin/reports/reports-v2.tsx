@@ -1,5 +1,5 @@
 "use client";
-import { Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, Select, ListBox } from '@heroui/react';
+import { Checkbox, Description, FieldError, Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, Select, ListBox } from '@heroui/react';
 import { Eye as VisibilityIcon, Flag as ReportIcon, MessageCircle as ChatIcon, Image as PhotoIcon, FileText as DescriptionIcon } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from 'next/navigation';
@@ -43,6 +43,10 @@ interface Report {
     reason: string;
     description: string | null;
     evidenceImages: string[];
+    severity?: "urgent" | "normal" | null;
+    category?: string | null;
+    slackDelivered?: boolean;
+    reportCount?: number;
     status: "pending" | "reviewing" | "resolved" | "rejected";
     createdAt: string;
     updatedAt: string | null;
@@ -50,6 +54,7 @@ interface Report {
 }
 interface ReportDetail extends Report {
     chatRoomId?: string;
+    matchId?: string;
 }
 interface ChatMessage {
     id: string;
@@ -104,7 +109,6 @@ function getDefaultActionForStatus(status: ReportStatus | 'dismissed'): ReportAc
         return 'warned';
     return 'escalated';
 }
-const REASONS_REQUIRING_CHAT = ["부적절한 언어 사용", "스팸/광고"];
 const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사진"];
 function ReportsManagementContent() {
     const toast = useToast();
@@ -118,6 +122,8 @@ function ReportsManagementContent() {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
     const [statusFilter, setStatusFilter] = useState<string>("");
+    const [urgentOnly, setUrgentOnly] = useState(false);
+    const [slackUndeliveredOnly, setSlackUndeliveredOnly] = useState(false);
     const [reporterNameFilter, setReporterNameFilter] = useState<string>("");
     const [reportedNameFilter, setReportedNameFilter] = useState<string>("");
     const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(null);
@@ -132,9 +138,10 @@ function ReportsManagementContent() {
     const [statusUpdating, setStatusUpdating] = useState(false);
     const statusForm = useAdminForm<ReportStatusFormValues>({
         schema: reportStatusSchema,
-        defaultValues: { status: "pending", action: 'escalated' },
+        defaultValues: { status: "pending", action: 'escalated', suspendDays: 7, suspendPermanent: false, approverId: '' },
     });
     const watchedStatus = statusForm.watch('status');
+    const watchedAction = statusForm.watch('action');
     const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
@@ -162,6 +169,7 @@ function ReportsManagementContent() {
                 ? {
                     ...fallbackReport,
                     ...detailResponse,
+                    reportCount: detailResponse.reportCount ?? fallbackReport.reportCount,
                 }
                 : (detailResponse as ReportDetail);
             setSelectedReport(reportDetail);
@@ -193,6 +201,8 @@ function ReportsManagementContent() {
             if (statusFilter) {
                 params.append("status", statusFilter);
             }
+            if (urgentOnly) params.append("urgent", "true");
+            if (slackUndeliveredOnly) params.append("slackUndelivered", "true");
             if (reporterNameFilter.trim()) {
                 params.append("reporterName", reporterNameFilter.trim());
             }
@@ -218,7 +228,7 @@ function ReportsManagementContent() {
     };
     useEffect(() => {
         fetchReports();
-    }, [page, rowsPerPage, statusFilter, reporterNameFilter, reportedNameFilter]);
+    }, [page, rowsPerPage, statusFilter, urgentOnly, slackUndeliveredOnly, reporterNameFilter, reportedNameFilter]);
     useEffect(() => {
         if (!deepLinkedReportId) {
             lastOpenedReportIdRef.current = null;
@@ -304,7 +314,7 @@ function ReportsManagementContent() {
             return;
         setStatusUpdating(true);
         try {
-            await AdminService.reports.updateReportStatus(selectedReport.id, data.status, { type: 'profile', action: data.action });
+            await AdminService.reports.updateReportStatus(selectedReport.id, data.status, { type: 'profile', action: data.action, suspendDays: data.suspendDays as 3 | 7 | 14 | 30 | undefined, suspendPermanent: data.suspendPermanent, approverId: data.approverId });
             toast.success("상태가 변경되었습니다.");
             await openReportDetail(selectedReport.id, {
                 ...selectedReport,
@@ -377,7 +387,6 @@ function ReportsManagementContent() {
         }
         return report.reason;
     };
-    const requiresChatHistory = (reason: string) => REASONS_REQUIRING_CHAT.includes(reason);
     const requiresProfileImages = (reason: string) => REASONS_REQUIRING_PROFILE_IMAGES.includes(reason);
     const getReviewActionLabel = (action: ReportHistoryEntry['action']) => {
         const actionMap: Record<ReportHistoryEntry['action'], string> = {
@@ -436,7 +445,7 @@ function ReportsManagementContent() {
     const renderDetailTabs = () => {
         if (!selectedReport)
             return null;
-        const showChatTab = requiresChatHistory(selectedReport.reason) && selectedReport.chatRoomId;
+        const showChatTab = Boolean(selectedReport.chatRoomId);
         const showProfileImagesTab = requiresProfileImages(selectedReport.reason);
         const tabs = [{ label: "기본 정보", icon: <DescriptionIcon></DescriptionIcon> }];
         if (showChatTab) {
@@ -481,21 +490,21 @@ function ReportsManagementContent() {
               <h2 className="text-lg font-semibold">신고 정보</h2>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <Controller name="status" control={statusForm.control} render={({ field }) => (<div style={{ minWidth: 140 }}>
-                      <label>상태 변경</label>
-                      <Select {...field} aria-label={"상태 변경"} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+                      <Select {...field} aria-label={"상태 변경"} className="min-w-[120px]"><Label>상태 변경</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
                         {STATUS_OPTIONS.map((option) => (<ListBox.Item key={option.value} id={option.value} textValue={String(option.label)}>
                             {option.label}
                           </ListBox.Item>))}
                       </ListBox></Select.Popover></Select>
                     </div>)}></Controller>
                 <Controller name="action" control={statusForm.control} render={({ field }) => (<div style={{ minWidth: 140 }}>
-                      <label>처리 액션</label>
-                      <Select {...field} aria-label={"처리 액션"} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+                      <Select {...field} aria-label={"처리 액션"} className="min-w-[120px]"><Label>처리 액션</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
                         {ACTION_OPTIONS.map((option) => (<ListBox.Item key={option.value} id={option.value} textValue={String(option.label)}>
                             {option.label}
                           </ListBox.Item>))}
                       </ListBox></Select.Popover></Select>
                     </div>)}></Controller>
+                {watchedAction === 'suspended' && <><Controller name="suspendDays" control={statusForm.control} render={({field}) => <Select value={String(field.value ?? 7)} onChange={key => field.onChange(Number(key))} isDisabled={statusForm.watch('suspendPermanent') === true}><Label>정지 기간</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox>{[3,7,14,30].map(days => <ListBox.Item key={days} id={String(days)} textValue={`${days}일`}>{days}일</ListBox.Item>)}</ListBox></Select.Popover></Select>} /><Controller name="suspendPermanent" control={statusForm.control} render={({field}) => <Checkbox isSelected={field.value === true} onChange={field.onChange}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>영구 정지</Checkbox.Content></Checkbox>} /></>}
+                {watchedAction === 'banned' && <Controller name="approverId" control={statusForm.control} render={({field,fieldState}) => <TextField isInvalid={!!fieldState.error}><Label>승인자 관리자 ID (2인 승인)</Label><Input {...field} value={field.value ?? ''} placeholder="다른 관리자의 user id" /><Description>영구 차단은 본인 외 다른 관리자 승인이 필요합니다</Description><FieldError>{fieldState.error?.message}</FieldError></TextField>} />}
                 <Button onPress={() => void handleStatusChange()} isDisabled={statusUpdating ||
                 (statusForm.watch("status") === selectedReport.status &&
                     statusForm.watch('action') === getDefaultActionForStatus(selectedReport.status))} variant="primary">
@@ -775,11 +784,10 @@ function ReportsManagementContent() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="min-w-0">
             <div>
-              <label>상태</label>
               <Select value={statusFilter} aria-label={"상태"} onChange={(key) => {
             const value = String(key ?? "");
             (handleStatusFilterChange)({ target: { value: value }, currentTarget: { value: value } } as never);
-        }} className="min-w-[120px]"><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
+        }} className="min-w-[120px]"><Label>상태</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
                 <ListBox.Item id={""} textValue={"\uC804\uCCB4"}>전체</ListBox.Item>
                 <ListBox.Item id={"pending"} textValue={"\uB300\uAE30\uC911"}>대기중</ListBox.Item>
                 <ListBox.Item id={"reviewing"} textValue={"\uAC80\uD1A0\uC911"}>검토중</ListBox.Item>
@@ -797,6 +805,7 @@ function ReportsManagementContent() {
         </div>
       </section>
 
+      <div className="flex flex-wrap gap-3"><Checkbox isSelected={urgentOnly} onChange={checked => { setUrgentOnly(checked); setPage(0); }}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>긴급 신고만</Checkbox.Content></Checkbox><Checkbox isSelected={slackUndeliveredOnly} onChange={checked => { setSlackUndeliveredOnly(checked); setPage(0); }}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>슬랙 미전달만</Checkbox.Content></Checkbox></div>
       <section className="rounded-xl border bg-white p-4">
         <div>
           <table className="w-full text-sm">
@@ -820,10 +829,10 @@ function ReportsManagementContent() {
                   <td colSpan={7} className="border-b px-4 py-3">
                     신고 내역이 없습니다.
                   </td>
-                </tr>) : (reports.map((report) => (<tr key={report.id} className="border-b">
+                </tr>) : (reports.map((report) => (<tr key={report.id} className={`border-b ${report.severity === 'urgent' ? 'bg-red-50' : ''}`}>
                     <td className="border-b px-4 py-3">
                       <p>
-                        {report.id.slice(0, 8)}...
+                        {report.id.slice(0, 8)}...{report.severity === 'urgent' && <Chip size="sm">긴급</Chip>}{report.slackDelivered === false && <span title="슬랙 미전달 — 신고는 접수됐지만 CS 알림 전송에 실패했습니다" aria-label="슬랙 미전달">알림 실패</span>}
                       </p>
                     </td>
                     <td className="border-b px-4 py-3">
@@ -845,7 +854,7 @@ function ReportsManagementContent() {
                         <img src={report.reported.profileImageUrl || undefined} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
                         <div>
                           <p>
-                            {report.reported.name}
+                            {report.reported.name}{(report.reportCount ?? 0) > 1 && <Chip size="sm">누적 {report.reportCount}건</Chip>}
                           </p>
                           <p>
                             {getGenderText(report.reported.gender)},{" "}

@@ -51,12 +51,15 @@ describe("HeroUI 블랙리스트 actions", () => {
         name: "이 유저를 블랙리스트 등록합니다. 확인했습니다.",
       }),
     );
+    expect(submit).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", {name: "승인자 관리자 ID (2인 승인, 필수)"}), {target: {value: " other-admin "}});
     fireEvent.click(submit);
     await waitFor(() =>
       expect(blacklist.register).toHaveBeenCalledWith("user-jp", {
         reason: "스팸",
         memo: undefined,
         sendNotice: false,
+        approverId: "other-admin",
       }),
     );
     await waitFor(() => expect(onClose).toHaveBeenCalled());

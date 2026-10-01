@@ -29,6 +29,8 @@ export default function StatusCountBar({
   return (
     <div
       style={{
+        flexWrap: "wrap",
+        gap: 12,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

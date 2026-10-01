@@ -21,6 +21,7 @@ it("상담 카드 Enter 입력은 해당 세션을 한 번 연다", async () => 
   const user = userEvent.setup();
   const open = jest.fn();
   (supportChatService.getSessionDetail as jest.Mock).mockResolvedValue({
+    sessionId: "card-session",
     messages: [],
   });
   render(
@@ -42,6 +43,7 @@ it("상담 카드 Enter 입력은 해당 세션을 한 번 연다", async () => 
       domainFilter="all"
       onDomainFilterChange={jest.fn()}
       onOpenSession={open}
+      onSessionUpdated={jest.fn()}
     />,
   );
   await waitFor(() =>

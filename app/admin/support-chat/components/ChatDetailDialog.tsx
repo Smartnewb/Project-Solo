@@ -29,6 +29,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 import supportChatService from "@/app/services/support-chat";
 import { useSupportChatSocket } from "../hooks/useSupportChatSocket";
+import { useReadState } from "../lib/read-state";
 import { canMutateSupportMessage } from "../lib/can-mutate-message";
 import type {
   SupportSessionDetail,
@@ -75,6 +76,9 @@ export default function ChatDetailDialog({
   onSessionUpdated,
 }: ChatDetailDialogProps) {
   const { session: adminSession } = useAdminSession();
+  const { markRead } = useReadState();
+  const detailRequestRef = useRef(0);
+  const completedDetailRef = useRef(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [session, setSession] = useState<SupportSessionDetail | null>(null);
@@ -176,29 +180,49 @@ export default function ChatDetailDialog({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const fetchSessionDetail = async () => {
+  const fetchSessionDetail = useCallback(async () => {
+    const request = ++detailRequestRef.current;
     setLoading(true);
     setError("");
 
     try {
       const detail = await supportChatService.getSessionDetail(sessionId);
+      if (detailRequestRef.current !== request) return;
+      if (detail.sessionId !== sessionId)
+        throw new Error("Session detail does not match the requested session.");
       setSession(detail);
+      completedDetailRef.current = request;
     } catch (err) {
+      if (detailRequestRef.current !== request) return;
       setError(
         err instanceof Error
           ? err.message
           : "세션 정보를 불러오는데 실패했습니다.",
       );
     } finally {
-      setLoading(false);
+      if (detailRequestRef.current === request) setLoading(false);
     }
-  };
+  }, [sessionId]);
 
   useEffect(() => {
-    if (open && sessionId) {
-      fetchSessionDetail();
+    setSession(null);
+    if (open && sessionId) fetchSessionDetail();
+    return () => {
+      detailRequestRef.current++;
+    };
+  }, [open, sessionId, fetchSessionDetail]);
+
+  useEffect(() => {
+    if (
+      open &&
+      session?.sessionId === sessionId &&
+      !loading &&
+      !error &&
+      completedDetailRef.current === detailRequestRef.current
+    ) {
+      markRead(sessionId, session.messages);
     }
-  }, [open, sessionId]);
+  }, [open, sessionId, session, loading, error, markRead]);
 
   useEffect(() => {
     if (session?.messages) {
@@ -628,7 +652,7 @@ export default function ChatDetailDialog({
                 >
                   <Spinner aria-label="로딩 중" />
                 </div>
-              ) : session ? (
+              ) : session?.sessionId === sessionId ? (
                 <>
                   <div
                     style={{

@@ -1,6 +1,6 @@
 'use client';
 import { Button, Input } from '@heroui/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Images, RefreshCw } from 'lucide-react';
 import { profileImageAudit, userReview } from '@/app/services/admin';
 import type { ProfileImageAuditBulkActionResponse, ProfileImageAuditItem, ProfileImageAuditProfileRank, } from '@/app/services/admin';
@@ -14,6 +14,7 @@ import { ProfileImageAuditGrid } from './components/ProfileImageAuditGrid';
 import { filterVisibleAuditItems, formatProfileRank, getBulkActionCounts, getSelectedAuditGroup, summarizeBulkActionFailure } from './profile-image-audit-utils';
 import type { AuditAction, AuditFilters } from './types';
 export default function ProfileImageAuditV2() {
+    const latestLoad = useRef(0);
     const [items, setItems] = useState<readonly ProfileImageAuditItem[]>([]);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
@@ -28,11 +29,14 @@ export default function ProfileImageAuditV2() {
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const selectedGroup = useMemo(() => getSelectedAuditGroup(items, selectedIds), [items, selectedIds]);
+    const removesLastApprovedImage = selectedGroup.selectedItems.some(item => selectedGroup.selectedItems.filter(selected => selected.profileId === item.profileId).length >= item.approvedImageCount);
     const load = async () => {
+        const requestId = ++latestLoad.current;
         try {
             setLoading(true);
             setError(null);
             const response = await profileImageAudit.list({ page, limit: PAGE_SIZE, ...filters });
+            if (requestId !== latestLoad.current) return;
             const visibleItems = filterVisibleAuditItems(response.data, filters);
             const hiddenItemCount = response.data.length - visibleItems.length;
             setItems(visibleItems);
@@ -41,13 +45,14 @@ export default function ProfileImageAuditV2() {
             setSelectedIds(new Set());
         }
         catch (loadError) {
+            if (requestId !== latestLoad.current) return;
             const message = loadError instanceof Error
                 ? getAdminErrorMessage(loadError, '프로필 이미지 전수검사 목록 조회 실패')
                 : '프로필 이미지 전수검사 목록 조회 실패';
             setError(message);
         }
         finally {
-            setLoading(false);
+            if (requestId === latestLoad.current) setLoading(false);
         }
     };
     useEffect(() => {
@@ -99,6 +104,7 @@ export default function ProfileImageAuditV2() {
         try {
             setBusy(true);
             setError(null);
+            setNotice(null);
             let response: ProfileImageAuditBulkActionResponse;
             if (pendingAction === 'mark-ok') {
                 response = await profileImageAudit.bulkMarkOk({ profileImageIds: selectedGroup.selectedIds });
@@ -116,6 +122,7 @@ export default function ProfileImageAuditV2() {
                 response = await profileImageAudit.bulkDelete({
                     profileImageIds: selectedGroup.selectedIds,
                     reason: DELETE_REASON,
+                    confirmationPhrase: removesLastApprovedImage ? '재업로드 필요' : '삭제',
                 });
             }
             const failureMessage = summarizeBulkActionFailure(response);
@@ -132,6 +139,7 @@ export default function ProfileImageAuditV2() {
             }
             setPendingAction(null);
             await load();
+            if (failureMessage) setError(failureMessage);
         }
         catch (actionError) {
             const message = actionError instanceof Error
@@ -179,7 +187,7 @@ export default function ProfileImageAuditV2() {
           </div>)}
       </div>
 
-      <ConfirmAuditActionDialog action={pendingAction} selectedCount={selectedGroup.selectedIds.length} busy={busy} onClose={() => setPendingAction(null)} onConfirm={runAction}></ConfirmAuditActionDialog>
+      <ConfirmAuditActionDialog action={pendingAction} selectedCount={selectedGroup.selectedIds.length} busy={busy} removesLastApprovedImage={removesLastApprovedImage} onClose={() => setPendingAction(null)} onConfirm={runAction}></ConfirmAuditActionDialog>
 
       {blacklistTarget && (<BlacklistRegisterModal open user={{
                 id: blacklistTarget.userId,

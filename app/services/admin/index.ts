@@ -5,6 +5,13 @@ export { matching, forceMatching } from './matching';
 export { referrals } from './referrals';
 export type { ReferralMode, ReferralOwner, ReferralPreview } from './referrals';
 export { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
+export { accessLogs } from './access-logs';
+export type {
+  AdminAccessLogItem,
+  AdminAccessLogListParams,
+  AdminAccessLogListResponse,
+  AdminAccessLogMethod,
+} from './access-logs';
 export { pushNotificationRegistry } from './push-notification-registry';
 export {
   pushGroups,
@@ -40,6 +47,7 @@ export type {
 	PushNotificationTemplate,
 	PushNotificationVariant,
 	FreshmenMilestone,
+	PushLegalClass,
 } from './messaging';
 export type {
 	DirectPushNotificationEntry,
@@ -59,10 +67,22 @@ export {
 	appReviews,
 	communityReviewArticles,
 	publicReviews,
+	policyDocuments,
 } from './content';
+export type { PolicyDocumentListParams } from './content';
 export { notices } from './notices';
 export type { NoticeListParams } from './notices';
 export { etaMission } from './eta-mission';
+export { jpIdentity } from './jp-identity';
+export type {
+	JpIdentityAccount,
+	JpIdentityActionResponse,
+	JpIdentityChecks,
+	JpIdentityExtracted,
+	JpIdentityGender,
+	JpIdentityStatus,
+	JpIdentitySubmission,
+} from './jp-identity';
 export { pixelCampus } from './pixel-campus';
 export type {
 	EtaSubmission,
@@ -200,6 +220,22 @@ export type {
 export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
+export { meeting } from './meeting';
+export type {
+	MeetingRoomRow,
+	MeetingRoomDetail,
+	MeetingRoomMember,
+	MeetingRoomDeposit,
+	MeetingRoomCheckin,
+	MeetingCancelLog,
+	MeetingRefundFailure,
+	MeetingRoomStatus,
+	MeetingDepositStatus,
+	MeetingCheckinMethod,
+	MeetingGender,
+	MeetingTeamSide,
+	MeetingRoomCanceledReason,
+} from './meeting';
 export { matchingMonitor } from './matching-monitor';
 export { styleReference } from './style-reference';
 export { care } from './care';
@@ -310,6 +346,7 @@ import { stats, kpiReport } from './dashboard';
 import { userAppearance, deletedFemales, userEngagement } from './users';
 import { matching, forceMatching } from './matching';
 import { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
+import { accessLogs } from './access-logs';
 import { pushNotificationRegistry } from './push-notification-registry';
 import {
 	backgroundPresets,
@@ -319,9 +356,11 @@ import {
 	appReviews,
 	communityReviewArticles,
 	publicReviews,
+	policyDocuments,
 } from './content';
 import { notices } from './notices';
 import { etaMission } from './eta-mission';
+import { jpIdentity } from './jp-identity';
 import { videos } from './video';
 import { seo } from './seo';
 import { cardNewsGeneration } from './card-news-generation';
@@ -340,6 +379,7 @@ import {
 import { revenueV2 } from './revenue-v2';
 import { fcmTokens, universities } from './system';
 import { featureFlags } from './feature-flags';
+import { meeting } from './meeting';
 import { matchingMonitor } from './matching-monitor';
 import { styleReference } from './style-reference';
 import { care } from './care';
@@ -375,6 +415,7 @@ const AdminService = {
 	userReview,
 	pushNotifications,
 	pushNotificationCatalog,
+	accessLogs,
 	pushNotificationRegistry,
 	aiChat,
 	backgroundPresets,
@@ -398,9 +439,11 @@ const AdminService = {
 	appReviews,
 	communityReviewArticles,
 	publicReviews,
+	policyDocuments,
 	fcmTokens,
 	getProfileReports: reports.getProfileReports,
 	featureFlags,
+	meeting,
 	matchingMonitor,
 	styleReference,
 	care,
@@ -428,6 +471,7 @@ const AdminService = {
 	communitySettings,
 	targetPosts,
 	etaMission,
+	jpIdentity,
 	pixelCampus,
 	xMarketing: XMarketingAdminService,
 };

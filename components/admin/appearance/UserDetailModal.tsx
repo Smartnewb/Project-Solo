@@ -1,3 +1,4 @@
+import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
 import { Button as HeroActionButton } from "@heroui/react";
 import {
   Alert,
@@ -812,13 +813,23 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setUserDetail((prev) =>
         prev ? { ...prev, isUniversityVerified: true } : prev,
       );
+      setUniVerificationStatus("verified");
 
       setActionSuccess("대학교 인증이 승인되었습니다.");
       if (onRefresh) onRefresh();
     } catch (error: any) {
-      setActionError(
-        error.message || "대학교 인증 승인 중 오류가 발생했습니다.",
+      const message = getAdminErrorMessage(
+        error,
+        "대학교 인증 승인 중 오류가 발생했습니다.",
       );
+      // 백엔드가 이미 인증된 사용자라고 거절하면 인증 상태를 즉시 반영한다.
+      if (message.includes("이미 인증")) {
+        setUserDetail((prev) =>
+          prev ? { ...prev, isUniversityVerified: true } : prev,
+        );
+        setUniVerificationStatus("verified");
+      }
+      setActionError(message);
     } finally {
       setActionLoading(false);
     }
@@ -938,6 +949,45 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     Boolean(
       userDetail?.universityDetails?.authentication ?? userDetail?.verifiedAt,
     );
+
+  // v2 사용자 상세 응답에는 대학교 인증 상태가 없어 별도 조회한다.
+  const [uniVerificationStatus, setUniVerificationStatus] = useState<
+    "loading" | "verified" | "pending" | "unverified" | "unknown"
+  >("loading");
+
+  useEffect(() => {
+    if (!open || !userDetail?.id) return;
+    if (isUniversityVerified || !currentUniversityName) {
+      setUniVerificationStatus(isUniversityVerified ? "verified" : "unknown");
+      return;
+    }
+    let cancelled = false;
+    setUniVerificationStatus("loading");
+    AdminService.userAppearance
+      .getUniversityVerificationStatus({
+        userId: userDetail.id,
+        name: userDetail.name,
+        universityName: currentUniversityName,
+      })
+      .then((result) => {
+        if (!cancelled) setUniVerificationStatus(result.status);
+      })
+      .catch(() => {
+        if (!cancelled) setUniVerificationStatus("unknown");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    open,
+    userDetail?.id,
+    userDetail?.name,
+    isUniversityVerified,
+    currentUniversityName,
+  ]);
+
+  const showUniversityVerified =
+    isUniversityVerified || uniVerificationStatus === "verified";
 
   return (
     <Modal.Backdrop
@@ -1681,7 +1731,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           <div className={"text-sm text-neutral-700"}>
                             인증 상태:
                           </div>
-                          {isUniversityVerified ? (
+                          {showUniversityVerified ? (
                             <Chip
                               style={{
                                 backgroundColor: "#e8f5e8",
@@ -1706,31 +1756,38 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                               >
                                 {"미인증"}
                               </Chip>
-                              <Button
-                                style={{
-                                  minWidth: "auto",
-                                  paddingLeft: 8,
-                                  paddingRight: 8,
-                                  paddingTop: 2,
-                                  paddingBottom: 2,
-                                  fontSize: "0.75rem",
-                                }}
-                                onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      `${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`,
-                                    )
-                                  ) {
-                                    handleUniversityApproval();
-                                  }
-                                }}
-                                variant={"primary"}
-                                isDisabled={undefined}
-                                size={"sm"}
-                                className="rounded-xl"
-                              >
-                                인증 승인
-                              </Button>
+                              {uniVerificationStatus === "unverified" && (
+                                <p className="text-xs text-neutral-600">
+                                  학생증 미제출
+                                </p>
+                              )}
+                              {uniVerificationStatus !== "loading" && (
+                                <Button
+                                  style={{
+                                    minWidth: "auto",
+                                    paddingLeft: 8,
+                                    paddingRight: 8,
+                                    paddingTop: 2,
+                                    paddingBottom: 2,
+                                    fontSize: "0.75rem",
+                                  }}
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        `${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`,
+                                      )
+                                    ) {
+                                      handleUniversityApproval();
+                                    }
+                                  }}
+                                  variant={"primary"}
+                                  isDisabled={undefined}
+                                  size={"sm"}
+                                  className="rounded-xl"
+                                >
+                                  인증 승인
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>
