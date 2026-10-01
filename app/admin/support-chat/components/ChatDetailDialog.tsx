@@ -37,6 +37,7 @@ import {
 import supportChatService from '@/app/services/support-chat';
 import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
 import { canMutateSupportMessage } from '../lib/can-mutate-message';
+import { useReadState } from '../lib/read-state';
 import type { SupportSessionDetail, SupportMessage, SupportSenderType } from '@/app/types/support-chat';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import {
@@ -71,6 +72,9 @@ export default function ChatDetailDialog({
   onSessionUpdated,
 }: ChatDetailDialogProps) {
   const { session: adminSession } = useAdminSession();
+  const { markRead } = useReadState();
+  const detailRequestRef = useRef(0);
+  const completedDetailRef = useRef(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [session, setSession] = useState<SupportSessionDetail | null>(null);
@@ -147,25 +151,37 @@ export default function ChatDetailDialog({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchSessionDetail = async () => {
+  const fetchSessionDetail = useCallback(async () => {
+    const request = ++detailRequestRef.current;
     setLoading(true);
     setError('');
 
     try {
       const detail = await supportChatService.getSessionDetail(sessionId);
+      if (detailRequestRef.current !== request) return;
+      if (detail.sessionId !== sessionId) throw new Error('Session detail does not match the requested session.');
       setSession(detail);
+      completedDetailRef.current = request;
     } catch (err) {
+      if (detailRequestRef.current !== request) return;
       setError(err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.');
     } finally {
-      setLoading(false);
+      if (detailRequestRef.current === request) setLoading(false);
     }
-  };
+  }, [sessionId]);
 
   useEffect(() => {
-    if (open && sessionId) {
-      fetchSessionDetail();
+    setSession(null);
+    if (open && sessionId) fetchSessionDetail();
+    return () => { detailRequestRef.current++; };
+  }, [open, sessionId, fetchSessionDetail]);
+
+  useEffect(() => {
+    if (open && session?.sessionId === sessionId && !loading && !error &&
+        completedDetailRef.current === detailRequestRef.current) {
+      markRead(sessionId, session.messages);
     }
-  }, [open, sessionId]);
+  }, [open, sessionId, session, loading, error, markRead]);
 
   useEffect(() => {
     if (session?.messages) {
@@ -513,7 +529,7 @@ export default function ChatDetailDialog({
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
               <CircularProgress />
             </Box>
-          ) : session ? (
+          ) : session?.sessionId === sessionId ? (
             <>
               <Box sx={{ p: 2, bgcolor: 'grey.50', borderBottom: 1, borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>

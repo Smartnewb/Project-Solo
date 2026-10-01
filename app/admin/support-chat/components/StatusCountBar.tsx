@@ -24,12 +24,12 @@ const pulseKeyframes = {
 
 export default function StatusCountBar({ waitingCount, handlingCount, resolvedCount }: StatusCountBarProps) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
       <Typography variant="h5" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700 }}>
         <SupportAgentIcon fontSize="large" />
         Q&A 처리
       </Typography>
-      <Box sx={{ display: 'flex', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
         <Chip
           icon={<PendingIcon />}
           label={`대기 ${waitingCount}`}

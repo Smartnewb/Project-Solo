@@ -7,7 +7,7 @@ import {
   Paper,
   Typography,
   Chip,
-  Badge,
+  Checkbox,
   Alert,
   ButtonGroup,
   Button,
@@ -21,8 +21,11 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material';
 import type { SupportSessionSummary, SupportDomain } from '@/app/types/support-chat';
-import { DOMAIN_LABELS, DOMAIN_COLORS } from '@/app/types/support-chat';
+import { DOMAIN_LABELS, DOMAIN_COLORS, SESSION_STATUS_LABELS } from '@/app/types/support-chat';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
+import { useSessionMessages } from '../hooks/useSessionMessages';
+import { useReadState } from '../lib/read-state';
+import BulkResolveToolbar, { useSessionSelection } from './BulkResolveToolbar';
 
 interface SessionQueueProps {
   activeSessions: SupportSessionSummary[];
@@ -35,7 +38,7 @@ interface SessionQueueProps {
   onDomainFilterChange: (domain: SupportDomain | 'all') => void;
   newSessionIds: Set<string>;
   onClearNewSessionIds: () => void;
-  unreadMap: Record<string, number>;
+  onSessionUpdated: () => void;
 }
 
 const statusDotColor: Record<string, string> = {
@@ -86,6 +89,9 @@ function SessionCard({
   unreadCount,
   assignedToMe,
   onClick,
+  checked,
+  onToggle,
+  messageError,
 }: {
   session: SupportSessionSummary;
   selected: boolean;
@@ -93,6 +99,9 @@ function SessionCard({
   unreadCount: number;
   assignedToMe: boolean;
   onClick: () => void;
+  checked: boolean;
+  onToggle?: () => void;
+  messageError?: string;
 }) {
   const [highlight, setHighlight] = useState(isNew);
 
@@ -118,11 +127,19 @@ function SessionCard({
     <Paper
       elevation={selected ? 3 : 0}
       onClick={onClick}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       sx={{
         p: 1.5,
         cursor: 'pointer',
-        border: selected ? '2px solid' : '1px solid',
-        borderColor: selected ? 'primary.main' : 'divider',
+        border: 1,
+        borderColor: 'divider',
+        bgcolor: selected || checked ? 'action.selected' : 'background.paper',
         borderRadius: 2,
         transition: 'all 0.15s ease',
         ...(highlight && {
@@ -135,6 +152,9 @@ function SessionCard({
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+        {onToggle && <Checkbox size="small" checked={checked}
+          inputProps={{ 'aria-label': `${session.userNickname || session.userId} 선택` }}
+          onClick={(event) => event.stopPropagation()} onChange={onToggle} />}
         <DotIcon
           sx={{
             fontSize: 12,
@@ -153,9 +173,6 @@ function SessionCard({
         )}
         {session.assignedAdminId && !assignedToMe && (
           <Chip label="배정됨" size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 18, mr: 0.5 }} />
-        )}
-        {unreadCount > 0 && (
-          <Badge badgeContent={unreadCount} color="error" sx={{ mr: 0.5 }} />
         )}
         {waitingMinutes !== null && (
           <Typography
@@ -177,7 +194,10 @@ function SessionCard({
       <Typography variant="body2" color="text.secondary" noWrap sx={{ mb: 0.5, pl: 2.5 }}>
         {session.lastMessage || '메시지 없음'}
       </Typography>
-      <Box sx={{ display: 'flex', gap: 0.5, pl: 2.5 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, pl: 2.5 }}>
+        <Chip label={SESSION_STATUS_LABELS[session.status]} size="small" variant="outlined" />
+        {unreadCount > 0 && <Chip label="사용자 답변 미확인" color="error" size="small" />}
+        {messageError && <Chip label="답변 확인 실패" title={messageError} color="warning" size="small" />}
         {session.domain && (
           <Chip
             label={DOMAIN_LABELS[session.domain]}
@@ -202,7 +222,7 @@ export default function SessionQueue({
   onDomainFilterChange,
   newSessionIds,
   onClearNewSessionIds,
-  unreadMap,
+  onSessionUpdated,
 }: SessionQueueProps) {
   const [search, setSearch] = useState('');
   const [myOnly, setMyOnly] = useState(false);
@@ -228,24 +248,15 @@ export default function SessionQueue({
         )
       : byDomain;
 
-    if (activeTab !== 'active') return bySearch;
+    return [...bySearch].sort((a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() || a.sessionId.localeCompare(b.sessionId)
+    );
+  }, [sessions, domainFilter, search, myOnly, myAdminId]);
 
-    // 활성 탭: 대기(가장 오래 기다린 순) → AI 응대 → 어드민 응대
-    const statusRank: Record<string, number> = {
-      waiting_admin: 0,
-      bot_handling: 1,
-      admin_handling: 2,
-    };
-    const waitingStart = (s: SupportSessionSummary) =>
-      new Date(s.waitingSince ?? s.createdAt).getTime();
-
-    return [...bySearch].sort((a, b) => {
-      const rankDiff = (statusRank[a.status] ?? 3) - (statusRank[b.status] ?? 3);
-      if (rankDiff !== 0) return rankDiff;
-      // 같은 상태면 오래된(작은 timestamp) 순 우선
-      return waitingStart(a) - waitingStart(b);
-    });
-  }, [sessions, domainFilter, search, activeTab, myOnly, myAdminId]);
+  const scope = `${activeTab}:${domainFilter}:${search}:${myOnly}:${myAdminId}`;
+  const { selected, toggle, setSelectedIds } = useSessionSelection(filtered, scope);
+  const { messagesBySession, errorsBySession } = useSessionMessages(filtered);
+  const { isUnread } = useReadState();
 
   const newCount = newSessionIds.size;
   const hasOtherTabItems = activeTab === 'active' ? resolvedSessions.length > 0 : activeSessions.length > 0;
@@ -260,8 +271,8 @@ export default function SessionQueue({
   return (
     <Box
       sx={{
-        width: 380,
-        minWidth: 380,
+        width: { xs: '100%', md: 380 },
+        minWidth: { xs: 0, md: 380 },
         height: 'calc(100vh - 200px)',
         display: 'flex',
         flexDirection: 'column',
@@ -330,6 +341,9 @@ export default function SessionQueue({
             sx={{ fontSize: '0.7rem', mt: 0.75 }}
           />
         )}
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', my: 1 }}>접수순 · 먼저 들어온 상담부터</Typography>
+        {activeTab === 'active' && <BulkResolveToolbar selected={selected} setSelectedIds={setSelectedIds}
+          onSessionUpdated={onSessionUpdated} scope={scope} />}
       </Box>
 
       {/* New session alert */}
@@ -401,7 +415,10 @@ export default function SessionQueue({
               session={session}
               selected={selectedSessionId === session.sessionId}
               isNew={newSessionIds.has(session.sessionId)}
-              unreadCount={unreadMap[session.sessionId] || 0}
+              unreadCount={isUnread(session.sessionId, messagesBySession[session.sessionId] ?? []) ? 1 : 0}
+              checked={selected.some((item) => item.sessionId === session.sessionId)}
+              messageError={errorsBySession[session.sessionId]}
+              onToggle={activeTab === 'active' ? () => toggle(session.sessionId) : undefined}
               assignedToMe={!!myAdminId && session.assignedAdminId === myAdminId}
               onClick={() => onSelectSession(session.sessionId)}
             />

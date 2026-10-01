@@ -24,12 +24,10 @@ function SupportChatPageContent() {
   const [domainFilter, setDomainFilter] = useState<SupportDomain | 'all'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
   const [gridSessionId, setGridSessionId] = useState<string | null>(null);
-  const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(() =>
     isMobile && sessionFromUrl ? 'chat' : 'list'
   );
 
-  const prevMessageCountsRef = useRef<Record<string, number>>({});
   const initializedFromUrlRef = useRef(false);
   const notifiedSessionIdsRef = useRef<Set<string>>(new Set());
 
@@ -62,27 +60,6 @@ function SupportChatPageContent() {
     clearNewSessionIds,
     refresh,
   } = useSessionPolling();
-
-  // Track unread messages
-  useEffect(() => {
-    const allSessions = [...activeSessions, ...resolvedSessions];
-    const newUnread: Record<string, number> = {};
-
-    allSessions.forEach((session) => {
-      const prevCount = prevMessageCountsRef.current[session.sessionId];
-      if (prevCount !== undefined && session.messageCount > prevCount) {
-        // Only count as unread if not the currently selected session
-        if (session.sessionId !== selectedSessionId) {
-          newUnread[session.sessionId] = (unreadMap[session.sessionId] || 0) + (session.messageCount - prevCount);
-        }
-      }
-      prevMessageCountsRef.current[session.sessionId] = session.messageCount;
-    });
-
-    if (Object.keys(newUnread).length > 0) {
-      setUnreadMap((prev) => ({ ...prev, ...newUnread }));
-    }
-  }, [activeSessions, resolvedSessions, selectedSessionId]);
 
   // 신규 대기 문의 데스크톱 알림
   useEffect(() => {
@@ -125,13 +102,6 @@ function SupportChatPageContent() {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
     params.set('session', sessionId);
     router.replace(`/admin/support-chat?${params.toString()}`, { scroll: false });
-    // Clear unread for selected session
-    setUnreadMap((prev) => {
-      if (!prev[sessionId]) return prev;
-      const next = { ...prev };
-      delete next[sessionId];
-      return next;
-    });
     if (isMobile) {
       setMobileView('chat');
     }
@@ -169,7 +139,7 @@ function SupportChatPageContent() {
               onDomainFilterChange={setDomainFilter}
               newSessionIds={newSessionIds}
               onClearNewSessionIds={clearNewSessionIds}
-              unreadMap={unreadMap}
+              onSessionUpdated={handleSessionUpdated}
             />
           </Box>
         ) : (
@@ -221,6 +191,7 @@ function SupportChatPageContent() {
             domainFilter={domainFilter}
             onDomainFilterChange={setDomainFilter}
             onOpenSession={setGridSessionId}
+            onSessionUpdated={handleSessionUpdated}
           />
           {gridSessionId && (
             <ChatDetailDialog
@@ -254,7 +225,7 @@ function SupportChatPageContent() {
           onDomainFilterChange={setDomainFilter}
           newSessionIds={newSessionIds}
           onClearNewSessionIds={clearNewSessionIds}
-          unreadMap={unreadMap}
+          onSessionUpdated={handleSessionUpdated}
         />
         <ChatPanel
           sessionId={selectedSessionId}

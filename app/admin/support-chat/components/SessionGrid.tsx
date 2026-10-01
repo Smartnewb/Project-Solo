@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   Alert,
   Box,
   Chip,
+  Checkbox,
   CircularProgress,
   MenuItem,
   Paper,
@@ -13,7 +14,6 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import supportChatService from '@/app/services/support-chat';
 import type {
   SupportDomain,
   SupportMessage,
@@ -28,6 +28,8 @@ import {
   SESSION_STATUS_LABELS,
 } from '@/app/types/support-chat';
 import { useReadState } from '../lib/read-state';
+import { useSessionMessages } from '../hooks/useSessionMessages';
+import BulkResolveToolbar, { useSessionSelection } from './BulkResolveToolbar';
 
 interface SessionGridProps {
   activeSessions: SupportSessionSummary[];
@@ -37,6 +39,7 @@ interface SessionGridProps {
   domainFilter: SupportDomain | 'all';
   onDomainFilterChange: (domain: SupportDomain | 'all') => void;
   onOpenSession: (sessionId: string) => void;
+  onSessionUpdated: () => void;
 }
 
 const SENDER_STYLE: Record<SupportSenderType, { label: string; bg: string; align: 'flex-start' | 'flex-end' }> = {
@@ -61,33 +64,29 @@ function SessionCard({
   session,
   unread,
   onOpen,
+  messages,
+  error,
+  checked,
+  onToggle,
 }: {
   session: SupportSessionSummary;
   unread: boolean;
   onOpen: () => void;
+  messages?: SupportMessage[];
+  error?: string;
+  checked: boolean;
+  onToggle?: () => void;
 }) {
-  const [messages, setMessages] = useState<SupportMessage[] | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    setError('');
-    supportChatService
-      .getSessionDetail(session.sessionId)
-      .then((detail) => {
-        if (!cancelled) setMessages(detail.messages);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : '대화를 불러오지 못했습니다.');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [session.sessionId, session.messageCount]);
-
   return (
     <Paper
       onClick={onOpen}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
       elevation={0}
       sx={{
         display: 'flex',
@@ -96,36 +95,38 @@ function SessionCard({
         cursor: 'pointer',
         overflow: 'hidden',
         borderRadius: 2,
-        border: unread ? 3 : 1,
-        borderColor: unread ? 'error.main' : 'divider',
-        boxShadow: unread ? '0 0 0 3px rgba(211,47,47,0.12)' : 'none',
-        transition: 'border-color 120ms, box-shadow 120ms',
-        '&:hover': { borderColor: unread ? 'error.dark' : 'primary.main' },
+        border: 1,
+        borderColor: 'divider',
+        bgcolor: checked ? 'action.selected' : 'background.paper',
+        '&:hover': { bgcolor: 'action.hover' },
+        '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main' },
       }}
     >
       <Box
         sx={{
           p: 1.5,
-          bgcolor: unread ? 'rgba(211,47,47,0.06)' : 'grey.50',
+          bgcolor: checked ? 'action.selected' : 'grey.50',
           borderBottom: 1,
           borderColor: 'divider',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+          {onToggle && <Checkbox size="small" checked={checked}
+            inputProps={{ 'aria-label': `${session.userNickname || session.userId} 선택` }}
+            onClick={(event) => event.stopPropagation()} onChange={onToggle} />}
           <Typography
             variant="subtitle2"
-            sx={{ fontWeight: unread ? 800 : 500, color: unread ? 'error.main' : 'text.primary' }}
+            sx={{ flex: 1, minWidth: 0, fontWeight: unread ? 800 : 500, color: unread ? 'error.main' : 'text.primary' }}
             noWrap
           >
             {LANGUAGE_FLAGS[session.language]} {session.userNickname || session.userId.slice(0, 8)}
           </Typography>
-          {unread && <Chip label="미확인" color="error" size="small" sx={{ fontWeight: 700, height: 20 }} />}
-          <Box sx={{ flex: 1 }} />
-          <Typography variant="caption" color="text.secondary">
-            {timeAgo(session.waitingSince || session.createdAt)}
+          <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+            접수 {timeAgo(session.createdAt)}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+          {unread && <Chip label="사용자 답변 미확인" color="error" size="small" sx={{ fontWeight: 700, height: 20 }} />}
           <Chip
             label={SESSION_STATUS_LABELS[session.status]}
             color={SESSION_STATUS_COLORS[session.status]}
@@ -147,7 +148,7 @@ function SessionCard({
 
       <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
         {error && <Alert severity="error" sx={{ py: 0 }}>{error}</Alert>}
-        {!error && messages === null && (
+        {!error && messages === undefined && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
             <CircularProgress size={20} />
           </Box>
@@ -193,8 +194,9 @@ export default function SessionGrid({
   domainFilter,
   onDomainFilterChange,
   onOpenSession,
+  onSessionUpdated,
 }: SessionGridProps) {
-  const { isUnread, markRead } = useReadState();
+  const { isUnread } = useReadState();
 
   const sessions = useMemo(() => {
     const base = activeTab === 'active' ? activeSessions : resolvedSessions;
@@ -203,24 +205,19 @@ export default function SessionGrid({
       .slice()
       .sort(
         (a, b) =>
-          new Date(b.waitingSince || b.createdAt).getTime() -
-          new Date(a.waitingSince || a.createdAt).getTime()
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime() ||
+          a.sessionId.localeCompare(b.sessionId)
       );
   }, [activeSessions, resolvedSessions, activeTab, domainFilter]);
 
-  const unreadCount = sessions.filter((s) => isUnread(s.sessionId, s.messageCount)).length;
-
-  const handleOpen = useCallback(
-    (session: SupportSessionSummary) => {
-      markRead(session.sessionId, session.messageCount);
-      onOpenSession(session.sessionId);
-    },
-    [markRead, onOpenSession]
-  );
+  const { messagesBySession, errorsBySession } = useSessionMessages(sessions);
+  const scope = `${activeTab}:${domainFilter}`;
+  const { selected, toggle, setSelectedIds } = useSessionSelection(sessions, scope);
+  const unreadCount = sessions.filter((s) => isUnread(s.sessionId, messagesBySession[s.sessionId] ?? [])).length;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 1 }}>
         <Tabs value={activeTab} onChange={(_, value) => onTabChange(value)} sx={{ minHeight: 40 }}>
           <Tab label={`진행 중 (${activeSessions.length})`} value="active" sx={{ minHeight: 40 }} />
           <Tab label={`완료 (${resolvedSessions.length})`} value="resolved" sx={{ minHeight: 40 }} />
@@ -239,9 +236,12 @@ export default function SessionGrid({
         </Select>
         <Box sx={{ flex: 1 }} />
         <Typography variant="body2" sx={{ fontWeight: 700, color: unreadCount ? 'error.main' : 'text.secondary' }}>
-          미확인 {unreadCount}건
+          사용자 답변 미확인 {unreadCount}건
         </Typography>
       </Box>
+      <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>접수순 · 먼저 들어온 상담부터 표시합니다.</Typography>
+      {activeTab === 'active' && <BulkResolveToolbar selected={selected} setSelectedIds={setSelectedIds}
+        onSessionUpdated={onSessionUpdated} scope={scope} />}
 
       <Box
         sx={{
@@ -249,7 +249,7 @@ export default function SessionGrid({
           overflowY: 'auto',
           display: 'grid',
           gap: 2,
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
           alignContent: 'start',
           pb: 2,
         }}
@@ -258,8 +258,12 @@ export default function SessionGrid({
           <SessionCard
             key={session.sessionId}
             session={session}
-            unread={isUnread(session.sessionId, session.messageCount)}
-            onOpen={() => handleOpen(session)}
+            unread={isUnread(session.sessionId, messagesBySession[session.sessionId] ?? [])}
+            messages={messagesBySession[session.sessionId]}
+            error={errorsBySession[session.sessionId]}
+            checked={selected.some((item) => item.sessionId === session.sessionId)}
+            onToggle={activeTab === 'active' ? () => toggle(session.sessionId) : undefined}
+            onOpen={() => onOpenSession(session.sessionId)}
           />
         ))}
         {sessions.length === 0 && (

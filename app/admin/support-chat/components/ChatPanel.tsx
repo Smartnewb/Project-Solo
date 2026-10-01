@@ -48,6 +48,7 @@ import AdminService from '@/app/services/admin';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
 import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
 import { canMutateSupportMessage } from '../lib/can-mutate-message';
+import { useReadState } from '../lib/read-state';
 import QuickReplyDialog from './QuickReplyDialog';
 import ResolveDialog from './ResolveDialog';
 import type {
@@ -85,6 +86,9 @@ const DEFAULT_GEM_GRANT_MESSAGE = '고객지원 보상 구슬 지급';
 
 export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatPanelProps) {
   const { session: adminSession } = useAdminSession();
+  const { markRead } = useReadState();
+  const detailRequestRef = useRef(0);
+  const completedDetailRef = useRef(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [session, setSession] = useState<SupportSessionDetail | null>(null);
@@ -206,27 +210,38 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
 
   const fetchSessionDetail = useCallback(async () => {
     if (!sessionId) return;
+    const request = ++detailRequestRef.current;
     setLoading(true);
     setError('');
     try {
       const detail = await supportChatService.getSessionDetail(sessionId);
+      if (detailRequestRef.current !== request) return;
+      if (detail.sessionId !== sessionId) throw new Error('Session detail does not match the requested session.');
       setSession(detail);
       setNoteValue(detail.adminNote ?? '');
       await fetchUserAdminInfo(detail.user.id);
+      if (detailRequestRef.current === request) completedDetailRef.current = request;
     } catch (err) {
+      if (detailRequestRef.current !== request) return;
       setError(err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.');
       setGemsLoading(false);
     } finally {
-      setLoading(false);
+      if (detailRequestRef.current === request) setLoading(false);
     }
   }, [sessionId, fetchUserAdminInfo]);
 
   useEffect(() => {
-    if (sessionId) {
-      setSession(null);
-      fetchSessionDetail();
-    }
+    setSession(null);
+    if (sessionId) fetchSessionDetail();
+    return () => { detailRequestRef.current++; };
   }, [sessionId, fetchSessionDetail]);
+
+  useEffect(() => {
+    if (sessionId && session?.sessionId === sessionId && !loading && !error &&
+        completedDetailRef.current === detailRequestRef.current) {
+      markRead(sessionId, session.messages);
+    }
+  }, [sessionId, session, loading, error, markRead]);
 
   useEffect(() => {
     if (session?.messages) {
@@ -864,7 +879,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
           <CircularProgress />
         </Box>
-      ) : session ? (
+      ) : session?.sessionId === sessionId ? (
         <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
           {session.messages.length === 0 ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
