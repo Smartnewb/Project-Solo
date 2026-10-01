@@ -59,9 +59,9 @@ export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode =
             {isOpen && (<Modal.Backdrop isOpen onOpenChange={open => { if (!open) handleClose(); }}><Modal.Container size="lg">
 
                     {/* MARK: - 모달 전체 */}
-                    <Modal.Dialog aria-label={mode === 'edit' ? '템플릿 수정' : '새 템플릿 만들기'}>
+                    <Modal.Dialog style={{width:"100%",maxWidth:600,minWidth:0}} aria-label={mode === 'edit' ? '템플릿 수정' : '새 템플릿 만들기'}>
                             {/* 모달 헤더 */}
-                            <div className="flex justify-between items-center px-4 sm:px-6 py-4 border-b">
+                            <Modal.Header className="flex justify-between items-center px-4 sm:px-6 py-4 border-b flex-row flex-wrap gap-3">
                                 <h2 className="text-base sm:text-lg font-medium text-gray-900">
                                     {mode === 'edit' ? '템플릿 수정' : '새 템플릿 만들기'}
                                 </h2>
@@ -69,10 +69,10 @@ export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode =
                                 <Button onPress={handleClose} className="p-1.5 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 transition-colors" variant="secondary">
                                     <X size={20}></X>
                                 </Button>
-                            </div>
+                            </Modal.Header>
 
                             {/* MARK: - 모달 바디 */}
-                            <div className="px-4 sm:px-6 py-5 space-y-5">
+                            <Modal.Body className="px-4 sm:px-6 py-5 space-y-5">
                                     {/* 템플릿 제목 입력 */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1.5"> 템플릿 제목 *</label>
@@ -134,9 +134,9 @@ export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode =
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </Modal.Body>
                             {/* MARK: - 모달 푸터 구현 */}
-                            <div className="flex flex-col-reverse rounded-lg sm:flex-row gap-2 sm:gap-3 justify-end px-4 sm:px-6 py-3 sm:py-4 border-t bg-gray-50">
+                            <Modal.Footer className="flex flex-col-reverse rounded-lg sm:flex-row gap-2 sm:gap-3 justify-end px-4 sm:px-6 py-3 sm:py-4 border-t bg-gray-50">
                                 {/* 취소 버튼 */}
                                 <Button onPress={handleClose} className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition-colors" variant="secondary">
                                         취소
@@ -150,7 +150,7 @@ export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode =
                                     {isSubmitting ? '저장 중...' : mode === 'edit' ? '수정 완료' : '템플릿 저장'}
                                     </Button>
 
-                            </div>
+                            </Modal.Footer>
 
 
                     </Modal.Dialog>

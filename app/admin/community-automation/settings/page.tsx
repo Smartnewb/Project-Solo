@@ -148,7 +148,7 @@ export default function SettingsPage() {
 			<Modal.Backdrop isOpen={killConfirmOpen} onOpenChange={next => {
             if (!next)
                 (() => setKillConfirmOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>
 					{killConfirmAction === 'kill' ? '긴급 중단 확인' : '자동화 재개 확인'}
 				</Modal.Heading>
@@ -169,7 +169,7 @@ export default function SettingsPage() {
 			<Modal.Backdrop isOpen={resetConfirmOpen} onOpenChange={next => {
             if (!next)
                 (() => setResetConfirmOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>기본값으로 초기화</Modal.Heading>
 				<Modal.Body>
 					<p>설정을 기본값으로 초기화하시겠습니까?</p>

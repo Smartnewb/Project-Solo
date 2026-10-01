@@ -62,7 +62,7 @@ export default function CareExecuteModal({
 
   const targetAge = calculateAge(target.birthday);
   return <Modal.Backdrop isOpen={open} onOpenChange={isOpen => !isOpen && handleClose()} isDismissable={!executing} isKeyboardDismissDisabled={executing}>
-    <Modal.Container size="md"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>케어 실행</Modal.Heading><Button variant="tertiary" isIconOnly aria-label="케어 실행 닫기" onPress={handleClose} isDisabled={executing}><X size={18} /></Button></Modal.Header>
+    <Modal.Container size="md"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}><Modal.Header className="flex items-center justify-between flex-row flex-wrap gap-3"><Modal.Heading>케어 실행</Modal.Heading><Button variant="tertiary" isIconOnly aria-label="케어 실행 닫기" onPress={handleClose} isDisabled={executing}><X size={18} /></Button></Modal.Header>
       <Modal.Body className="space-y-4">
         <p className="text-xs text-gray-600" role="status">{step} / 2 단계 · {step === 1 ? '액션 선택' : '실행 확인'}</p>
         <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">

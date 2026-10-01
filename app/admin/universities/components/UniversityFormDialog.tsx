@@ -145,7 +145,7 @@ export default function UniversityFormDialog({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading>
             {editUniversity ? "대학 수정" : "대학 등록"}
           </Modal.Heading>

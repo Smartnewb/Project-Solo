@@ -117,7 +117,7 @@ export function StatusActionDialog({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading>상태 변경</Modal.Heading>
           <Modal.Body>
             {episode && (

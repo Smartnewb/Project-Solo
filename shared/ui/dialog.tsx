@@ -74,8 +74,8 @@ function DialogContent({
 	const { open, setOpen } = React.useContext(DialogContext);
 	return (
 		<Modal.Backdrop isOpen={open} onOpenChange={setOpen}>
-			<Modal.Container size="lg">
-				<Modal.Dialog {...props} className={cn("relative p-6", className)}>
+			<Modal.Container size="lg" scroll="outside">
+				<Modal.Dialog {...props} className={cn("relative min-w-0 p-6 break-words", className)}>
 					{children}
 					<Modal.CloseTrigger
 						aria-label="닫기"

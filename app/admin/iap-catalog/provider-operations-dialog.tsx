@@ -162,7 +162,7 @@ export default function ProviderOperationsDialog({
 			isDismissable={isBusy ? undefined : onClose !== undefined}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>스토어 연결 · {product.product_key}</Modal.Heading>
 					</Modal.Header>

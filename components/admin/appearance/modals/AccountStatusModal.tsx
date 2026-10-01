@@ -141,12 +141,12 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
       }}
       isDismissable={handleClose !== undefined}
     >
-      <Modal.Container size="md" scroll="inside">
-        <Modal.Dialog>
+      <Modal.Container size="md" scroll="inside" className="w-full">
+        <Modal.Dialog style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}>
           <Modal.Header>
             <Modal.Heading>{title}</Modal.Heading>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
             {success ? (
               <Alert style={{ marginTop: 8 }} status={"success"} role="alert">
                 <Alert.Content>
@@ -399,7 +399,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
               </div>
             )}
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="flex-wrap gap-2">
             <Button
               onClick={handleClose}
               variant={"ghost"}

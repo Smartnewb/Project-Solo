@@ -105,30 +105,30 @@ export default function AIChatMessageDetail({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading>
-            <div
+            <span
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <img
                   src={session.user.profileImage || undefined}
                   alt="프로필"
                   className="h-9 w-9 rounded-full object-cover"
                 />
-                <div>
-                  <h6>{session.user.name}님의 AI 채팅</h6>
+                <span>
+                  <span>{session.user.name}님의 AI 채팅</span>
                   <p>세션 ID: {session.id}</p>
-                </div>
-              </div>
+                </span>
+              </span>
               <Button onClick={onClose} variant={"secondary"}>
                 {<CloseIcon size={16} />}닫기
               </Button>
-            </div>
+            </span>
           </Modal.Heading>
           <Modal.Body>
             {loading ? (

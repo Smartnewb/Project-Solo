@@ -194,7 +194,7 @@ export default function EtaMissionReviewPage() {
       <Modal.Backdrop isOpen={!!lightboxUrl} onOpenChange={next => {
             if (!next)
                 (() => setLightboxUrl(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
         <Modal.Body style={{ padding: 0 }}>
           {lightboxUrl && (<img src={lightboxUrl} alt="에타 스크린샷 확대" style={{ display: "block", maxWidth: "90vw", maxHeight: "85vh", objectFit: "contain" }}></img>)}
         </Modal.Body>
@@ -204,7 +204,7 @@ export default function EtaMissionReviewPage() {
       <Modal.Backdrop isOpen={!!rejectTarget} onOpenChange={next => {
             if (!next)
                 (() => setRejectTarget(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
         <Modal.Header><Modal.Heading>
             거절 사유
           </Modal.Heading>

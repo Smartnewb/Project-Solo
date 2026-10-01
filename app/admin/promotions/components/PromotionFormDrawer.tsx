@@ -167,7 +167,7 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
     const productsLoading = productListQuery.isLoading;
     const productsError = productListQuery.isError;
     return (<Drawer.Backdrop isOpen={open} onOpenChange={(v) => !v && onClose()}>
-      <Drawer.Content placement="right" className="w-full max-w-[480px]"><Drawer.Dialog className="overflow-y-auto">
+      <Drawer.Content placement="right" className="w-full"><Drawer.Dialog style={{ width: 'min(480px, 100vw)', maxWidth: '100%', height: '100%', minWidth: 0 }} className="overflow-y-auto">
         <Drawer.Header>
           <Drawer.Heading>{editPromotion ? '프로모션 수정' : '프로모션 등록'}</Drawer.Heading>
         </Drawer.Header>

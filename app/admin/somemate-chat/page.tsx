@@ -487,8 +487,7 @@ export default function SomemateChatPage() {
             <p>총 {total.toLocaleString()}개 관계</p>
           </div>
           <Tooltip>
-            <Tooltip.Trigger>
-              <Button
+            <Button
                 onClick={() => relationshipsQuery.refetch()}
                 aria-label="새로고침"
                 variant={"secondary"}
@@ -496,7 +495,6 @@ export default function SomemateChatPage() {
               >
                 <RefreshIcon size={16} />
               </Button>
-            </Tooltip.Trigger>
             <Tooltip.Content>{"새로고침"}</Tooltip.Content>
           </Tooltip>
         </div>

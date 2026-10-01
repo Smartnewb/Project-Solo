@@ -179,8 +179,7 @@ export default function UniversityTable({
                     }}
                   >
                     <Tooltip>
-                      <Tooltip.Trigger>
-                        <Button
+                      <Button
                           onClick={() => onViewDetail(university)}
                           variant={"secondary"}
                           isIconOnly
@@ -188,12 +187,10 @@ export default function UniversityTable({
                         >
                           <VisibilityIcon size={16} />
                         </Button>
-                      </Tooltip.Trigger>
                       <Tooltip.Content>{"상세 보기"}</Tooltip.Content>
                     </Tooltip>
                     <Tooltip>
-                      <Tooltip.Trigger>
-                        <Button
+                      <Button
                           onClick={() => onEdit(university)}
                           variant={"secondary"}
                           isIconOnly
@@ -201,12 +198,10 @@ export default function UniversityTable({
                         >
                           <EditIcon size={16} />
                         </Button>
-                      </Tooltip.Trigger>
                       <Tooltip.Content>{"수정"}</Tooltip.Content>
                     </Tooltip>
                     <Tooltip>
-                      <Tooltip.Trigger>
-                        <Button
+                      <Button
                           onClick={() => onDelete(university.id)}
                           variant={"secondary"}
                           isIconOnly
@@ -214,7 +209,6 @@ export default function UniversityTable({
                         >
                           <DeleteIcon size={16} />
                         </Button>
-                      </Tooltip.Trigger>
                       <Tooltip.Content>{"삭제"}</Tooltip.Content>
                     </Tooltip>
                   </div>

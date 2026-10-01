@@ -66,9 +66,9 @@ export default function UniversityDetailDialog({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 16 }}>
               {university.logoUrl ? (
                 <img
                   src={university.logoUrl}
@@ -76,17 +76,17 @@ export default function UniversityDetailDialog({
                   className="h-12 w-12 rounded-lg object-contain"
                 />
               ) : (
-                <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                <span className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
                   <SchoolIcon size={16} />
-                </div>
+                </span>
               )}
-              <div>
-                <h6 className="text-lg font-semibold text-foreground">
+              <span>
+                <span className="text-lg font-semibold text-foreground">
                   {university.name}
-                </h6>
+                </span>
                 {university.en && <p>{university.en}</p>}
-              </div>
-            </div>
+              </span>
+            </span>
           </Modal.Heading>
           <Tabs
             selectedKey={tabValue}

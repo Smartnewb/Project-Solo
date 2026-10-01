@@ -116,7 +116,7 @@ function AppearanceGradePageContent() {
       </div>
       {/* 탭 컨텐츠 */}
       <div>
-        <div>
+        {activeTab === 0 && <div>
           <AppearanceFilterPanel
             onFilter={(filters) => {
               if (tableRef.current) {
@@ -129,7 +129,7 @@ function AppearanceGradePageContent() {
             userStatus="approved"
             ref={tableRef}
           />
-        </div>
+        </div>}
         {activeTab === 1 && (
           <Alert status={"default"} role="alert">
             <Alert.Content>

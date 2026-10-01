@@ -650,14 +650,14 @@ function ProfileReviewV2Content() {
             setBulkRejectModalOpen(false);
         }} onConfirm={handleBulkRejectConfirm}></RejectReasonModal>
 
-      <Modal.Backdrop isOpen={processing} isDismissable={false}><Modal.Container size="lg"><Modal.Dialog>
+      <Modal.Backdrop isOpen={processing} isDismissable={false}><Modal.Container size="lg"><Modal.Dialog aria-label="프로필 이미지 처리 중" style={{ width: '100%', maxWidth: 600, minWidth: 0 }}><Modal.Body>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: "white", borderRadius: 2, minWidth: 200 }}>
           <Spinner size="sm"></Spinner>
           <p style={{ marginTop: 16, fontWeight: 600 }}>
             처리 중입니다...
           </p>
         </div>
-      </Modal.Dialog></Modal.Container></Modal.Backdrop>
+      </Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>

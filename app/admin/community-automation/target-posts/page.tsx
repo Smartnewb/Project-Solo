@@ -823,7 +823,7 @@ export default function TargetPostsPage() {
                 setSelected(null);
                 setScheduledComments([]);
             }
-        }}><Drawer.Content placement="right" className="w-full max-w-[960px]"><Drawer.Dialog aria-label="게시글 자동 활동 상세" className="overflow-y-auto">
+        }}><Drawer.Content placement="right" className="w-full"><Drawer.Dialog style={{ width: 'min(960px, 100vw)', maxWidth: '100%', height: '100%', minWidth: 0 }} aria-label="게시글 자동 활동 상세" className="overflow-y-auto">
 				<div style={{ padding: 24 }}>
 					{detailLoading || !selected ? (<div style={{ display: "flex", paddingBlock: 64 }}>
 							<Spinner size="sm"></Spinner>
@@ -991,7 +991,7 @@ export default function TargetPostsPage() {
 				<Modal.Backdrop isOpen={activityDialogOpen} onOpenChange={next => {
             if (!next)
                 (() => !actionLoading && setActivityDialogOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Heading style={{ fontWeight: 900 }}>AI 활동 추가</Modal.Heading>
 					<Modal.Body style={{ paddingTop: '12px !important' }}>
 						<div>
@@ -1067,7 +1067,7 @@ export default function TargetPostsPage() {
 				<Modal.Backdrop isOpen={hotPromotionOpen} onOpenChange={next => {
             if (!next)
                 (() => !actionLoading && setHotPromotionOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Heading style={{ fontWeight: 900 }}>인기 게시글로 등업할까요?</Modal.Heading>
 					<Modal.Body style={{ paddingTop: '12px !important' }}>
 						<div>
@@ -1089,7 +1089,7 @@ export default function TargetPostsPage() {
 				<Modal.Backdrop isOpen={Boolean(reviewDialogMode)} onOpenChange={next => {
             if (!next)
                 closeReviewDialog();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading style={{ fontWeight: 900 }}>
 					{reviewDialogMode === 'inject'
             ? '댓글 수정 승인'

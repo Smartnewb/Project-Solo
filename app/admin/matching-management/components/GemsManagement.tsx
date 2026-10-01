@@ -258,7 +258,7 @@ const GemsManagement: React.FC<GemsManagementProps> = ({ searchTerm, searchLoadi
       <Modal.Backdrop isOpen={overLimitDialogOpen} onOpenChange={next => {
             if (!next)
                 (() => setOverLimitDialogOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
         <Modal.Heading>구슬 지급 확인</Modal.Heading>
         <Modal.Body>
           <p style={{ marginBottom: 16 }}>

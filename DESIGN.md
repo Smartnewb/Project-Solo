@@ -2,7 +2,7 @@
 
 ## Migration status
 
-The admin UI uses HeroUI 3.2.6 with Tailwind CSS 4.3.3. MUI, Radix UI, Shadcn and the previous date-picker dependencies have been removed. Shared controls, page controls and the interactive app preview compose actual HeroUI components. Semantic layout, tables, charts and hidden native file inputs remain appropriate. This is a local implementation; deployment has not been performed.
+The admin UI uses HeroUI 3.2.6 with Tailwind CSS 4.3.3. MUI, Radix UI, Shadcn and the previous date-picker dependencies have been removed. Shared controls, page controls and the interactive app preview compose actual HeroUI components. Semantic layout, tables, charts and hidden native file inputs remain appropriate. The initial migration was deployed to Vercel production on 2026-10-02. Follow-up modal and navigation corrections require the deployment verification recorded below.
 
 Local verification on 2026-10-02: the admin typecheck (including app/components/admin), lint with zero errors, all 122 Jest suites / 481 tests, and the production Next.js build passed. A source audit covered 546 UI files and found no exposed native form controls, legacy UI imports, displaced client directives or empty imports. Aside browser checks used a read-only fixture gateway for the X marketing theme and text entry, notice/HTML editor transition and named priority selection, and keyboard UTM tab navigation. Real backend mutations and device-specific browser testing were not performed.
 
@@ -39,3 +39,13 @@ The font stack remains configured in `tailwind.config.js`: Cereal/Circular/Inter
 - Preserve service calls, country separation, filters, pagination, unsaved changes and confirmation flows.
 - Keep Date and range conversions in the intended local timezone. A single-date test does not verify a date-range consumer.
 - Remove old dependencies only after all callers are migrated. Import removal alone is not proof: verify real control behavior, layout, typecheck and build before release.
+
+## Modal and navigation corrections (2026-10-02)
+
+HeroUI md/lg are not MUI md/lg widths. Specify the intended Dialog max-width; the global Container fills the viewport so the limit can take effect. Drawer.Content owns positioning and Drawer.Dialog owns panel width. Inside-scrolling forms need a flex/min-height chain; headers and footers remain outside the body scroll. Shared dialogs without a Body use outside scrolling. Horizontal tab lists scroll within their available width.
+
+The sidebar has top search, compact favorites, collapsible categories, 40px desktop/44px coarse-pointer rows and Lucide category icons. Hidden favorite actions remain accessible on focus and on touch. Active groups open without overwriting saved preferences.
+
+Aside checks used a read-only local fixture gateway: desktop user detail width 1076px, 390px iframe user detail and birthday dialogs 354px without horizontal overflow, sidebar row height 40px/font 14px, and cancel/focus restoration. Source size restoration covered 78 admin files and four Drawer callsites. Real account changes, messages and publishing were not performed. The iframe verifies a narrow browser viewport, not a physical mobile device.
+
+Follow-up local verification: 140 suites / 557 tests passed; the final search-field change passed seven targeted tests and the admin typecheck. Lint has zero errors with existing warnings.

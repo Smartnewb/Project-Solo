@@ -468,7 +468,7 @@ export default function LoveCourtAdminPage() {
 			<Modal.Backdrop isOpen={deleteOpen} onOpenChange={next => {
             if (!next)
                 (() => !isBusy && setDeleteOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>제출건 삭제</Modal.Heading>
 				<Modal.Body>
 					<TextField className="mb-4"><Label>{"사유"}</Label><TextArea autoFocus value={deleteReason} onChange={(event) => setDeleteReason(event.target.value)}></TextArea></TextField>

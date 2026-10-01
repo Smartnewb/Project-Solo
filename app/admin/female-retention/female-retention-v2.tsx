@@ -379,7 +379,7 @@ function FemaleRetentionPageContent() {
 				isDismissable={true}
 			>
 				<Modal.Container size="md" scroll="inside">
-					<Modal.Dialog>
+					<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 						<Modal.Header>
 							<Modal.Heading>임시 패스워드 발급 확인</Modal.Heading>
 						</Modal.Header>

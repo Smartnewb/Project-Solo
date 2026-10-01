@@ -302,7 +302,7 @@ function VersionManagementContent() {
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading>새 버전 업데이트 생성</Modal.Heading>
             <Modal.Body>
               <Controller
@@ -400,7 +400,7 @@ function VersionManagementContent() {
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading>버전 상세 정보</Modal.Heading>
             <Modal.Body>
               {selectedVersion && (
@@ -444,7 +444,7 @@ function VersionManagementContent() {
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading>버전 업데이트 수정</Modal.Heading>
             <Modal.Body>
               <Controller

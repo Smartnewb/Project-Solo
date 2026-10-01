@@ -587,8 +587,7 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                           }}
                         >
                           <Tooltip>
-                            <Tooltip.Trigger>
-                              <Button
+                            <Button
                                 onClick={() =>
                                   copyToClipboard(
                                     link.destinationUrl,
@@ -601,15 +600,13 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                               >
                                 <ContentCopyIcon size={16} />
                               </Button>
-                            </Tooltip.Trigger>
                             <Tooltip.Content>
                               {"최종 도착 URL 복사 (클릭 추적 없음)"}
                             </Tooltip.Content>
                           </Tooltip>
                           {link.shortUrl && (
                             <Tooltip>
-                              <Tooltip.Trigger>
-                                <Button
+                              <Button
                                   onClick={() =>
                                     copyToClipboard(link.shortUrl!, "추적 URL")
                                   }
@@ -619,15 +616,13 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                                 >
                                   <LinkIcon size={16} />
                                 </Button>
-                              </Tooltip.Trigger>
                               <Tooltip.Content>
                                 {"추적 URL 복사"}
                               </Tooltip.Content>
                             </Tooltip>
                           )}
                           <Tooltip>
-                            <Tooltip.Trigger>
-                              <Button
+                            <Button
                                 onClick={() => openEdit(link)}
                                 variant={"secondary"}
                                 isIconOnly
@@ -635,12 +630,10 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                               >
                                 <EditIcon size={16} />
                               </Button>
-                            </Tooltip.Trigger>
                             <Tooltip.Content>{"수정"}</Tooltip.Content>
                           </Tooltip>
                           <Tooltip>
-                            <Tooltip.Trigger>
-                              <Button
+                            <Button
                                 onClick={() => handleDelete(link)}
                                 variant={"secondary"}
                                 isIconOnly
@@ -648,7 +641,6 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                               >
                                 <DeleteIcon size={16} />
                               </Button>
-                            </Tooltip.Trigger>
                             <Tooltip.Content>{"삭제"}</Tooltip.Content>
                           </Tooltip>
                         </div>
@@ -694,7 +686,7 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading style={{ fontWeight: 700 }}>링크 수정</Modal.Heading>
             <Modal.Body>
               <TextField style={{ marginBottom: 16, marginTop: 8 }}>

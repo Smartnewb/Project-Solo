@@ -165,7 +165,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 관리 메뉴 상태
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(menuAnchorEl);
-  console.log({ userDetail });
   const [selectedImage, setSelectedImage] = useState<string>(
     (() => {
       if (userDetail.profileImages && userDetail.profileImages.length > 0) {
@@ -540,9 +539,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketLoading(true);
       setTicketError(null);
 
-      console.log("재매칭 티켓 정보 조회 요청:", userId);
       const data = await AdminService.userAppearance.getUserTickets(userId);
-      console.log("재매칭 티켓 정보 응답:", data);
 
       setTicketInfo(data);
     } catch (error: any) {
@@ -563,7 +560,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketActionLoading(true);
       setTicketError(null);
 
-      console.log("재매칭 티켓 추가 요청:", { userId, count: ticketCount });
       await AdminService.userAppearance.createUserTickets(userId, ticketCount);
 
       // 성공 메시지 표시
@@ -593,7 +589,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketActionLoading(true);
       setTicketError(null);
 
-      console.log("재매칭 티켓 제거 요청:", { userId, count: ticketCount });
       await AdminService.userAppearance.deleteUserTickets(userId, ticketCount);
 
       // 성공 메시지 표시
@@ -623,9 +618,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsLoading(true);
       setGemsError(null);
 
-      console.log("구슬 정보 조회 요청:", userId);
       const response = await AdminService.userAppearance.getUserGems(userId);
-      console.log("구슬 정보 조회 응답:", response);
 
       setGemsInfo(response);
     } catch (error: any) {
@@ -644,7 +637,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsActionLoading(true);
       setGemsError(null);
 
-      console.log("구슬 추가 요청:", { userId, count: gemsCount });
       await AdminService.userAppearance.addUserGems(userId, gemsCount);
 
       // 성공 메시지 표시
@@ -672,7 +664,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsActionLoading(true);
       setGemsError(null);
 
-      console.log("구슬 제거 요청:", { userId, count: gemsCount });
       await AdminService.userAppearance.removeUserGems(userId, gemsCount);
 
       // 성공 메시지 표시
@@ -700,9 +691,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setLoading(true);
       setError(null);
 
-      console.log("사용자 상세 정보 새로고침 요청:", userId);
       const data = await AdminService.userAppearance.getUserDetails(userId);
-      console.log("사용자 상세 정보 새로고침 응답:", data);
 
       setUserDetail(data);
 
@@ -997,9 +986,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       }}
       isDismissable={onClose !== undefined}
     >
-      <Modal.Container size="md" scroll="inside">
-        <Modal.Dialog>
+      <Modal.Container size="md" scroll="inside" className="w-full">
+        <Modal.Dialog style={{ width: "100%", maxWidth: "72rem", minWidth: 0 }}>
           <Modal.Header
+            className="relative flex-row flex-wrap gap-3 pr-12"
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -1007,110 +997,105 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               paddingBottom: 4,
             }}
           >
-            <Modal.Heading>
-              <div className={"text-lg font-semibold text-neutral-900"}>
-                사용자 상세 정보
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                {!loading && userDetail?.gender === "MALE" && userId && (
-                  <Button
-                    onClick={handleOpenProfileCuration}
-                    variant={"secondary"}
-                    isDisabled={actionLoading}
-                    size={"sm"}
-                    className="rounded-xl"
-                  >
-                    {<ExternalLink />}프로필 큐레이팅
-                  </Button>
-                )}
-                {/* 계정 정지 상태 빠른 액션 */}
-                {!loading && userDetail && userId && (
-                  <Button
-                    onClick={() => setAccountStatusModalOpen(true)}
-                    variant={"secondary"}
-                    isDisabled={actionLoading}
-                    size={"sm"}
-                    className="rounded-xl"
-                  >
-                    {<Ban />}
-                    {isAccountSuspended ? "정지 해제" : "계정 정지"}
-                  </Button>
-                )}
-                {/* 블랙리스트 액션 버튼 */}
-                {!loading && userDetail && userId && (
+            <Modal.Heading className="mb-0 shrink-0 text-lg font-semibold">사용자 상세 정보</Modal.Heading>
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {!loading && userDetail?.gender === "MALE" && userId && (
+                <Button
+                  onClick={handleOpenProfileCuration}
+                  variant={"secondary"}
+                  isDisabled={actionLoading}
+                  size={"sm"}
+                  className="rounded-xl"
+                >
+                  {<ExternalLink />}프로필 큐레이팅
+                </Button>
+              )}
+              {/* 계정 정지 상태 빠른 액션 */}
+              {!loading && userDetail && userId && (
+                <Button
+                  onClick={() => setAccountStatusModalOpen(true)}
+                  variant={"secondary"}
+                  isDisabled={actionLoading}
+                  size={"sm"}
+                  className="rounded-xl"
+                >
+                  {<Ban />}
+                  {isAccountSuspended ? "정지 해제" : "계정 정지"}
+                </Button>
+              )}
+              {/* 블랙리스트 액션 버튼 */}
+              {!loading && userDetail && userId && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 1,
+                  }}
+                >
+                  {isBlacklisted ? (
+                    <Button
+                      onClick={() => setBlacklistReleaseDialogOpen(true)}
+                      variant={"secondary"}
+                      isDisabled={actionLoading}
+                      size={"sm"}
+                      className="rounded-xl"
+                    >
+                      {<RotateCcw size={16} />}블랙리스트 해제
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setBlacklistRegisterModalOpen(true)}
+                      variant={"secondary"}
+                      isDisabled={actionLoading}
+                      size={"sm"}
+                      className="rounded-xl"
+                    >
+                      {<ShieldBan size={16} />}블랙리스트 등록
+                    </Button>
+                  )}
                   <div
                     style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: 1,
+                      lineHeight: 1.2,
+                      maxWidth: 160,
+                      textAlign: "right",
                     }}
+                    className={"text-sm text-neutral-700"}
                   >
-                    {isBlacklisted ? (
-                      <Button
-                        onClick={() => setBlacklistReleaseDialogOpen(true)}
-                        variant={"secondary"}
-                        isDisabled={actionLoading}
-                        size={"sm"}
-                        className="rounded-xl"
-                      >
-                        {<RotateCcw size={16} />}블랙리스트 해제
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => setBlacklistRegisterModalOpen(true)}
-                        variant={"secondary"}
-                        isDisabled={actionLoading}
-                        size={"sm"}
-                        className="rounded-xl"
-                      >
-                        {<ShieldBan size={16} />}블랙리스트 등록
-                      </Button>
-                    )}
-                    <div
-                      style={{
-                        lineHeight: 1.2,
-                        maxWidth: 160,
-                        textAlign: "right",
-                      }}
-                      className={"text-sm text-neutral-700"}
-                    >
-                      영구 차단(블랙리스트). 기본 고지 발송
-                    </div>
+                    영구 차단(블랙리스트). 기본 고지 발송
                   </div>
-                )}
-                {/* 관리 메뉴 버튼 */}
-                {!loading && userDetail && (
-                  <Tooltip>
-                    <Tooltip.Trigger>
-                      <Button
-                        onClick={handleOpenMenu}
-                        style={{ marginRight: 4 }}
-                        variant={"ghost"}
-                        isDisabled={actionLoading}
-                        isIconOnly={true}
-                        size={"md"}
-                        className="rounded-lg"
-                      >
-                        <EllipsisVertical />
-                      </Button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>{"관리 메뉴"}</Tooltip.Content>
-                  </Tooltip>
-                )}
-                <Button
-                  onClick={onClose}
-                  aria-label="close"
-                  variant={"ghost"}
-                  isDisabled={undefined}
-                  isIconOnly={true}
-                  size={"md"}
-                  className="rounded-lg"
-                >
-                  <X />
-                </Button>
-              </div>
-            </Modal.Heading>
+                </div>
+              )}
+              {/* 관리 메뉴 버튼 */}
+              {!loading && userDetail && (
+                <Tooltip>
+                    <Button
+                      aria-label="사용자 관리 메뉴"
+                      onClick={handleOpenMenu}
+                      style={{ marginRight: 4 }}
+                      variant={"ghost"}
+                      isDisabled={actionLoading}
+                      isIconOnly={true}
+                      size={"md"}
+                      className="rounded-lg"
+                    >
+                      <EllipsisVertical />
+                    </Button>
+                  <Tooltip.Content>{"관리 메뉴"}</Tooltip.Content>
+                </Tooltip>
+              )}
+              <Button
+                onClick={onClose}
+                aria-label="사용자 상세 닫기"
+                variant={"ghost"}
+                isDisabled={undefined}
+                isIconOnly={true}
+                size={"md"}
+                className="absolute right-0 top-0 rounded-lg"
+              >
+                <X />
+              </Button>
+            </div>
           </Modal.Header>
           <Separator></Separator>
           {/* 관리 메뉴 */}
@@ -1121,8 +1106,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             }}
             isDismissable={handleCloseMenu !== undefined}
           >
-            <Modal.Container size="md" scroll="inside">
-              <Modal.Dialog>
+            <Modal.Container size="md" scroll="inside" className="w-full">
+              <Modal.Dialog
+                style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+              >
                 <Button
                   onClick={handleOpenEditProfileModal}
                   variant={"ghost"}
@@ -1254,14 +1241,17 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               </Tabs.List>
             </Tabs>
           )}
-          <Modal.Body style={{ padding: 12 }}>
+          <Modal.Body
+            className="min-w-0 [overflow-wrap:anywhere] [&_svg]:shrink-0"
+            style={{ padding: 12 }}
+          >
             {loading ? (
               <div
                 style={{
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
-                  height: 400,
+                  height: "clamp(240px, 45vh, 400px)",
                 }}
               >
                 <Spinner aria-label="불러오는 중" size="sm" />
@@ -1298,7 +1288,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                 />
               ) : null
             ) : (
-              <div className={"grid grid-cols-1 gap-4 md:grid-cols-2"}>
+              <div className={"grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2"}>
                 {/* 프로필 이미지 섹션 */}
                 <div className={"min-w-0"}>
                   <div style={{ position: "relative", marginBottom: 8 }}>
@@ -1312,7 +1302,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           alt={userDetail.name}
                           style={{
                             width: "100%",
-                            height: 400,
+                            height: "clamp(240px, 45vh, 400px)",
                             objectFit: "contain",
                             borderRadius: 8,
                             backgroundColor: "#f5f5f5",
@@ -1339,7 +1329,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         alt={userDetail.name}
                         style={{
                           width: "100%",
-                          height: 400,
+                          height: "clamp(240px, 45vh, 400px)",
                           objectFit: "contain",
                           borderRadius: 8,
                           backgroundColor: "#f5f5f5",
@@ -1349,7 +1339,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       <div
                         style={{
                           width: "100%",
-                          height: 400,
+                          height: 160,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1439,6 +1429,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     <div style={{ marginBottom: 4 }}>
                       {/* 이름과 외모 등급을 같은 줄에 표시 */}
                       <div
+                        className="flex-wrap gap-2"
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -1452,7 +1443,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           {userDetail.name}
                         </div>
                         {/* 외모 등급 토글 버튼 */}
-                        <div style={{ display: "flex", alignItems: "center" }}>
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
                           <div
                             style={{ marginRight: 4, fontWeight: "bold" }}
                             className={"text-sm text-neutral-700"}
@@ -1670,7 +1661,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           }}
                         >
                           <GraduationCap />
-                          <div style={{ flex: 1 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
                             {userDetail.universityDetails ? (
                               <>
                                 <div className={"text-sm text-neutral-700"}>
@@ -2001,7 +1992,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         시스템 정보
                       </div>
                       <Separator style={{ marginBottom: 8 }}></Separator>
-                      <div className={"grid grid-cols-1 gap-4 md:grid-cols-2"}>
+                      <div
+                        className={
+                          "grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2"
+                        }
+                      >
                         <div className={"min-w-0"}>
                           <div className={"text-sm text-neutral-700"}>
                             사용자 ID
@@ -2694,8 +2689,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               (() => setDeleteConfirmModalOpen(false)) !== undefined
             }
           >
-            <Modal.Container size="md" scroll="inside">
-              <Modal.Dialog>
+            <Modal.Container size="md" scroll="inside" className="w-full">
+              <Modal.Dialog
+                style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+              >
                 <Modal.Header>
                   <Modal.Heading>
                     <div className={"text-lg font-semibold text-neutral-900"}>
@@ -2703,7 +2700,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </div>
                   </Modal.Heading>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
                   <div
                     style={{ marginBottom: 8 }}
                     className={"text-sm text-neutral-700"}
@@ -2753,7 +2750,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Checkbox>
                   </div>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer className="flex-wrap gap-2">
                   <Button
                     onClick={() => setDeleteConfirmModalOpen(false)}
                     variant={"ghost"}
@@ -2785,12 +2782,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               }}
               isDismissable={(() => setTicketAddModalOpen(false)) !== undefined}
             >
-              <Modal.Container size="md" scroll="inside">
-                <Modal.Dialog>
+              <Modal.Container size="md" scroll="inside" className="w-full">
+                <Modal.Dialog
+                  style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+                >
                   <Modal.Header>
                     <Modal.Heading>재매칭 티켓 추가</Modal.Heading>
                   </Modal.Header>
-                  <Modal.Body>
+                  <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
                     <div
                       style={{ marginBottom: 8 }}
                       className={"text-sm text-neutral-700"}
@@ -2833,7 +2832,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       </Alert>
                     )}
                   </Modal.Body>
-                  <Modal.Footer>
+                  <Modal.Footer className="flex-wrap gap-2">
                     <Button
                       onClick={() => setTicketAddModalOpen(false)}
                       variant={"ghost"}
@@ -2872,12 +2871,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                 (() => setTicketRemoveModalOpen(false)) !== undefined
               }
             >
-              <Modal.Container size="md" scroll="inside">
-                <Modal.Dialog>
+              <Modal.Container size="md" scroll="inside" className="w-full">
+                <Modal.Dialog
+                  style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+                >
                   <Modal.Header>
                     <Modal.Heading>재매칭 티켓 제거</Modal.Heading>
                   </Modal.Header>
-                  <Modal.Body>
+                  <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
                     <div
                       style={{ marginBottom: 8 }}
                       className={"text-sm text-neutral-700"}
@@ -2935,7 +2936,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       </Alert>
                     )}
                   </Modal.Body>
-                  <Modal.Footer>
+                  <Modal.Footer className="flex-wrap gap-2">
                     <Button
                       onClick={() => setTicketRemoveModalOpen(false)}
                       variant={"ghost"}
@@ -2971,12 +2972,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             }}
             isDismissable={(() => setGemsAddModalOpen(false)) !== undefined}
           >
-            <Modal.Container size="md" scroll="inside">
-              <Modal.Dialog>
+            <Modal.Container size="md" scroll="inside" className="w-full">
+              <Modal.Dialog
+                style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+              >
                 <Modal.Header>
                   <Modal.Heading>구슬 추가</Modal.Heading>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
                   <div
                     style={{ marginBottom: 8 }}
                     className={"text-sm text-neutral-700"}
@@ -3016,7 +3019,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Alert>
                   )}
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer className="flex-wrap gap-2">
                   <Button
                     onClick={() => setGemsAddModalOpen(false)}
                     variant={"ghost"}
@@ -3051,12 +3054,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             }}
             isDismissable={(() => setGemsRemoveModalOpen(false)) !== undefined}
           >
-            <Modal.Container size="md" scroll="inside">
-              <Modal.Dialog>
+            <Modal.Container size="md" scroll="inside" className="w-full">
+              <Modal.Dialog
+                style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+              >
                 <Modal.Header>
                   <Modal.Heading>구슬 제거</Modal.Heading>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
                   <div
                     style={{ marginBottom: 8 }}
                     className={"text-sm text-neutral-700"}
@@ -3111,7 +3116,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Alert>
                   )}
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer className="flex-wrap gap-2">
                   <Button
                     onClick={() => setGemsRemoveModalOpen(false)}
                     variant={"ghost"}
@@ -3148,8 +3153,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               (() => setRevokeApprovalModalOpen(false)) !== undefined
             }
           >
-            <Modal.Container size="md" scroll="inside">
-              <Modal.Dialog>
+            <Modal.Container size="md" scroll="inside" className="w-full">
+              <Modal.Dialog
+                style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+              >
                 <Modal.Header>
                   <Modal.Heading>
                     <div className={"text-lg font-semibold text-neutral-900"}>
@@ -3157,7 +3164,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </div>
                   </Modal.Heading>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
                   <div
                     style={{ marginBottom: 8 }}
                     className={"text-sm text-neutral-700"}
@@ -3250,7 +3257,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Alert>
                   )}
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer className="flex-wrap gap-2">
                   <Button
                     onClick={() => {
                       setRevokeApprovalModalOpen(false);
@@ -3295,12 +3302,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               (() => setResetPasswordConfirmOpen(false)) !== undefined
             }
           >
-            <Modal.Container size="md" scroll="inside">
-              <Modal.Dialog>
+            <Modal.Container size="md" scroll="inside" className="w-full">
+              <Modal.Dialog
+                style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+              >
                 <Modal.Header>
                   <Modal.Heading>비밀번호 초기화</Modal.Heading>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
                   <div>
                     <strong>{userDetail?.name}</strong>님의 비밀번호를
                     초기화하시겠습니까?
@@ -3310,7 +3319,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     수 없게 됩니다.
                   </div>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer className="flex-wrap gap-2">
                   <Button
                     onClick={() => setResetPasswordConfirmOpen(false)}
                     variant={"ghost"}
@@ -3345,12 +3354,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             }}
             isDismissable={handleResetPasswordResultClose !== undefined}
           >
-            <Modal.Container size="md" scroll="inside">
-              <Modal.Dialog>
+            <Modal.Container size="md" scroll="inside" className="w-full">
+              <Modal.Dialog
+                style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
+              >
                 <Modal.Header>
                   <Modal.Heading>비밀번호 초기화 완료</Modal.Heading>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
                   <div style={{ marginBottom: 8 }}>
                     비밀번호가 성공적으로 초기화되었습니다.
                     <br />
@@ -3383,7 +3394,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Button>
                   </div>
                 </Modal.Body>
-                <Modal.Footer>
+                <Modal.Footer className="flex-wrap gap-2">
                   <Button
                     onClick={handleResetPasswordResultClose}
                     variant={"primary"}

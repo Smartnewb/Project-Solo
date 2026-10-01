@@ -6,7 +6,7 @@ export function AdminHeader({
 	title = "Admin",
 }: { onMenuToggle?: () => void; title?: string }) {
 	return (
-		<header className="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-gray-200 bg-white px-5">
+		<header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 border-b border-gray-200 bg-white px-4">
 			{onMenuToggle && (
 				<Button
 					variant="tertiary"

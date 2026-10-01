@@ -335,10 +335,10 @@ export function RoomDetailDrawer({
 				if (!open) onClose?.();
 			}}
 		>
-			<Drawer.Content placement="right" className="w-full max-w-[760px]">
-				<Drawer.Dialog aria-label="미팅 방 상세">
+			<Drawer.Content placement="right" className="w-full">
+				<Drawer.Dialog style={{ width: 'min(760px, 100vw)', maxWidth: '100%', height: '100%', minWidth: 0 }} aria-label="미팅 방 상세">
 					<div
-						style={{ width: 760, padding: 16 }}
+						style={{ width: "100%", minWidth: 0, padding: 16 }}
 						data-testid="meeting-room-detail"
 					>
 						<div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -413,7 +413,7 @@ export function RoomDetailDrawer({
 								<div
 									style={{
 										display: "grid",
-										gridTemplateColumns: "1fr 1fr",
+										gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
 										gap: 12,
 										padding: 16,
 										backgroundColor: "#fafafa",
@@ -574,7 +574,7 @@ export function RoomDetailDrawer({
 						isDismissable={true}
 					>
 						<Modal.Container size="md" scroll="inside">
-							<Modal.Dialog>
+							<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 								<Modal.Header style={{ fontWeight: 700 }}>
 									<Modal.Heading>불가항력 환불</Modal.Heading>
 								</Modal.Header>
@@ -646,7 +646,7 @@ export function RoomDetailDrawer({
 						isDismissable={true}
 					>
 						<Modal.Container size="md" scroll="inside">
-							<Modal.Dialog>
+							<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 								{cancelStep === "final" ? (
 									<>
 										<Modal.Header style={{ fontWeight: 700, color: "#dc2626" }}>

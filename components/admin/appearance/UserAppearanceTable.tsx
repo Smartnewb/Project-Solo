@@ -439,7 +439,6 @@ const UserAppearanceTable = forwardRef<
           paddingRight: 4,
         }}
       >
-        <Label id="appearance-user-sort-label">정렬 기준</Label>
         <Select
           selectedKey={sort}
           onSelectionChange={(value) =>
@@ -695,8 +694,8 @@ const UserAppearanceTable = forwardRef<
                         </Chip>
                       ) : (
                         <Tooltip>
-                          <Tooltip.Trigger>
                             <HeroActionButton
+                              aria-label="대학교 인증 승인"
                               variant="ghost"
                               className="h-auto min-w-0 p-0"
                               onClick={() =>
@@ -718,7 +717,6 @@ const UserAppearanceTable = forwardRef<
                                 {"미인증"}
                               </Chip>
                             </HeroActionButton>
-                          </Tooltip.Trigger>
                           <Tooltip.Content>
                             {"클릭하여 인증 처리"}
                           </Tooltip.Content>

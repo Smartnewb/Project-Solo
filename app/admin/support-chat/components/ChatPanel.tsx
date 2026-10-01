@@ -1252,7 +1252,7 @@ export default function ChatPanel({
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading>구슬 지급</Modal.Heading>
             <Modal.Body>
               <p style={{ marginBottom: 16 }}>

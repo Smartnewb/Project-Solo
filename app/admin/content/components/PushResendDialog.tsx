@@ -47,7 +47,7 @@ export function PushResendDialog({ open, onClose, item }: Props) {
     return (<Modal.Backdrop isOpen={open && !!item} onOpenChange={next => {
             if (!next)
                 onClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>푸시 재발송</Modal.Heading>
       <Modal.Body>
         {item && (<p style={{ marginBottom: 16 }}>

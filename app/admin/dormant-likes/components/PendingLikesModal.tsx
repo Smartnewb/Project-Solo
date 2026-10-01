@@ -229,7 +229,7 @@ export default function PendingLikesModal({
 			isDismissable={!processing && !viewingProfileId}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>미확인 좋아요 관리 - {user.name}</Modal.Heading>
 					</Modal.Header>

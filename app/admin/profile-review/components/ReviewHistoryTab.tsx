@@ -387,17 +387,17 @@ export default function ReviewHistoryTab() {
       <Modal.Backdrop isOpen={!!previewImage} onOpenChange={next => {
             if (!next)
                 (() => setPreviewImage(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog aria-label="심사 이미지 미리보기" style={{ width: '100%', maxWidth: 900, minWidth: 0 }}><Modal.Body>
         <div style={{ position: "relative" }}>
-          <Button onPress={() => setPreviewImage(null)} variant="tertiary" isIconOnly={true} style={{ position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.5)", color: "white", zIndex: 1 }}>
+          <Button aria-label="미리보기 닫기" onPress={() => setPreviewImage(null)} variant="tertiary" isIconOnly={true} style={{ position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.5)", color: "white", zIndex: 1 }}>
             <CloseIcon></CloseIcon>
           </Button>
           {previewImage && (<img src={previewImage} alt="미리보기" style={{
-                maxWidth: "90vw",
-                maxHeight: "85vh",
+                maxWidth: "100%",
+                maxHeight: "calc(100dvh - 140px)",
                 display: "block",
             }}></img>)}
         </div>
-      </Modal.Dialog></Modal.Container></Modal.Backdrop>
+      </Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>
     </div>);
 }

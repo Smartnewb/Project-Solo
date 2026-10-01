@@ -34,7 +34,7 @@ export function SendConfirmModal({ open, filter, count, message, type, regions, 
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 onClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 			<Modal.Heading>발송 확인</Modal.Heading>
 			<Modal.Body>
 				<div className='space-y-3'>

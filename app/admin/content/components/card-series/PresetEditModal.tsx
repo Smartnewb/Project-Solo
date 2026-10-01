@@ -73,7 +73,7 @@ export default function PresetEditModal({ open, preset, onClose, onSuccess, onDe
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 handleClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>프리셋 수정</span>
         <Button onPress={handleDeleteClick} variant="tertiary" isIconOnly={true} aria-label={"프리셋 삭제"}>

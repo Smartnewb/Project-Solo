@@ -243,7 +243,7 @@ function DeletedFemalesPageContent() {
         isDismissable={(() => setRestoreDialogOpen(false)) !== undefined}
       >
         <Modal.Container size="md" scroll="inside">
-          <Modal.Dialog>
+          <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
             <Modal.Header>
               <Modal.Heading>회원 복구</Modal.Heading>
             </Modal.Header>
@@ -293,7 +293,7 @@ function DeletedFemalesPageContent() {
         isDismissable={handlePasswordDialogClose !== undefined}
       >
         <Modal.Container size="md" scroll="inside">
-          <Modal.Dialog>
+          <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
             <Modal.Header>
               <Modal.Heading>회원 복구 완료</Modal.Heading>
             </Modal.Header>

@@ -893,12 +893,12 @@ function ReportsManagementContent() {
       <Modal.Backdrop isOpen={detailDialogOpen} onOpenChange={next => {
             if (!next)
                 handleCloseDetailDialog();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
         <Modal.Heading>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <ReportIcon></ReportIcon>
-            <h2 className="text-lg font-semibold">신고 상세 정보</h2>
-          </div>
+            <span className="text-lg font-semibold">신고 상세 정보</span>
+          </span>
         </Modal.Heading>
         <Modal.Body>
           {detailLoading ? (<div style={{ display: "flex", justifyContent: "center", paddingBlock: 32 }}>

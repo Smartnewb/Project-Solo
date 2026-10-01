@@ -238,7 +238,7 @@ export default function ReviewQueuePage() {
 			<Modal.Backdrop isOpen={!!dialogMode} onOpenChange={next => {
             if (!next)
                 (() => setDialogMode(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>{dialogMode ? dialogTitle[dialogMode] : ''}</Modal.Heading>
 				<Modal.Body style={{ paddingTop: '16px !important' }}>
 					{dialogMode === 'regenerate' ? (<p>이 콘텐츠를 회수하고 새 DAG run을 시작하시겠습니까?</p>) : (<TextField className="mb-4"><Label>{dialogMode === 'inject' ? '최종 텍스트' : '사유'}</Label><TextArea rows={dialogMode === 'inject' ? 6 : 3} value={dialogText} onChange={(e) => setDialogText(e.target.value)}></TextArea></TextField>)}

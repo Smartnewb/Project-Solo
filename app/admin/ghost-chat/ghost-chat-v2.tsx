@@ -206,7 +206,7 @@ function GhostChatV2Content() {
 
 	const context = <GhostContextPanel session={selectedSession} context={selectedContext} />;
   const fullScreenDialog = <Modal.Backdrop isOpen={fullScreenOpen} onOpenChange={setFullScreenOpen}>
-    <Modal.Container size="full"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>Ghost Chat 전체 대응</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="전체 화면 닫기" onPress={()=>setFullScreenOpen(false)}><X size={18}/></Button></Modal.Header>
+    <Modal.Container size="full"><Modal.Dialog><Modal.Header className="flex items-center justify-between flex-row flex-wrap gap-3"><Modal.Heading>Ghost Chat 전체 대응</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="전체 화면 닫기" onPress={()=>setFullScreenOpen(false)}><X size={18}/></Button></Modal.Header>
       <Modal.Body className="grid min-h-0 flex-1 overflow-hidden p-0 lg:grid-cols-[minmax(0,1fr)_380px]">
         <GhostChatPanel session={selectedSession} context={selectedContext} messages={selectedMessages} loading={loading} messagesLoading={messagesLoading} actionLoading={actionLoading} onSendMessage={sendMessage} onClose={closeSession} fullScreenMode/>
         <div className="hidden min-h-0 border-l lg:block">{context}</div>

@@ -66,7 +66,7 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 handleClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 1200, minWidth: 0 }}>
       <Modal.Header><Modal.Heading style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>배치 상세</Modal.Heading>
         <Button onPress={handleClose} aria-label="배치 상세 닫기" variant="tertiary" isIconOnly={true}>
           <CloseIcon></CloseIcon>

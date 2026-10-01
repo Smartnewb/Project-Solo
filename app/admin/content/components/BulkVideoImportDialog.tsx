@@ -49,7 +49,7 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 handleClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>영상 일괄 추가</Modal.Heading>
       <Modal.Body>
         {!result ? (<div style={{ marginTop: 8 }} className="flex flex-wrap gap-4">

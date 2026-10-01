@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Modal } from "@heroui/react";
 import { Check } from "lucide-react";
 import { useAdminSession } from "@/shared/contexts/admin-session-context";
@@ -15,6 +15,9 @@ export function AdminCountrySelectorModal({
 	const { session, changeCountry } = useAdminSession();
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	useEffect(() => {
+		if (open) setError(null);
+	}, [open]);
 	async function select(code: Country) {
 		if (code === session?.selectedCountry) {
 			onClose();
@@ -40,6 +43,7 @@ export function AdminCountrySelectorModal({
 				if (!next && !busy) onClose();
 			}}
 			isDismissable={!busy}
+			isKeyboardDismissDisabled={busy}
 		>
 			<Modal.Container size="sm">
 				<Modal.Dialog>
@@ -49,7 +53,7 @@ export function AdminCountrySelectorModal({
 							선택한 국가의 데이터만 조회/수정됩니다
 						</p>
 					</Modal.Header>
-					<Modal.Body className="space-y-3">
+					<Modal.Body className="space-y-2">
 						{countries.map((c) => (
 							<Button
 								key={c.code}
@@ -60,7 +64,7 @@ export function AdminCountrySelectorModal({
 								onPress={() => {
 									void select(c.code);
 								}}
-								className={`h-auto justify-start gap-4 p-4 text-left ${c.code === session?.selectedCountry ? "border border-[#7A4AE2]" : "border border-gray-200"}`}
+								className={`h-auto justify-start gap-3 p-3 text-left ${c.code === session?.selectedCountry ? "border border-[#7A4AE2]" : "border border-gray-200"}`}
 							>
 								<span className="font-semibold">{c.code.toUpperCase()}</span>
 								<span className="flex-1">

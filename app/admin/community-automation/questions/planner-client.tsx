@@ -686,7 +686,7 @@ function CandidateActionDialog({ state, scope, isMutating, onClose, onSaveEdit, 
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 !isMutating && onClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 			<form onSubmit={submit}>
 				<Modal.Heading>{title}</Modal.Heading>
 				<Modal.Body>
@@ -747,7 +747,7 @@ function ScheduleDialog({ state, isMutating, onClose, onSave, }: {
     return (<Modal.Backdrop isOpen={!!question} onOpenChange={next => {
             if (!next)
                 !isMutating && onClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 			<form onSubmit={submit}>
 				<Modal.Heading>질문 일정 수정</Modal.Heading>
 				<Modal.Body>

@@ -109,8 +109,7 @@ export function EpisodeListTab({ status, onStatsClick }: Props) {
               </td>
               <td className="px-3 py-2 border-b border-default">
                 <Tooltip>
-                  <Tooltip.Trigger>
-                    <Button
+                  <Button
                       onClick={(event) => {
                         event.stopPropagation();
                         router.push(`/admin/pixel-campus/edit/${episode.id}`);
@@ -121,12 +120,10 @@ export function EpisodeListTab({ status, onStatsClick }: Props) {
                     >
                       <VisibilityIcon size={16} />
                     </Button>
-                  </Tooltip.Trigger>
                   <Tooltip.Content>{"상세"}</Tooltip.Content>
                 </Tooltip>
                 <Tooltip>
-                  <Tooltip.Trigger>
-                    <Button
+                  <Button
                       onClick={(event) => {
                         event.stopPropagation();
                         router.push(`/admin/pixel-campus/edit/${episode.id}`);
@@ -137,12 +134,10 @@ export function EpisodeListTab({ status, onStatsClick }: Props) {
                     >
                       <EditIcon size={16} />
                     </Button>
-                  </Tooltip.Trigger>
                   <Tooltip.Content>{"편집"}</Tooltip.Content>
                 </Tooltip>
                 <Tooltip>
-                  <Tooltip.Trigger>
-                    <Button
+                  <Button
                       onClick={(event) => {
                         event.stopPropagation();
                         onStatsClick(episode.id);
@@ -153,7 +148,6 @@ export function EpisodeListTab({ status, onStatsClick }: Props) {
                     >
                       <BarChartIcon size={16} />
                     </Button>
-                  </Tooltip.Trigger>
                   <Tooltip.Content>{"통계"}</Tooltip.Content>
                 </Tooltip>
               </td>

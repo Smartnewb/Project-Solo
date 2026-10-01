@@ -203,7 +203,7 @@ export default function MarkdownEditor({ value, onChange, placeholder = '마크�
       <Modal.Backdrop isOpen={linkDialogOpen} onOpenChange={next => {
             if (!next)
                 (() => setLinkDialogOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
         <Modal.Heading>링크 삽입</Modal.Heading>
         <Modal.Body>
           <TextField className="mb-4"><Label>{"링크 텍스트"}</Label><Input value={linkText} onChange={(e) => setLinkText(e.target.value)} placeholder="표시될 텍스트"></Input></TextField>

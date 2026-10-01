@@ -452,7 +452,7 @@ function ArticleList() {
 			<Modal.Backdrop isOpen={openBlindDialog} onOpenChange={next => {
             if (!next)
                 handleCloseBlindDialog();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'}</Modal.Heading>
 				<Modal.Body>
 					<p style={{ marginBottom: 16 }}>
@@ -475,7 +475,7 @@ function ArticleList() {
 			<Modal.Backdrop isOpen={detailDialogOpen} onOpenChange={next => {
             if (!next)
                 handleCloseDetailDialog();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 1200, minWidth: 0 }}>
 				<Modal.Heading>게시글 상세 정보</Modal.Heading>
 				<Modal.Body>
 					{selectedArticleDetail && (<CommunityPostAppDetailPanel post={{
@@ -523,7 +523,7 @@ function ArticleList() {
 			<Modal.Backdrop isOpen={openDeleteDialog} onOpenChange={next => {
             if (!next)
                 (() => setOpenDeleteDialog(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>게시글 삭제 확인</Modal.Heading>
 				<Modal.Body>
 					<p>
@@ -544,7 +544,7 @@ function ArticleList() {
 			<Modal.Backdrop isOpen={openCategoryDialog} onOpenChange={next => {
             if (!next)
                 (() => setOpenCategoryDialog(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>게시글 카테고리 이전</Modal.Heading>
 				<Modal.Body>
 					<p style={{ marginBottom: 16 }}>이 게시글을 어느 카테고리로 이전하시겠습니까?</p>
@@ -910,7 +910,7 @@ function ReportList() {
 			<Modal.Backdrop isOpen={openDetailDialog} onOpenChange={next => {
             if (!next)
                 (() => setOpenDetailDialog(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
 				<Modal.Heading>신고 상세 정보</Modal.Heading>
 				<Modal.Body>
 					{selectedReport && (<div style={{ marginTop: 8 }}>
@@ -1076,7 +1076,7 @@ function ReportList() {
 			<Modal.Backdrop isOpen={openBlindDialog} onOpenChange={next => {
             if (!next)
                 (() => setOpenBlindDialog(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>
 					게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 확인
 				</Modal.Heading>

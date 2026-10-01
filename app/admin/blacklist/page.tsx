@@ -169,7 +169,7 @@ export default function BlacklistPage() {
         isDismissable={(() => setHistoryUserId(null)) !== undefined}
       >
         <Modal.Container size="md" scroll="inside">
-          <Modal.Dialog>
+          <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
             <Modal.Header>
               <Modal.Heading>블랙리스트 이력</Modal.Heading>
             </Modal.Header>

@@ -1405,7 +1405,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading style={{ fontWeight: 700 }}>
               링크 생성 완료
             </Modal.Heading>

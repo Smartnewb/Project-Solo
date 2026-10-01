@@ -54,7 +54,7 @@ export default function PresetSelectModal({ open, onClose, onSelect, selectedPre
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 handleClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
       <Modal.Heading>배경 프리셋 선택</Modal.Heading>
       <Modal.Body>
         <div style={{ paddingTop: 16 }}>

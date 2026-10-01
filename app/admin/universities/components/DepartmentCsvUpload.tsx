@@ -136,7 +136,7 @@ export default function DepartmentCsvUpload({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading>
             학과 CSV 일괄 업로드
             <p style={{ marginTop: 4 }}>{universityName}</p>

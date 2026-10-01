@@ -24,7 +24,7 @@ import {
 } from "@/shared/ui/admin/confirm-dialog";
 import { CommandSearch } from "./command-search";
 import { Button, Drawer, Spinner } from "@heroui/react";
-import { Menu, Search, Globe, LogOut } from "lucide-react";
+import { Menu, Globe, LogOut } from "lucide-react";
 
 export function AdminShell({ children }: { children: ReactNode }) {
 	const router = useRouter();
@@ -119,52 +119,41 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
 	const sidebar = (
 		<>
-			<div className="border-b border-gray-200 p-5">
-				<h2 className="text-lg font-semibold">관리자 대시보드</h2>
-				<p className="mt-1 truncate text-sm text-muted">{session.user.email}</p>
+			<div className="flex h-14 shrink-0 items-center border-b border-gray-100 px-4">
+				<h2 className="text-sm font-semibold">Sometimes Admin</h2>
 			</div>
 			<AdminSidebar onNavigate={() => setSidebarOpen(false)} />
-			<div className="space-y-1 border-t border-gray-200 p-3">
-				<Button
-					fullWidth
-					variant="secondary"
-					className="justify-between"
-					onPress={() => {
-						setSidebarOpen(false);
-						window.dispatchEvent(
-							new KeyboardEvent("keydown", { key: "k", metaKey: true }),
-						);
-					}}
+			<div className="shrink-0 border-t border-gray-200 px-3 py-2">
+				<p
+					title={session.user.email}
+					className="mb-1 truncate px-1 text-xs text-gray-500"
 				>
-					<span className="flex items-center gap-2">
-						<Search size={18} />
-						메뉴 검색
-					</span>
-					<kbd className="text-xs text-muted">⌘K</kbd>
-				</Button>
-				<Button
-					fullWidth
-					variant="tertiary"
-					className="justify-start"
-					onPress={() => {
-						setSidebarOpen(false);
-						setCountryModalOpen(true);
-					}}
-				>
-					<Globe size={18} />
-					국가 변경 ({session.selectedCountry.toUpperCase()})
-				</Button>
-				<Button
-					fullWidth
-					variant="tertiary"
-					className="justify-start"
-					onPress={() => {
-						void logout();
-					}}
-				>
-					<LogOut size={18} />
-					로그아웃
-				</Button>
+					{session.user.email}
+				</p>
+				<div className="flex items-center gap-1">
+					<Button
+						variant="ghost"
+						onPress={() => {
+							setSidebarOpen(false);
+							setCountryModalOpen(true);
+						}}
+						className="h-10 min-w-0 flex-1 justify-start px-2 text-sm [@media(pointer:coarse)]:h-11"
+						aria-label={`운영 국가 변경 (${session.selectedCountry.toUpperCase()})`}
+					>
+						<Globe size={16} />
+						<span>{session.selectedCountry.toUpperCase()}</span>
+					</Button>
+					<Button
+						variant="ghost"
+						onPress={() => {
+							void logout();
+						}}
+						className="h-10 min-w-0 px-2 text-xs text-gray-600 [@media(pointer:coarse)]:h-11"
+					>
+						<LogOut size={15} />
+						로그아웃
+					</Button>
+				</div>
 			</div>
 		</>
 	);

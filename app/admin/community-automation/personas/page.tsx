@@ -168,7 +168,7 @@ export default function PersonasPage() {
 			<Modal.Backdrop isOpen={!!traitTarget} onOpenChange={next => {
             if (!next)
                 (() => setTraitTarget(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>커뮤니티 트레이트 설정</Modal.Heading>
 				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: '16px !important' }}>
 					<div>
@@ -216,7 +216,7 @@ export default function PersonasPage() {
 			<Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={next => {
             if (!next)
                 (() => setDeleteTarget(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>트레이트 오버라이드 삭제</Modal.Heading>
 				<Modal.Body>
 					<p>이 Ghost의 커뮤니티 트레이트 오버라이드를 삭제하시겠습니까?</p>

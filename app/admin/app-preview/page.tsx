@@ -943,10 +943,11 @@ function HomeMatchScreen() {
 				>
 					<Modal.Container
 						placement="bottom"
-						className="!absolute !inset-0 !m-0 !w-full !max-w-none !items-end !p-0"
+						className="!absolute !inset-0 !m-0 !h-full !w-full !max-w-none !items-end !p-0"
 					>
 						<Modal.Dialog
 							aria-label="파트너 상세"
+                            className="max-h-full"
 							style={{
 								width: "100%",
 								maxWidth: "none",
@@ -959,7 +960,7 @@ function HomeMatchScreen() {
 							<Modal.CloseTrigger
 								aria-label="파트너 상세 닫기"
 								className="absolute top-3 right-3"
-							/>
+							/><Modal.Body>
 							<div
 								style={{
 									width: 40,
@@ -1048,7 +1049,7 @@ function HomeMatchScreen() {
 									💜 좋아요 보내기
 								</span>
 							</Button>
-						</Modal.Dialog>
+						</Modal.Body></Modal.Dialog>
 					</Modal.Container>
 				</Modal.Backdrop>
 			)}

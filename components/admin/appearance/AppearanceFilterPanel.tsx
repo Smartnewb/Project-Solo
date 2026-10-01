@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Input,
+  InputGroup,
   Label,
   ListBox,
   Select,
@@ -198,26 +199,9 @@ export default function AppearanceFilterPanel({
               isInvalid={undefined}
             >
               <Label>{"검색어"}</Label>
-              {
-                <span>
-                  <Search />
-                </span>
-              }
-              {searchTerm ? (
-                <span>
-                  <Button
-                    onClick={() => setSearchTerm("")}
-                    variant={"ghost"}
-                    isDisabled={undefined}
-                    isIconOnly={true}
-                    size={"sm"}
-                    className="rounded-lg"
-                  >
-                    <X />
-                  </Button>
-                </span>
-              ) : null}
-              <Input
+              <InputGroup>
+                <InputGroup.Prefix><Search size={16} aria-hidden="true" /></InputGroup.Prefix>
+              <InputGroup.Input
                 placeholder="이름, 인스타그램, 전화번호로 검색"
                 value={searchTerm}
                 onChange={(e) => handleSearchTermChange(e.target.value)}
@@ -228,6 +212,10 @@ export default function AppearanceFilterPanel({
                 }}
                 aria-label={"검색어"}
               />
+                {searchTerm && <InputGroup.Suffix>
+                  <Button aria-label="검색어 지우기" onPress={() => setSearchTerm("")} variant="ghost" isIconOnly size="sm"><X size={16} /></Button>
+                </InputGroup.Suffix>}
+              </InputGroup>
             </TextField>
           </div>
           <div className={"min-w-0"}>

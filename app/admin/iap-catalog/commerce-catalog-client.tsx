@@ -596,7 +596,7 @@ export default function CommerceCatalogClient() {
 				isDismissable={true}
 			>
 				<Modal.Container size="md" scroll="inside">
-					<Modal.Dialog>
+					<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 						<Modal.Header>
 							<Modal.Heading>Apple IAP 심사 요청</Modal.Heading>
 						</Modal.Header>
@@ -641,7 +641,7 @@ export default function CommerceCatalogClient() {
 				isDismissable={true}
 			>
 				<Modal.Container size="md" scroll="inside">
-					<Modal.Dialog>
+					<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 						<Modal.Header>
 							<Modal.Heading>앱 카탈로그 발행 검토</Modal.Heading>
 						</Modal.Header>

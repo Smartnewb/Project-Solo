@@ -427,7 +427,7 @@ function CreatePriceDialog({
 			isDismissable={onClose !== undefined}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>가격 행 추가</Modal.Heading>
 					</Modal.Header>
@@ -646,7 +646,7 @@ function EditPriceDialog({
 			isDismissable={onClose !== undefined}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>
 							정가 수정 — {featureLabel(row.featureType)}
@@ -790,7 +790,7 @@ function ToggleActiveDialog({
 			isDismissable={onClose !== undefined}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>
 							{next ? "가격 행 활성화" : "가격 행 비활성화"}

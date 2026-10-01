@@ -206,13 +206,13 @@ export default function ChatRefundTab() {
       </div></section>
     </div>
     <Modal.Backdrop isOpen={reasonModalOpen} onOpenChange={setReasonModalOpen}>
-      <Modal.Container size="md"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>환불 사유 선택</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="환불 사유 닫기" onPress={() => setReasonModalOpen(false)}><X size={18} /></Button></Modal.Header>
+      <Modal.Container size="md"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}><Modal.Header className="flex items-center justify-between flex-row flex-wrap gap-3"><Modal.Heading>환불 사유 선택</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="환불 사유 닫기" onPress={() => setReasonModalOpen(false)}><X size={18} /></Button></Modal.Header>
         <Modal.Body><RadioGroup value={selectedReason} onChange={value => setSelectedReason(value as RefundReasonCode)}><Label>환불 사유를 선택해주세요</Label>{REFUND_REASONS.map(reason => <Radio key={reason.code} value={reason.code}><Radio.Content><Radio.Control><Radio.Indicator /></Radio.Control><Label>{reason.text}</Label></Radio.Content></Radio>)}</RadioGroup></Modal.Body>
         <Modal.Footer><Button variant="secondary" onPress={() => setReasonModalOpen(false)}>취소</Button><Button onPress={() => void handleReasonSubmit()}>다음</Button></Modal.Footer>
       </Modal.Dialog></Modal.Container>
     </Modal.Backdrop>
     <Modal.Backdrop isOpen={previewModalOpen} onOpenChange={open => !processing && setPreviewModalOpen(open)} isDismissable={!processing} isKeyboardDismissDisabled={processing}>
-      <Modal.Container size="lg"><Modal.Dialog><Modal.Header className="flex items-center justify-between"><Modal.Heading>SMS 미리보기 및 확인</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="환불 미리보기 닫기" isDisabled={processing} onPress={() => setPreviewModalOpen(false)}><X size={18} /></Button></Modal.Header>
+      <Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}><Modal.Header className="flex items-center justify-between flex-row flex-wrap gap-3"><Modal.Heading>SMS 미리보기 및 확인</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="환불 미리보기 닫기" isDisabled={processing} onPress={() => setPreviewModalOpen(false)}><X size={18} /></Button></Modal.Header>
         <Modal.Body className="space-y-4">{previewData && <>
           <section className="space-y-2 rounded-lg bg-gray-50 p-4"><h3 className="font-semibold">환불 정보</h3><dl className="space-y-2 text-sm">{[
             ['사용자', previewData.userName], ['전화번호', previewData.phoneNumber], ['환급 구슬', `${previewData.refundGemAmount}개`], ['사유', previewData.refundReasonText],

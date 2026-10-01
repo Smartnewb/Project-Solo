@@ -397,7 +397,7 @@ function CreateDiscountDialog({
 			isDismissable={onClose !== undefined}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>기간 할인 등록</Modal.Heading>
 					</Modal.Header>
@@ -619,7 +619,7 @@ function CancelDiscountDialog({
 			isDismissable={onClose !== undefined}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>할인 조기 종료</Modal.Heading>
 					</Modal.Header>

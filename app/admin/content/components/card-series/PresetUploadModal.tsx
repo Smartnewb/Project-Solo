@@ -82,7 +82,7 @@ export default function PresetUploadModal({ open, onClose, onSuccess }: PresetUp
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 handleClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>배경 프리셋 추가</Modal.Heading>
       <Modal.Body>
         <div style={{ paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 24 }}>

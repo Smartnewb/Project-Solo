@@ -421,7 +421,7 @@ export default function ManualMatching() {
       <Modal.Backdrop isOpen={!!detailDialog} onOpenChange={next => {
             if (!next)
                 (() => setDetailDialog(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
         {detailDialog && (<>
             <Modal.Heading>수동 매칭 상세</Modal.Heading>
             <Modal.Body>
@@ -522,7 +522,7 @@ export default function ManualMatching() {
       <Modal.Backdrop isOpen={!!executeDialog} onOpenChange={next => {
             if (!next)
                 (() => setExecuteDialog(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
         <Modal.Heading>수동 매칭 즉시 실행</Modal.Heading>
         <Modal.Body>
           <p>
@@ -543,7 +543,7 @@ export default function ManualMatching() {
       <Modal.Backdrop isOpen={!!cancelDialog} onOpenChange={next => {
             if (!next)
                 (() => setCancelDialog(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
         <Modal.Heading>매칭 취소</Modal.Heading>
         <Modal.Body>
           <p style={{ marginBottom: 16 }}>

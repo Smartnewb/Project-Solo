@@ -141,7 +141,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
     return (<Modal.Backdrop isOpen={open && !!item} onOpenChange={next => {
             if (!next)
                 onClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>{typeLabel} 발행</Modal.Heading>
       <Modal.Body>
         <p style={{ marginBottom: 16 }}>

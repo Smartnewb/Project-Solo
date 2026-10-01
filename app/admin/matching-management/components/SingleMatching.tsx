@@ -579,7 +579,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({ selectedUser, matchingL
       <Modal.Backdrop isOpen={directMatchDialogOpen} onOpenChange={next => {
             if (!next)
                 closeDirectMatchDialog();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
         <Modal.Heading>
           직접 매칭 생성
         </Modal.Heading>

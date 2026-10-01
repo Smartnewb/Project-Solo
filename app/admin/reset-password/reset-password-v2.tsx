@@ -303,7 +303,7 @@ function ResetPasswordPageContent() {
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading>비밀번호 초기화</Modal.Heading>
             <Modal.Body>
               <p>
@@ -342,7 +342,7 @@ function ResetPasswordPageContent() {
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading>비밀번호 초기화 완료</Modal.Heading>
             <Modal.Body>
               <p style={{ marginBottom: 16 }}>

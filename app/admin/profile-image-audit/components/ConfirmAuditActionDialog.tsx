@@ -28,7 +28,7 @@ export function ConfirmAuditActionDialog({ action, selectedCount, busy, removesL
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 !busy && onClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
       <Modal.Heading>{action ? ACTION_LABELS[action] : '처리 확인'}</Modal.Heading>
       <Modal.Body>
         <p>

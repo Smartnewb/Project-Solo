@@ -1,10 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@heroui/react";
+import { Button, Input, Label, TextField } from "@heroui/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Star } from "lucide-react";
+import {
+	ChevronDown,
+	Star,
+	Search,
+	X,
+	ChartNoAxesCombined,
+	Users,
+	HeartHandshake,
+	Wallet,
+	Megaphone,
+	RefreshCw,
+	Bot,
+	Settings,
+	type LucideIcon,
+} from "lucide-react";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -291,10 +305,6 @@ function useExpandableState(
 		}
 	}, [storageKey]);
 
-	useEffect(() => {
-		if (forceOpen) setOpen(true);
-	}, [forceOpen]);
-
 	const update = (next: boolean) => {
 		setOpen(next);
 		try {
@@ -304,53 +314,39 @@ function useExpandableState(
 		}
 	};
 
-	return [open, update];
+	return [forceOpen || open, update];
 }
 
-interface ExpandableGroupProps {
-	item: NavExpandable;
-	pathname: string;
-	onNavigate?: () => void;
-	favoriteHrefs: string[];
-	onToggleFavorite: (href: string) => void;
-}
-
+const categoryIcons: Record<string, LucideIcon> = {
+	대시보드: ChartNoAxesCombined,
+	"회원 관리": Users,
+	"매칭/채팅": HeartHandshake,
+	"결제/매출": Wallet,
+	마케팅: Megaphone,
+	리텐션: RefreshCw,
+	"가상 매칭": Bot,
+	설정: Settings,
+};
+const rowClass = "h-10 [@media(pointer:coarse)]:h-11";
 function FavoriteButton({
 	label,
 	active,
-	onClick,
-	activeRow,
-}: {
-	label: string;
-	active: boolean;
-	onClick: () => void;
-	activeRow?: boolean;
-}) {
+	onPress,
+}: { label: string; active: boolean; onPress: () => void }) {
 	return (
 		<Button
-			variant="tertiary"
+			variant="ghost"
 			isIconOnly
-			type="button"
+			size="sm"
 			aria-label={`${label} 즐겨찾기 ${active ? "해제" : "추가"}`}
 			aria-pressed={active}
-			onClick={(event) => {
-				event.preventDefault();
-				event.stopPropagation();
-				onClick();
-			}}
-			className={`mx-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
-				active
-					? "text-amber-600 hover:bg-gray-100"
-					: activeRow
-						? "text-white/80 hover:bg-white/15 hover:text-white"
-						: "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-			}`}
+			onPress={onPress}
+			className={`!h-10 !w-9 [@media(pointer:coarse)]:!h-11 [@media(pointer:coarse)]:!w-11 !min-w-0 !rounded-md !bg-transparent p-0 shadow-none transition-opacity ${active ? "text-amber-600" : "text-current opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"}`}
 		>
-			<Star className="h-4 w-4" fill={active ? "currentColor" : "none"} />
+			<Star size={15} fill={active ? "currentColor" : "none"} />
 		</Button>
 	);
 }
-
 function SidebarLinkRow({
 	href,
 	label,
@@ -367,67 +363,62 @@ function SidebarLinkRow({
 	nested?: boolean;
 }) {
 	const active = pathname === href;
-
 	return (
 		<div
-			className={`flex items-center overflow-hidden rounded-lg transition-colors ${
-				active ? "bg-[#7A4AE2] text-white" : "text-gray-700 hover:bg-gray-100"
-			}`}
+			className={`group flex items-center overflow-hidden rounded-lg ${active ? "bg-[#7A4AE2] text-white" : "text-gray-700 hover:bg-gray-100"}`}
 		>
 			<Link
 				href={href}
 				aria-current={active ? "page" : undefined}
 				onClick={onNavigate}
-				className={`min-w-0 flex-1 py-3 text-[15px] font-medium leading-6 ${nested ? "pl-9 pr-2" : "px-4 pr-2"}`}
+				className={`${rowClass} flex min-w-0 flex-1 items-center text-sm font-medium ${nested ? "pl-8" : "pl-3"}`}
 			>
-				<span className="block truncate">{label}</span>
+				<span className="truncate">{label}</span>
 			</Link>
 			<FavoriteButton
 				label={label}
 				active={favorite}
-				activeRow={active}
-				onClick={() => onToggleFavorite(href)}
+				onPress={() => onToggleFavorite(href)}
 			/>
 		</div>
 	);
 }
-
+type MenuProps = {
+	pathname: string;
+	onNavigate?: () => void;
+	favoriteHrefs: string[];
+	onToggleFavorite: (href: string) => void;
+	searching?: boolean;
+};
 function ExpandableGroup({
 	item,
-	pathname,
-	onNavigate,
-	favoriteHrefs,
-	onToggleFavorite,
-}: ExpandableGroupProps) {
-	const childHrefs = item.children.map((c) => c.href);
-	const containsActive = childHrefs.some(
-		(href) => pathname === href || pathname.startsWith(`${href}/`),
+	...props
+}: MenuProps & { item: NavExpandable }) {
+	const containsActive = item.children.some(
+		({ href }) =>
+			props.pathname === href || props.pathname.startsWith(`${href}/`),
 	);
 	const [open, setOpen] = useExpandableState(
 		item.id,
 		item.defaultOpen ?? false,
-		containsActive,
+		containsActive || Boolean(props.searching),
 	);
-
 	return (
 		<Collapsible open={open} onOpenChange={setOpen}>
-			<CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-[15px] font-semibold leading-6 text-gray-700 transition-colors hover:bg-gray-100">
+			<CollapsibleTrigger
+				className={`${rowClass} flex w-full items-center justify-between rounded-lg px-3 text-sm font-medium text-gray-700 hover:bg-gray-100`}
+			>
 				<span>{item.label}</span>
-				<ChevronDown
-					className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
-				/>
+				<ChevronDown size={15} className={open ? "rotate-180" : ""} />
 			</CollapsibleTrigger>
 			<CollapsibleContent>
-				<ul>
+				<ul className="space-y-0.5">
 					{item.children.map((child) => (
-						<li key={child.href} className="mt-1">
+						<li key={child.href}>
 							<SidebarLinkRow
-								href={child.href}
-								label={child.label}
-								pathname={pathname}
-								onNavigate={onNavigate}
-								favorite={favoriteHrefs.includes(child.href)}
-								onToggleFavorite={onToggleFavorite}
+								{...child}
+								{...props}
+								favorite={props.favoriteHrefs.includes(child.href)}
 								nested
 							/>
 						</li>
@@ -437,115 +428,165 @@ function ExpandableGroup({
 		</Collapsible>
 	);
 }
-
-function FavoriteMenuPanel({
-	items,
-	onNavigate,
-	onToggleFavorite,
-}: {
-	items: FavoriteNavLink[];
-	onNavigate?: () => void;
-	onToggleFavorite: (href: string) => void;
-}) {
-	if (items.length === 0) return null;
-
+function CategoryGroup({
+	category,
+	...props
+}: MenuProps & { category: NavCategory }) {
+	const children = category.items.flatMap((item) =>
+		isExpandable(item) ? item.children : [item],
+	);
+	const containsActive = children.some(
+		({ href }) =>
+			props.pathname === href || props.pathname.startsWith(`${href}/`),
+	);
+	const [open, setOpen] = useExpandableState(
+		`category.${category.label}`,
+		false,
+		containsActive || Boolean(props.searching),
+	);
+	const Icon = categoryIcons[category.label] ?? Settings;
 	return (
-		<section className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-			<div className="mb-2 flex items-center justify-between px-1">
-				<h3 className="text-[13px] font-semibold uppercase tracking-normal text-gray-600">
-					즐겨찾기
-				</h3>
-				<span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-					{items.length}
-				</span>
-			</div>
-			<div className="grid grid-cols-1 gap-2">
-				{items.map((item) => (
-					<div
-						key={item.href}
-						className="group flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50"
-					>
-						<Link
-							href={item.href}
-							onClick={onNavigate}
-							className="min-w-0 flex-1"
-						>
-							<span className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-gray-500">
-								<span>{item.icon}</span>
-								<span className="truncate">{item.category}</span>
-							</span>
-							<span className="block truncate text-[15px] font-semibold leading-6 text-gray-900">
-								{item.label}
-							</span>
-						</Link>
-						<FavoriteButton
-							label={item.label}
-							active
-							onClick={() => onToggleFavorite(item.href)}
-						/>
-					</div>
-				))}
-			</div>
-		</section>
+		<Collapsible open={open} onOpenChange={setOpen}>
+			<CollapsibleTrigger
+				className={`${rowClass} flex w-full items-center gap-2 rounded-lg px-3 text-xs font-semibold text-gray-600 hover:bg-gray-100`}
+			>
+				<Icon size={16} />
+				<span className="flex-1 text-left">{category.label}</span>
+				<ChevronDown size={14} className={open ? "rotate-180" : ""} />
+			</CollapsibleTrigger>
+			<CollapsibleContent>
+				<ul className="space-y-0.5">
+					{category.items.map((item) => (
+						<li key={isExpandable(item) ? item.id : item.href}>
+							{isExpandable(item) ? (
+								<ExpandableGroup item={item} {...props} />
+							) : (
+								<SidebarLinkRow
+									{...item}
+									{...props}
+									favorite={props.favoriteHrefs.includes(item.href)}
+								/>
+							)}
+						</li>
+					))}
+				</ul>
+			</CollapsibleContent>
+		</Collapsible>
 	);
 }
-
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
-	const pathname = usePathname();
+	const pathname = usePathname() ?? "";
+	const [query, setQuery] = useState("");
 	const { favoriteHrefs, toggleFavorite } = useFavoriteMenuItems();
-	const favoriteItems = useMemo(() => {
-		const allItems = flattenNavLinks();
-		return favoriteHrefs
-			.map((href) => allItems.find((item) => item.href === href))
-			.filter((item): item is FavoriteNavLink => Boolean(item));
-	}, [favoriteHrefs]);
-
+	const allItems = useMemo(() => flattenNavLinks(), []);
+	const favoriteItems = favoriteHrefs
+		.map((href) => allItems.find((item) => item.href === href))
+		.filter((item): item is FavoriteNavLink => Boolean(item));
+	const term = query.trim().toLocaleLowerCase();
+	const results = term
+		? Array.from(
+				new Map(
+					allItems
+						.filter((item) =>
+							`${item.label} ${item.category} ${item.href}`
+								.toLocaleLowerCase()
+								.includes(term),
+						)
+						.map((item) => [item.href, item]),
+				).values(),
+			)
+		: [];
+	const props = {
+		pathname,
+		onNavigate,
+		favoriteHrefs,
+		onToggleFavorite: toggleFavorite,
+	};
 	return (
 		<nav
 			aria-label="운영 메뉴"
-			className="flex-1 overflow-y-auto bg-white px-4 py-4"
+			className="flex min-h-0 flex-1 flex-col bg-white"
 		>
-			<FavoriteMenuPanel
-				items={favoriteItems}
-				onNavigate={onNavigate}
-				onToggleFavorite={toggleFavorite}
-			/>
-			{NAV_CATEGORIES.map((category) => (
-				<div key={category.label}>
-					<div className="mt-4 px-3 py-2 text-[13px] font-semibold uppercase tracking-normal text-gray-500">
-						{category.icon} {category.label}
+			<div className="shrink-0 px-3 py-3">
+				<TextField>
+					<Label className="sr-only">메뉴 검색</Label>
+					<div className="relative">
+						<Search
+							size={15}
+							className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-gray-400"
+						/>
+						<Input
+							value={query}
+							onChange={(event) => setQuery(event.target.value)}
+							placeholder="메뉴 검색"
+							className="h-10 w-full pl-9 pr-10 text-sm"
+						/>
+						{query && (
+							<Button
+								variant="ghost"
+								isIconOnly
+								size="sm"
+								aria-label="메뉴 검색 지우기"
+								onPress={() => setQuery("")}
+								className="absolute right-1 top-1 h-8 w-8 min-w-0"
+							>
+								<X size={14} />
+							</Button>
+						)}
 					</div>
-					<ul>
-						{category.items.map((item) => {
-							if (isExpandable(item)) {
-								return (
-									<li key={item.id}>
-										<ExpandableGroup
-											item={item}
-											pathname={pathname ?? ""}
-											onNavigate={onNavigate}
-											favoriteHrefs={favoriteHrefs}
-											onToggleFavorite={toggleFavorite}
-										/>
-									</li>
-								);
-							}
-							return (
-								<li key={item.href} className="mt-1">
+				</TextField>
+			</div>
+			<div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+				{term ? (
+					<section aria-label="메뉴 검색 결과">
+						<ul className="space-y-0.5">
+							{results.map((item) => (
+								<li key={item.href}>
 									<SidebarLinkRow
-										href={item.href}
-										label={item.label}
-										pathname={pathname ?? ""}
-										onNavigate={onNavigate}
+										{...item}
+										{...props}
 										favorite={favoriteHrefs.includes(item.href)}
-										onToggleFavorite={toggleFavorite}
 									/>
 								</li>
-							);
-						})}
-					</ul>
-				</div>
-			))}
+							))}
+						</ul>
+						{results.length === 0 && (
+							<p role="status" className="px-3 py-4 text-sm text-gray-500">
+								일치하는 메뉴가 없습니다.
+							</p>
+						)}
+					</section>
+				) : (
+					<>
+						{favoriteItems.length > 0 && (
+							<section
+								aria-label="즐겨찾기"
+								className="mb-2 border-b border-gray-100 pb-2"
+							>
+								<h3 className="px-3 py-1 text-xs font-semibold text-gray-500">
+									즐겨찾기
+								</h3>
+								<ul className="space-y-0.5">
+									{favoriteItems.map((item) => (
+										<li key={item.href}>
+											<SidebarLinkRow {...item} {...props} favorite />
+										</li>
+									))}
+								</ul>
+							</section>
+						)}
+						<div className="space-y-1">
+							{NAV_CATEGORIES.map((category) => (
+								<CategoryGroup
+									key={category.label}
+									category={category}
+									{...props}
+								/>
+							))}
+						</div>
+					</>
+				)}
+			</div>
 		</nav>
 	);
 }

@@ -81,7 +81,7 @@ export default function RejectReasonModal({ open, onClose, onConfirm }: RejectRe
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 handleClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Header><Modal.Heading>
           반려 사유 선택
         </Modal.Heading>

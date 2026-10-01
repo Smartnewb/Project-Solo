@@ -142,7 +142,7 @@ export function BlacklistRegisterModal({
       isDismissable={handleClose !== undefined}
     >
       <Modal.Container size="md" scroll="inside">
-        <Modal.Dialog>
+        <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
           <Modal.Header
             style={{ display: "flex", alignItems: "center", gap: 4 }}
           >

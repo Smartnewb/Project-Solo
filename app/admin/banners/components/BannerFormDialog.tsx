@@ -132,7 +132,7 @@ export default function BannerFormDialog({ open, onClose, onSubmit, editBanner, 
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 handleClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>{isEditMode ? '배너 수정' : '배너 등록'}</Modal.Heading>
       <Modal.Body>
         {fileError && (<aside role="alert" className="rounded-lg border p-3" style={{ marginBottom: 16 }}>

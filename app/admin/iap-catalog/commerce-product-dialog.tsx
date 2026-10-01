@@ -133,7 +133,7 @@ export default function CommerceProductDialog({
 			isDismissable={loading ? undefined : onClose !== undefined}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>
 							{product ? "상품 Draft 편집" : "표준 상품 Draft 생성"}

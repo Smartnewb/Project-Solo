@@ -430,4 +430,31 @@
 @layer components {
   .button { border-radius: 0.75rem; }
   .button--secondary { --button-fg: #222222; }
+  /* Let each dialog's max-width determine its size, rather than shrink-to-fit content. */
+  .modal__container {
+    width: 100%;
+    max-width: 100%;
+    padding: clamp(12px, 3vw, 32px);
+  }
+  .modal__body, .drawer__body { min-width: 0; overflow-wrap: anywhere; }
+  .modal__header, .modal__footer, .drawer__header, .drawer__footer { flex-shrink: 0; }
+  .modal__dialog--scroll-inside > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .modal__footer, .drawer__footer { flex-wrap: wrap; }
+  .tabs { min-width: 0; max-width: 100%; }
+  .tabs > .tabs__list[data-orientation="horizontal"] {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .tabs > .tabs__list[data-orientation="horizontal"] > .tabs__tab {
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 }

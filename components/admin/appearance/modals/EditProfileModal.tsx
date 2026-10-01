@@ -43,9 +43,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
   // 유저 정보로 폼 초기화
   useEffect(() => {
     if (userDetail) {
-      // DB 데이터 로깅
-      console.log("사용자 상세 정보 로드:", userDetail);
-
       setFormData({
         name: userDetail.name || "",
         email: userDetail.email || "",
@@ -86,14 +83,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         mbti: formData.mbti || "",
       };
 
-      console.log("프로필 업데이트 요청 데이터:", profileData);
-
       // 실제 API 호출
-      const response = await AdminService.userAppearance.updateUserProfile(
-        userId,
-        profileData,
-      );
-      console.log("프로필 업데이트 응답:", response);
+      await AdminService.userAppearance.updateUserProfile(userId, profileData);
 
       setSuccess(true);
       if (onSuccess) onSuccess();
@@ -126,8 +117,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       }}
       isDismissable={handleClose !== undefined}
     >
-      <Modal.Container size="md" scroll="inside">
-        <Modal.Dialog>
+      <Modal.Container size="md" scroll="inside" className="w-full">
+        <Modal.Dialog style={{ width: "100%", maxWidth: "44rem", minWidth: 0 }}>
           <Modal.Header>
             <Modal.Heading>
               <div style={{ display: "flex", alignItems: "center" }}>
@@ -136,7 +127,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </div>
             </Modal.Heading>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
             {success ? (
               <Alert style={{ marginTop: 8 }} status={"success"} role="alert">
                 <Alert.Content>
@@ -244,7 +235,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </div>
             )}
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="flex-wrap gap-2">
             <Button
               onClick={handleClose}
               variant={"ghost"}

@@ -56,7 +56,7 @@ export function StyleReferenceUploadDialog({ open, onClose, onSubmit, isLoading 
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 handleClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>이미지 등록</Modal.Heading>
       <Modal.Body>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>

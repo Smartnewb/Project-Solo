@@ -311,7 +311,7 @@ export function JpIdentityCard({
 				isDismissable={true}
 			>
 				<Modal.Container size="lg" scroll="inside">
-					<Modal.Dialog aria-label="신분증 크게 보기">
+					<Modal.Dialog style={{ width: '100%', maxWidth: 1200, minWidth: 0 }} aria-label="신분증 크게 보기">
 						<Modal.Body
 							style={{
 								padding: 0,

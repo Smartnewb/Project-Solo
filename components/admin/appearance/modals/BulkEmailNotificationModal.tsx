@@ -117,8 +117,8 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
       }}
       isDismissable={handleClose !== undefined}
     >
-      <Modal.Container size="md" scroll="inside">
-        <Modal.Dialog>
+      <Modal.Container size="md" scroll="inside" className="w-full">
+        <Modal.Dialog style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}>
           <Modal.Header
             style={{
               display: "flex",
@@ -130,20 +130,20 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
               <div className={"text-lg font-semibold text-neutral-900"}>
                 일괄 이메일 발송
               </div>
-              <Button
-                onClick={handleClose}
-                aria-label="close"
-                variant={"ghost"}
-                isDisabled={loading}
-                isIconOnly={true}
-                size={"md"}
-                className="rounded-lg"
-              >
-                <X />
-              </Button>
             </Modal.Heading>
+            <Button
+              onClick={handleClose}
+              aria-label="close"
+              variant={"ghost"}
+              isDisabled={loading}
+              isIconOnly={true}
+              size={"md"}
+              className="rounded-lg"
+            >
+              <X />
+            </Button>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
             <div style={{ marginTop: 8 }}>
               <div style={{ marginBottom: 12 }}>
                 <div className={"text-sm text-neutral-700"}>수신자</div>
@@ -220,6 +220,7 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
             </div>
           </Modal.Body>
           <Modal.Footer
+            className="flex-wrap gap-2"
             style={{ paddingLeft: 12, paddingRight: 12, paddingBottom: 12 }}
           >
             <Button

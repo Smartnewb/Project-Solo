@@ -569,7 +569,7 @@ export default function ChatDetailDialog({
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading
               style={{
                 display: "flex",
@@ -577,9 +577,9 @@ export default function ChatDetailDialog({
                 alignItems: "center",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <SupportAgentIcon size={16} />
-                <h6>채팅 상세</h6>
+                <span>채팅 상세</span>
                 {session && (
                   <>
                     <Chip size="sm">
@@ -605,7 +605,7 @@ export default function ChatDetailDialog({
                       : "연결 중..."}
                   </Chip>
                 )}
-              </div>
+              </span>
               <Button
                 onClick={onClose}
                 variant={"secondary"}

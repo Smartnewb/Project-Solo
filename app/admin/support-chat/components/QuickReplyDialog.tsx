@@ -108,7 +108,7 @@ export default function QuickReplyDialog({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading
             style={{
               display: "flex",
@@ -164,8 +164,7 @@ export default function QuickReplyDialog({
                   </div>
                   {!reply.builtin && (
                     <Tooltip>
-                      <Tooltip.Trigger>
-                        <Button
+                      <Button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRemove(reply.id);
@@ -176,7 +175,6 @@ export default function QuickReplyDialog({
                         >
                           <DeleteIcon size={16} />
                         </Button>
-                      </Tooltip.Trigger>
                       <Tooltip.Content>{"삭제"}</Tooltip.Content>
                     </Tooltip>
                   )}

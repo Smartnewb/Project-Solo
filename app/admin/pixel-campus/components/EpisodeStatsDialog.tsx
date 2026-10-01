@@ -22,7 +22,7 @@ export function EpisodeStatsDialog({ episodeId, open, onClose }: Props) {
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading style={{ paddingRight: 6 }}>
             선택지별 참여 통계
             <Button

@@ -145,7 +145,7 @@ export default function BulkResolveToolbar({
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-sm">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }} className="max-w-sm">
             <Modal.Heading>
               선택한 {targets?.length ?? 0}건을 해결 완료할까요?
             </Modal.Heading>

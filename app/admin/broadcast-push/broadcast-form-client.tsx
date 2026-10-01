@@ -236,12 +236,12 @@ export default function BroadcastFormClient() {
         <Checkbox isSelected={testConfirmed} onChange={setTestConfirmed}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control><Label>테스트 푸시를 수신했음을 확인했습니다.</Label></Checkbox.Content></Checkbox>
       </section>
       <div className="flex justify-end"><Button isDisabled={!canSubmit || submitting} onPress={handleOpenConfirm}>예약 등록</Button></div>
-      <Modal.Backdrop isOpen={confirmOpen} onOpenChange={open => !submitting && setConfirmOpen(open)} isDismissable={!submitting} isKeyboardDismissDisabled={submitting}><Modal.Container size="md"><Modal.Dialog><Modal.Header><Modal.Heading>예약 발송 최종 확인</Modal.Heading></Modal.Header>
+      <Modal.Backdrop isOpen={confirmOpen} onOpenChange={open => !submitting && setConfirmOpen(open)} isDismissable={!submitting} isKeyboardDismissDisabled={submitting}><Modal.Container size="md"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}><Modal.Header><Modal.Heading>예약 발송 최종 확인</Modal.Heading></Modal.Header>
           <Modal.Body><p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-900">주의: 예약 등록 후에는 취소할 수 없습니다. 등록 즉시 예약이 확정됩니다.</p>
             <dl className="space-y-3"><SummaryRow label="발송 분류" value={legalClass === 'advertising' ? '광고성' : '정보성'} /><SummaryRow label="발송 대상" value={targetSummary} /><SummaryRow label="예정 시각" value={formatDateTimeKR(scheduledAt)} />{needKr && <SummaryRow label="KR 제목" value={krTitle} />}{needJp && <SummaryRow label="JP 제목" value={jpTitle} />}<SummaryRow label="딥링크" value={deepLink || '-'} /></dl>
           </Modal.Body><Modal.Footer><Button variant="secondary" onPress={() => setConfirmOpen(false)} isDisabled={submitting}>취소</Button><Button onPress={handleConfirmSubmit} isDisabled={submitting}>예약 등록 진행{submitting && <Spinner size="sm" />}</Button></Modal.Footer>
         </Modal.Dialog></Modal.Container></Modal.Backdrop>
-      <Modal.Backdrop isOpen={Boolean(result)} isDismissable={false} isKeyboardDismissDisabled><Modal.Container size="sm"><Modal.Dialog><Modal.Header><Modal.Heading>예약 등록 완료</Modal.Heading></Modal.Header><Modal.Body>
+      <Modal.Backdrop isOpen={Boolean(result)} isDismissable={false} isKeyboardDismissDisabled><Modal.Container size="sm"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}><Modal.Header><Modal.Heading>예약 등록 완료</Modal.Heading></Modal.Header><Modal.Body>
           <p>예약 ID: {result?.id}</p><p>예상 대상 인원: {result?.targetPreviewCount.toLocaleString()}명</p><p>발송 예정 시각: {result ? formatDateTimeKR(result.scheduledAt) : '-'}</p>
         </Modal.Body><Modal.Footer><Button onPress={() => router.push('/admin/broadcast-push')}>이력 보기</Button></Modal.Footer></Modal.Dialog></Modal.Container></Modal.Backdrop>
     </section>

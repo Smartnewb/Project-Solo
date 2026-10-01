@@ -16,7 +16,7 @@ function Modal({ isOpen, onClose, children, className, ...props }: ModalProps) {
 				if (!open) onClose();
 			}}
 		>
-			<HeroModal.Container size="lg">
+			<HeroModal.Container size="lg" scroll="outside">
 				<HeroModal.Dialog
 					{...props}
 					aria-label={props["aria-label"] ?? "대화상자"}

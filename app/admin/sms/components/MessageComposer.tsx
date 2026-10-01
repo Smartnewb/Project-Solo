@@ -204,7 +204,7 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
                 </div>
             </div>
 
-            {scheduledAtOpen && (<Modal.Backdrop isOpen onOpenChange={setScheduledAtOpen}><Modal.Container size="sm"><Modal.Dialog aria-label="예약 발송 시간 설정" className="p-6">
+            {scheduledAtOpen && (<Modal.Backdrop isOpen onOpenChange={setScheduledAtOpen}><Modal.Container size="sm"><Modal.Dialog style={{width:"100%",maxWidth:384,minWidth:0}} aria-label="예약 발송 시간 설정" className="p-6"><Modal.Body>
                         <h3 className='text-lg font-semibold mb-4'>예약 발송 시간 설정</h3>
                         <Input aria-label='예약 발송 시간' type='datetime-local' value={scheduledAt} className='w-full border rounded px-3 py-2 mb-4' onChange={(e) => setScheduledAt(e.target.value)}></Input>
                         <div className='flex gap-2'>
@@ -212,6 +212,6 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
                                 취소
                             </Button>
                         </div>
-                    </Modal.Dialog></Modal.Container></Modal.Backdrop>)}
+                    </Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>)}
         </>);
 }

@@ -571,7 +571,7 @@ export function PushSendTab() {
       </div>
 
       {/* 프로필 상세 모달 */}
-      {showProfileModal && (<Modal.Backdrop isOpen onOpenChange={open => { if (!open) closeProfileModal(); }}><Modal.Container size="lg"><Modal.Dialog aria-label="프로필 상세 정보" className="p-6">
+      {showProfileModal && (<Modal.Backdrop isOpen onOpenChange={open => { if (!open) closeProfileModal(); }}><Modal.Container size="lg"><Modal.Dialog style={{width:"100%",maxWidth:672,minWidth:0}} aria-label="프로필 상세 정보" className="p-6"><Modal.Body>
             {loadingProfile ? (<div className="text-center py-8">
                 <p>프로필 정보를 불러오는 중...</p>
               </div>) : selectedUser ? (<div>
@@ -657,7 +657,7 @@ export function PushSendTab() {
               </div>) : (<div className="text-center py-8">
                 <p>프로필 정보를 불러올 수 없습니다.</p>
               </div>)}
-          </Modal.Dialog></Modal.Container></Modal.Backdrop>)}
+          </Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>)}
     </div>);
 }
 export default PushSendTab;

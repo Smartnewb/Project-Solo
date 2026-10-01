@@ -877,7 +877,7 @@ function KeywordsContent() {
 				isDismissable={!promptSubmitting}
 			>
 				<Modal.Container size="md" scroll="inside">
-					<Modal.Dialog>
+					<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 						<Modal.Header style={{ fontWeight: 700 }}>
 							<Modal.Heading>
 								AI 아이콘 생성 - &quot;{promptDialog.item?.keyword}&quot;

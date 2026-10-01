@@ -33,7 +33,7 @@ export function JpIdentityRejectDialog({
 			isKeyboardDismissDisabled={busy}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>거절 사유</Modal.Heading>
 						<p style={{ marginTop: 4 }} className={"text-sm text-neutral-700"}>

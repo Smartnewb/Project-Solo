@@ -404,7 +404,7 @@ export default function CountryOverview() {
       <Modal.Backdrop isOpen={scheduleConfirmOpen} onOpenChange={next => {
             if (!next)
                 (() => setScheduleConfirmOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
         <Modal.Heading>스케줄 매칭 실행</Modal.Heading>
         <Modal.Body>
           <p>

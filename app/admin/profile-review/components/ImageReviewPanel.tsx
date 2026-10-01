@@ -560,20 +560,20 @@ export default function ImageReviewPanel({ user, onApprove, onReject, onImageApp
       <Modal.Backdrop isOpen={imageModalOpen} onOpenChange={next => {
             if (!next)
                 handleImageModalClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog aria-label="프로필 이미지 확대" style={{ width: '100%', maxWidth: 600, minWidth: 0 }}><Modal.Body>
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-          <Button onPress={handleImageModalClose} variant="tertiary" isIconOnly={true} style={{ position: "absolute", top: -20, right: -20, backgroundColor: "white", color: "#333", zIndex: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+          <Button aria-label="확대 이미지 닫기" onPress={handleImageModalClose} variant="tertiary" isIconOnly={true} style={{ position: "absolute", top: 8, right: 8, backgroundColor: "white", color: "#333", zIndex: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
             <CloseIcon></CloseIcon>
           </Button>
-          {selectedImageUrl && (<img src={selectedImageUrl} alt="확대 이미지" style={{ maxWidth: "90vw", maxHeight: "90vh", width: "auto", height: "auto", objectFit: "contain", borderRadius: 2, boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}/>)}
+          {selectedImageUrl && (<img src={selectedImageUrl} alt="확대 이미지" style={{ maxWidth: "100%", maxHeight: "calc(100dvh - 140px)", width: "auto", height: "auto", objectFit: "contain", borderRadius: 2, boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}/>)}
         </div>
-      </Modal.Dialog></Modal.Container></Modal.Backdrop>
+      </Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>
 
       {/* 개별 이미지 거절 사유 입력 모달 */}
       <Modal.Backdrop isOpen={rejectImageModalOpen} onOpenChange={next => {
             if (!next)
                 handleRejectImageModalClose();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog aria-label="이미지 거절 사유 선택" style={{ width: '100%', maxWidth: 900, minWidth: 0 }}><Modal.Body>
         <div style={{ padding: 32 }}>
           <h2 style={{ marginBottom: 8, fontWeight: 700 }} className="text-lg font-semibold">
             이미지 거절 사유 선택
@@ -684,6 +684,6 @@ export default function ImageReviewPanel({ user, onApprove, onReject, onImageApp
             </Button>
           </div>
         </div>
-      </Modal.Dialog></Modal.Container></Modal.Backdrop>
+      </Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>
     </section>);
 }

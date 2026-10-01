@@ -98,7 +98,7 @@ export default function ResolveDialog({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading>문의 해결 완료</Modal.Heading>
           <Modal.Body>
             <p style={{ marginBottom: 16 }}>

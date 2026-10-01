@@ -187,8 +187,8 @@ export default function UniversityTransferModal({
       }}
       isDismissable={(saving ? undefined : onClose) !== undefined}
     >
-      <Modal.Container size="md" scroll="inside">
-        <Modal.Dialog>
+      <Modal.Container size="md" scroll="inside" className="w-full">
+        <Modal.Dialog style={{ width: "100%", maxWidth: "44rem", minWidth: 0 }}>
           <Modal.Header>
             <Modal.Heading>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -197,7 +197,7 @@ export default function UniversityTransferModal({
               </div>
             </Modal.Heading>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="min-w-0 [overflow-wrap:anywhere]">
             <div style={{ paddingTop: 4 }}>
               {error && (
                 <Alert style={{ marginBottom: 8 }} status="danger" role="alert">
@@ -352,7 +352,7 @@ export default function UniversityTransferModal({
               </div>
             </div>
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="flex-wrap gap-2">
             <Button
               onClick={onClose}
               variant={"ghost"}

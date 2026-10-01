@@ -71,7 +71,7 @@ function ConsentProgressDialog({
 			isDismissable={onClose !== undefined}
 		>
 			<Modal.Container size="md" scroll="inside">
-				<Modal.Dialog>
+				<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 					<Modal.Header>
 						<Modal.Heading>재동의 진행 현황</Modal.Heading>
 					</Modal.Header>

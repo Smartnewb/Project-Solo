@@ -297,8 +297,8 @@ export function ContentTypeSelectModal({ open, onClose, onSelect }: Props) {
     return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
             if (!next)
                 onClose();
-        }}><Modal.Container size="lg"><Modal.Dialog aria-label="콘텐츠 유형 선택">
-      <Modal.Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8 }}>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} aria-label="콘텐츠 유형 선택">
+      <Modal.Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8 , flexDirection: 'row', flexWrap: 'wrap', gap: 12}}>
         <div>
           <h2 className="text-lg font-semibold">콘텐츠 유형 선택</h2>
           <p>

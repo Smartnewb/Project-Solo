@@ -88,8 +88,10 @@ describe('admin IA labels', () => {
     });
   });
 
-  it('shows explicit sidebar labels for profile reports and the review inbox', () => {
+  it('shows explicit sidebar labels for profile reports and the review inbox', async () => {
+    const user = userEvent.setup();
     render(<AdminSidebar />);
+    await user.click(screen.getByRole('button', { name: '회원 관리', exact: true }));
 
     expect(screen.getByRole('link', { name: '프로필 이미지 전수검사' })).toHaveAttribute(
       'href',
@@ -105,6 +107,7 @@ describe('admin IA labels', () => {
 
     render(<AdminSidebar />);
 
+    await user.click(screen.getByRole('button', { name: '회원 관리', exact: true }));
     await user.click(screen.getByRole('button', { name: '검토 인박스 즐겨찾기 추가' }));
 
     expect(screen.getByRole('heading', { name: '즐겨찾기' })).toBeInTheDocument();

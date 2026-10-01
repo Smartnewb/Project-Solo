@@ -43,7 +43,7 @@ export default function QuestionDetailDialog({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading>질문 상세</Modal.Heading>
           <Modal.Body>
             <div style={{ marginBottom: 24 }}>

@@ -322,7 +322,7 @@ export default function ReviewPostsPage() {
 			<Modal.Backdrop isOpen={Boolean(editingJob)} onOpenChange={next => {
             if (!next)
                 closeEditDialog();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
 				<Modal.Heading style={{ fontWeight: 900 }}>리뷰 내용 수정</Modal.Heading>
 				<Modal.Body style={{ paddingTop: '12px !important' }}>
 					<div>

@@ -93,7 +93,7 @@ export default function QuestionEditDialog({
       }}
     >
       <Modal.Container>
-        <Modal.Dialog className="max-w-3xl">
+        <Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }} className="max-w-3xl">
           <Modal.Heading>질문 수정</Modal.Heading>
           <Modal.Body>
             {error && (

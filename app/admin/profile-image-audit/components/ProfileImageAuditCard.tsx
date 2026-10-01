@@ -75,7 +75,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
       <Modal.Backdrop isOpen={viewerOpen} onOpenChange={next => {
             if (!next)
                 (() => setViewerOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog aria-label="프로필 이미지 크게 보기">
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 1200, minWidth: 0 }} aria-label="프로필 이미지 크게 보기">
         <Modal.Body style={{ padding: 0, backgroundColor: '#020617', position: 'relative' }}>
           <Button aria-label="큰 이미지 닫기" onPress={() => setViewerOpen(false)} variant="tertiary" isIconOnly={true} style={{ position: 'absolute', top: 10, right: 10, zIndex: 2, color: '#fff', backgroundColor: 'rgba(15,23,42,0.72)' }}>
             <X></X>

@@ -225,7 +225,7 @@ export default function CampaignsPage() {
 			<Modal.Backdrop isOpen={createOpen} onOpenChange={next => {
             if (!next)
                 (() => setCreateOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>캠페인 생성</Modal.Heading>
 				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '16px !important' }}>
 					<TextField isRequired={true} className="mb-4"><Label>{"이름"}</Label><Input required value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}></Input></TextField>
@@ -279,7 +279,7 @@ export default function CampaignsPage() {
 			<Modal.Backdrop isOpen={!!dagOpen} onOpenChange={next => {
             if (!next)
                 (() => setDagOpen(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>자동화 수동 실행</Modal.Heading>
 				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '16px !important' }}>
 					<div>

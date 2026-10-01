@@ -277,8 +277,7 @@ export default function DepartmentManagement({
                       }}
                     >
                       <Tooltip>
-                        <Tooltip.Trigger>
-                          <Button
+                        <Button
                             onClick={() => handleEdit(dept)}
                             variant={"secondary"}
                             isIconOnly
@@ -286,12 +285,10 @@ export default function DepartmentManagement({
                           >
                             <EditIcon size={16} />
                           </Button>
-                        </Tooltip.Trigger>
                         <Tooltip.Content>{"수정"}</Tooltip.Content>
                       </Tooltip>
                       <Tooltip>
-                        <Tooltip.Trigger>
-                          <Button
+                        <Button
                             onClick={() => handleDelete(dept.id)}
                             variant={"secondary"}
                             isIconOnly
@@ -299,7 +296,6 @@ export default function DepartmentManagement({
                           >
                             <DeleteIcon size={16} />
                           </Button>
-                        </Tooltip.Trigger>
                         <Tooltip.Content>{"삭제"}</Tooltip.Content>
                       </Tooltip>
                     </div>
@@ -317,7 +313,7 @@ export default function DepartmentManagement({
         }}
       >
         <Modal.Container>
-          <Modal.Dialog className="max-w-3xl">
+          <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }} className="max-w-3xl">
             <Modal.Heading>
               {editDepartment ? "학과 수정" : "학과 추가"}
             </Modal.Heading>
