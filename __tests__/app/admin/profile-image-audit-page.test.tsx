@@ -244,6 +244,25 @@ describe('ProfileImageAuditPage', () => {
     await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({ presentationMode: 'PHOTO' })));
   });
 
+  it('displays two characters linked to one original while selecting the original only once', async () => {
+    const user = userEvent.setup();
+    const base = { ...profileImageAuditItemFixture, presentationMode: 'BLIND' as const,
+      originalImageUrl: 'https://example.com/original.jpg' };
+    mockedAudit.list.mockResolvedValue({ ...profileImageAuditListFixture, data: [
+      { ...base, kind: 'profile_image', selectable: true, blindImageUrl: 'https://example.com/character-1.jpg' },
+      { ...base, profileImageId: 'blind_asset:asset-2', kind: 'blind_asset', selectable: false, blindImageUrl: 'https://example.com/character-2.jpg' },
+    ] });
+    mockedAudit.bulkMarkOk.mockResolvedValue(profileImageAuditBulkActionFixture);
+    render(<ProfileImageAuditPage />);
+    const pairs = await screen.findAllByTestId('blind-photo-comparison');
+    expect(pairs).toHaveLength(2);
+    for (const pair of pairs) expect(within(pair).getByRole('img', { name: /원본 사진/ })).toHaveAttribute('src', base.originalImageUrl);
+    await user.click(screen.getByRole('button', { name: '전체선택' }));
+    await user.click(screen.getByRole('button', { name: '정상 처리' }));
+    await user.click(screen.getByRole('button', { name: '처리' }));
+    await waitFor(() => expect(mockedAudit.bulkMarkOk).toHaveBeenCalledWith({ profileImageIds: ['profile-image-1'] }));
+  });
+
   it('shows an unretained original without selecting reference-only characters for bulk actions', async () => {
     const user = userEvent.setup();
     mockedAudit.list.mockResolvedValue({
