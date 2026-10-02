@@ -3,15 +3,16 @@ import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import DepartmentCsvUpload from "@/app/admin/universities/components/DepartmentCsvUpload";
 import AdminService from "@/app/services/admin";
+const mockConfirm = jest.fn();
+jest.mock("@/shared/ui/admin/confirm-dialog", () => ({
+  useConfirm: () => mockConfirm,
+}));
 jest.mock("@/app/services/admin", () => ({
   __esModule: true,
   default: { universities: { departments: { uploadCsv: jest.fn() } } },
 }));
 it("CSV 교체 확인을 취소하면 업로드하지 않고 확인 후 기존 학교 ID와 파일을 전달한다", async () => {
-  const confirm = jest
-    .spyOn(window, "confirm")
-    .mockReturnValueOnce(false)
-    .mockReturnValueOnce(true);
+  mockConfirm.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
   (
     AdminService.universities.departments.uploadCsv as jest.Mock
   ).mockResolvedValue({
@@ -36,6 +37,7 @@ it("CSV 교체 확인을 취소하면 업로드하지 않고 확인 후 기존 �
     target: { files: [file] },
   });
   fireEvent.click(screen.getByRole("button", { name: "업로드" }));
+  await waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1));
   expect(
     AdminService.universities.departments.uploadCsv,
   ).not.toHaveBeenCalled();
@@ -45,5 +47,4 @@ it("CSV 교체 확인을 취소하면 업로드하지 않고 확인 후 기존 �
       AdminService.universities.departments.uploadCsv,
     ).toHaveBeenCalledWith("school-jp", file),
   );
-  confirm.mockRestore();
 });

@@ -67,6 +67,13 @@ function SelectContent({
 		</HeroSelect.Popover>
 	);
 }
+// 트리거에 보일 텍스트. `{20}`, `{n}개` 같은 숫자/조합 children 도 포함한다.
+function textOf(children: React.ReactNode): string | undefined {
+	const text = React.Children.toArray(children)
+		.filter((c) => typeof c === "string" || typeof c === "number")
+		.join("");
+	return text || undefined;
+}
 function SelectItem({
 	value,
 	disabled,
@@ -82,7 +89,7 @@ function SelectItem({
 			{...props}
 			id={value}
 			isDisabled={disabled ?? props.isDisabled}
-			textValue={typeof children === "string" ? children : props.textValue}
+			textValue={props.textValue ?? textOf(children)}
 		>
 			{children}
 			<ListBox.ItemIndicator />

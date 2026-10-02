@@ -2,12 +2,13 @@
 import { Label as HeroSelectLabel } from "@heroui/react";
 
 import { Button as HeroActionButton } from "@heroui/react";
-import { ListBox, Select, Input, Button } from "@heroui/react";
+import { ListBox, Select, Input, Button, Modal } from "@heroui/react";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { adminGet } from "@/shared/lib/http/admin-fetch";
+import { useToast } from "@/shared/ui/admin/toast";
 import {
   formatDateWithoutTimezoneConversion,
   formatDateTimeWithoutTimezoneConversion,
@@ -79,6 +80,7 @@ const getGenderText = (gender: string) => {
 
 function UsersV2Content() {
   const router = useRouter();
+  const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,7 +205,7 @@ function UsersV2Content() {
         throw error;
       }
     } catch (err: any) {
-      alert(`등급 변경 중 오류가 발생했습니다: ${err.message}`);
+      toast.error(`등급 변경 중 오류가 발생했습니다: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -381,55 +383,55 @@ function UsersV2Content() {
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   이름
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   분류
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   나이/성별
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   전화번호
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   인스타그램
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   가입일
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   마지막 접속
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   상태
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   관리
                 </th>
@@ -469,7 +471,7 @@ function UsersV2Content() {
                           selectedKey={String(
                             (user.classification || "") ?? "",
                           )}
-                          isDisabled={loading || isBlocked}
+                          isDisabled // 등급 변경 API 미연결(handleClassificationChange 미구현)
                           onSelectionChange={(key) =>
                             ((e) =>
                               handleClassificationChange(
@@ -512,6 +514,9 @@ function UsersV2Content() {
                             </ListBox>
                           </Select.Popover>
                         </Select>
+                        <p className="mt-1 text-xs text-gray-500">
+                          등급 변경 미구현
+                        </p>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                           <svg
                             className="w-4 h-4"
@@ -611,18 +616,18 @@ function UsersV2Content() {
                             variant="secondary"
                             onClick={() => handleUnblockUser(user.userId)}
                             className="text-[#ff385c] hover:text-green-700"
-                            isDisabled={loading}
+                            isDisabled // 차단 해제 API 미연결(handleUnblockUser 미구현)
                           >
-                            차단해제
+                            차단해제 (미구현)
                           </Button>
                         ) : (
                           <Button
                             variant="secondary"
                             onClick={() => handleBlockUser(user.userId)}
                             className="text-red-500 hover:text-red-700"
-                            isDisabled={loading}
+                            isDisabled // 차단 API 미연결(handleBlockUser 미구현)
                           >
-                            차단
+                            차단 (미구현)
                           </Button>
                         )}
 
@@ -910,12 +915,20 @@ function UsersV2Content() {
 
       {/* 사용자 상세 정보 모달 */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full my-8 relative">
+        <Modal.Backdrop
+          isOpen
+          onOpenChange={(isOpen) => {
+            if (!isOpen) handleCloseDetails();
+          }}
+        >
+          <Modal.Container size="lg" scroll="inside" className="w-full">
+            <Modal.Dialog style={{ width: "100%", maxWidth: "56rem" }}>
             {/* 헤더 */}
-            <div className="sticky top-0 bg-white z-10 pb-4 border-b mb-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">사용자 상세 정보</h2>
+            <Modal.Header className="border-b pb-4">
+              <div className="flex w-full items-center justify-between gap-2">
+                <Modal.Heading className="text-2xl font-bold">
+                  사용자 상세 정보
+                </Modal.Heading>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="secondary"
@@ -939,6 +952,7 @@ function UsersV2Content() {
                   <Button
                     variant="secondary"
                     onClick={handleCloseDetails}
+                    aria-label="사용자 상세 닫기"
                     className="text-gray-500 hover:text-gray-700 p-2"
                   >
                     <svg
@@ -957,10 +971,10 @@ function UsersV2Content() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </Modal.Header>
 
             {/* 컨텐츠 */}
-            <div className="overflow-y-auto max-h-[calc(100vh-16rem)]">
+            <Modal.Body>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 왼쪽 컬럼 */}
                 <div className="space-y-6">
@@ -1198,22 +1212,21 @@ function UsersV2Content() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Modal.Body>
 
             {/* 하단 버튼 */}
-            <div className="sticky bottom-0 bg-white pt-6 mt-6 border-t">
-              <div className="flex justify-end">
-                <Button
-                  variant="secondary"
-                  onClick={handleCloseDetails}
-                  className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  닫기
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+            <Modal.Footer>
+              <Button
+                variant="secondary"
+                onClick={handleCloseDetails}
+                className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                닫기
+              </Button>
+            </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       )}
 
       {/* Ghost 노출 이력 Sheet */}

@@ -13,6 +13,15 @@ jest.mock('@/components/admin/common/RegionFilter', () => ({
   }),
 }));
 
+jest.mock('@/shared/ui/admin/toast', () => ({
+  useToast: () => ({
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn(),
+    info: jest.fn(),
+  }),
+}));
+
 jest.mock('@/app/services/admin', () => ({
   __esModule: true,
   default: {

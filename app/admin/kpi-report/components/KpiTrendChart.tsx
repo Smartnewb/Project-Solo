@@ -145,7 +145,7 @@ export default function KpiTrendChart({
 									{filteredTrends.map((trend, idx) => (
 										<linearGradient
 											key={trend.name}
-											id={`gradient-kpi-${trend.name}`}
+											id={`gradient-kpi-${idx}`}
 											x1="0"
 											y1="0"
 											x2="0"
@@ -193,7 +193,7 @@ export default function KpiTrendChart({
 										dataKey={trend.label}
 										stroke={CHART_COLORS[idx % CHART_COLORS.length]}
 										strokeWidth={2}
-										fill={`url(#gradient-kpi-${trend.name})`}
+										fill={`url(#gradient-kpi-${idx})`}
 									/>
 								))}
 							</AreaChart>

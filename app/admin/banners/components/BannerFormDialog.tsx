@@ -6,6 +6,8 @@ import { Controller } from 'react-hook-form';
 import type { Banner, BannerPosition, CreateBannerRequest } from '@/types/admin';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { bannerSchema, type BannerFormValues } from '@/app/admin/hooks/forms/schemas/banner.schema';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { getApiErrorMessage } from '@/app/utils/errors';
 interface BannerFormDialogProps {
     open: boolean;
     onClose: () => void;
@@ -21,6 +23,7 @@ function toLocalDateTimeString(isoString: string | null): string {
     return localDate.toISOString().slice(0, 16);
 }
 export default function BannerFormDialog({ open, onClose, onSubmit, editBanner, }: BannerFormDialogProps) {
+    const toast = useToast();
     // File upload state kept separate (not in react-hook-form)
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -125,12 +128,16 @@ export default function BannerFormDialog({ open, onClose, onSubmit, editBanner, 
             await onSubmit(imageFile, requestData);
             handleClose();
         }
+        catch (err: unknown) {
+            // 실패 시 모달을 열어 둔 채 입력을 유지한다.
+            toast.error(getApiErrorMessage(err, isEditMode ? '배너 수정에 실패했습니다.' : '배너 등록에 실패했습니다.'));
+        }
         finally {
             setLoading(false);
         }
     });
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
-            if (!next)
+    return (<Modal.Backdrop isOpen={open} isDismissable={!loading} isKeyboardDismissDisabled={loading} onOpenChange={next => {
+            if (!next && !loading)
                 handleClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>{isEditMode ? '배너 수정' : '배너 등록'}</Modal.Heading>
@@ -139,12 +146,12 @@ export default function BannerFormDialog({ open, onClose, onSubmit, editBanner, 
             {fileError}
           </aside>)}
 
-        <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} style={{ border: '2px dashed', borderRadius: 2, padding: 24, marginBottom: 24, textAlign: 'center', backgroundColor: isDragOver ? 'primary.50' : 'grey.50', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+        <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} style={{ border: '2px dashed #d1d5db', borderRadius: 2, padding: 24, marginBottom: 24, textAlign: 'center', backgroundColor: isDragOver ? '#f5f3ff' : '#f9fafb', cursor: 'pointer', transition: 'all 0.2s ease' }}>
           <Button variant="secondary" aria-label="배너 이미지 선택" onPress={() => document.getElementById('banner-image-input')?.click()}>이미지 선택</Button>
           <input id="banner-image-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleInputChange} style={{ display: 'none' }}></input>
 
           {previewUrl ? (<img src={previewUrl} alt="미리보기" style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 1 }}/>) : (<>
-              <CloudUploadIcon style={{ fontSize: 48, color: 'grey.400', marginBottom: 8 }}></CloudUploadIcon>
+              <CloudUploadIcon style={{ fontSize: 48, color: '#9ca3af', marginBottom: 8 }}></CloudUploadIcon>
               <p>
                 클릭하거나 이미지를 드래그하세요
               </p>

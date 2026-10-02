@@ -6,6 +6,18 @@ import ChatPanel from "@/app/admin/support-chat/components/ChatPanel";
 import { useSupportChatSocket } from "@/app/admin/support-chat/hooks/useSupportChatSocket";
 import type { SupportSessionDetail } from "@/app/types/support-chat";
 
+jest.mock("@/shared/ui/admin/confirm-dialog", () => ({
+  useConfirm: () => jest.fn().mockResolvedValue(true),
+}));
+const mockToastError = jest.fn();
+jest.mock("@/shared/ui/admin/toast", () => ({
+  useToast: () => ({
+    success: jest.fn(),
+    error: mockToastError,
+    warning: jest.fn(),
+    info: jest.fn(),
+  }),
+}));
 jest.mock("@/shared/contexts/admin-session-context", () => ({
   useAdminSession: () => ({ session: { user: { id: "admin-1" } } }),
 }));
@@ -64,6 +76,7 @@ describe.each(["dialog", "panel"] as const)("%s admin send", (surface) => {
 
   beforeEach(() => {
     pending = deferred<Response>();
+    mockToastError.mockClear();
     updated = jest.fn();
     socketSend = jest.fn(() => new Promise<boolean>(() => {}));
     (useSupportChatSocket as jest.Mock).mockReturnValue({
@@ -93,6 +106,12 @@ describe.each(["dialog", "panel"] as const)("%s admin send", (surface) => {
     global.fetch = originalFetch;
     jest.useRealTimers();
   });
+
+  // dialog 는 모달 뒤에 가려지지 않도록 toast, panel 은 인라인 알림으로 오류를 노출한다.
+  function expectSendError() {
+    if (surface === "dialog") expect(mockToastError).toHaveBeenCalled();
+    else expect(screen.getByRole("alert", { hidden: true })).toBeVisible();
+  }
 
   async function mount() {
     await act(async () => {
@@ -175,8 +194,7 @@ describe.each(["dialog", "panel"] as const)("%s admin send", (surface) => {
     );
     expect(input).toHaveValue("keep my draft");
     expect(input).toBeEnabled();
-    // MUI's modal marks the sibling Snackbar aria-hidden; it is still visually shown.
-    expect(screen.getByRole("alert", { hidden: true })).toBeVisible();
+    expectSendError();
     expect(updated).not.toHaveBeenCalled();
     expect(posts()).toHaveLength(1);
     pending = deferred<Response>();
@@ -195,7 +213,7 @@ describe.each(["dialog", "panel"] as const)("%s admin send", (surface) => {
     await act(async () => jest.advanceTimersByTime(30_000));
     expect(input).toHaveValue("uncertain delivery");
     expect(input).toBeEnabled();
-    expect(screen.getByRole("alert", { hidden: true })).toBeVisible();
+    expectSendError();
     expect(posts()).toHaveLength(1);
     expect(updated).not.toHaveBeenCalled();
   });

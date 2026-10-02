@@ -15,6 +15,8 @@ import { useState, useEffect, useCallback } from "react";
 import AdminService from "@/app/services/admin";
 import type { FeatureFlag } from "@/app/services/admin";
 import { safeToLocaleDateString } from "@/app/utils/formatters";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
 const AVAILABLE_ROLES = ["admin", "tester", "user"];
 function formatRelativeTime(dateStr: string): string {
 	const now = Date.now();
@@ -29,6 +31,8 @@ function formatRelativeTime(dateStr: string): string {
 	return safeToLocaleDateString(dateStr);
 }
 export default function FeatureFlagsV2() {
+	const confirm = useConfirm();
+	const toast = useToast();
 	const [flags, setFlags] = useState<FeatureFlag[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -60,6 +64,13 @@ export default function FeatureFlagsV2() {
 	}, [fetchFlags]);
 	const handleToggle = async (flag: FeatureFlag) => {
 		const newEnabled = !flag.enabled;
+		const ok = await confirm({
+			title: "플래그 변경",
+			message: `"${flag.name}" 플래그를 ${newEnabled ? "ON" : "OFF"}(으)로 변경합니다.\n변경 즉시 서비스에 반영됩니다.`,
+			confirmText: newEnabled ? "ON 으로 변경" : "OFF 로 변경",
+			severity: "warning",
+		});
+		if (!ok) return;
 		setFlags((prev) =>
 			prev.map((f) =>
 				f.name === flag.name ? { ...f, enabled: newEnabled } : f,
@@ -78,7 +89,9 @@ export default function FeatureFlagsV2() {
 					f.name === flag.name ? { ...f, enabled: flag.enabled } : f,
 				),
 			);
-			setError(`"${flag.name}" 토글에 실패했습니다.`);
+			const message = `"${flag.name}" 토글에 실패했습니다.`;
+			setError(message);
+			toast.error(message);
 		} finally {
 			setTogglingFlags((prev) => {
 				const next = new Set(prev);
@@ -113,7 +126,9 @@ export default function FeatureFlagsV2() {
 			);
 			setEditOpen(false);
 		} catch (err: any) {
-			setError(err.response?.data?.message || "수정에 실패했습니다.");
+			const message = err.response?.data?.message || "수정에 실패했습니다.";
+			setError(message);
+			toast.error(message);
 		} finally {
 			setEditSaving(false);
 		}
@@ -264,12 +279,12 @@ export default function FeatureFlagsV2() {
 											</div>
 										)}
 									</td>
-									<td>
+									<td className="whitespace-nowrap">
 										<p className={"text-sm text-neutral-700"}>
 											{flag.country ? flag.country.toUpperCase() : "전체"}
 										</p>
 									</td>
-									<td>
+									<td className="whitespace-nowrap">
 										<span className={"text-sm text-neutral-700"}>
 											{formatRelativeTime(flag.updatedAt)}
 										</span>
@@ -286,6 +301,7 @@ export default function FeatureFlagsV2() {
 					if (!isOpen && !editSaving) setEditOpen(false);
 				}}
 				isDismissable={!editSaving}
+				isKeyboardDismissDisabled={editSaving}
 			>
 				<Modal.Container size="md" scroll="inside">
 					<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>

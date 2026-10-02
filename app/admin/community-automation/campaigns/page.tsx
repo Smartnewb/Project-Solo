@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { format, isValid, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import type { Campaign, CampaignStatus, CommunityAutomationCategory, CommunityAutomationCategoryOption, CreateCampaignBody, DagTemplateId, } from '@/app/services/admin/community-automation';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
+import { useToast } from '@/shared/ui/admin/toast';
 import { campaigns as campaignsApi, COMMUNITY_AUTOMATION_CATEGORY_OPTIONS, getCommunityAutomationCategoryLabel, } from '@/app/services/admin/community-automation';
 const STATUS_COLOR: Record<CampaignStatus, 'default' | 'success' | 'warning' | 'error'> = {
     draft: 'default',
@@ -50,6 +52,14 @@ function getDagTemplateLabel(template: string | null | undefined) {
     return DAG_TEMPLATE_OPTIONS.find((option) => option.value === template)?.label ?? template;
 }
 export default function CampaignsPage() {
+    const confirm = useConfirm();
+    const toast = useToast();
+    // 에러는 페이지 배너와 함께 토스트로도 알린다 (모달에 가려져 보이지 않기 때문).
+    function fail(e: unknown, fallback: string) {
+        const message = e instanceof Error ? e.message : fallback;
+        setError(message);
+        toast.error(message);
+    }
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -89,7 +99,7 @@ export default function CampaignsPage() {
         if (!createForm.name || !createForm.category)
             return;
         if (createForm.startAt && createForm.endAt && createForm.startAt > createForm.endAt) {
-            setError('종료일은 시작일과 같거나 이후여야 합니다.');
+            fail(null, '종료일은 시작일과 같거나 이후여야 합니다.');
             return;
         }
         setCreateLoading(true);
@@ -102,13 +112,24 @@ export default function CampaignsPage() {
             setSuccess('캠페인을 생성했습니다.');
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '생성 실패');
+            fail(e, '생성 실패');
         }
         finally {
             setCreateLoading(false);
         }
     }
     async function handleStatusChange(id: string, action: 'activate' | 'pause' | 'archive') {
+        if (action === 'archive') {
+            const name = items.find((item) => item.id === id)?.name ?? id;
+            const ok = await confirm({
+                title: '캠페인 보관',
+                message: `‘${name}’ 캠페인을 보관합니다.\n보관한 캠페인은 다시 활성화할 수 없습니다.`,
+                confirmText: '보관',
+                severity: 'error',
+            });
+            if (!ok)
+                return;
+        }
         setActionLoading(id + action);
         setSuccess(null);
         try {
@@ -117,7 +138,7 @@ export default function CampaignsPage() {
             setSuccess('캠페인 상태를 변경했습니다.');
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '상태 변경 실패');
+            fail(e, '상태 변경 실패');
         }
         finally {
             setActionLoading(null);
@@ -137,11 +158,16 @@ export default function CampaignsPage() {
             setDagOpen(null);
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '자동화 실행 실패');
+            fail(e, '자동화 실행 실패');
         }
         finally {
             setDagLoading(false);
         }
+    }
+    function openDagDialog(id: string) {
+        setDagCount(1);
+        setDagTemplate('');
+        setDagOpen(id);
     }
     function getNextActions(status: CampaignStatus): Array<'activate' | 'pause' | 'archive'> {
         if (status === 'draft')
@@ -211,7 +237,7 @@ export default function CampaignsPage() {
 											{getNextActions(item.status).map((action) => (<Button key={action} isDisabled={actionLoading === item.id + action} onPress={() => handleStatusChange(item.id, action)} variant="secondary">
 													{action === 'activate' ? '활성화' : action === 'pause' ? '일시정지' : '보관'}
 												</Button>))}
-											{item.status !== 'archived' && (<Button onPress={() => setDagOpen(item.id)} variant="primary">
+											{item.status !== 'archived' && (<Button onPress={() => openDagDialog(item.id)} variant="primary">
 													자동화 실행
 												</Button>)}
 										</div>
@@ -222,12 +248,12 @@ export default function CampaignsPage() {
 				</div>)}
 
 			{/* Create Dialog */}
-			<Modal.Backdrop isOpen={createOpen} onOpenChange={next => {
-            if (!next)
-                (() => setCreateOpen(false))();
+			<Modal.Backdrop isOpen={createOpen} isDismissable={!createLoading} isKeyboardDismissDisabled={createLoading} onOpenChange={next => {
+            if (!next && !createLoading)
+                setCreateOpen(false);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>캠페인 생성</Modal.Heading>
-				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '16px !important' }}>
+				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '16px' }}>
 					<TextField isRequired={true} className="mb-4"><Label>{"이름"}</Label><Input required value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}></Input></TextField>
 					<div>
 						<label>카테고리</label>
@@ -268,7 +294,7 @@ export default function CampaignsPage() {
 					</div>
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setCreateOpen(false)} variant="tertiary">취소</Button>
+					<Button isDisabled={createLoading} onPress={() => setCreateOpen(false)} variant="tertiary">취소</Button>
 					<Button isDisabled={createLoading} onPress={handleCreate} variant="primary">
 						{createLoading ? <Spinner size="sm"></Spinner> : '생성'}
 					</Button>
@@ -276,12 +302,12 @@ export default function CampaignsPage() {
 			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* Automation Run Dialog */}
-			<Modal.Backdrop isOpen={!!dagOpen} onOpenChange={next => {
-            if (!next)
-                (() => setDagOpen(null))();
+			<Modal.Backdrop isOpen={!!dagOpen} isDismissable={!dagLoading} isKeyboardDismissDisabled={dagLoading} onOpenChange={next => {
+            if (!next && !dagLoading)
+                setDagOpen(null);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>자동화 수동 실행</Modal.Heading>
-				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '16px !important' }}>
+				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: '16px' }}>
 					<div>
 						<label>자동화 유형</label>
 						<Select value={dagTemplate} aria-label={"자동화 유형"} onChange={(key) => {
@@ -298,7 +324,7 @@ export default function CampaignsPage() {
 					<TextField className="mb-4"><Label>{"실행 수 (1-10)"}</Label><Input type="number" value={dagCount} onChange={(e) => setDagCount(Math.max(1, Math.min(10, Number(e.target.value))))} {...{ min: 1, max: 10 }}></Input></TextField>
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setDagOpen(null)} variant="tertiary">취소</Button>
+					<Button isDisabled={dagLoading} onPress={() => setDagOpen(null)} variant="tertiary">취소</Button>
 					<Button isDisabled={dagLoading} onPress={handleDagRun} variant="primary">
 						{dagLoading ? <Spinner size="sm"></Spinner> : '실행'}
 					</Button>

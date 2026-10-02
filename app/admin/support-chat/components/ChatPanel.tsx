@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Chip,
+  Description,
   FieldError,
   Input,
   Label,
@@ -39,6 +40,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import supportChatService from "@/app/services/support-chat";
 import AdminService from "@/app/services/admin";
 import { useAdminSession } from "@/shared/contexts/admin-session-context";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
 import { useSupportChatSocket } from "../hooks/useSupportChatSocket";
 import { useReadState } from "../lib/read-state";
 import { canMutateSupportMessage } from "../lib/can-mutate-message";
@@ -91,6 +94,8 @@ export default function ChatPanel({
 }: ChatPanelProps) {
   const { session: adminSession } = useAdminSession();
   const { markRead } = useReadState();
+  const confirm = useConfirm();
+  const toast = useToast();
   const detailRequestRef = useRef(0);
   const completedDetailRef = useRef(0);
   const [loading, setLoading] = useState(false);
@@ -111,7 +116,12 @@ export default function ChatPanel({
     null,
   );
   const [gemGrantDialogOpen, setGemGrantDialogOpen] = useState(false);
-  const [gemGrantAmount, setGemGrantAmount] = useState(10);
+  const [gemGrantAmountInput, setGemGrantAmountInput] = useState("10");
+  const gemGrantAmount = /^\d+$/.test(gemGrantAmountInput)
+    ? Number(gemGrantAmountInput)
+    : NaN;
+  const gemGrantAmountInvalid =
+    !Number.isInteger(gemGrantAmount) || gemGrantAmount < 1;
   const [gemGrantMessage, setGemGrantMessage] = useState(
     DEFAULT_GEM_GRANT_MESSAGE,
   );
@@ -361,19 +371,16 @@ export default function ChatPanel({
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message:
-          err instanceof Error ? err.message : "세션 해결 처리에 실패했습니다.",
-        severity: "error",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "세션 해결 처리에 실패했습니다.",
+      );
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleOpenGemGrantDialog = () => {
-    setGemGrantAmount(10);
+    setGemGrantAmountInput("10");
     setGemGrantMessage(DEFAULT_GEM_GRANT_MESSAGE);
     setGemGrantDialogOpen(true);
   };
@@ -385,29 +392,17 @@ export default function ChatPanel({
     const normalizedMessage = gemGrantMessage.trim();
 
     if (!phoneNumber || phoneNumber.includes("*")) {
-      setSnackbar({
-        open: true,
-        message: "원본 연락처를 확인할 수 없어 구슬을 지급할 수 없습니다.",
-        severity: "error",
-      });
+      toast.error("원본 연락처를 확인할 수 없어 구슬을 지급할 수 없습니다.");
       return;
     }
 
-    if (!Number.isInteger(gemGrantAmount) || gemGrantAmount < 1) {
-      setSnackbar({
-        open: true,
-        message: "구슬 개수는 1개 이상이어야 합니다.",
-        severity: "error",
-      });
+    if (gemGrantAmountInvalid) {
+      toast.error("구슬 개수는 1개 이상이어야 합니다.");
       return;
     }
 
     if (!normalizedMessage) {
-      setSnackbar({
-        open: true,
-        message: "푸시 알림 메시지를 입력해주세요.",
-        severity: "error",
-      });
+      toast.error("푸시 알림 메시지를 입력해주세요.");
       return;
     }
 
@@ -423,22 +418,16 @@ export default function ChatPanel({
       const pushSummary = pushResult
         ? ` 푸시 성공 ${pushResult.pushSuccessCount}건, 실패 ${pushResult.pushFailureCount}건.`
         : "";
-      setSnackbar({
-        open: true,
-        message: `구슬 ${gemGrantAmount}개 지급이 완료되었습니다.${pushSummary}`,
-        severity: (result?.failedCount ?? 0) > 0 ? "error" : "success",
-      });
+      const grantMessage = `구슬 ${gemGrantAmount}개 지급이 완료되었습니다.${pushSummary}`;
+      if ((result?.failedCount ?? 0) > 0) toast.error(grantMessage);
+      else
+        setSnackbar({ open: true, message: grantMessage, severity: "success" });
       setGemGrantDialogOpen(false);
       await fetchUserAdminInfo(session.user.id);
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message:
-          err instanceof Error
-            ? err.message
-            : "구슬 지급 중 오류가 발생했습니다.",
-        severity: "error",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "구슬 지급 중 오류가 발생했습니다.",
+      );
     } finally {
       setGemGrantLoading(false);
     }
@@ -518,7 +507,16 @@ export default function ChatPanel({
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!sessionId || !window.confirm("이 답변을 삭제할까요?")) return;
+    if (!sessionId) return;
+    const target = session?.messages.find((m) => m.id === messageId);
+    const preview = target?.content.slice(0, 80) ?? "";
+    const ok = await confirm({
+      title: "답변 삭제",
+      message: `이 답변을 삭제합니다.\n\n${preview}${(target?.content.length ?? 0) > 80 ? "…" : ""}`,
+      confirmText: "삭제",
+      severity: "error",
+    });
+    if (!ok) return;
 
     setDeletingMessageId(messageId);
     try {
@@ -863,7 +861,7 @@ export default function ChatPanel({
                 onClick={onBack}
                 variant={"secondary"}
                 isIconOnly
-                aria-label="작업"
+                aria-label="목록으로 돌아가기"
               >
                 <ArrowBackIcon size={16} />
               </Button>
@@ -1246,9 +1244,10 @@ export default function ChatPanel({
       />
       <Modal.Backdrop
         isOpen={gemGrantDialogOpen}
+        isDismissable={!gemGrantLoading}
+        isKeyboardDismissDisabled={gemGrantLoading}
         onOpenChange={(isOpen) => {
-          if (!isOpen)
-            (() => !gemGrantLoading && setGemGrantDialogOpen(false))();
+          if (!isOpen && !gemGrantLoading) setGemGrantDialogOpen(false);
         }}
       >
         <Modal.Container>
@@ -1263,15 +1262,15 @@ export default function ChatPanel({
                 <Label>{"지급할 구슬 개수"}</Label>
                 <Input
                   type="number"
-                  value={gemGrantAmount}
-                  onChange={(e) =>
-                    setGemGrantAmount(
-                      Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                    )
-                  }
+                  value={gemGrantAmountInput}
+                  onChange={(e) => setGemGrantAmountInput(e.target.value)}
                   {...{ min: 1 }}
                   disabled={gemGrantLoading}
+                  aria-invalid={gemGrantAmountInvalid}
                 />
+                {gemGrantAmountInvalid && (
+                  <FieldError>1 이상의 정수를 입력해주세요.</FieldError>
+                )}
               </TextField>
               <TextField className="flex-1 min-w-0">
                 <Label>{"푸시 알림 메시지"}</Label>
@@ -1281,7 +1280,7 @@ export default function ChatPanel({
                   {...{ maxLength: 200 }}
                   disabled={gemGrantLoading}
                 />
-                <FieldError>{`${gemGrantMessage.length}/200자 | 지급 사유와 푸시 알림 메시지로 사용됩니다.`}</FieldError>
+                <Description>{`${gemGrantMessage.length}/200자 | 지급 사유와 푸시 알림 메시지로 사용됩니다.`}</Description>
               </TextField>
             </Modal.Body>
             <Modal.Footer>
@@ -1299,7 +1298,7 @@ export default function ChatPanel({
                   gemGrantLoading ||
                   !canGrantGems ||
                   !gemGrantMessage.trim() ||
-                  gemGrantAmount < 1
+                  gemGrantAmountInvalid
                 }
               >
                 {gemGrantLoading ? (

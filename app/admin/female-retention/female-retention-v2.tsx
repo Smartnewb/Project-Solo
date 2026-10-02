@@ -88,6 +88,8 @@ function FemaleRetentionPageContent() {
 				toast.success(
 					"임시 패스워드가 발급되었습니다. 표에서 이메일과 패스워드를 확인하세요.",
 				);
+			} else {
+				toast.error(`${selectedUser.name}님의 임시 패스워드 발급에 실패했습니다.`);
 			}
 		} catch (err: any) {
 			toast.error(
@@ -98,9 +100,13 @@ function FemaleRetentionPageContent() {
 			setSelectedUser(null);
 		}
 	};
-	const handleCopyToClipboard = (text: string, label: string) => {
-		navigator.clipboard.writeText(text);
-		toast.info(`${label}이(가) 클립보드에 복사되었습니다.`);
+	const handleCopyToClipboard = async (text: string, label: string) => {
+		try {
+			await navigator.clipboard.writeText(text);
+			toast.success(`${label}이(가) 클립보드에 복사되었습니다.`);
+		} catch {
+			toast.error(`${label} 복사에 실패했습니다. 직접 선택해 복사해주세요.`);
+		}
 	};
 	const formatInactiveDuration = (duration: string) => {
 		// ISO 8601 Duration 파싱 (예: P5DT3H30M)
@@ -267,7 +273,7 @@ function FemaleRetentionPageContent() {
 														}
 														variant={"tertiary"}
 														isIconOnly={true}
-														aria-label={"자세히 보기"}
+														aria-label={"이메일 복사"}
 														size={"sm"}
 													>
 														<Copy size={18} />
@@ -301,7 +307,7 @@ function FemaleRetentionPageContent() {
 														}
 														variant={"tertiary"}
 														isIconOnly={true}
-														aria-label={"자세히 보기"}
+														aria-label={"패스워드 복사"}
 														size={"sm"}
 													>
 														<Copy size={18} />
@@ -411,7 +417,7 @@ function FemaleRetentionPageContent() {
 							</Button>
 							<Button
 								onClick={handleIssuePasswordConfirm}
-								variant={"primary"}
+								variant={"danger"}
 								size={"md"}
 							>
 								발급

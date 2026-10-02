@@ -1,5 +1,5 @@
 'use client';
-import { Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, TextArea, Select, ListBox, Checkbox } from '@heroui/react';
+import { Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, TextArea, Description, Select, ListBox, Checkbox } from '@heroui/react';
 import { FileText as ArticleIcon, MessageSquare as CommentIcon, Trash2 as DeleteIcon, Heart as FavoriteIcon, MessagesSquare as ForumIcon, Inbox as MoveToInboxIcon, User as PersonIcon, RefreshCw as RefreshIcon, Flag as ReportIcon, Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -9,14 +9,27 @@ import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import communityService, { Category } from '@/app/services/community';
 import type { GhostCommentBody } from '@/app/services/community';
-import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
+import UserDetailModal, { type UserDetail } from '@/components/admin/appearance/UserDetailModal';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { articleBlindSchema, ArticleBlindFormValues } from '@/app/admin/hooks/forms/schemas/community.schema';
 import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 import { CommunityPostAppDetailPanel } from './components/CommunityPostAppDetailPanel';
+// 사용자 상세를 불러오는 동안 모달에 넘기는 빈 값 (loading/error 상태가 화면을 대신한다)
+const EMPTY_USER_DETAIL: UserDetail = {
+    id: '',
+    name: '',
+    age: 0,
+    gender: 'MALE',
+    profileImages: [],
+};
 // 게시글 목록 컴포넌트
 function ArticleList() {
     const toast = useToast();
+    // 에러는 페이지 배너와 함께 토스트로도 알린다 (모달에 가려져 보이지 않기 때문).
+    const fail = (message: string) => {
+        setError(message);
+        toast.error(message);
+    };
     const [articles, setArticles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -143,7 +156,7 @@ function ArticleList() {
             handleCloseBlindDialog();
         }
         catch (error) {
-            setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
+            fail('게시글 블라인드 처리 중 오류가 발생했습니다.');
         }
         finally {
             setActionLoading(false);
@@ -160,7 +173,7 @@ function ArticleList() {
             setDeleteTargetId('');
         }
         catch (error) {
-            setError('게시글 삭제 중 오류가 발생했습니다.');
+            fail('게시글 삭제 중 오류가 발생했습니다.');
         }
         finally {
             setActionLoading(false);
@@ -178,7 +191,7 @@ function ArticleList() {
             setSelectedCategoryId('');
         }
         catch (error) {
-            setError('게시글 카테고리 이전 중 오류가 발생했습니다.');
+            fail('게시글 카테고리 이전 중 오류가 발생했습니다.');
         }
         finally {
             setActionLoading(false);
@@ -195,13 +208,14 @@ function ArticleList() {
                 articleReports =
                     reportsResponse?.items?.filter((report: any) => report.targetId === id || report.target_id === id) ?? [];
             }
-            catch { }
-            ;
+            catch {
+                toast.warning('게시글 신고 내역을 불러오지 못했습니다.');
+            }
             setSelectedArticleDetail({ ...detail, reports: articleReports });
             setDetailDialogOpen(true);
         }
         catch (error) {
-            setError('게시글 상세 정보를 불러오는 중 오류가 발생했습니다.');
+            fail('게시글 상세 정보를 불러오는 중 오류가 발생했습니다.');
         }
         finally {
             setActionLoading(false);
@@ -258,7 +272,9 @@ function ArticleList() {
             const response = await communityService.getCategories();
             setCategories(response.categories ?? []);
         }
-        catch { }
+        catch {
+            toast.error('카테고리 목록을 불러오지 못했습니다.');
+        }
     };
     useEffect(() => {
         fetchCategories();
@@ -330,22 +346,22 @@ function ArticleList() {
 				</aside>)}
 
 			{/* 게시글 목록 테이블 */}
-			<div>
+			<div className="overflow-x-auto">
 				<table className="w-full text-sm">
 					<thead className="bg-gray-50 text-left">
 						<tr className="border-b">
-							<th scope="col" className="border-b px-4 py-3">
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">
 								<Checkbox isSelected={articles.length > 0 && selectedArticles.length === articles.length} isIndeterminate={selectedArticles.length > 0 && selectedArticles.length < articles.length} onChange={checked => handleSelectAll()}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>
 							</th>
-							<th scope="col" className="border-b px-4 py-3">작성자</th>
-							<th scope="col" className="border-b px-4 py-3">제목</th>
-							<th scope="col" className="border-b px-4 py-3">내용</th>
-							<th scope="col" className="border-b px-4 py-3">댓글</th>
-							<th scope="col" className="border-b px-4 py-3">좋아요</th>
-							<th scope="col" className="border-b px-4 py-3">신고</th>
-							<th scope="col" className="border-b px-4 py-3">상태</th>
-							<th scope="col" className="border-b px-4 py-3">작성일</th>
-							<th scope="col" className="border-b px-4 py-3">액션</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">작성자</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">제목</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">내용</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">댓글</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">좋아요</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">신고</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">상태</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">작성일</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">액션</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -372,34 +388,32 @@ function ArticleList() {
 											{article.anonymous ?? '익명'}
 											{article.author?.name ? ` [${article.author.name}]` : ''}
 										</Button>
-										<p>
-											ID: {article.author?.id ?? article.userId}
-										</p>
+										{(article.author?.id ?? article.userId) && (
+											<p className="text-xs text-gray-500">
+												ID: {article.author?.id ?? article.userId}
+											</p>
+										)}
 									</td>
 									<td className="border-b px-4 py-3">
-										<p style={{ maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', color: article.isBlinded || (article as any).blindedAt
-                    ? 'text.disabled'
-                    : 'text.primary' }}>
+										<p title={article.title ?? undefined} className={`max-w-[200px] truncate ${article.isBlinded || (article as any).blindedAt ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
 											{article.title ?? '제목 없음'}
 										</p>
 									</td>
 									<td className="border-b px-4 py-3">
-										<p style={{ maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', color: article.isBlinded || (article as any).blindedAt
-                    ? 'text.disabled'
-                    : 'text.primary' }}>
+										<p title={article.content ?? undefined} className={`max-w-[200px] truncate ${article.isBlinded || (article as any).blindedAt ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
 											{article.emoji} {article.content}
 										</p>
 									</td>
-									<td className="border-b px-4 py-3">{article.commentCount}</td>
-									<td className="border-b px-4 py-3">{article.likeCount ?? 0}</td>
+									<td className="whitespace-nowrap border-b px-4 py-3">{article.commentCount}</td>
+									<td className="whitespace-nowrap border-b px-4 py-3">{article.likeCount ?? 0}</td>
 									<td className="border-b px-4 py-3">
 										{article.reportCount > 0 ? (<Chip size="sm">{article.reportCount}</Chip>) : ('0')}
 									</td>
 									<td className="border-b px-4 py-3">
 										{article.isBlinded || (article as any).blindedAt ? (<Chip size="sm">{"블라인드"}</Chip>) : (<Chip size="sm">{"정상"}</Chip>)}
 									</td>
-									<td className="border-b px-4 py-3">{safeToLocaleDateString(article.createdAt)}</td>
-									<td className="border-b px-4 py-3">
+									<td className="whitespace-nowrap border-b px-4 py-3">{safeToLocaleDateString(article.createdAt)}</td>
+									<td className="whitespace-nowrap border-b px-4 py-3">
 										<span title={"상세 보기"}>
 											<Button onPress={() => handleViewDetail(article.id)} variant="tertiary" isIconOnly={true} aria-label={"상세 보기"}>
 												<ArticleIcon></ArticleIcon>
@@ -423,6 +437,7 @@ function ArticleList() {
 										<span title={"카테고리 이전"}>
 											<Button onPress={() => {
                 setCategoryTargetId(article.id);
+                setSelectedCategoryId('');
                 setOpenCategoryDialog(true);
             }} variant="tertiary" isIconOnly={true} aria-label={"카테고리 이전"}>
 												<MoveToInboxIcon></MoveToInboxIcon>
@@ -449,8 +464,8 @@ function ArticleList() {
         }} className="min-w-[120px]"><Label>페이지당 행 수</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox><ListBox.Item id={5} textValue={"5"}>5</ListBox.Item><ListBox.Item id={10} textValue={"10"}>10</ListBox.Item><ListBox.Item id={25} textValue={"25"}>25</ListBox.Item><ListBox.Item id={50} textValue={"50"}>50</ListBox.Item></ListBox></Select.Popover></Select></div><Button variant="secondary" isDisabled={page <= 0} onPress={() => (handleChangePage)(null, page - 1)}>이전</Button><span>{page + 1} 페이지 / {totalCount}개</span><Button variant="secondary" isDisabled={(page + 1) * rowsPerPage >= totalCount} onPress={() => (handleChangePage)(null, page + 1)}>다음</Button></div>
 
 			{/* 블라인드 다이얼로그 */}
-			<Modal.Backdrop isOpen={openBlindDialog} onOpenChange={next => {
-            if (!next)
+			<Modal.Backdrop isOpen={openBlindDialog} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
                 handleCloseBlindDialog();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'}</Modal.Heading>
@@ -459,7 +474,7 @@ function ArticleList() {
 						선택한 {selectedArticles.length}개의 게시글을{' '}
 						{blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리하시겠습니까?
 					</p>
-					{blindAction === 'blind' && (<TextField className="mb-4"><Label>{"블라인드 사유"}</Label><TextArea rows={3} value={blindReason} onChange={(e) => blindForm.setValue('blindReason', e.target.value)} placeholder="블라인드 사유를 입력하세요 (선택사항)"></TextArea></TextField>)}
+					{blindAction === 'blind' && (<TextField className="mb-4"><Label>{"블라인드 사유"}</Label><TextArea rows={3} value={blindReason} onChange={(e) => blindForm.setValue('blindReason', e.target.value)} placeholder="블라인드 사유를 입력하세요 (선택사항)"></TextArea><Description>사유는 현재 저장되지 않습니다</Description></TextField>)}
 				</Modal.Body>
 				<Modal.Footer>
 					<Button onPress={handleCloseBlindDialog} isDisabled={actionLoading} variant="tertiary">
@@ -503,6 +518,7 @@ function ArticleList() {
 								</Button>)}
 							<Button onPress={() => {
                 setCategoryTargetId(selectedArticleDetail.id);
+                setSelectedCategoryId('');
                 handleCloseDetailDialog();
                 setOpenCategoryDialog(true);
             }} variant="tertiary">{<MoveToInboxIcon></MoveToInboxIcon>}
@@ -520,30 +536,30 @@ function ArticleList() {
 			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 게시글 삭제 확인 다이얼로그 */}
-			<Modal.Backdrop isOpen={openDeleteDialog} onOpenChange={next => {
-            if (!next)
-                (() => setOpenDeleteDialog(false))();
+			<Modal.Backdrop isOpen={openDeleteDialog} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
+                setOpenDeleteDialog(false);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>게시글 삭제 확인</Modal.Heading>
 				<Modal.Body>
 					<p>
-						정말로 이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+						정말로 ‘{articles.find((article) => article.id === deleteTargetId)?.title || '제목 없음'}’ 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
 					</p>
 				</Modal.Body>
 				<Modal.Footer>
 					<Button onPress={() => setOpenDeleteDialog(false)} isDisabled={actionLoading} variant="tertiary">
 						취소
 					</Button>
-					<Button onPress={handleDeleteArticle} isDisabled={actionLoading} variant="tertiary">
+					<Button onPress={handleDeleteArticle} isDisabled={actionLoading} variant="danger">
 						{actionLoading ? <Spinner size="sm"></Spinner> : '삭제'}
 					</Button>
 				</Modal.Footer>
 			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 카테고리 이전 다이얼로그 */}
-			<Modal.Backdrop isOpen={openCategoryDialog} onOpenChange={next => {
-            if (!next)
-                (() => setOpenCategoryDialog(false))();
+			<Modal.Backdrop isOpen={openCategoryDialog} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
+                setOpenCategoryDialog(false);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>게시글 카테고리 이전</Modal.Heading>
 				<Modal.Body>
@@ -582,6 +598,13 @@ function ArticleList() {
 }
 // 신고 관리 컴포넌트
 function ReportList() {
+    const toast = useToast();
+    const confirm = useConfirm();
+    // 에러는 페이지 배너와 함께 토스트로도 알린다 (모달에 가려져 보이지 않기 때문).
+    const fail = (message: string) => {
+        setError(message);
+        toast.error(message);
+    };
     const [reports, setReports] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -668,7 +691,9 @@ function ReportList() {
             setUserDetail(data);
         }
         catch (error: any) {
-            setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+            const message = error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.';
+            setUserDetailError(message);
+            toast.error(message);
         }
         finally {
             setLoadingUserDetail(false);
@@ -697,15 +722,25 @@ function ReportList() {
             fetchReports(); // 목록 새로고침
         }
         catch (error) {
-            setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
+            fail('게시글 블라인드 처리 중 오류가 발생했습니다.');
         }
         finally {
             setActionLoading(false);
         }
     };
     // 게시글 삭제
-    const handleDeleteArticle = async (articleId: string) => {
-        if (!confirm('정말로 이 게시글을 삭제하시겠습니까?'))
+    const handleDeleteArticle = async (articleId: string, title?: string) => {
+        if (!articleId) {
+            toast.error('삭제할 게시글 정보를 찾을 수 없습니다.');
+            return;
+        }
+        const ok = await confirm({
+            title: '게시글 삭제',
+            message: `‘${title || '제목 없음'}’ 게시글을 삭제합니다.\n이 작업은 되돌릴 수 없습니다.`,
+            confirmText: '삭제',
+            severity: 'error',
+        });
+        if (!ok)
             return;
         try {
             setActionLoading(true);
@@ -714,7 +749,7 @@ function ReportList() {
             fetchReports(); // 목록 새로고침
         }
         catch (error) {
-            setError('게시글 삭제 중 오류가 발생했습니다.');
+            fail('게시글 삭제 중 오류가 발생했습니다.');
         }
         finally {
             setActionLoading(false);
@@ -811,13 +846,13 @@ function ReportList() {
 				<table className="w-full text-sm">
 					<thead className="bg-gray-50 text-left">
 						<tr className="border-b">
-							<th scope="col" className="border-b px-4 py-3">신고자</th>
-							<th scope="col" className="border-b px-4 py-3">신고당한 사용자</th>
-							<th scope="col" className="border-b px-4 py-3">게시글 제목</th>
-							<th scope="col" className="border-b px-4 py-3">신고 사유</th>
-							<th scope="col" className="border-b px-4 py-3">상태</th>
-							<th scope="col" className="border-b px-4 py-3">신고일</th>
-							<th scope="col" className="border-b px-4 py-3">액션</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">신고자</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">신고당한 사용자</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">게시글 제목</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">신고 사유</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">상태</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">신고일</th>
+							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">액션</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -890,7 +925,7 @@ function ReportList() {
 											<Button onPress={() => handleBlindArticle(report.article?.id, !!report.article?.blindedAt)} isDisabled={actionLoading} variant="secondary">
 												{report.article?.blindedAt ? '블라인드 해제' : '블라인드'}
 											</Button>
-											<Button onPress={() => handleDeleteArticle(report.article?.id)} isDisabled={actionLoading} variant="secondary">
+											<Button onPress={() => handleDeleteArticle(report.article?.id, report.article?.title)} isDisabled={actionLoading} variant="secondary">
 												삭제
 											</Button>
 										</div>
@@ -919,22 +954,16 @@ function ReportList() {
 							</h2>
 							<div style={{ marginBottom: 16 }}>
 								<p>
-									<div>
-										신고 ID:
-									</div>{' '}
+									<span>신고 ID:</span>{' '}
 									{selectedReport.id}
 								</p>
 								<p>
-									<div>
-										신고 사유:
-									</div>{' '}
+									<span>신고 사유:</span>{' '}
 									{selectedReport.reason}
 								</p>
 								{selectedReport.description && (<div style={{ marginTop: 8 }}>
 										<p>
-											<div>
-												상세 설명:
-											</div>
+											<span>상세 설명:</span>
 										</p>
 										<section style={{ padding: 12, marginTop: 4, backgroundColor: '#fff3e0' }} className="rounded-xl border bg-white p-4">
 											<p style={{ whiteSpace: 'pre-wrap' }}>
@@ -943,15 +972,11 @@ function ReportList() {
 										</section>
 									</div>)}
 								<p style={{ marginTop: 8 }}>
-									<div>
-										상태:
-									</div>{' '}
+									<span>상태:</span>{' '}
 									{getStatusText(selectedReport.status)}
 								</p>
 								<p>
-									<div>
-										신고일:
-									</div>{' '}
+									<span>신고일:</span>{' '}
 									{safeToLocaleString(selectedReport.createdAt)}
 								</p>
 							</div>
@@ -963,27 +988,19 @@ function ReportList() {
 								<img src={selectedReport.reporter?.profileImageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
 								<div>
 									<p>
-										<div>
-											이름:
-										</div>{' '}
+										<span>이름:</span>{' '}
 										{selectedReport.reporter?.name || '-'}
 									</p>
 									<p>
-										<div>
-											이메일:
-										</div>{' '}
+										<span>이메일:</span>{' '}
 										{selectedReport.reporter?.email || '-'}
 									</p>
 									<p>
-										<div>
-											전화번호:
-										</div>{' '}
+										<span>전화번호:</span>{' '}
 										{selectedReport.reporter?.phoneNumber || '-'}
 									</p>
 									<p>
-										<div>
-											나이/성별:
-										</div>{' '}
+										<span>나이/성별:</span>{' '}
 										{selectedReport.reporter?.age ? `${selectedReport.reporter.age}세` : '-'} /{' '}
 										{selectedReport.reporter?.gender === 'MALE'
                 ? '남성'
@@ -1001,27 +1018,19 @@ function ReportList() {
 								<img src={selectedReport.reported?.profileImageUrl} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
 								<div>
 									<p>
-										<div>
-											이름:
-										</div>{' '}
+										<span>이름:</span>{' '}
 										{selectedReport.reported?.name || '-'}
 									</p>
 									<p>
-										<div>
-											이메일:
-										</div>{' '}
+										<span>이메일:</span>{' '}
 										{selectedReport.reported?.email || '-'}
 									</p>
 									<p>
-										<div>
-											전화번호:
-										</div>{' '}
+										<span>전화번호:</span>{' '}
 										{selectedReport.reported?.phoneNumber || '-'}
 									</p>
 									<p>
-										<div>
-											나이/성별:
-										</div>{' '}
+										<span>나이/성별:</span>{' '}
 										{selectedReport.reported?.age ? `${selectedReport.reported.age}세` : '-'} /{' '}
 										{selectedReport.reported?.gender === 'MALE'
                 ? '남성'
@@ -1037,15 +1046,11 @@ function ReportList() {
 							</h2>
 							<div style={{ marginBottom: 16 }}>
 								<p>
-									<div>
-										제목:
-									</div>{' '}
+									<span>제목:</span>{' '}
 									{selectedReport.article?.title || '제목 없음'}
 								</p>
 								<p style={{ marginTop: 8 }}>
-									<div>
-										내용:
-									</div>
+									<span>내용:</span>
 								</p>
 								<section style={{ padding: 16, marginTop: 8, backgroundColor: '#f5f5f5' }} className="rounded-xl border bg-white p-4">
 									<p style={{ whiteSpace: 'pre-wrap' }}>
@@ -1053,15 +1058,11 @@ function ReportList() {
 									</p>
 								</section>
 								<p style={{ marginTop: 8 }}>
-									<div>
-										작성일:
-									</div>{' '}
+									<span>작성일:</span>{' '}
 									{safeToLocaleString(selectedReport.article?.createdAt)}
 								</p>
 								<p>
-									<div>
-										블라인드 상태:
-									</div>{' '}
+									<span>블라인드 상태:</span>{' '}
 									<Chip size="sm">{selectedReport.article?.blindedAt ? '블라인드 처리됨' : '정상'}</Chip>
 								</p>
 							</div>
@@ -1073,9 +1074,9 @@ function ReportList() {
 			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 블라인드 확인 다이얼로그 */}
-			<Modal.Backdrop isOpen={openBlindDialog} onOpenChange={next => {
-            if (!next)
-                (() => setOpenBlindDialog(false))();
+			<Modal.Backdrop isOpen={openBlindDialog} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
+                setOpenBlindDialog(false);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>
 					게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 확인
@@ -1087,7 +1088,7 @@ function ReportList() {
 					</p>
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setOpenBlindDialog(false)} variant="tertiary">취소</Button>
+					<Button onPress={() => setOpenBlindDialog(false)} isDisabled={actionLoading} variant="tertiary">취소</Button>
 					<Button onPress={handleConfirmBlind} isDisabled={actionLoading} variant="primary">
 						{actionLoading ? '처리중...' : blindAction === 'blind' ? '블라인드' : '블라인드 해제'}
 					</Button>
@@ -1095,7 +1096,7 @@ function ReportList() {
 			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 사용자 상세 정보 모달 */}
-			{!!userDetail && (<UserDetailModal open={userDetailModalOpen} onClose={handleCloseUserDetailModal} userId={selectedUserId} userDetail={userDetail} loading={loadingUserDetail} error={userDetailError} onRefresh={() => {
+			{userDetailModalOpen && (<UserDetailModal open={userDetailModalOpen} onClose={handleCloseUserDetailModal} userId={selectedUserId} userDetail={userDetail ?? EMPTY_USER_DETAIL} loading={loadingUserDetail} error={userDetailError} onRefresh={() => {
                 fetchReports();
             }}></UserDetailModal>)}
 		</div>);

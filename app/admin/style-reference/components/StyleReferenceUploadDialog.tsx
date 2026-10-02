@@ -53,8 +53,8 @@ export function StyleReferenceUploadDialog({ open, onClose, onSubmit, isLoading 
             setError(msg);
         }
     };
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
-            if (!next)
+    return (<Modal.Backdrop isOpen={open} isDismissable={!isLoading} isKeyboardDismissDisabled={isLoading} onOpenChange={next => {
+            if (!next && !isLoading)
                 handleClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>이미지 등록</Modal.Heading>

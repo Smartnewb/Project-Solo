@@ -1,11 +1,12 @@
 import { ComboBox, ListBox, Button, Spinner, Chip, Modal, TextField, Label, Input, Select } from '@heroui/react';
 import { History as HistoryIcon, Plus as AddIcon } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ko } from 'date-fns/locale';
 import { safeFormat, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 import { UserSearchResult, MatchingResult } from '../types';
 import AdminService from '@/app/services/admin';
 import { adminGet } from '@/shared/lib/http/admin-fetch';
+import { useToast } from '@/shared/ui/admin/toast';
 // 매칭 이력 아이템 인터페이스
 interface MatchHistoryItem {
     id: string;
@@ -63,6 +64,8 @@ interface SingleMatchingProps {
     processSingleMatching: () => void;
 }
 const SingleMatching: React.FC<SingleMatchingProps> = ({ selectedUser, matchingLoading, matchingResult, processSingleMatching }) => {
+    const toast = useToast();
+    const directMatchCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     // 매칭 이력 관련 상태
     const [showMatchHistory, setShowMatchHistory] = useState<boolean>(false);
     const [matchHistory, setMatchHistory] = useState<MatchHistoryResponse | null>(null);
@@ -197,6 +200,11 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({ selectedUser, matchingL
         setEndDate(new Date());
         setMatchCount(null);
     }, [selectedUser]);
+    // 언마운트 시 자동 닫기 타이머 정리
+    useEffect(() => () => {
+        if (directMatchCloseTimer.current)
+            clearTimeout(directMatchCloseTimer.current);
+    }, []);
     // 타겟 사용자 검색 함수
     const searchTargetUsers = async (searchTerm: string) => {
         if (!searchTerm.trim()) {
@@ -222,6 +230,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({ selectedUser, matchingL
         }
         catch (error: any) {
             setTargetUserSearchResults([]);
+            toast.error(error?.response?.data?.message || '사용자 검색 중 오류가 발생했습니다.');
         }
     };
     // 직접 매칭 생성 함수
@@ -237,7 +246,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({ selectedUser, matchingL
             ;
             setDirectMatchResult(response);
             // 성공 시 다이얼로그 닫기
-            setTimeout(() => {
+            directMatchCloseTimer.current = setTimeout(() => {
                 setDirectMatchDialogOpen(false);
                 resetDirectMatchForm();
             }, 2000);
@@ -255,6 +264,10 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({ selectedUser, matchingL
     };
     // 직접 매칭 폼 초기화
     const resetDirectMatchForm = () => {
+        if (directMatchCloseTimer.current) {
+            clearTimeout(directMatchCloseTimer.current);
+            directMatchCloseTimer.current = null;
+        }
         setTargetUserSearch('');
         setTargetUserSearchResults([]);
         setSelectedTargetUser(null);
@@ -576,8 +589,8 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({ selectedUser, matchingL
         </div>)}
 
       {/* 직접 매칭 생성 다이얼로그 */}
-      <Modal.Backdrop isOpen={directMatchDialogOpen} onOpenChange={next => {
-            if (!next)
+      <Modal.Backdrop isOpen={directMatchDialogOpen} isDismissable={!directMatchLoading} isKeyboardDismissDisabled={directMatchLoading} onOpenChange={next => {
+            if (!next && !directMatchLoading)
                 closeDirectMatchDialog();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
         <Modal.Heading>
@@ -666,10 +679,10 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({ selectedUser, matchingL
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button onPress={closeDirectMatchDialog} variant="tertiary">
+          <Button onPress={closeDirectMatchDialog} isDisabled={directMatchLoading} variant="tertiary">
             취소
           </Button>
-          <Button onPress={createDirectMatch} isDisabled={directMatchLoading || !selectedUser || !selectedTargetUser} variant="primary">
+          <Button onPress={createDirectMatch} isDisabled={directMatchLoading || !!directMatchResult || !selectedUser || !selectedTargetUser} variant="primary">
             {directMatchLoading ? <Spinner size="sm"></Spinner> : '매칭 생성'}
           </Button>
         </Modal.Footer>

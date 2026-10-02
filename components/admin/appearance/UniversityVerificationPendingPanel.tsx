@@ -23,6 +23,7 @@ import { CircleCheck, CircleX, Eye, GraduationCap } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 import AdminService from "@/app/services/admin";
+import { useToast } from "@/shared/ui/admin/toast";
 import UserDetailModal, { UserDetail } from "./UserDetailModal";
 
 interface UniversityVerificationUser {
@@ -61,6 +62,7 @@ interface CertificateDialog {
 }
 
 export default function UniversityVerificationPendingPanel() {
+  const toast = useToast();
   const [users, setUsers] = useState<UniversityVerificationUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -255,7 +257,9 @@ export default function UniversityVerificationPendingPanel() {
       handleCloseConfirmDialog();
     } catch (err: any) {
       console.error("대학교 인증 처리 중 오류:", err);
-      setError(err.message || "대학교 인증 처리 중 오류가 발생했습니다.");
+      const message = err.message || "대학교 인증 처리 중 오류가 발생했습니다.";
+      setError(message);
+      toast.error(message);
     } finally {
       setActionLoading(null);
     }
@@ -661,9 +665,10 @@ export default function UniversityVerificationPendingPanel() {
       <Modal.Backdrop
         isOpen={confirmDialog.open}
         onOpenChange={(isOpen) => {
-          if (!isOpen) handleCloseConfirmDialog?.();
+          if (!isOpen && actionLoading === null) handleCloseConfirmDialog();
         }}
-        isDismissable={handleCloseConfirmDialog !== undefined}
+        isDismissable={actionLoading === null}
+        isKeyboardDismissDisabled={actionLoading !== null}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -701,7 +706,7 @@ export default function UniversityVerificationPendingPanel() {
               <Button
                 onClick={handleCloseConfirmDialog}
                 variant={"ghost"}
-                isDisabled={undefined}
+                isDisabled={actionLoading !== null}
                 size={"md"}
                 className="rounded-xl"
               >
@@ -709,7 +714,9 @@ export default function UniversityVerificationPendingPanel() {
               </Button>
               <Button
                 onClick={handleConfirmAction}
-                variant={"primary"}
+                variant={
+                  confirmDialog.action === "reject" ? "danger" : "primary"
+                }
                 isDisabled={actionLoading !== null}
                 size={"md"}
                 className="rounded-xl"
@@ -730,9 +737,8 @@ export default function UniversityVerificationPendingPanel() {
       <Modal.Backdrop
         isOpen={certificateDialog.open}
         onOpenChange={(isOpen) => {
-          if (!isOpen) handleCloseCertificateDialog?.();
+          if (!isOpen) handleCloseCertificateDialog();
         }}
-        isDismissable={handleCloseCertificateDialog !== undefined}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>

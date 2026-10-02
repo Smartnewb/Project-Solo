@@ -6,6 +6,8 @@ interface RejectReasonModalProps {
     open: boolean;
     onClose: () => void;
     onConfirm: (category: string, reason: string) => void;
+    /** 일괄 반려일 때 대상 인원 수 */
+    count?: number;
 }
 const REJECTION_CATEGORIES = [
     { value: 'INAPPROPRIATE_PROFILE_IMAGE', label: '부적절한 프로필 이미지' },
@@ -51,7 +53,7 @@ const commonTemplates = [
     { category: 'FAKE_PROFILE', reason: '타인 사진 도용', label: '사진 도용' },
     { category: 'INCOMPLETE_PROFILE', reason: '필수 정보 미입력', label: '정보 미입력' },
 ];
-export default function RejectReasonModal({ open, onClose, onConfirm }: RejectReasonModalProps) {
+export default function RejectReasonModal({ open, onClose, onConfirm, count }: RejectReasonModalProps) {
     const { control, handleFormSubmit, watch, setValue, reset } = useAdminForm<RejectReasonFormValues>({
         schema: rejectReasonSchema,
         defaultValues: { category: '', reason: '' },
@@ -86,7 +88,7 @@ export default function RejectReasonModal({ open, onClose, onConfirm }: RejectRe
           반려 사유 선택
         </Modal.Heading>
         <p style={{ marginTop: 4 }}>
-          회원에게 전달될 반려 카테고리와 사유를 선택해주세요.
+          {count ? `${count}명 반려 — 선택한 사유가 모든 대상 회원에게 동일하게 전달됩니다.` : '회원에게 전달될 반려 카테고리와 사유를 선택해주세요.'}
         </p>
       </Modal.Header>
 
@@ -101,15 +103,13 @@ export default function RejectReasonModal({ open, onClose, onConfirm }: RejectRe
           </div>
         </div>
 
-        <hr style={{ marginBottom: 24 }}>
-          <p>
+        <hr style={{ marginBottom: 24 }} />
+          <p className="mb-2 text-sm font-semibold text-gray-700">
             또는 직접 선택
           </p>
-        </hr>
-
         {/* 카테고리 선택 */}
         <Controller name="category" control={control} render={({ field, fieldState }) => (<div style={{ marginBottom: 24 }}>
-              <label>반려 카테고리</label>
+              <span className="mb-1 block text-sm font-medium">반려 카테고리</span>
               <Select {...field} aria-label={"반려 카테고리"} onChange={(key) => {
                 const value = String(key ?? "");
                 handleCategoryChange(value);
@@ -147,8 +147,8 @@ export default function RejectReasonModal({ open, onClose, onConfirm }: RejectRe
         <Button onPress={handleClose} variant="tertiary">
           취소
         </Button>
-        <Button variant="primary" onPress={() => void onSubmit()}>
-          반려하기
+        <Button variant="danger" onPress={() => void onSubmit()}>
+          {count ? `${count}명 반려하기` : '반려하기'}
         </Button>
       </Modal.Footer>
     </Modal.Dialog></Modal.Container></Modal.Backdrop>);

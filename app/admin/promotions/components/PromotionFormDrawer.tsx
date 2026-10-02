@@ -6,6 +6,7 @@ import { PromotionImageUpload } from './PromotionImageUpload';
 import { useUploadPromotionImage, useDeletePromotionImage, } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast';
 import AdminService from '@/app/services/admin';
+import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import type { Promotion, CreatePromotionRequest, AdminGemProduct, } from '@/types/admin';
 interface PromotionFormDrawerProps {
     open: boolean;
@@ -156,8 +157,9 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
                 deleteImageMutation.mutate(oldS3Key);
             }
         }
-        catch {
-            // parent handles toast
+        catch (err) {
+            // 부모(promotions-client)는 실패 시 toast 를 띄우지 않고 throw 만 하므로 여기서 알린다. 드로어는 열어 둔다.
+            toast.error(getAdminErrorMessage(err, '프로모션 저장에 실패했습니다.'));
         }
         finally {
             setSubmitting(false);
@@ -166,12 +168,13 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
     const set = (field: string, value: unknown) => setForm((prev) => ({ ...prev, [field]: value }));
     const productsLoading = productListQuery.isLoading;
     const productsError = productListQuery.isError;
-    return (<Drawer.Backdrop isOpen={open} onOpenChange={(v) => !v && onClose()}>
-      <Drawer.Content placement="right" className="w-full"><Drawer.Dialog style={{ width: 'min(480px, 100vw)', maxWidth: '100%', height: '100%', minWidth: 0 }} className="overflow-y-auto">
+    return (<Drawer.Backdrop isOpen={open} isDismissable={!submitting} isKeyboardDismissDisabled={submitting} onOpenChange={(v) => !v && !submitting && onClose()}>
+      <Drawer.Content placement="right" className="w-full"><Drawer.Dialog style={{ width: 'min(480px, 100vw)', maxWidth: '100%', height: '100%', minWidth: 0 }}>
         <Drawer.Header>
           <Drawer.Heading>{editPromotion ? '프로모션 수정' : '프로모션 등록'}</Drawer.Heading>
         </Drawer.Header>
 
+        <Drawer.Body>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
           <TextField isInvalid={!!errors.title} className="mb-4"><Label>{"제목 *"}</Label><Input value={form.title} onChange={(e) => set('title', e.target.value)} {...{ maxLength: 50 }}></Input><Description>{errors.title}</Description></TextField>
 
@@ -187,9 +190,9 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
             {errors.imageUrl && (<p>{errors.imageUrl}</p>)}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <div>
-              <p>
+              <p className="mb-1 text-sm">
                 배경색 *
               </p>
               <Input type="color" value={form.backgroundColor} onChange={(e) => set('backgroundColor', e.target.value)} style={{ width: 48, height: 36, cursor: 'pointer', border: 'none', borderRadius: 4 }}></Input>
@@ -199,15 +202,15 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
 
           <hr></hr>
 
-          <p>
+          <p className="font-semibold">
             구슬 SKU 페어
           </p>
-          <p>
+          <p className="text-sm text-gray-600">
             할인 상품의 Apple SKU가 gem_sale_10, gem_25, gem_50이면 앱 72시간 오퍼 카드의
             이미지/문구/CTA 에셋으로도 사용됩니다.
           </p>
 
-          {productsError && (<p>
+          {productsError && (<p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               구슬 상품 목록을 불러오지 못했습니다.
             </p>)}
 
@@ -224,7 +227,7 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
                   {formatProductLabel(p)}
                 </ListBox.Item>))}
             </ListBox></Select.Popover></Select>
-            {errors.originGemProductId && (<p>{errors.originGemProductId}</p>)}
+            {errors.originGemProductId && (<p className="mt-1 text-xs text-red-600">{errors.originGemProductId}</p>)}
           </div>
 
           <div>
@@ -240,7 +243,7 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
                   {formatProductLabel(p)}
                 </ListBox.Item>))}
             </ListBox></Select.Popover></Select>
-            {errors.saleGemProductId && (<p>{errors.saleGemProductId}</p>)}
+            {errors.saleGemProductId && (<p className="mt-1 text-xs text-red-600">{errors.saleGemProductId}</p>)}
           </div>
 
           {isIap72hOfferAsset && (<p>
@@ -279,7 +282,10 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
 
           <Checkbox isSelected={form.isActive} onChange={checked => set('isActive', checked)} className="inline-flex items-center gap-2 mr-4"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control>{"활성화"}</Checkbox.Content></Checkbox>
 
-          <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
+        </div>
+        </Drawer.Body>
+        <Drawer.Footer>
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
             <Button onPress={onClose} isDisabled={submitting} fullWidth variant="secondary">
               취소
             </Button>
@@ -287,7 +293,7 @@ export function PromotionFormDrawer({ open, onClose, onSubmit, editPromotion, }:
               {submitting ? <Spinner size="sm"></Spinner> : editPromotion ? '수정' : '등록'}
             </Button>
           </div>
-        </div>
+        </Drawer.Footer>
       </Drawer.Dialog></Drawer.Content>
     </Drawer.Backdrop>);
 }

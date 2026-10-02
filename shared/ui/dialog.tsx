@@ -67,13 +67,23 @@ function DialogPortal({ children }: { children: React.ReactNode }) {
 function DialogContent({
 	className,
 	children,
+	isDismissable = true,
 	...props
 }: Omit<React.ComponentProps<typeof Modal.Dialog>, "children"> & {
 	children: React.ReactNode;
+	/** 요청 진행 중 등 닫히면 안 될 때 false (바깥 클릭/Esc 차단) */
+	isDismissable?: boolean;
 }) {
 	const { open, setOpen } = React.useContext(DialogContext);
 	return (
-		<Modal.Backdrop isOpen={open} onOpenChange={setOpen}>
+		<Modal.Backdrop
+			isOpen={open}
+			onOpenChange={(next) => {
+				if (next || isDismissable) setOpen(next);
+			}}
+			isDismissable={isDismissable}
+			isKeyboardDismissDisabled={!isDismissable}
+		>
 			<Modal.Container size="lg" scroll="outside">
 				<Modal.Dialog {...props} className={cn("relative min-w-0 p-6 break-words", className)}>
 					{children}

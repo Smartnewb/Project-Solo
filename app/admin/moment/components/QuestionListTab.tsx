@@ -32,6 +32,7 @@ import type {
   QuestionDetail,
 } from "@/types/moment";
 import { safeToLocaleDateString } from "@/app/utils/formatters";
+import { useToast } from "@/shared/ui/admin/toast";
 import QuestionDetailDialog from "./QuestionDetailDialog";
 import QuestionEditDialog from "./QuestionEditDialog";
 
@@ -55,6 +56,7 @@ const DIMENSION_COLORS: Record<
 };
 
 export default function QuestionListTab() {
+  const toast = useToast();
   const [questions, setQuestions] = useState<QuestionListItem[]>([]);
   const [pagination, setPagination] = useState<QuestionListPagination | null>(
     null,
@@ -158,7 +160,9 @@ export default function QuestionListTab() {
       setDeleteTargetId(null);
       fetchQuestions();
     } catch (err: any) {
-      setError(err.response?.data?.message || "삭제에 실패했습니다.");
+      const message = err.response?.data?.message || "삭제에 실패했습니다.";
+      setError(message);
+      toast.error(message);
     } finally {
       setProcessing(false);
     }
@@ -175,7 +179,9 @@ export default function QuestionListTab() {
       setSelectedQuestion(null);
       fetchQuestions();
     } catch (err: any) {
-      setError(err.response?.data?.message || "수정에 실패했습니다.");
+      toast.error(err.response?.data?.message || "수정에 실패했습니다.");
+      // 다이얼로그가 열린 채로 오류를 표시하도록 다시 던진다.
+      throw err;
     } finally {
       setProcessing(false);
     }
@@ -569,8 +575,10 @@ export default function QuestionListTab() {
       />
       <Modal.Backdrop
         isOpen={deleteDialogOpen}
+        isDismissable={!processing}
+        isKeyboardDismissDisabled={processing}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setDeleteDialogOpen(false))();
+          if (!isOpen && !processing) setDeleteDialogOpen(false);
         }}
       >
         <Modal.Container>
@@ -578,8 +586,12 @@ export default function QuestionListTab() {
             <Modal.Heading>질문 삭제</Modal.Heading>
             <Modal.Body>
               <p>
-                이 질문을 삭제하시겠습니까? 삭제된 질문은 비활성화되며, 새로운
-                주차 생성 시 제외됩니다.
+                {(() => {
+                  const target = questions.find((q) => q.id === deleteTargetId);
+                  return target ? `'${target.text}' 질문을` : "이 질문을";
+                })()}{" "}
+                삭제하시겠습니까? 삭제된 질문은 비활성화되며, 새로운 주차 생성 시
+                제외됩니다.
               </p>
             </Modal.Body>
             <Modal.Footer>
@@ -592,7 +604,7 @@ export default function QuestionListTab() {
               </Button>
               <Button
                 onClick={handleDeleteConfirm}
-                variant={"secondary"}
+                variant={"danger"}
                 isDisabled={processing}
               >
                 {processing ? "삭제 중..." : "삭제"}

@@ -135,7 +135,7 @@ export default function PendingLikesModal({
 			const errorMsg =
 				err.response?.data?.message || "처리 중 오류가 발생했습니다.";
 			setError(errorMsg);
-			toast.info(errorMsg);
+			toast.error(errorMsg);
 		} finally {
 			setProcessing(false);
 		}
@@ -209,13 +209,17 @@ export default function PendingLikesModal({
 						`알림 발송: ${result.notificationSent ? "성공" : "실패"}`,
 				);
 				await fetchData();
+			} else {
+				const failMsg = "프로필 노출 처리에 실패했습니다.";
+				setError(failMsg);
+				toast.error(failMsg);
 			}
 		} catch (err: any) {
 			const errorMsg =
 				err.response?.data?.message ||
 				"프로필 노출 처리 중 오류가 발생했습니다.";
 			setError(errorMsg);
-			toast.info(errorMsg);
+			toast.error(errorMsg);
 		} finally {
 			setViewingProfileId(null);
 		}
@@ -227,6 +231,7 @@ export default function PendingLikesModal({
 				if (!isOpen && !processing && !viewingProfileId) onClose?.();
 			}}
 			isDismissable={!processing && !viewingProfileId}
+			isKeyboardDismissDisabled={processing || !!viewingProfileId}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
@@ -479,7 +484,7 @@ export default function PendingLikesModal({
 						<Button
 							onClick={onClose}
 							variant={"tertiary"}
-							isDisabled={processing}
+							isDisabled={processing || !!viewingProfileId}
 							size={"md"}
 						>
 							취소

@@ -6,7 +6,33 @@ import {
   GraduationCap as SchoolIcon,
 } from "lucide-react";
 
+import { useState } from "react";
 import type { UniversityItem } from "@/types/admin";
+
+// 로고 URL 이 깨졌으면 운영자가 알아보도록 표시한다 (아이콘으로 숨기지 않음).
+function LogoImage({ src, name }: { src: string; name: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <div
+        title={src}
+        className="flex h-12 w-12 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-center text-[10px] leading-tight text-red-600"
+      >
+        로고
+        <br />
+        깨짐
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={name}
+      onError={() => setBroken(true)}
+      className="h-12 w-12 rounded-lg object-contain"
+    />
+  );
+}
 
 interface UniversityTableProps {
   universities: UniversityItem[];
@@ -109,11 +135,7 @@ export default function UniversityTable({
               <tr key={university.id}>
                 <td className="px-3 py-2 border-b border-default">
                   {university.logoUrl ? (
-                    <img
-                      src={university.logoUrl}
-                      alt={university.name}
-                      className="h-12 w-12 rounded-lg object-contain"
-                    />
+                    <LogoImage src={university.logoUrl} name={university.name} />
                   ) : (
                     <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
                       <SchoolIcon size={16} />

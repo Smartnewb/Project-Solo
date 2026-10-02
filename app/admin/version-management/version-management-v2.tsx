@@ -19,6 +19,8 @@ import {
 import { useState, useEffect } from "react";
 import { Controller, useFieldArray } from "react-hook-form";
 import versionService, { VersionUpdate } from "@/app/services/version";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
 
 import { useAdminForm } from "@/app/admin/hooks/forms";
 import {
@@ -31,6 +33,8 @@ import {
 } from "@/app/utils/formatters";
 
 function VersionManagementContent() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [versions, setVersions] = useState<VersionUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +51,7 @@ function VersionManagementContent() {
     control: createControl,
     reset: resetCreate,
     handleFormSubmit: handleCreateSubmit,
+    formState: { isSubmitting: isCreating },
   } = useAdminForm<VersionFormData>({
     schema: versionFormSchema,
     defaultValues: {
@@ -69,6 +74,7 @@ function VersionManagementContent() {
     control: editControl,
     reset: resetEdit,
     handleFormSubmit: handleEditSubmit,
+    formState: { isSubmitting: isUpdating },
   } = useAdminForm<VersionFormData>({
     schema: versionFormSchema,
     defaultValues: {
@@ -99,12 +105,22 @@ function VersionManagementContent() {
       setVersions(data);
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message || "버전 목록을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
     }
   };
 
+  const confirmForceUpdate = (version: string) =>
+    confirm({
+      title: "강제 업데이트 확인",
+      message: `'${version}' 버전을 '업데이트 필요'로 저장하면 모든 사용자에게 업데이트가 강제됩니다.\n계속하시겠습니까?`,
+      confirmText: "저장",
+      severity: "warning",
+    });
+
   const handleCreateVersion = handleCreateSubmit(async (data) => {
+    if (data.shouldUpdate && !(await confirmForceUpdate(data.version))) return;
     try {
       setError(null);
       await versionService.createVersionUpdate({
@@ -126,11 +142,13 @@ function VersionManagementContent() {
       fetchVersions();
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message || "저장에 실패했습니다.");
     }
   });
 
   const handleUpdateVersion = handleEditSubmit(async (data) => {
     if (!selectedVersion) return;
+    if (data.shouldUpdate && !(await confirmForceUpdate(data.version))) return;
     try {
       setError(null);
       await versionService.updateVersionUpdate(selectedVersion.id, {
@@ -148,6 +166,7 @@ function VersionManagementContent() {
       fetchVersions();
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message || "저장에 실패했습니다.");
     }
   });
 
@@ -275,7 +294,7 @@ function VersionManagementContent() {
                       onClick={() => openViewDialog(version)}
                       variant={"secondary"}
                       isIconOnly
-                      aria-label="작업 실행"
+                      aria-label="상세 보기"
                     >
                       <ViewIcon size={16} />
                     </Button>
@@ -283,7 +302,7 @@ function VersionManagementContent() {
                       onClick={() => openEditDialog(version)}
                       variant={"secondary"}
                       isIconOnly
-                      aria-label="작업 실행"
+                      aria-label="수정"
                     >
                       <EditIcon size={16} />
                     </Button>
@@ -297,8 +316,10 @@ function VersionManagementContent() {
       {/* 새 버전 생성 다이얼로그 */}
       <Modal.Backdrop
         isOpen={createDialogOpen}
+        isDismissable={!isCreating}
+        isKeyboardDismissDisabled={isCreating}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setCreateDialogOpen(false))();
+          if (!isOpen && !isCreating) setCreateDialogOpen(false);
         }}
       >
         <Modal.Container>
@@ -382,11 +403,16 @@ function VersionManagementContent() {
               <Button
                 onClick={() => setCreateDialogOpen(false)}
                 variant={"secondary"}
+                isDisabled={isCreating}
               >
                 취소
               </Button>
-              <Button onClick={handleCreateVersion} variant={"primary"}>
-                생성
+              <Button
+                onClick={handleCreateVersion}
+                variant={"primary"}
+                isDisabled={isCreating}
+              >
+                {isCreating ? <Spinner aria-label="저장 중" /> : "생성"}
               </Button>
             </Modal.Footer>
           </Modal.Dialog>
@@ -439,8 +465,10 @@ function VersionManagementContent() {
       {/* 버전 수정 다이얼로그 */}
       <Modal.Backdrop
         isOpen={editDialogOpen}
+        isDismissable={!isUpdating}
+        isKeyboardDismissDisabled={isUpdating}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setEditDialogOpen(false))();
+          if (!isOpen && !isUpdating) setEditDialogOpen(false);
         }}
       >
         <Modal.Container>
@@ -524,11 +552,16 @@ function VersionManagementContent() {
               <Button
                 onClick={() => setEditDialogOpen(false)}
                 variant={"secondary"}
+                isDisabled={isUpdating}
               >
                 취소
               </Button>
-              <Button onClick={handleUpdateVersion} variant={"primary"}>
-                수정
+              <Button
+                onClick={handleUpdateVersion}
+                variant={"primary"}
+                isDisabled={isUpdating}
+              >
+                {isUpdating ? <Spinner aria-label="저장 중" /> : "수정"}
               </Button>
             </Modal.Footer>
           </Modal.Dialog>

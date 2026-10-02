@@ -44,19 +44,24 @@ export function ConfirmDialogProvider({
 
 	const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
 		return new Promise((resolve) => {
+			// 이미 열린 확인창이 있으면 취소로 끝내서 앞선 await 가 영원히 멈추지 않게 한다.
+			resolveRef.current(false);
 			resolveRef.current = resolve;
 			setState({ ...options, open: true });
 		});
 	}, []);
 
+	// 닫힘 애니메이션 동안 빈 다이얼로그가 보이지 않도록 내용은 유지하고 open 만 끈다.
 	const handleConfirm = useCallback(() => {
 		resolveRef.current(true);
-		setState(defaultState);
+		resolveRef.current = () => {};
+		setState((prev) => ({ ...prev, open: false }));
 	}, []);
 
 	const handleCancel = useCallback(() => {
 		resolveRef.current(false);
-		setState(defaultState);
+		resolveRef.current = () => {};
+		setState((prev) => ({ ...prev, open: false }));
 	}, []);
 
 	return (

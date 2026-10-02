@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Button } from '@heroui/react';
 import AdminService from '@/app/services/admin';
 import type { CareTarget, CarePartner } from '@/app/services/admin/care';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
@@ -160,16 +161,27 @@ function CareV2Content() {
 			<h1 className="text-2xl font-bold">
 				유저 집중 케어
 			</h1>
-			<CareStats
-				pending={stats.pending}
-				cared={stats.cared}
-				dismissed={stats.dismissed}
-				loading={loading}
-			/>
-			{error && (
-				<p role="alert" className="text-danger">
-					{error}
-				</p>
+			{error ? (
+				<div
+					role="alert"
+					className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+				>
+					<span>{error}</span>
+					<Button
+						size="sm"
+						variant="secondary"
+						onPress={() => fetchTargets(pagination.page, searchTerm || undefined)}
+					>
+						다시 시도
+					</Button>
+				</div>
+			) : (
+				<CareStats
+					pending={stats.pending}
+					cared={stats.cared}
+					dismissed={stats.dismissed}
+					loading={loading}
+				/>
 			)}
 			<div className="grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
 				<div>
@@ -178,6 +190,7 @@ function CareV2Content() {
 						selectedTarget={selectedTarget}
 						onSelect={setSelectedTarget}
 						loading={loading}
+						error={!!error}
 						searchTerm={searchInput}
 						onSearchChange={setSearchInput}
 						pagination={pagination}

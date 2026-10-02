@@ -84,7 +84,7 @@ export default function BackgroundSelector({ presets, selectedPresetId, customBa
       {backgroundType === 'PRESET' ? (<div>
           {loading ? (<div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
               {[...Array(4)].map((_, i) => (<div key={i} style={{ flexShrink: 0, borderRadius: 2 }} className="h-32 w-24 animate-pulse rounded-lg bg-gray-200"></div>))}
-            </div>) : presets.length === 0 ? (<div style={{ padding: 32, textAlign: 'center', backgroundColor: 'grey.50', borderRadius: 2, border: '1px dashed' }}>
+            </div>) : presets.length === 0 ? (<div style={{ padding: 32, textAlign: 'center', backgroundColor: '#f9fafb', borderRadius: 2, border: '1px dashed #d1d5db' }}>
               <p style={{ marginBottom: 16 }}>
                 등록된 프리셋이 없습니다.
               </p>
@@ -117,8 +117,8 @@ export default function BackgroundSelector({ presets, selectedPresetId, customBa
                                 }
                             }} style={{ width: '100%', height: '100%', objectFit: 'cover' }}></img>) : null}
                       <div className="image-placeholder" style={{ display: imageUrl ? 'none' : 'flex', width: '100%', height: '100%', backgroundColor: "#e5e7eb", alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4 }}>
-                        <AddPhotoAlternateIcon style={{ fontSize: 28, color: 'grey.400' }}></AddPhotoAlternateIcon>
-                        <p style={{ color: 'grey.500', fontSize: 10 }}>
+                        <AddPhotoAlternateIcon style={{ fontSize: 28, color: '#9ca3af' }}></AddPhotoAlternateIcon>
+                        <p style={{ color: '#6b7280', fontSize: 10 }}>
                           이미지 없음
                         </p>
                       </div>
@@ -133,15 +133,15 @@ export default function BackgroundSelector({ presets, selectedPresetId, customBa
                     </div>);
                 })}
 
-                <Button variant="tertiary" aria-label="배경 선택" onPress={onAddPresetClick} style={{ flexShrink: 0, width: 100, height: 125, borderRadius: 2, border: '2px dashed', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: 'grey.50', transition: 'all 0.2s ease' }}>
-                  <AddPhotoAlternateIcon style={{ fontSize: 28, color: 'grey.400', marginBottom: 4 }}></AddPhotoAlternateIcon>
+                <Button variant="tertiary" aria-label="배경 선택" onPress={onAddPresetClick} style={{ flexShrink: 0, width: 100, height: 125, borderRadius: 2, border: '2px dashed #d1d5db', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: '#f9fafb', transition: 'all 0.2s ease' }}>
+                  <AddPhotoAlternateIcon style={{ fontSize: 28, color: '#9ca3af', marginBottom: 4 }}></AddPhotoAlternateIcon>
                   <p style={{ fontSize: 11 }}>
                     프리셋 추가
                   </p>
                 </Button>
               </div>
 
-              {selectedPreset && (<div style={{ marginTop: 16, padding: 12, backgroundColor: 'rgba(122, 74, 226, 0.04)', borderRadius: 1.5, border: '1px solid', display: 'flex', alignItems: 'center', gap: 12 }}>
+              {selectedPreset && (<div style={{ marginTop: 16, padding: 12, backgroundColor: 'rgba(122, 74, 226, 0.04)', borderRadius: 1.5, border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <CheckCircleIcon style={{ color: '#7A4AE2', fontSize: 18 }}></CheckCircleIcon>
                   <p>
                     선택됨: <strong style={{ color: '#7A4AE2' }}>{selectedPreset.displayName}</strong>
@@ -149,12 +149,12 @@ export default function BackgroundSelector({ presets, selectedPresetId, customBa
                 </div>)}
             </>)}
         </div>) : (<div>
-          {!customBackgroundUrl ? (<div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} style={{ padding: 32, borderRadius: 2, border: '2px dashed', backgroundColor: isDragOver ? 'rgba(122, 74, 226, 0.04)' : 'grey.50', textAlign: 'center', transition: 'all 0.2s ease', cursor: 'pointer' }}><Button variant="secondary" onPress={() => fileInputRef.current?.click()}>배경 이미지 선택</Button>
+          {!customBackgroundUrl ? (<div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} style={{ padding: 32, borderRadius: 2, border: '2px dashed #d1d5db', backgroundColor: isDragOver ? 'rgba(122, 74, 226, 0.04)' : '#f9fafb', textAlign: 'center', transition: 'all 0.2s ease', cursor: 'pointer' }}><Button variant="secondary" onPress={() => fileInputRef.current?.click()}>배경 이미지 선택</Button>
               {uploadingBackground ? (<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
                   <Spinner size="sm" style={{ color: '#7A4AE2' }}></Spinner>
                   <p>업로드 중...</p>
                 </div>) : (<>
-                  <CloudUploadIcon style={{ fontSize: 48, color: isDragOver ? '#7A4AE2' : 'grey.400', marginBottom: 8 }}></CloudUploadIcon>
+                  <CloudUploadIcon style={{ fontSize: 48, color: isDragOver ? '#7A4AE2' : '#9ca3af', marginBottom: 8 }}></CloudUploadIcon>
                   <p style={{ marginBottom: 4 }}>
                     이미지를 드래그하거나 클릭하여 업로드
                   </p>

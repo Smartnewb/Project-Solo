@@ -3,6 +3,8 @@ import { Button, Spinner, Chip, Modal, TextField, Label, TextArea, Select, ListB
 import { useCallback, useEffect, useState } from 'react';
 import type { Content, ContentStatus } from '@/app/services/admin/community-automation';
 import { reviewQueue as reviewApi } from '@/app/services/admin/community-automation';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
+import { useToast } from '@/shared/ui/admin/toast';
 const STATUS_COLOR: Record<ContentStatus, 'default' | 'warning' | 'success' | 'error' | 'info'> = {
     draft: 'default',
     pending_review: 'warning',
@@ -24,7 +26,16 @@ const STATUS_LABEL: Record<ContentStatus, string> = {
     withdrawn: '회수됨',
 };
 type DialogMode = 'reject' | 'inject' | 'withdraw' | 'regenerate' | null;
+const BULK_ACTION_LABEL = { approve: '승인', reject: '거절', withdraw: '회수' } as const;
 export default function ReviewQueuePage() {
+    const confirm = useConfirm();
+    const toast = useToast();
+    // 에러는 페이지 배너와 함께 토스트로도 알린다 (모달에 가려져 보이지 않기 때문).
+    function fail(e: unknown, fallback: string) {
+        const message = e instanceof Error ? e.message : fallback;
+        setError(message);
+        toast.error(message);
+    }
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [items, setItems] = useState<Content[]>([]);
@@ -58,6 +69,11 @@ export default function ReviewQueuePage() {
         setDialogTarget(id);
         setDialogText(prefill);
     }
+    function closeDialog() {
+        setDialogMode(null);
+        setDialogTarget(null);
+        setDialogText('');
+    }
     async function handleDialogConfirm() {
         if (!dialogTarget || !dialogMode)
             return;
@@ -71,12 +87,11 @@ export default function ReviewQueuePage() {
                 await reviewApi.withdraw(dialogTarget, dialogText);
             else if (dialogMode === 'regenerate')
                 await reviewApi.regenerate(dialogTarget);
-            setDialogMode(null);
-            setDialogTarget(null);
+            closeDialog();
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '처리 실패');
+            fail(e, '처리 실패');
         }
         finally {
             setDialogLoading(false);
@@ -89,7 +104,7 @@ export default function ReviewQueuePage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '승인 실패');
+            fail(e, '승인 실패');
         }
         finally {
             setActionLoading(null);
@@ -98,6 +113,14 @@ export default function ReviewQueuePage() {
     async function handleBulk() {
         if (selected.size === 0)
             return;
+        const ok = await confirm({
+            title: `일괄 ${BULK_ACTION_LABEL[bulkAction]}`,
+            message: `선택한 콘텐츠 ${selected.size}개를 일괄 ${BULK_ACTION_LABEL[bulkAction]}합니다.`,
+            confirmText: BULK_ACTION_LABEL[bulkAction],
+            severity: bulkAction === 'approve' ? 'warning' : 'error',
+        });
+        if (!ok)
+            return;
         setBulkLoading(true);
         try {
             const result = await reviewApi.bulk({
@@ -105,12 +128,15 @@ export default function ReviewQueuePage() {
                 action: bulkAction,
             });
             const msg = `완료: ${result.succeeded.length}개, 실패: ${result.failed.length}개`;
-            alert(msg);
+            if (result.failed.length > 0)
+                toast.warning(msg);
+            else
+                toast.success(msg);
             setSelected(new Set());
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '일괄 처리 실패');
+            fail(e, '일괄 처리 실패');
         }
         finally {
             setBulkLoading(false);
@@ -235,17 +261,17 @@ export default function ReviewQueuePage() {
 					</table>
 				</div>)}
 
-			<Modal.Backdrop isOpen={!!dialogMode} onOpenChange={next => {
-            if (!next)
-                (() => setDialogMode(null))();
+			<Modal.Backdrop isOpen={!!dialogMode} isDismissable={!dialogLoading} isKeyboardDismissDisabled={dialogLoading} onOpenChange={next => {
+            if (!next && !dialogLoading)
+                closeDialog();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>{dialogMode ? dialogTitle[dialogMode] : ''}</Modal.Heading>
-				<Modal.Body style={{ paddingTop: '16px !important' }}>
+				<Modal.Body style={{ paddingTop: '16px' }}>
 					{dialogMode === 'regenerate' ? (<p>이 콘텐츠를 회수하고 새 DAG run을 시작하시겠습니까?</p>) : (<TextField className="mb-4"><Label>{dialogMode === 'inject' ? '최종 텍스트' : '사유'}</Label><TextArea rows={dialogMode === 'inject' ? 6 : 3} value={dialogText} onChange={(e) => setDialogText(e.target.value)}></TextArea></TextField>)}
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setDialogMode(null)} variant="tertiary">취소</Button>
-					<Button isDisabled={dialogLoading} onPress={handleDialogConfirm} variant="primary">
+					<Button isDisabled={dialogLoading} onPress={closeDialog} variant="tertiary">취소</Button>
+					<Button isDisabled={dialogLoading || (dialogMode !== 'regenerate' && !dialogText.trim())} onPress={handleDialogConfirm} variant={dialogMode === 'reject' || dialogMode === 'withdraw' ? 'danger' : 'primary'}>
 						{dialogLoading ? <Spinner size="sm"></Spinner> : '확인'}
 					</Button>
 				</Modal.Footer>

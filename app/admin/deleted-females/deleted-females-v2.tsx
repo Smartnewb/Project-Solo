@@ -38,8 +38,8 @@ function DeletedFemalesPageContent() {
 
   const { data, isLoading, error } = useDeletedFemalesList(page, 20);
   const females = data?.items || [];
-  const totalPages = data?.meta?.totalPages || 1;
-  const totalCount = data?.meta?.totalCount || 0;
+  const totalCount = data?.meta?.totalItems;
+  const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / 20));
 
   const restoreMutation = useRestoreDeletedFemale();
   const sleepMutation = useSleepDeletedFemale();
@@ -63,10 +63,13 @@ function DeletedFemalesPageContent() {
     }
   };
 
-  const handleCopyPassword = () => {
-    if (restoreResult?.temporaryPassword) {
-      navigator.clipboard.writeText(restoreResult.temporaryPassword);
+  const handleCopyPassword = async () => {
+    if (!restoreResult?.temporaryPassword) return;
+    try {
+      await navigator.clipboard.writeText(restoreResult.temporaryPassword);
       toast.success("임시 비밀번호가 복사되었습니다.");
+    } catch {
+      toast.error("복사에 실패했습니다. 비밀번호를 직접 선택해 복사해주세요.");
     }
   };
 
@@ -126,7 +129,7 @@ function DeletedFemalesPageContent() {
         }}
       >
         <div className={"text-sm text-neutral-700"}>
-          총 {totalCount}명의 탈퇴 회원
+          총 {totalCount?.toLocaleString() ?? "—"}명의 탈퇴 회원
         </div>
       </div>
       {isLoading ? (
@@ -238,9 +241,10 @@ function DeletedFemalesPageContent() {
       <Modal.Backdrop
         isOpen={restoreDialogOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setRestoreDialogOpen(false))?.();
+          if (!isOpen && !restoreMutation.isPending) setRestoreDialogOpen(false);
         }}
-        isDismissable={(() => setRestoreDialogOpen(false)) !== undefined}
+        isDismissable={!restoreMutation.isPending}
+        isKeyboardDismissDisabled={restoreMutation.isPending}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -290,7 +294,9 @@ function DeletedFemalesPageContent() {
         onOpenChange={(isOpen) => {
           if (!isOpen) handlePasswordDialogClose?.();
         }}
-        isDismissable={handlePasswordDialogClose !== undefined}
+        // 임시 비밀번호는 한 번만 보여준다. 바깥 클릭/Esc 로 실수로 닫히지 않게 닫기 버튼으로만 닫는다.
+        isDismissable={false}
+        isKeyboardDismissDisabled
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -323,6 +329,7 @@ function DeletedFemalesPageContent() {
                   isIconOnly={true}
                   size={"md"}
                   className="rounded-lg"
+                  aria-label="임시 비밀번호 복사"
                 >
                   <Copy size={18} />
                 </Button>

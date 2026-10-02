@@ -50,6 +50,7 @@ export default function ChatManagementTab() {
   const [previewMessagesByRoomId, setPreviewMessagesByRoomId] = useState<Record<string, ChatMessage[]>>({});
   const [previewLoadingRoomIds, setPreviewLoadingRoomIds] = useState<Set<string>>(new Set());
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -262,6 +263,7 @@ export default function ChatManagementTab() {
 
   const fetchChatMessages = async (chatRoomId: string) => {
     setMessagesLoading(true);
+    setMessagesError(null);
     setError('');
 
     try {
@@ -272,7 +274,9 @@ export default function ChatManagementTab() {
 
       setChatMessages(response?.messages ?? []);
     } catch (error: any) {
-      setError(error.message || '채팅 메시지를 불러오는데 실패했습니다.');
+      const message = error.message || '채팅 메시지를 불러오는데 실패했습니다.';
+      setMessagesError(message);
+      setError(message);
     } finally {
       setMessagesLoading(false);
     }
@@ -416,7 +420,7 @@ export default function ChatManagementTab() {
       <Modal.Body className="space-y-3">{selectedChatRoom && <>
         <div className="flex flex-wrap justify-between gap-3 rounded-lg bg-gray-50 p-3">{[selectedChatRoom.male,selectedChatRoom.female].map(user => <div key={user.id} className="flex items-center gap-2"><Avatar><Avatar.Image src={getRepresentativePhoto(user)} alt="" /><Avatar.Fallback>{user.name?.charAt(0)}</Avatar.Fallback></Avatar><p className="text-sm font-semibold">{user.name}</p><Button variant="secondary" size="sm" aria-label={`${user.name} 프로필`} onPress={() => void handleUserClick(user.id)}><UserRound size={16} />프로필</Button></div>)}<Chip size="sm" variant="soft">{selectedChatRoom.isActive ? '활성' : '비활성'}</Chip></div>
         <p className="text-xs text-gray-600">생성일: {formatDate(selectedChatRoom.createdAt)}{selectedChatRoom.lastMessageAt && ` · 마지막 메시지: ${formatDate(selectedChatRoom.lastMessageAt)}`}</p>
-        <div ref={messagesContainerRef} className="h-96 overflow-auto p-1">{messagesLoading ? <div role="status" aria-label="메시지 불러오는 중" className="flex h-full items-center justify-center"><Spinner /></div> : !chatMessages.length ? <p className="py-12 text-center text-gray-600">메시지가 없습니다.</p> : <ul className="space-y-3">{chatMessages.map(message => {
+        <div ref={messagesContainerRef} className="h-96 overflow-auto p-1">{messagesLoading ? <div role="status" aria-label="메시지 불러오는 중" className="flex h-full items-center justify-center"><Spinner /></div> : messagesError ? <div role="alert" className="flex flex-col items-center gap-3 py-12 text-center text-red-600"><p>{messagesError}</p><Button variant="secondary" onPress={() => void fetchChatMessages(selectedChatRoom.id)}>다시 시도</Button></div> : !chatMessages.length ? <p className="py-12 text-center text-gray-600">메시지가 없습니다.</p> : <ul className="space-y-3">{chatMessages.map(message => {
           if (message.senderId === 'system') return <li key={message.id} className="text-center"><Chip size="sm" variant="soft">{message.content}</Chip></li>;
           const male=message.senderId === selectedChatRoom.male.id;
           const sender=male ? selectedChatRoom.male : selectedChatRoom.female;
@@ -430,7 +434,7 @@ export default function ChatManagementTab() {
       </>}</Modal.Body><Modal.Footer><Button variant="secondary" onPress={() => setChatDetailOpen(false)}>닫기</Button></Modal.Footer>
     </Modal.Dialog></Modal.Container></Modal.Backdrop>
     {userDetailOpen && userDetail && <UserDetailModal open={userDetailOpen} onClose={() => setUserDetailOpen(false)} userId={selectedUserId} userDetail={userDetail} loading={loadingUserDetail} error={userDetailError} onRefresh={() => {if(selectedUserId) void handleUserClick(selectedUserId);}} />}
-    <Modal.Backdrop isOpen={userDetailOpen && !userDetail} onOpenChange={setUserDetailOpen}><Modal.Container size="md"><Modal.Dialog><Modal.Header><Modal.Heading>사용자 프로필</Modal.Heading></Modal.Header><Modal.Body>{loadingUserDetail ? <p role="status" className="flex items-center gap-2"><Spinner size="sm" />프로필 조회 중</p> : <p role="alert">{userDetailError || '프로필 정보가 없습니다.'}</p>}</Modal.Body><Modal.Footer>{userDetailError && <Button variant="secondary" onPress={() => void handleUserClick(selectedUserId)}>재시도</Button>}<Button variant="secondary" onPress={() => setUserDetailOpen(false)}>닫기</Button></Modal.Footer></Modal.Dialog></Modal.Container></Modal.Backdrop>
+    <Modal.Backdrop isOpen={userDetailOpen && !userDetail} onOpenChange={setUserDetailOpen}><Modal.Container size="md"><Modal.Dialog style={{width:"100%",maxWidth:600,minWidth:0}}><Modal.Header><Modal.Heading>사용자 프로필</Modal.Heading></Modal.Header><Modal.Body>{loadingUserDetail ? <p role="status" className="flex items-center gap-2"><Spinner size="sm" />프로필 조회 중</p> : <p role="alert">{userDetailError || '프로필 정보가 없습니다.'}</p>}</Modal.Body><Modal.Footer>{userDetailError && <Button variant="secondary" onPress={() => void handleUserClick(selectedUserId)}>재시도</Button>}<Button variant="secondary" onPress={() => setUserDetailOpen(false)}>닫기</Button></Modal.Footer></Modal.Dialog></Modal.Container></Modal.Backdrop>
     <Modal.Backdrop isOpen={imagePreviewOpen} onOpenChange={setImagePreviewOpen}><Modal.Container size="lg"><Modal.Dialog style={{width:"100%",maxWidth:900,minWidth:0}}><Modal.Header className="flex items-center justify-between flex-row flex-wrap gap-3"><Modal.Heading>이미지 미리보기</Modal.Heading><Button isIconOnly variant="tertiary" aria-label="이미지 미리보기 닫기" onPress={() => setImagePreviewOpen(false)}><X size={18} /></Button></Modal.Header><Modal.Body>{previewImageUrl && <img src={previewImageUrl} alt="미리보기 이미지" className="mx-auto max-h-[70vh] max-w-full rounded-lg" />}</Modal.Body><Modal.Footer><Link className="button button--secondary" href={previewImageUrl} target="_blank" rel="noopener noreferrer">새 탭에서 열기</Link><Button variant="secondary" onPress={() => setImagePreviewOpen(false)}>닫기</Button></Modal.Footer></Modal.Dialog></Modal.Container></Modal.Backdrop>
   </div>;
 }

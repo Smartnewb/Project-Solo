@@ -3,6 +3,7 @@ import { Button, Spinner, Chip, Modal, TextField, Label, Input } from '@heroui/r
 import { RefreshCw as RefreshIcon, Play as PlayArrowIcon, Square as StopIcon, Map as MapIcon, Rocket as RocketLaunchIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { scheduledMatchingService } from '../service';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 import type { Country, ScheduledMatchingConfig, JobStatus, BatchHistory, ScheduleMatchingResponse } from '../types';
 import type { MatchingPoolStatsResponse, MatchingPoolCountry, MatchTypeStats } from '@/types/admin';
 type MatchingType = 'scheduled' | 'rematching';
@@ -94,7 +95,7 @@ function CountryCard({ country, config, jobStatus, lastBatch, onTrigger, trigger
             </div>)}
 
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-            <Button onPress={() => onTrigger(country)} isDisabled={triggering} variant="tertiary">
+            <Button onPress={() => onTrigger(country)} isDisabled={triggering} variant="primary">
               {triggering ? (<Spinner size="sm" style={{ marginRight: 8 }}></Spinner>) : (<PlayArrowIcon style={{ fontSize: 16, marginRight: 4 }}></PlayArrowIcon>)}
               수동 실행
             </Button>
@@ -127,6 +128,7 @@ function RunningBatchAlert({ batch, onCancel, cancelling }: RunningBatchAlertPro
     </aside>);
 }
 export default function CountryOverview() {
+    const confirm = useConfirm();
     const [configs, setConfigs] = useState<ScheduledMatchingConfig[]>([]);
     const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([]);
     const [runningBatches, setRunningBatches] = useState<BatchHistory[]>([]);
@@ -222,6 +224,14 @@ export default function CountryOverview() {
     };
     const currentStats: MatchTypeStats | null = mapStats ? mapStats[matchingType] : null;
     const handleTrigger = async (country: Country) => {
+        const ok = await confirm({
+            title: '수동 실행',
+            message: `${country === 'KR' ? '한국' : '일본'} 정기 매칭을 지금 수동 실행합니다. (${formatDate(new Date())})`,
+            confirmText: '실행',
+            severity: 'warning',
+        });
+        if (!ok)
+            return;
         try {
             setTriggering(country);
             await scheduledMatchingService.triggerManualExecution(country);
@@ -415,7 +425,7 @@ export default function CountryOverview() {
           <Button onPress={() => setScheduleConfirmOpen(false)} variant="tertiary">
             닫기
           </Button>
-          <Button onPress={handleScheduleMatching} isDisabled={scheduleExecuting} variant="tertiary">
+          <Button onPress={handleScheduleMatching} isDisabled={scheduleExecuting} variant="primary">
             실행
           </Button>
         </Modal.Footer>

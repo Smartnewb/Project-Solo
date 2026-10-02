@@ -392,9 +392,10 @@ function CreateDiscountDialog({
 		<Modal.Backdrop
 			isOpen={true}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) onClose?.();
+				if (!isOpen && !saving) onClose?.();
 			}}
-			isDismissable={onClose !== undefined}
+			isDismissable={!saving}
+			isKeyboardDismissDisabled={saving}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -569,7 +570,12 @@ function CreateDiscountDialog({
 						</div>
 					</Modal.Body>
 					<Modal.Footer>
-						<Button onClick={onClose} variant={"tertiary"} size={"md"}>
+						<Button
+							onClick={onClose}
+							variant={"tertiary"}
+							isDisabled={saving}
+							size={"md"}
+						>
 							취소
 						</Button>
 						<Button
@@ -614,9 +620,10 @@ function CancelDiscountDialog({
 		<Modal.Backdrop
 			isOpen={true}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) onClose?.();
+				if (!isOpen && !saving) onClose?.();
 			}}
-			isDismissable={onClose !== undefined}
+			isDismissable={!saving}
+			isKeyboardDismissDisabled={saving}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
@@ -643,12 +650,17 @@ function CancelDiscountDialog({
 						</div>
 					</Modal.Body>
 					<Modal.Footer>
-						<Button onClick={onClose} variant={"tertiary"} size={"md"}>
+						<Button
+							onClick={onClose}
+							variant={"tertiary"}
+							isDisabled={saving}
+							size={"md"}
+						>
 							닫기
 						</Button>
 						<Button
 							onClick={submit}
-							variant={"primary"}
+							variant={"danger"}
 							isDisabled={saving}
 							size={"md"}
 						>

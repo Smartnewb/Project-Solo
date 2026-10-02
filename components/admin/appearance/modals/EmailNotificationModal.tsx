@@ -9,7 +9,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { X } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import AdminService from "@/app/services/admin";
 
@@ -35,6 +35,14 @@ const EmailNotificationModal: React.FC<EmailNotificationModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setSubject("");
+    setMessage("");
+    setError(null);
+    setSuccess(false);
+  }, [open, userId]);
 
   const handleSubmit = async () => {
     if (!userId || !subject.trim() || !message.trim()) {
@@ -67,6 +75,7 @@ const EmailNotificationModal: React.FC<EmailNotificationModalProps> = ({
   };
 
   const handleClose = () => {
+    if (loading) return;
     setSubject("");
     setMessage("");
     setError(null);
@@ -80,7 +89,8 @@ const EmailNotificationModal: React.FC<EmailNotificationModalProps> = ({
       onOpenChange={(isOpen) => {
         if (!isOpen) handleClose?.();
       }}
-      isDismissable={handleClose !== undefined}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
     >
       <Modal.Container size="md" scroll="inside" className="w-full">
         <Modal.Dialog style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}>
@@ -98,9 +108,9 @@ const EmailNotificationModal: React.FC<EmailNotificationModalProps> = ({
             </Modal.Heading>
             <Button
               onClick={handleClose}
-              aria-label="close"
+              aria-label="닫기"
               variant={"ghost"}
-              isDisabled={undefined}
+              isDisabled={loading}
               isIconOnly={true}
               size={"md"}
               className="rounded-lg"
@@ -180,7 +190,9 @@ const EmailNotificationModal: React.FC<EmailNotificationModalProps> = ({
               onClick={handleSubmit}
               style={{ borderRadius: 8, position: "relative" }}
               variant={"primary"}
-              isDisabled={loading || !subject.trim() || !message.trim()}
+              isDisabled={
+                loading || success || !subject.trim() || !message.trim()
+              }
               size={"md"}
               className="rounded-xl"
             >

@@ -4,6 +4,7 @@ import { Bold as FormatBoldIcon, Italic as FormatItalicIcon, List as FormatListB
 import { useState, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import AdminService from '@/app/services/admin';
+import { useToast } from '@/shared/ui/admin/toast';
 interface MarkdownEditorProps {
     value: string;
     onChange: (value: string) => void;
@@ -11,6 +12,7 @@ interface MarkdownEditorProps {
     minHeight?: number;
 }
 export default function MarkdownEditor({ value, onChange, placeholder = '마크다운 형식으로 본문을 작성하세요...', minHeight = 400, }: MarkdownEditorProps) {
+    const toast = useToast();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
@@ -58,6 +60,9 @@ export default function MarkdownEditor({ value, onChange, placeholder = '마크�
             const markdownLink = linkText ? `[${linkText}](${linkUrl})` : `[링크](${linkUrl})`;
             insertAtCursor(markdownLink);
         }
+        closeLinkDialog();
+    };
+    const closeLinkDialog = () => {
         setLinkDialogOpen(false);
         setLinkUrl('');
         setLinkText('');
@@ -67,11 +72,11 @@ export default function MarkdownEditor({ value, onChange, placeholder = '마크�
         if (!file)
             return;
         if (!file.type.match(/^image\/(jpeg|png|gif|webp)$/)) {
-            alert('JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.');
+            toast.error('JPG, PNG, GIF, WEBP 파일만 업로드 가능합니다.');
             return;
         }
         if (file.size > 10 * 1024 * 1024) {
-            alert('파일 크기는 10MB 이하여야 합니다.');
+            toast.error('파일 크기는 10MB 이하여야 합니다.');
             return;
         }
         try {
@@ -81,7 +86,7 @@ export default function MarkdownEditor({ value, onChange, placeholder = '마크�
             insertAtCursor(imageMarkdown);
         }
         catch (err: any) {
-            alert(err.message || '이미지 업로드에 실패했습니다.');
+            toast.error(err.message || '이미지 업로드에 실패했습니다.');
         }
         finally {
             setUploading(false);
@@ -165,8 +170,8 @@ export default function MarkdownEditor({ value, onChange, placeholder = '마크�
         <span title={"이미지 업로드"}>
           <Button onPress={() => fileInputRef.current?.click()} aria-label="이미지 업로드" isDisabled={uploading} variant="tertiary" isIconOnly={true}>
             {uploading ? <Spinner size="sm"></Spinner> : <ImageIcon></ImageIcon>}
-            <input ref={fileInputRef} type="file" hidden accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleImageUpload}></input>
           </Button>
+          <input ref={fileInputRef} type="file" hidden accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleImageUpload}></input>
         </span>
 
         <div style={{ flex: 1 }}></div>
@@ -202,7 +207,7 @@ export default function MarkdownEditor({ value, onChange, placeholder = '마크�
       {/* Link Dialog */}
       <Modal.Backdrop isOpen={linkDialogOpen} onOpenChange={next => {
             if (!next)
-                (() => setLinkDialogOpen(false))();
+                closeLinkDialog();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
         <Modal.Heading>링크 삽입</Modal.Heading>
         <Modal.Body>
@@ -210,7 +215,7 @@ export default function MarkdownEditor({ value, onChange, placeholder = '마크�
           <TextField className="mb-4"><Label>{"URL"}</Label><Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://example.com"></Input></TextField>
         </Modal.Body>
         <Modal.Footer>
-          <Button onPress={() => setLinkDialogOpen(false)} variant="tertiary">취소</Button>
+          <Button onPress={closeLinkDialog} variant="tertiary">취소</Button>
           <Button onPress={handleLinkInsert} isDisabled={!linkUrl} variant="primary">
             삽입
           </Button>

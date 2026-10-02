@@ -9,7 +9,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { X } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import AdminService from "@/app/services/admin";
 
@@ -50,6 +50,14 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
   };
 
   const [byteCount, setByteCount] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+    setMessage("");
+    setError(null);
+    setSuccess(false);
+    setByteCount(0);
+  }, [open, userId]);
 
   const MAX_USER_INPUT_BYTE = 69; // 사용자가 입력할 수 있는 최대 바이트 (기본 템플릿 제외)
   const SMS_PREFIX = "[web발신]\n[썸타임]\n"; // SMS 기본 템플릿
@@ -99,6 +107,7 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
   };
 
   const handleClose = () => {
+    if (loading) return;
     setMessage("");
     setError(null);
     setSuccess(false);
@@ -112,7 +121,8 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
       onOpenChange={(isOpen) => {
         if (!isOpen) handleClose?.();
       }}
-      isDismissable={handleClose !== undefined}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
     >
       <Modal.Container size="md" scroll="inside" className="w-full">
         <Modal.Dialog style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}>
@@ -130,9 +140,9 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
             </Modal.Heading>
             <Button
               onClick={handleClose}
-              aria-label="close"
+              aria-label="닫기"
               variant={"ghost"}
-              isDisabled={undefined}
+              isDisabled={loading}
               isIconOnly={true}
               size={"md"}
               className="rounded-lg"
@@ -201,7 +211,10 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
               style={{ borderRadius: 8, position: "relative" }}
               variant={"primary"}
               isDisabled={
-                loading || !message.trim() || byteCount > MAX_USER_INPUT_BYTE
+                loading ||
+                success ||
+                !message.trim() ||
+                byteCount > MAX_USER_INPUT_BYTE
               }
               size={"md"}
               className="rounded-xl"

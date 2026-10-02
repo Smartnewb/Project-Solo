@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import AdminService from "@/app/services/admin";
 import type { EtaSubmission, EtaSubmissionStatus, EtaSubmissionStatusFilter, } from "@/app/services/admin";
 import { useToast } from "@/shared/ui/admin/toast/toast-context";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
 import { safeToLocaleDateString } from "@/app/utils/formatters";
 import { sanitizeUrl } from "@/shared/lib/safe-url";
@@ -35,6 +36,7 @@ const STATUS_CHIP: Record<EtaSubmissionStatus, {
 };
 export default function EtaMissionReviewPage() {
     const toast = useToast();
+    const confirm = useConfirm();
     const [status, setStatus] = useState<EtaSubmissionStatusFilter>("pending");
     const [page, setPage] = useState(0); // 화면 페이지는 0-based, API는 1-based
     const [rowsPerPage, setRowsPerPage] = useState(20);
@@ -45,6 +47,7 @@ export default function EtaMissionReviewPage() {
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     const [rejectTarget, setRejectTarget] = useState<EtaSubmission | null>(null);
     const [rejectReason, setRejectReason] = useState("");
+    const rejectProcessing = !!rejectTarget && processingId === rejectTarget.id;
     const load = useCallback(async () => {
         setLoading(true);
         try {
@@ -70,6 +73,13 @@ export default function EtaMissionReviewPage() {
     };
     const handleApprove = async (submission: EtaSubmission) => {
         if (processingId)
+            return;
+        const ok = await confirm({
+            title: "인증 승인",
+            message: `${submission.name ?? "이름 없음"}(${submission.schoolName})님의 인증을 승인합니다.\n구슬이 지급되고 유저에게 푸시가 발송됩니다.`,
+            confirmText: "승인",
+        });
+        if (!ok)
             return;
         setProcessingId(submission.id);
         try {
@@ -150,7 +160,7 @@ export default function EtaMissionReviewPage() {
                 </tr>) : (items.map((s) => (<tr key={s.id} className="border-b">
                     <td className="border-b px-4 py-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <Button variant="tertiary" aria-label="이미지 확대" onPress={() => setLightboxUrl(s.screenshotUrl)}><img src={s.screenshotUrl} alt="에타 스크린샷" width={56} height={56} style={{ objectFit: "cover", borderRadius: 6 }} /></Button>
+                      <Button variant="tertiary" isIconOnly className="h-14 w-14 overflow-hidden p-0" aria-label="이미지 확대" onPress={() => setLightboxUrl(s.screenshotUrl)}><img src={s.screenshotUrl} alt="에타 스크린샷" className="h-14 w-14 max-w-none rounded-md object-cover object-top" /></Button>
                     </td>
                     <td className="border-b px-4 py-3">{s.name ?? "-"}</td>
                     <td className="border-b px-4 py-3">{s.schoolName}</td>
@@ -194,15 +204,16 @@ export default function EtaMissionReviewPage() {
       <Modal.Backdrop isOpen={!!lightboxUrl} onOpenChange={next => {
             if (!next)
                 (() => setLightboxUrl(null))();
-        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
+        }}><Modal.Container size="lg"><Modal.Dialog aria-label="에타 스크린샷 확대" style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
+        <Modal.CloseTrigger aria-label="닫기" />
         <Modal.Body style={{ padding: 0 }}>
           {lightboxUrl && (<img src={lightboxUrl} alt="에타 스크린샷 확대" style={{ display: "block", maxWidth: "90vw", maxHeight: "85vh", objectFit: "contain" }}></img>)}
         </Modal.Body>
       </Modal.Dialog></Modal.Container></Modal.Backdrop>
 
       {/* 거절 사유 모달 */}
-      <Modal.Backdrop isOpen={!!rejectTarget} onOpenChange={next => {
-            if (!next)
+      <Modal.Backdrop isOpen={!!rejectTarget} isDismissable={!rejectProcessing} isKeyboardDismissDisabled={rejectProcessing} onOpenChange={next => {
+            if (!next && !rejectProcessing)
                 (() => setRejectTarget(null))();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
         <Modal.Header><Modal.Heading>
@@ -219,10 +230,10 @@ export default function EtaMissionReviewPage() {
           <TextField className="mb-4"><Label>{"거절 사유 (직접 입력 가능)"}</Label><TextArea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="사유를 선택하거나 직접 입력하세요"></TextArea></TextField>
         </Modal.Body>
         <Modal.Footer style={{ paddingInline: 24, paddingBottom: 16 }}>
-          <Button onPress={() => setRejectTarget(null)} variant="tertiary">
+          <Button onPress={() => setRejectTarget(null)} isDisabled={rejectProcessing} variant="tertiary">
             취소
           </Button>
-          <Button onPress={handleRejectConfirm} isDisabled={!rejectReason.trim() || processingId === rejectTarget?.id} variant="primary">
+          <Button onPress={handleRejectConfirm} isDisabled={!rejectReason.trim() || rejectProcessing} variant="danger">
             거절하기
           </Button>
         </Modal.Footer>

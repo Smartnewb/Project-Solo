@@ -1,7 +1,7 @@
 'use client';
 import { Button, Spinner, Chip, Modal, TextField, Label, TextArea, Description, Select, ListBox } from '@heroui/react';
 import { CircleCheck as CheckCircleIcon, CircleAlert as ErrorIcon, Copy as ContentCopyIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BulkCreateVideoResponse, TargetGender, VideoStatus } from '@/types/admin';
 import { useBulkCreateVideos } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
@@ -24,6 +24,16 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
     const [status, setStatus] = useState<VideoStatus>('published');
     const [targetGender, setTargetGender] = useState<TargetGender>('ALL');
     const [result, setResult] = useState<BulkCreateVideoResponse | null>(null);
+    // 닫힌 뒤에 도착한 응답이 다음 열림에 섞이지 않도록 요청 세대를 기록한다.
+    const requestIdRef = useRef(0);
+    useEffect(() => {
+        if (open) {
+            setUrlsText('');
+            setStatus('published');
+            setTargetGender('ALL');
+            setResult(null);
+        }
+    }, [open]);
     const urls = parseUrls(urlsText);
     const urlCount = urls.length;
     const handleSubmit = async () => {
@@ -31,23 +41,29 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
             toast.error('URL을 입력해주세요.');
             return;
         }
+        const requestId = ++requestIdRef.current;
         try {
             const res = await bulkCreate.mutateAsync({ urls, status, targetGender });
+            if (requestId !== requestIdRef.current)
+                return;
             setResult(res);
         }
         catch (err: unknown) {
+            if (requestId !== requestIdRef.current)
+                return;
             toast.error(getApiErrorMessage(err, '일괄 등록에 실패했습니다.'));
         }
     };
     const handleClose = () => {
+        requestIdRef.current += 1;
         setUrlsText('');
         setStatus('published');
         setTargetGender('ALL');
         setResult(null);
         onClose();
     };
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
-            if (!next)
+    return (<Modal.Backdrop isOpen={open} isDismissable={!bulkCreate.isPending} isKeyboardDismissDisabled={bulkCreate.isPending} onOpenChange={next => {
+            if (!next && !bulkCreate.isPending)
                 handleClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>영상 일괄 추가</Modal.Heading>
@@ -56,7 +72,7 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
             <p>
               YouTube Shorts URL을 한 줄에 하나씩 입력하세요. 중복 영상은 자동으로 제외됩니다.
             </p>
-            <TextField className="mb-4"><TextArea rows={10} placeholder={'https://youtube.com/shorts/mZz70McqsSI\nhttps://youtube.com/shorts/4wQvtfBLV60\n...'} value={urlsText} onChange={(e) => setUrlsText(e.target.value)} {...{ style: { fontFamily: 'monospace', fontSize: 12 } }}></TextArea></TextField>
+            <TextField className="mb-4" aria-label="영상 URL 목록"><TextArea aria-label="영상 URL 목록" rows={10} placeholder={'https://youtube.com/shorts/mZz70McqsSI\nhttps://youtube.com/shorts/4wQvtfBLV60\n...'} value={urlsText} onChange={(e) => setUrlsText(e.target.value)} {...{ style: { fontFamily: 'monospace', fontSize: 12 } }}></TextArea></TextField>
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
               <div className="block"><Select aria-label="등록 상태" value={status} onChange={(key) => {
                 const value = String(key ?? "");
@@ -115,7 +131,7 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
       </Modal.Body>
 
       <Modal.Footer>
-        <Button onPress={handleClose} variant="tertiary">
+        <Button onPress={handleClose} isDisabled={bulkCreate.isPending} variant="tertiary">
           {result ? '닫기' : '취소'}
         </Button>
         {!result && (<Button onPress={handleSubmit} isDisabled={bulkCreate.isPending || urlCount === 0} variant="primary">{bulkCreate.isPending ? <Spinner size="sm"></Spinner> : undefined}

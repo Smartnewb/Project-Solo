@@ -14,6 +14,7 @@ interface BulkProcessModalProps {
 interface ProcessResult {
 	success: number;
 	failed: number;
+	failedUsers: string[];
 	totalViewed: number;
 	totalRejected: number;
 	totalProcessed: number;
@@ -48,6 +49,7 @@ export default function BulkProcessModal({
 		const results: ProcessResult = {
 			success: 0,
 			failed: 0,
+			failedUsers: [],
 			totalViewed: 0,
 			totalRejected: 0,
 			totalProcessed: 0,
@@ -74,6 +76,8 @@ export default function BulkProcessModal({
 				results.totalProcessed += response.processedCount;
 			} catch (err: any) {
 				results.failed++;
+				const reason = err.response?.data?.message;
+				results.failedUsers.push(reason ? `${user.name} (${reason})` : user.name);
 			}
 		}
 		setProgress(100);
@@ -103,6 +107,7 @@ export default function BulkProcessModal({
 				if (!isOpen) handleClose?.();
 			}}
 			isDismissable={!processing}
+			isKeyboardDismissDisabled={processing}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -137,6 +142,14 @@ export default function BulkProcessModal({
 											: "모든 처리가 완료되었습니다!"}
 									</Alert.Content>
 								</Alert>
+								{result.failedUsers.length > 0 && (
+									<p
+										style={{ marginBottom: 8 }}
+										className={"text-sm text-neutral-700"}
+									>
+										실패한 계정: {result.failedUsers.join(", ")}
+									</p>
+								)}
 								<div
 									style={{ display: "flex", flexDirection: "column", gap: 8 }}
 								>

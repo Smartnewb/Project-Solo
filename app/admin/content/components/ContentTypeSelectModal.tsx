@@ -310,7 +310,7 @@ export function ContentTypeSelectModal({ open, onClose, onSelect }: Props) {
 
       <Modal.Body style={{ paddingBottom: 24 }}>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {OPTIONS.map((opt) => (<section key={opt.type} style={{ border: '2px solid #e0e0e0', borderRadius: 2, padding: 16, cursor: 'pointer', transition: 'all 0.15s ease' }}><Button variant="tertiary" onPress={() => onSelect(opt.type)} aria-label={`${opt.label} 작성`}>{opt.label} 작성</Button>
+          {OPTIONS.map((opt) => (<section key={opt.type} style={{ border: '2px solid #e0e0e0', borderRadius: 2, padding: 16, transition: 'all 0.15s ease' }}><Button variant="tertiary" onPress={() => onSelect(opt.type)} aria-label={`${opt.label} 작성`}>{opt.label} 작성</Button>
               <div style={{ marginBottom: 12 }}>
                 <p style={{ marginBottom: 2.4 }}>
                   {opt.label}

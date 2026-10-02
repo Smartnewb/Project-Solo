@@ -189,14 +189,15 @@ function EditPolicyDialog({
 		<Modal.Backdrop
 			isOpen={true}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) onClose?.();
+				if (!isOpen && !saving) onClose?.();
 			}}
-			isDismissable={onClose !== undefined}
+			isDismissable={!saving}
+			isKeyboardDismissDisabled={saving}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Header>
-						<Modal.Heading>{row.label}수정</Modal.Heading>
+						<Modal.Heading>{row.label} 수정</Modal.Heading>
 					</Modal.Header>
 					<Modal.Body>
 						<div style={{ marginTop: 8 }} className="flex flex-col gap-4">
@@ -265,7 +266,12 @@ function EditPolicyDialog({
 						</div>
 					</Modal.Body>
 					<Modal.Footer>
-						<Button onClick={onClose} variant={"tertiary"} size={"md"}>
+						<Button
+							onClick={onClose}
+							variant={"tertiary"}
+							isDisabled={saving}
+							size={"md"}
+						>
 							취소
 						</Button>
 						<Button

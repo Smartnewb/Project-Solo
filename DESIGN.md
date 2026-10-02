@@ -38,6 +38,11 @@ The font stack remains configured in `tailwind.config.js`: Cereal/Circular/Inter
 - Put Radio/Checkbox/Switch controls inside their Content slots so the visible control and label activate the same input.
 - Preserve service calls, country separation, filters, pagination, unsaved changes and confirmation flows.
 - Keep Date and range conversions in the intended local timezone. A single-date test does not verify a date-range consumer.
+- Never use native `alert`/`confirm`/`prompt`; use `useToast` and `useConfirm` from `@/shared/ui/admin`. Irreversible or outbound actions (delete, sanction, refund, send, publish, gem grant/remove, bulk ops, production flag toggles) confirm first and name the target and count.
+- While a request is pending, disable submit and block backdrop/Esc dismissal (`isDismissable={false}`, `isKeyboardDismissDisabled`); `shared/ui/modal` and `shared/ui/dialog` accept `isDismissable`. One-time secrets such as temporary passwords close only by button.
+- Errors raised while a modal is open must be visible inside the modal or as a toast, not only on the page behind the backdrop. Reset per-record fields when a modal opens for another record.
+- `useAdminForm` returns a new object every render; put `form.setValue` (stable) in effect/callback dependencies, never the form object.
+- Field errors placed in `Description` render red when the field is invalid (`app/globals.css`); helper text and counters belong in `Description`, not `FieldError`.
 - Remove old dependencies only after all callers are migrated. Import removal alone is not proof: verify real control behavior, layout, typecheck and build before release.
 
 ## Modal and navigation corrections (2026-10-02)

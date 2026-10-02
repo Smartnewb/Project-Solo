@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminService from "@/app/services/admin";
 import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
 import { useToast } from "@/shared/ui/admin/toast";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import type { CommerceCatalogProduct, CommerceProvider } from "@/types/admin";
 import CommerceProductDialog, {
 	type CommerceProductFormValue,
@@ -50,6 +51,7 @@ function providerColor(state: string) {
 }
 export default function CommerceCatalogClient() {
 	const toast = useToast();
+	const confirm = useConfirm();
 	const queryClient = useQueryClient();
 	const [topTab, setTopTab] = useState<"commerce" | "legacy">("commerce");
 	const [region, setRegion] = useState<Region>("KR");
@@ -441,8 +443,12 @@ export default function CommerceCatalogClient() {
 														)}
 													</div>
 												</td>
-												<td>
-													<Chip size={"sm"} variant={"soft"}>
+												<td className="whitespace-nowrap">
+													<Chip
+														size={"sm"}
+														variant={"soft"}
+														color={product.is_active ? "success" : "default"}
+													>
 														<Chip.Label>
 															{product.is_active ? "활성" : "비활성"}
 														</Chip.Label>
@@ -489,8 +495,17 @@ export default function CommerceCatalogClient() {
 															스토어 연결
 														</Button>
 														<Button
-															onClick={() => {
+															onClick={async () => {
 																const next = !product.is_active;
+																const ok = await confirm({
+																	title: next ? "상품 활성화" : "상품 비활성화",
+																	message: next
+																		? `${region} '${product.display_name}' 상품을 활성화합니다.`
+																		: `${region} '${product.display_name}' 상품을 비활성화합니다. 다음 카탈로그 발행부터 구매 화면에서 제외됩니다.`,
+																	confirmText: next ? "활성화" : "비활성화",
+																	severity: next ? "warning" : "error",
+																});
+																if (!ok) return;
 																activeMutation.mutate({
 																	productId: product.id,
 																	isActive: next,
@@ -636,9 +651,10 @@ export default function CommerceCatalogClient() {
 			<Modal.Backdrop
 				isOpen={publishOpen}
 				onOpenChange={(isOpen) => {
-					if (!isOpen) (() => setPublishOpen(false))?.();
+					if (!isOpen && !publishMutation.isPending) setPublishOpen(false);
 				}}
-				isDismissable={true}
+				isDismissable={!publishMutation.isPending}
+				isKeyboardDismissDisabled={publishMutation.isPending}
 			>
 				<Modal.Container size="md" scroll="inside">
 					<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -684,6 +700,7 @@ export default function CommerceCatalogClient() {
 							<Button
 								onClick={() => setPublishOpen(false)}
 								variant={"tertiary"}
+								isDisabled={publishMutation.isPending}
 								size={"md"}
 							>
 								취소

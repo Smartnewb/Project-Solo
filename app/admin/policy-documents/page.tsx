@@ -1,5 +1,6 @@
 "use client";
 import {
+	Alert,
 	Button,
 	Chip,
 	Label,
@@ -61,7 +62,7 @@ function ConsentProgressDialog({
 	id: string;
 	onClose: () => void;
 }) {
-	const { data, isLoading } = usePolicyConsentProgress(id);
+	const { data, isLoading, error } = usePolicyConsentProgress(id);
 	return (
 		<Modal.Backdrop
 			isOpen={true}
@@ -76,7 +77,16 @@ function ConsentProgressDialog({
 						<Modal.Heading>재동의 진행 현황</Modal.Heading>
 					</Modal.Header>
 					<Modal.Body>
-						{isLoading || !data ? (
+						{error ? (
+							<Alert status={"danger"}>
+								<Alert.Content>
+									{getAdminErrorMessage(
+										error,
+										"재동의 진행 현황을 불러오지 못했습니다.",
+									)}
+								</Alert.Content>
+							</Alert>
+						) : isLoading || !data ? (
 							<div
 								style={{
 									display: "flex",
@@ -182,10 +192,14 @@ export default function PolicyDocumentsPage() {
 		documentType: typeFilter || undefined,
 	});
 	const publishMutation = usePublishPolicyDocument();
-	const handlePublish = async (id: string, version: string) => {
+	const handlePublish = async (
+		id: string,
+		version: string,
+		documentType: PolicyDocumentType,
+	) => {
 		const ok = await confirmAction({
 			title: "공지 개시",
-			message: `버전 ${version} 문서의 공지를 지금 개시하시겠습니까? 앱 배너는 바로 노출됩니다. 개별 푸시·이메일 안내는 배치가 약 10분 안에 자동 발송하며, 09:00~21:00 사이에만 발송됩니다.`,
+			message: `${DOCUMENT_TYPE_LABELS[documentType] ?? documentType} 버전 ${version} 문서의 공지를 지금 개시하시겠습니까? 앱 배너는 바로 노출됩니다. 개별 푸시·이메일 안내는 배치가 약 10분 안에 자동 발송하며, 09:00~21:00 사이에만 발송됩니다.`,
 		});
 		if (!ok) return;
 		try {
@@ -377,7 +391,9 @@ export default function PolicyDocumentsPage() {
 												{(doc.status === "DRAFT" ||
 													doc.status === "SCHEDULED") && (
 													<Button
-														onClick={() => handlePublish(doc.id, doc.version)}
+														onClick={() =>
+															handlePublish(doc.id, doc.version, doc.documentType)
+														}
 														variant={"tertiary"}
 														isDisabled={publishMutation.isPending}
 														isIconOnly={true}

@@ -25,7 +25,7 @@ export function ConfirmAuditActionDialog({ action, selectedCount, busy, removesL
             setRejectReason(SIMPLE_REJECT_REASON);
         }
     }, [action]);
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
+    return (<Modal.Backdrop isOpen={open} isDismissable={!busy} isKeyboardDismissDisabled={busy} onOpenChange={next => {
             if (!next)
                 !busy && onClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
@@ -67,7 +67,7 @@ export function ConfirmAuditActionDialog({ action, selectedCount, busy, removesL
         <Button onPress={onClose} isDisabled={busy} variant="tertiary">
           취소
         </Button>
-        <Button onPress={() => onConfirm(action === 'reject' ? normalizedRejectReason : undefined)} isDisabled={busy || (action === 'reject' && normalizedRejectReason.length === 0)} variant="primary">
+        <Button onPress={() => onConfirm(action === 'reject' ? normalizedRejectReason : undefined)} isDisabled={busy || (action === 'reject' && normalizedRejectReason.length === 0)} variant={tone === 'error' ? 'danger' : 'primary'}>
           처리
         </Button>
       </Modal.Footer>

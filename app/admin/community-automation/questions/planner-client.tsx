@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import type { CommunityQuestionCalendarDay, CommunityQuestionCandidate, CommunityQuestionCountry, CommunityQuestionScope, CommunityQuestionStatus, CommunityQuestionTargetScope, } from '@/app/services/admin/community-questions';
 import { useCommunityQuestionBatch, useCommunityQuestionBatches, useCommunityQuestionCalendar, useCommunityQuestionMutations, } from '@/app/admin/hooks';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
+import { useToast } from '@/shared/ui/admin/toast';
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const STATUS_LABELS: Record<string, string> = {
     draft: '초안',
@@ -140,6 +141,7 @@ interface ScheduleDialogState {
     question: CommunityQuestionCalendarDay['question'] | null;
 }
 export default function CommunityQuestionPlannerClient() {
+    const toast = useToast();
     const today = useMemo(() => new Date(), []);
     const [country, setCountry] = useState<CommunityQuestionCountry>('kr');
     const [scope, setScope] = useState<CommunityQuestionScope>('all');
@@ -219,20 +221,25 @@ export default function CommunityQuestionPlannerClient() {
             setFormError('생성 기간을 입력해주세요.');
             return;
         }
-        const result = await mutations.generateBatch.mutateAsync({
-            country,
-            startDate,
-            endDate,
-            targetScope: { scope },
-            candidatesPerDay,
-            operatorMemo: String(form.get('operatorMemo') || '').trim() || undefined,
-            externalTrends: splitLines(String(form.get('externalTrends') || '')),
-            includeKeywords: splitLines(String(form.get('includeKeywords') || '')),
-            excludeKeywords: splitLines(String(form.get('excludeKeywords') || '')),
-            seasonHints: splitLines(String(form.get('seasonHints') || '')),
-        });
-        setBatchFilters({ from: startDate, to: endDate });
-        setSelectedBatchId(result.batchId);
+        try {
+            const result = await mutations.generateBatch.mutateAsync({
+                country,
+                startDate,
+                endDate,
+                targetScope: { scope },
+                candidatesPerDay,
+                operatorMemo: String(form.get('operatorMemo') || '').trim() || undefined,
+                externalTrends: splitLines(String(form.get('externalTrends') || '')),
+                includeKeywords: splitLines(String(form.get('includeKeywords') || '')),
+                excludeKeywords: splitLines(String(form.get('excludeKeywords') || '')),
+                seasonHints: splitLines(String(form.get('seasonHints') || '')),
+            });
+            setBatchFilters({ from: startDate, to: endDate });
+            setSelectedBatchId(result.batchId);
+        }
+        catch (error) {
+            toast.error(getAdminErrorMessage(error, '후보 생성에 실패했습니다.'));
+        }
     };
     const handleCreateQuestion = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -244,17 +251,23 @@ export default function CommunityQuestionPlannerClient() {
             setFormError('질문 제목과 2개 이상의 선택지를 입력해주세요.');
             return;
         }
-        await mutations.createQuestion.mutateAsync({
-            title,
-            description: String(form.get('description') || '').trim() || undefined,
-            options,
-            status: String(form.get('status') || 'scheduled') as CommunityQuestionStatus,
-            categoryCode: String(form.get('categoryCode') || 'general').trim() || 'general',
-            sourceTheme: String(form.get('sourceTheme') || '').trim() || undefined,
-            publishAt: String(form.get('publishAt') || '') || undefined,
-            closeAt: String(form.get('closeAt') || '') || undefined,
-        });
-        event.currentTarget.reset();
+        const formElement = event.currentTarget;
+        try {
+            await mutations.createQuestion.mutateAsync({
+                title,
+                description: String(form.get('description') || '').trim() || undefined,
+                options,
+                status: String(form.get('status') || 'scheduled') as CommunityQuestionStatus,
+                categoryCode: String(form.get('categoryCode') || 'general').trim() || 'general',
+                sourceTheme: String(form.get('sourceTheme') || '').trim() || undefined,
+                publishAt: String(form.get('publishAt') || '') || undefined,
+                closeAt: String(form.get('closeAt') || '') || undefined,
+            });
+            formElement.reset();
+        }
+        catch (error) {
+            toast.error(getAdminErrorMessage(error, '질문 생성에 실패했습니다.'));
+        }
     };
     return (<div>
 			<div style={{ marginBottom: 24 }}>
@@ -404,18 +417,18 @@ function CalendarPanel({ month, selectedDate, days, daysByDate, isFetching, onMo
 					{isFetching ? <Spinner size="sm"></Spinner> : null}
 				</div>
 				<div>
-					<Button onPress={() => onMoveMonth(-1)} variant="tertiary" isIconOnly={true}>
+					<Button onPress={() => onMoveMonth(-1)} variant="tertiary" isIconOnly={true} aria-label="이전 달">
 						<ChevronLeftIcon></ChevronLeftIcon>
 					</Button>
 					<p style={{ minWidth: 96, textAlign: 'center' }}>
 						{formatMonthLabel(month)}
 					</p>
-					<Button onPress={() => onMoveMonth(1)} variant="tertiary" isIconOnly={true}>
+					<Button onPress={() => onMoveMonth(1)} variant="tertiary" isIconOnly={true} aria-label="다음 달">
 						<ChevronRightIcon></ChevronRightIcon>
 					</Button>
 				</div>
 			</div>
-			<div style={{ display: 'grid', border: '1px solid', borderRadius: 1, overflow: 'hidden' }}>
+			<div style={{ display: 'grid', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
 				{WEEKDAYS.map((weekday) => (<div key={weekday} style={{ padding: 8, backgroundColor: '#f9fafb' }}>
 						<p>
 							{weekday}
@@ -427,7 +440,7 @@ function CalendarPanel({ month, selectedDate, days, daysByDate, isFetching, onMo
             const question = day?.question;
             const selected = key === selectedDate;
             const inMonth = date.getMonth() === month.getMonth();
-            return (<div key={key}  style={{ minHeight: 132, padding: 8, textAlign: 'left', border: 0, backgroundColor: selected ? 'primary.50' : 'background.paper', color: inMonth ? 'text.primary' : 'text.disabled', cursor: 'pointer' }}><Button variant="tertiary" onPress={() => onSelectDate(key)}>날짜 선택</Button>
+            return (<div key={key}  style={{ minHeight: 132, padding: 8, textAlign: 'left', border: 0, backgroundColor: selected ? '#f5f3ff' : '#ffffff', color: inMonth ? '#111827' : '#9ca3af', cursor: 'pointer' }}><Button variant="tertiary" onPress={() => onSelectDate(key)}>날짜 선택</Button>
 							<div>
 								<p>
 									{date.getDate()}
@@ -541,7 +554,7 @@ function BatchPanel({ from, to, onChangeFilters, batches, selectedBatchId, onSel
 						<div>
 							{batches.length === 0 ? (<p>
 									조회 기간에 생성된 batch가 없습니다.
-								</p>) : (batches.map((item) => (<Button variant="tertiary" key={item.id} onPress={() => onSelectBatch(item.id)} style={{ padding: 12, textAlign: 'left', cursor: 'pointer', backgroundColor: selectedBatchId === item.id ? 'primary.50' : 'background.paper' }} className="rounded-xl border bg-white p-4">
+								</p>) : (batches.map((item) => (<Button variant="tertiary" key={item.id} onPress={() => onSelectBatch(item.id)} style={{ padding: 12, textAlign: 'left', cursor: 'pointer', backgroundColor: selectedBatchId === item.id ? '#f5f3ff' : '#ffffff' }} className="rounded-xl border bg-white p-4">
 										<div>
 											<div>
 												<p>
@@ -653,41 +666,49 @@ function CandidateActionDialog({ state, scope, isMutating, onClose, onSaveEdit, 
 }) {
     const candidate = state.candidate;
     const open = !!state.type && !!candidate;
+    const toast = useToast();
     const title = state.type === 'edit' ? '후보 수정' : state.type === 'assign' ? '후보 배정' : '후보 폐기';
+    const submitLabel = state.type === 'reject' ? '폐기' : state.type === 'assign' ? '배정' : '저장';
     const submit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!candidate || !state.type)
             return;
         const form = new FormData(event.currentTarget);
-        if (state.type === 'edit') {
-            await onSaveEdit(candidate.id, {
-                title: String(form.get('title') || '').trim(),
-                description: String(form.get('description') || '').trim(),
-                options: splitLines(String(form.get('options') || '')),
-                targetDate: String(form.get('targetDate') || '') || undefined,
-                sourceTheme: String(form.get('sourceTheme') || '').trim() || undefined,
-            });
+        try {
+            if (state.type === 'edit') {
+                await onSaveEdit(candidate.id, {
+                    title: String(form.get('title') || '').trim(),
+                    description: String(form.get('description') || '').trim(),
+                    options: splitLines(String(form.get('options') || '')),
+                    targetDate: String(form.get('targetDate') || '') || undefined,
+                    sourceTheme: String(form.get('sourceTheme') || '').trim() || undefined,
+                });
+            }
+            if (state.type === 'assign') {
+                await onAssign(candidate.id, {
+                    publishAt: String(form.get('publishAt') || ''),
+                    closeAt: String(form.get('closeAt') || ''),
+                    targetScope: { scope },
+                    categoryCode: String(form.get('categoryCode') || 'general').trim() || 'general',
+                });
+            }
+            if (state.type === 'reject') {
+                await onReject(candidate.id, {
+                    reason: String(form.get('reason') || '').trim(),
+                });
+            }
+            onClose();
         }
-        if (state.type === 'assign') {
-            await onAssign(candidate.id, {
-                publishAt: String(form.get('publishAt') || ''),
-                closeAt: String(form.get('closeAt') || ''),
-                targetScope: { scope },
-                categoryCode: String(form.get('categoryCode') || 'general').trim() || 'general',
-            });
+        catch (error) {
+            // 실패 시 모달을 열어 둔 채 입력을 유지한다.
+            toast.error(getAdminErrorMessage(error, `후보 ${submitLabel}에 실패했습니다.`));
         }
-        if (state.type === 'reject') {
-            await onReject(candidate.id, {
-                reason: String(form.get('reason') || '').trim(),
-            });
-        }
-        onClose();
     };
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
-            if (!next)
-                !isMutating && onClose();
+    return (<Modal.Backdrop isOpen={open} isDismissable={!isMutating} isKeyboardDismissDisabled={isMutating} onOpenChange={next => {
+            if (!next && !isMutating)
+                onClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
-			<form onSubmit={submit}>
+			<form onSubmit={submit} className="flex min-h-0 flex-col">
 				<Modal.Heading>{title}</Modal.Heading>
 				<Modal.Body>
 					{candidate ? (<div style={{ marginTop: 8 }}>
@@ -716,8 +737,8 @@ function CandidateActionDialog({ state, scope, isMutating, onClose, onSaveEdit, 
 					<Button onPress={onClose} isDisabled={isMutating} variant="tertiary">
 						취소
 					</Button>
-					<Button type="submit" isDisabled={isMutating} variant="primary">
-						{isMutating ? '처리 중...' : '저장'}
+					<Button type="submit" isDisabled={isMutating} variant={state.type === 'reject' ? 'danger' : 'primary'}>
+						{isMutating ? '처리 중...' : submitLabel}
 					</Button>
 				</Modal.Footer>
 			</form>
@@ -732,23 +753,30 @@ function ScheduleDialog({ state, isMutating, onClose, onSave, }: {
         closeAt: string;
     }) => Promise<unknown>;
 }) {
+    const toast = useToast();
     const question = state.question;
     const submit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!question)
             return;
         const form = new FormData(event.currentTarget);
-        await onSave(question.id, {
-            publishAt: String(form.get('publishAt') || '') || undefined,
-            closeAt: String(form.get('closeAt') || ''),
-        });
-        onClose();
+        try {
+            await onSave(question.id, {
+                publishAt: String(form.get('publishAt') || '') || undefined,
+                closeAt: String(form.get('closeAt') || ''),
+            });
+            onClose();
+        }
+        catch (error) {
+            // 실패 시 모달을 열어 둔 채 입력을 유지한다.
+            toast.error(getAdminErrorMessage(error, '질문 일정 수정에 실패했습니다.'));
+        }
     };
-    return (<Modal.Backdrop isOpen={!!question} onOpenChange={next => {
-            if (!next)
-                !isMutating && onClose();
+    return (<Modal.Backdrop isOpen={!!question} isDismissable={!isMutating} isKeyboardDismissDisabled={isMutating} onOpenChange={next => {
+            if (!next && !isMutating)
+                onClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
-			<form onSubmit={submit}>
+			<form onSubmit={submit} className="flex min-h-0 flex-col">
 				<Modal.Heading>질문 일정 수정</Modal.Heading>
 				<Modal.Body>
 					{question ? (<div style={{ marginTop: 8 }}>

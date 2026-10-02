@@ -9,7 +9,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { TriangleAlert } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import AdminService from "@/app/services/admin";
 
@@ -30,6 +30,15 @@ const WarningMessageModal: React.FC<WarningMessageModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setMessage("");
+    setError(null);
+    setSuccess(false);
+    setTouched(false);
+  }, [open, userId]);
 
   const handleSubmit = async () => {
     if (!userId || !message.trim()) return;
@@ -48,7 +57,7 @@ const WarningMessageModal: React.FC<WarningMessageModalProps> = ({
         handleClose();
       }, 1000);
     } catch (error: any) {
-      setError(error.message || "경고 메시지 발송 중 오류가 발생했습니다.");
+      setError(error.message || "경고 이력 기록 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -59,6 +68,7 @@ const WarningMessageModal: React.FC<WarningMessageModalProps> = ({
       setMessage("");
       setError(null);
       setSuccess(false);
+      setTouched(false);
       onClose();
     }
   };
@@ -69,7 +79,8 @@ const WarningMessageModal: React.FC<WarningMessageModalProps> = ({
       onOpenChange={(isOpen) => {
         if (!isOpen) handleClose?.();
       }}
-      isDismissable={handleClose !== undefined}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
     >
       <Modal.Container size="md" scroll="inside" className="w-full">
         <Modal.Dialog style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}>
@@ -77,7 +88,7 @@ const WarningMessageModal: React.FC<WarningMessageModalProps> = ({
             <Modal.Heading>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <TriangleAlert />
-                경고 메시지 발송
+                경고 이력 기록
               </div>
             </Modal.Heading>
           </Modal.Header>
@@ -109,19 +120,20 @@ const WarningMessageModal: React.FC<WarningMessageModalProps> = ({
                 <TextField
                   className="w-full"
                   isDisabled={loading}
-                  isInvalid={message.trim() === ""}
+                  isInvalid={touched && message.trim() === ""}
                 >
                   <Label>{"경고 메시지"}</Label>
                   <TextArea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
+                    onBlur={() => setTouched(true)}
                     placeholder="경고 메시지 내용을 입력하세요"
                     required
                     rows={4}
                     aria-label={"경고 메시지"}
                   />
                   <Description>
-                    {message.trim() === "" ? "메시지를 입력해주세요" : ""}
+                    {touched && message.trim() === "" ? "메시지를 입력해주세요" : ""}
                   </Description>
                 </TextField>
               </div>
@@ -145,7 +157,7 @@ const WarningMessageModal: React.FC<WarningMessageModalProps> = ({
               className="rounded-xl"
             >
               {loading ? <Spinner aria-label="불러오는 중" size="sm" /> : null}
-              {loading ? "발송 중..." : "발송하기"}
+              {loading ? "기록 중..." : "기록하기"}
             </Button>
           </Modal.Footer>
         </Modal.Dialog>

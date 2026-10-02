@@ -1,6 +1,8 @@
 import { Modal, Button, TextArea, Input } from '@heroui/react';
 // TITLE: 메세지 작성 컴포넌트
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
 interface MessageComposerProps {
     templateId?: string;
     templateTitle?: string;
@@ -8,6 +10,9 @@ interface MessageComposerProps {
     onMessageChange?: (message: string) => void;
 }
 export function MessageComposer({ templateId, templateTitle, templateContent, onMessageChange }: MessageComposerProps) {
+    const confirm = useConfirm();
+    const toast = useToast();
+    const draftPromptedRef = useRef(false);
     // === 상태관리 ===
     const [message, setMessage] = useState<string>('');
     const [scheduledAt, setScheduledAt] = useState<string>('');
@@ -24,7 +29,7 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
     // === 임시 저장 ===
     const handleSave = async () => {
         if (!message.trim()) {
-            alert('메세지를 입력해주세요.');
+            toast.warning('메세지를 입력해주세요.');
             return;
         }
         try {
@@ -36,16 +41,16 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
             };
             localStorage.setItem('sms_draft', JSON.stringify(savedData));
             setHasUnsavedChanges(false);
-            alert('임시 저장이 완료되었습니다.');
+            toast.success('임시 저장이 완료되었습니다.');
         }
         catch (error) {
-            alert('임시 저장에 실패했습니다.');
+            toast.error('임시 저장에 실패했습니다.');
         }
     };
     // === 템플릿 적용 ===
     const handleApplyTemplate = () => {
         if (!templateContent) {
-            alert('선택된 템플릿이 없습니다.');
+            toast.warning('선택된 템플릿이 없습니다.');
             return;
         }
         updateMessage(templateContent, 'template', false);
@@ -59,11 +64,17 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
                 setLastTemplateId(templateId);
             }
             else {
-                const confirmReplace = confirm('현재 작성 중인 내용이 있습니다.\n템플릿을 불러오면 현재 내용이 사라집니다.\n계속하시겠습니까?');
-                if (confirmReplace) {
-                    updateMessage(templateContent, 'template', false);
-                    setLastTemplateId(templateId);
-                }
+                void confirm({
+                    title: '템플릿 불러오기',
+                    message: '현재 작성 중인 내용이 있습니다.\n템플릿을 불러오면 현재 내용이 사라집니다.\n계속하시겠습니까?',
+                    confirmText: '불러오기',
+                    severity: 'warning',
+                }).then((confirmReplace) => {
+                    if (confirmReplace) {
+                        updateMessage(templateContent, 'template', false);
+                        setLastTemplateId(templateId);
+                    }
+                });
             }
         }
         else if (!templateId && lastTemplateId) {
@@ -73,44 +84,62 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
     }, [templateContent, templateId]);
     // === 임시저장 불러오기 ===
     useEffect(() => {
-        try {
-            const savedData = localStorage.getItem('sms_draft');
-            if (savedData) {
-                const parsed = JSON.parse(savedData);
-                const timeDiff = Date.now() - new Date(parsed.savedAt).getTime();
-                const hoursDiff = timeDiff / (1000 * 60 * 60);
-                if (hoursDiff < 24) {
-                    const loadDraft = confirm(`임시 저장된 메시지가 있습니다.\n저장 시간: ${new Date(parsed.savedAt).toLocaleString()}\n불러오시겠습니까?`);
-                    if (loadDraft) {
-                        updateMessage(parsed.message || '', 'draft', false);
-                        if (parsed.templateId) {
-                            setLastTemplateId(parsed.templateId);
+        // StrictMode 이중 실행 시 확인창이 두 번 떠서 앞선 확인이 취소 처리(=임시저장 삭제)되는 것을 막는다.
+        if (draftPromptedRef.current)
+            return;
+        draftPromptedRef.current = true;
+        const promptDraft = async () => {
+            try {
+                const savedData = localStorage.getItem('sms_draft');
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    const timeDiff = Date.now() - new Date(parsed.savedAt).getTime();
+                    const hoursDiff = timeDiff / (1000 * 60 * 60);
+                    if (hoursDiff < 24) {
+                        const loadDraft = await confirm({
+                            title: '임시저장 불러오기',
+                            message: `임시 저장된 메시지가 있습니다.\n저장 시간: ${new Date(parsed.savedAt).toLocaleString()}\n불러오시겠습니까?\n취소하면 임시저장이 삭제됩니다.`,
+                            confirmText: '불러오기',
+                            cancelText: '삭제',
+                            severity: 'info',
+                        });
+                        if (loadDraft) {
+                            updateMessage(parsed.message || '', 'draft', false);
+                            if (parsed.templateId) {
+                                setLastTemplateId(parsed.templateId);
+                            }
+                        }
+                        else {
+                            localStorage.removeItem('sms_draft');
                         }
                     }
                     else {
                         localStorage.removeItem('sms_draft');
                     }
                 }
-                else {
-                    localStorage.removeItem('sms_draft');
-                }
             }
-        }
-        catch (error) {
-            ;
-        }
+            catch (error) {
+                toast.error('임시저장을 불러오지 못했습니다.');
+            }
+        };
+        void promptDraft();
     }, []);
     // === 수동 임시저장 불러오기 ===
-    const handleLoadDraft = () => {
+    const handleLoadDraft = async () => {
         try {
             const savedData = localStorage.getItem('sms_draft');
             if (!savedData) {
-                alert('저장된 임시저장이 없습니다.');
+                toast.info('저장된 임시저장이 없습니다.');
                 return;
             }
             const parsed = JSON.parse(savedData);
             if (message.trim() && hasUnsavedChanges) {
-                const confirmReplace = confirm('현재 작성 중인 내용이 있습니다.\n임시저장을 불러오면 현재 내용이 사라집니다.\n계속하시겠습니까?');
+                const confirmReplace = await confirm({
+                    title: '임시저장 불러오기',
+                    message: '현재 작성 중인 내용이 있습니다.\n임시저장을 불러오면 현재 내용이 사라집니다.\n계속하시겠습니까?',
+                    confirmText: '불러오기',
+                    severity: 'warning',
+                });
                 if (!confirmReplace)
                     return;
             }
@@ -118,10 +147,10 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
             if (parsed.templateId) {
                 setLastTemplateId(parsed.templateId);
             }
-            alert(`임시저장을 불러왔습니다.\n저장 시간: ${new Date(parsed.savedAt).toLocaleString()}`);
+            toast.success(`임시저장을 불러왔습니다. (저장 시간: ${new Date(parsed.savedAt).toLocaleString()})`);
         }
         catch (error) {
-            alert('임시저장 불러오기에 실패했습니다.');
+            toast.error('임시저장 불러오기에 실패했습니다.');
         }
     };
     // === 메세지 변경 추적 ===
@@ -129,9 +158,14 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
         updateMessage(value, 'manual', true);
     };
     // === 메세지 초기화 ===
-    const handleClearMessage = () => {
+    const handleClearMessage = async () => {
         if (message.trim() && hasUnsavedChanges) {
-            const confirmClear = confirm('작성 중인 내용을 모두 삭제하시겠습니까?');
+            const confirmClear = await confirm({
+                title: '내용 초기화',
+                message: '작성 중인 내용을 모두 삭제하시겠습니까?',
+                confirmText: '삭제',
+                severity: 'error',
+            });
             if (!confirmClear)
                 return;
         }

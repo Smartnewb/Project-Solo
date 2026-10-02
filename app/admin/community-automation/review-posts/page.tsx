@@ -3,6 +3,8 @@ import { Button, Spinner, Chip, Modal, TextField, Label, Input, TextArea, Descri
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CommunityReviewPostJob, ReviewPostJobStatus, ReviewSourceStat, ReviewSourceType, } from '@/app/services/admin/community-automation';
 import { reviewSources as reviewSourcesApi } from '@/app/services/admin/community-automation';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
+import { useToast } from '@/shared/ui/admin/toast';
 const SOURCE_TYPE_OPTIONS: Array<{
     value: ReviewSourceType;
     label: string;
@@ -49,6 +51,14 @@ function statCount(stats: ReviewSourceStat[], sourceType: ReviewSourceType, safe
         .reduce((sum, item) => sum + Number(item.count ?? 0), 0);
 }
 export default function ReviewPostsPage() {
+    const confirm = useConfirm();
+    const toast = useToast();
+    // 에러는 페이지 배너와 함께 토스트로도 알린다 (모달에 가려져 보이지 않기 때문).
+    function fail(e: unknown, fallback: string) {
+        const message = e instanceof Error ? e.message : fallback;
+        setError(message);
+        toast.error(message);
+    }
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -95,7 +105,7 @@ export default function ReviewPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Qdrant 동기화 실패');
+            fail(e, 'Qdrant 동기화 실패');
         }
         finally {
             setActionLoading(false);
@@ -112,6 +122,16 @@ export default function ReviewPostsPage() {
         if (!nextScheduledAt) {
             setError('발행 예약 시간을 선택해 주세요.');
             return;
+        }
+        if (options?.publishNow) {
+            const ok = await confirm({
+                title: '리뷰 게시글 지금 작성',
+                message: '리뷰 게시글을 즉시 발행합니다.\n발행 후에는 앱에 바로 노출됩니다.',
+                confirmText: '지금 작성',
+                severity: 'warning',
+            });
+            if (!ok)
+                return;
         }
         setActionLoading(true);
         setError(null);
@@ -130,7 +150,7 @@ export default function ReviewPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '리뷰 예약 생성 실패');
+            fail(e, '리뷰 예약 생성 실패');
         }
         finally {
             setActionLoading(false);
@@ -150,7 +170,7 @@ export default function ReviewPostsPage() {
         if (!editingJob)
             return;
         if (!editTitle.trim() || !editContent.trim()) {
-            setError('제목과 본문을 모두 입력해 주세요.');
+            fail(null, '제목과 본문을 모두 입력해 주세요.');
             return;
         }
         setActionLoading(true);
@@ -166,7 +186,7 @@ export default function ReviewPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '리뷰 수정 실패');
+            fail(e, '리뷰 수정 실패');
         }
         finally {
             setActionLoading(false);
@@ -319,12 +339,12 @@ export default function ReviewPostsPage() {
 					</div>
 				</section>
 			</div>
-			<Modal.Backdrop isOpen={Boolean(editingJob)} onOpenChange={next => {
-            if (!next)
+			<Modal.Backdrop isOpen={Boolean(editingJob)} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
                 closeEditDialog();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
 				<Modal.Heading style={{ fontWeight: 900 }}>리뷰 내용 수정</Modal.Heading>
-				<Modal.Body style={{ paddingTop: '12px !important' }}>
+				<Modal.Body style={{ paddingTop: '12px' }}>
 					<div>
 						<TextField className="mb-4"><Label>{"제목"}</Label><Input value={editTitle} onChange={(event) => setEditTitle(event.target.value)} {...{ maxLength: 30 }}></Input><Description>{`${editTitle.length}/30`}</Description></TextField>
 						<TextField className="mb-4"><Label>{"본문"}</Label><TextArea value={editContent} onChange={(event) => setEditContent(event.target.value)}></TextArea></TextField>

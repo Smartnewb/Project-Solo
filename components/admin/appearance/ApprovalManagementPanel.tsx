@@ -29,6 +29,7 @@ import RegionFilter, {
 } from "@/components/admin/common/RegionFilter";
 
 import AdminService from "@/app/services/admin";
+import { useToast } from "@/shared/ui/admin/toast";
 
 interface PendingUser {
   id?: string;
@@ -51,6 +52,7 @@ interface PendingUser {
 }
 
 const ApprovalManagementPanel: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState(0); // 0: pending, 1: rejected, 2: reapply
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [rejectedUsers, setRejectedUsers] = useState<PendingUser[]>([]);
@@ -89,6 +91,12 @@ const ApprovalManagementPanel: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [customRejectionReason, setCustomRejectionReason] = useState("");
+
+  // 거부 모달을 열거나 닫을 때(백드롭/Esc 포함) 이전 사유가 남지 않게 초기화
+  useEffect(() => {
+    setRejectionReason("");
+    setCustomRejectionReason("");
+  }, [rejectionModalOpen]);
 
   // 거부 사유 옵션들
   const rejectionReasons = [
@@ -430,6 +438,7 @@ const ApprovalManagementPanel: React.FC = () => {
     } catch (err: any) {
       console.error("승인 처리 오류:", err);
       setError("승인 처리 중 오류가 발생했습니다.");
+      toast.error("승인 처리 중 오류가 발생했습니다.");
     } finally {
       setProcessing(false);
     }
@@ -462,6 +471,7 @@ const ApprovalManagementPanel: React.FC = () => {
     } catch (err: any) {
       console.error("거부 처리 오류:", err);
       setError("거부 처리 중 오류가 발생했습니다.");
+      toast.error("거부 처리 중 오류가 발생했습니다.");
     } finally {
       setProcessing(false);
     }
@@ -538,7 +548,7 @@ const ApprovalManagementPanel: React.FC = () => {
           value={region}
           onChange={setRegionFilter}
           size={isMobile ? "medium" : "small"}
-          sx={{ minWidth: { xs: "100%", sm: 150 } }}
+          sx={{ minWidth: isMobile ? "100%" : 150 }}
         />
         {/* 이름 검색 */}
         <TextField
@@ -979,9 +989,10 @@ const ApprovalManagementPanel: React.FC = () => {
       <Modal.Backdrop
         isOpen={approvalModalOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setApprovalModalOpen(false))?.();
+          if (!isOpen && !processing) setApprovalModalOpen(false);
         }}
-        isDismissable={(() => setApprovalModalOpen(false)) !== undefined}
+        isDismissable={!processing}
+        isKeyboardDismissDisabled={processing}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -997,7 +1008,7 @@ const ApprovalManagementPanel: React.FC = () => {
               <Button
                 onClick={() => setApprovalModalOpen(false)}
                 variant={"ghost"}
-                isDisabled={undefined}
+                isDisabled={processing}
                 size={"md"}
                 className="rounded-xl"
               >
@@ -1024,9 +1035,10 @@ const ApprovalManagementPanel: React.FC = () => {
       <Modal.Backdrop
         isOpen={rejectionModalOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setRejectionModalOpen(false))?.();
+          if (!isOpen && !processing) setRejectionModalOpen(false);
         }}
-        isDismissable={(() => setRejectionModalOpen(false)) !== undefined}
+        isDismissable={!processing}
+        isKeyboardDismissDisabled={processing}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -1069,7 +1081,7 @@ const ApprovalManagementPanel: React.FC = () => {
                         <ListBox.Item
                           key={reason.value}
                           id={reason.value}
-                          textValue={"reason.label"}
+                          textValue={reason.label}
                         >
                           {reason.label}
                         </ListBox.Item>
@@ -1102,7 +1114,7 @@ const ApprovalManagementPanel: React.FC = () => {
               <Button
                 onClick={() => setRejectionModalOpen(false)}
                 variant={"ghost"}
-                isDisabled={undefined}
+                isDisabled={processing}
                 size={"md"}
                 className="rounded-xl"
               >
@@ -1110,7 +1122,7 @@ const ApprovalManagementPanel: React.FC = () => {
               </Button>
               <Button
                 onClick={handleRejection}
-                variant={"primary"}
+                variant={"danger"}
                 isDisabled={
                   processing ||
                   !rejectionReason.trim() ||

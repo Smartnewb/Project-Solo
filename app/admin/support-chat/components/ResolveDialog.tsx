@@ -4,7 +4,7 @@ import {
   ListBox,
   Button,
   Chip,
-  FieldError,
+  Description,
   Label,
   Modal,
   Spinner,
@@ -93,8 +93,10 @@ export default function ResolveDialog({
   return (
     <Modal.Backdrop
       isOpen={open}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
       onOpenChange={(isOpen) => {
-        if (!isOpen) (() => !loading && onClose())();
+        if (!isOpen && !loading) onClose();
       }}
     >
       <Modal.Container>
@@ -171,7 +173,7 @@ export default function ResolveDialog({
                     {...{ maxLength: 1000 }}
                     disabled={loading}
                   />
-                  <FieldError>{`${message.length}/1000자`}</FieldError>
+                  <Description>{`${message.length}/1000자`}</Description>
                 </TextField>
               </>
             )}

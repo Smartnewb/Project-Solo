@@ -424,13 +424,13 @@ export interface DeletedFemale {
 
 export interface DeletedFemalesListResponse {
   items: DeletedFemale[];
+  // GET /admin/v2/retention/deleted-females 실제 응답 (2026-10-02 운영 확인)
   meta: {
-    page: number;
-    limit: number;
-    totalCount: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
   };
 }
 

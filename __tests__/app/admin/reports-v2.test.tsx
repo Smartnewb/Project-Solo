@@ -26,6 +26,8 @@ jest.mock('next/navigation', () => ({
   })),
 }));
 
+jest.mock('@/shared/ui/admin/confirm-dialog', () => ({ useConfirm: () => jest.fn().mockResolvedValue(true) }));
+
 jest.mock('@/shared/ui/admin/toast/toast-context', () => ({
   useToast: jest.fn(() => ({
     error: jest.fn(),

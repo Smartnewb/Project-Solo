@@ -79,7 +79,7 @@ export default function PresetUploadModal({ open, onClose, onSuccess }: PresetUp
         setError(null);
         onClose();
     };
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
+    return (<Modal.Backdrop isOpen={open} isDismissable={!uploading} isKeyboardDismissDisabled={uploading} onOpenChange={next => {
             if (!next)
                 handleClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -93,11 +93,11 @@ export default function PresetUploadModal({ open, onClose, onSuccess }: PresetUp
           <div>
             <Button onPress={() => fileInputRef.current?.click()} fullWidth variant="secondary" style={{ paddingBlock: 16 }}>{<CloudUploadIcon></CloudUploadIcon>}
               {selectedFile ? selectedFile.name : '이미지 선택 (JPG/PNG, 최대 5MB)'}
-              <input ref={fileInputRef} type="file" hidden accept="image/jpeg,image/png" onChange={handleFileSelect}></input>
             </Button>
+            <input ref={fileInputRef} type="file" hidden accept="image/jpeg,image/png" onChange={handleFileSelect}></input>
           </div>
 
-          {previewUrl && (<div style={{ width: '100%', borderRadius: 1, overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+          {previewUrl && (<div style={{ width: '100%', borderRadius: 4, overflow: 'hidden', border: '1px solid #e0e0e0' }}>
               <img src={previewUrl} alt="미리보기" style={{
                 width: '100%',
                 height: '100%',

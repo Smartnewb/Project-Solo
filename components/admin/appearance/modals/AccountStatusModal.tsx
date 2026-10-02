@@ -139,7 +139,8 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
       onOpenChange={(isOpen) => {
         if (!isOpen) handleClose?.();
       }}
-      isDismissable={handleClose !== undefined}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
     >
       <Modal.Container size="md" scroll="inside" className="w-full">
         <Modal.Dialog style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}>
@@ -296,7 +297,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
                                 <ListBox.Item
                                   key={days}
                                   id={days}
-                                  textValue={"days일\n                        "}
+                                  textValue={`${days}일`}
                                 >
                                   {days}일
                                 </ListBox.Item>
@@ -363,13 +364,13 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
                         backgroundColor: "rgba(237, 108, 2, 0.06)",
                         borderRadius: 4,
                         border: "1px solid",
-                        borderColor: "warning.light",
+                        borderColor: "#fde68a",
                       }}
                     >
                       <div
                         style={{
                           fontWeight: 600,
-                          color: "warning.dark",
+                          color: "#b45309",
                           marginBottom: 2,
                         }}
                         className={"text-sm text-neutral-700"}
@@ -411,7 +412,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
             </Button>
             <Button
               onClick={handleSubmit}
-              variant={"primary"}
+              variant={!isSuspended ? "danger" : "primary"}
               isDisabled={
                 loading || success || (!isSuspended && !canSubmitSuspend)
               }

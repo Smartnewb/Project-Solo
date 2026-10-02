@@ -10,7 +10,7 @@ import { smsTemplateSchema, type SmsTemplateFormData } from '@/app/admin/hooks/f
 interface TemplateModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (template: any) => void;
+    onSave: (template: any) => Promise<boolean>;
     editingTemplate?: SmsTemplate | null;
     mode?: 'create' | 'edit';
 }
@@ -47,8 +47,10 @@ export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode =
             createdAt: mode === 'edit' ? editingTemplate?.createdAt : new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
-        onSave(newTemplate);
-        handleClose();
+        // 저장 실패 시 입력을 유지하기 위해 성공했을 때만 닫는다.
+        const saved = await onSave(newTemplate);
+        if (saved)
+            handleClose();
     });
     const handleClose = () => {
         reset({ title: '', content: '' });
@@ -56,7 +58,7 @@ export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode =
     };
     // === 렌더링(JSX) ===
     return (<>
-            {isOpen && (<Modal.Backdrop isOpen onOpenChange={open => { if (!open) handleClose(); }}><Modal.Container size="lg">
+            {isOpen && (<Modal.Backdrop isOpen isDismissable={!isSubmitting} isKeyboardDismissDisabled={isSubmitting} onOpenChange={open => { if (!open && !isSubmitting) handleClose(); }}><Modal.Container size="lg">
 
                     {/* MARK: - 모달 전체 */}
                     <Modal.Dialog style={{width:"100%",maxWidth:600,minWidth:0}} aria-label={mode === 'edit' ? '템플릿 수정' : '새 템플릿 만들기'}>
@@ -66,7 +68,7 @@ export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode =
                                     {mode === 'edit' ? '템플릿 수정' : '새 템플릿 만들기'}
                                 </h2>
 
-                                <Button onPress={handleClose} className="p-1.5 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 transition-colors" variant="secondary">
+                                <Button onPress={handleClose} isDisabled={isSubmitting} aria-label="닫기" className="p-1.5 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 transition-colors" variant="secondary">
                                     <X size={20}></X>
                                 </Button>
                             </Modal.Header>
@@ -138,7 +140,7 @@ export function TemplateModal({ isOpen, onClose, onSave, editingTemplate, mode =
                             {/* MARK: - 모달 푸터 구현 */}
                             <Modal.Footer className="flex flex-col-reverse rounded-lg sm:flex-row gap-2 sm:gap-3 justify-end px-4 sm:px-6 py-3 sm:py-4 border-t bg-gray-50">
                                 {/* 취소 버튼 */}
-                                <Button onPress={handleClose} className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition-colors" variant="secondary">
+                                <Button onPress={handleClose} isDisabled={isSubmitting} className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition-colors" variant="secondary">
                                         취소
                                     </Button>
 

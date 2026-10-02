@@ -5,6 +5,7 @@ import { Search as SearchIcon, Plus as AddIcon, Minus as RemoveIcon, Diamond as 
 import { UserSearchResult } from '../types';
 import AdminService from '@/app/services/admin';
 import { MAX_GEM_GRANT } from '@/app/admin/constants/gem-limits';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 interface GemsManagementProps {
     searchTerm: string;
     searchLoading: boolean;
@@ -23,6 +24,7 @@ interface GemsInfo {
     lastTransaction: string;
 }
 const GemsManagement: React.FC<GemsManagementProps> = ({ searchTerm, searchLoading, error, searchResults, selectedUser, setSearchTerm, searchUsers, handleUserSelect }) => {
+    const confirm = useConfirm();
     // 구슬 관련 상태
     const [gemsInfo, setGemsInfo] = useState<GemsInfo | null>(null);
     const [gemsLoading, setGemsLoading] = useState(false);
@@ -63,6 +65,13 @@ const GemsManagement: React.FC<GemsManagementProps> = ({ searchTerm, searchLoadi
             setOverLimitDialogOpen(true);
             return;
         }
+        const ok = await confirm({
+            title: '구슬 추가',
+            message: `${selectedUser.name}님에게 구슬 ${gemsCount}개를 추가합니다.`,
+            confirmText: '추가',
+        });
+        if (!ok)
+            return;
         await executeAddGems();
     };
     const executeAddGems = async (reason?: string) => {
@@ -99,6 +108,14 @@ const GemsManagement: React.FC<GemsManagementProps> = ({ searchTerm, searchLoadi
     const removeGems = async () => {
         if (!selectedUser)
             return;
+        const ok = await confirm({
+            title: '구슬 제거',
+            message: `${selectedUser.name}님의 구슬 ${gemsCount}개를 제거합니다.`,
+            confirmText: '제거',
+            severity: 'error',
+        });
+        if (!ok)
+            return;
         setActionLoading(true);
         setGemsError(null);
         setActionResult(null);
@@ -123,6 +140,7 @@ const GemsManagement: React.FC<GemsManagementProps> = ({ searchTerm, searchLoadi
     };
     // 사용자 선택 핸들러
     const handleUserSelectWithGems = async (user: UserSearchResult) => {
+        setActionResult(null);
         handleUserSelect(user);
         await fetchGemsInfo(user.id);
     };
@@ -255,19 +273,19 @@ const GemsManagement: React.FC<GemsManagementProps> = ({ searchTerm, searchLoadi
             </div>)}
         </section>)}
 
-      <Modal.Backdrop isOpen={overLimitDialogOpen} onOpenChange={next => {
-            if (!next)
+      <Modal.Backdrop isOpen={overLimitDialogOpen} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
                 (() => setOverLimitDialogOpen(false))();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
         <Modal.Heading>구슬 지급 확인</Modal.Heading>
         <Modal.Body>
           <p style={{ marginBottom: 16 }}>
-            100개 이상의 구슬을 지급하려고 합니다. 사유를 입력해주세요.
+            {MAX_GEM_GRANT}개 초과의 구슬을 지급하려고 합니다. 사유를 입력해주세요.
           </p>
           <TextField className="mb-4"><Label>{"지급 사유"}</Label><TextArea value={overLimitReason} onChange={(e) => setOverLimitReason(e.target.value)} rows={3} autoFocus></TextArea></TextField>
         </Modal.Body>
         <Modal.Footer>
-          <Button onPress={() => setOverLimitDialogOpen(false)} variant="tertiary">취소</Button>
+          <Button onPress={() => setOverLimitDialogOpen(false)} isDisabled={actionLoading} variant="tertiary">취소</Button>
           <Button onPress={handleOverLimitConfirm} isDisabled={!overLimitReason.trim()} variant="primary">
             확인
           </Button>

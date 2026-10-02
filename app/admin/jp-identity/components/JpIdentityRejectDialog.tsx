@@ -1,5 +1,5 @@
 "use client";
-import { Button, Chip, Label, Modal, TextArea, TextField } from "@heroui/react";
+import { Button, Label, Modal, TextArea, TextField } from "@heroui/react";
 import { useEffect, useState } from "react";
 import type { JpIdentitySubmission } from "@/app/services/admin";
 import { JP_IDENTITY_REJECT_PRESETS, formatJpDocumentType } from "../utils";
@@ -27,7 +27,7 @@ export function JpIdentityRejectDialog({
 		<Modal.Backdrop
 			isOpen={target !== null}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) (busy ? undefined : onClose)?.();
+				if (!isOpen && !busy) onClose();
 			}}
 			isDismissable={!busy}
 			isKeyboardDismissDisabled={busy}
@@ -49,14 +49,16 @@ export function JpIdentityRejectDialog({
 							{JP_IDENTITY_REJECT_PRESETS.map((preset) => {
 								const selected = reason === preset.reason;
 								return (
-									<Chip
+									<Button
 										key={preset.label}
-										onClick={() => setReason(preset.reason)}
+										aria-pressed={selected}
+										onPress={() => setReason(preset.reason)}
+										isDisabled={busy}
 										size={"sm"}
-										variant={"soft"}
+										variant={selected ? "primary" : "secondary"}
 									>
-										<Chip.Label>{preset.label}</Chip.Label>
-									</Chip>
+										{preset.label}
+									</Button>
 								);
 							})}
 						</div>
@@ -84,7 +86,7 @@ export function JpIdentityRejectDialog({
 						</Button>
 						<Button
 							onClick={() => onConfirm(trimmed)}
-							variant={"primary"}
+							variant={"danger"}
 							isDisabled={!trimmed || busy}
 							size={"md"}
 						>

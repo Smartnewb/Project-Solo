@@ -44,8 +44,8 @@ export function PushResendDialog({ open, onClose, item }: Props) {
             toast.error(getApiErrorMessage(err, '재발송에 실패했습니다.'));
         }
     };
-    return (<Modal.Backdrop isOpen={open && !!item} onOpenChange={next => {
-            if (!next)
+    return (<Modal.Backdrop isOpen={open && !!item} isDismissable={!mutation.isPending} isKeyboardDismissDisabled={mutation.isPending} onOpenChange={next => {
+            if (!next && !mutation.isPending)
                 onClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>푸시 재발송</Modal.Heading>
@@ -60,7 +60,7 @@ export function PushResendDialog({ open, onClose, item }: Props) {
         <Button onPress={onClose} isDisabled={mutation.isPending} variant="tertiary">
           취소
         </Button>
-        <Button onPress={handleSubmit} isDisabled={mutation.isPending || !pushTitle.trim() || !pushMessage.trim()} variant="tertiary">
+        <Button onPress={handleSubmit} isDisabled={mutation.isPending || !pushTitle.trim() || !pushMessage.trim()} variant="primary">
           {mutation.isPending ? '발송 중...' : '재발송'}
         </Button>
       </Modal.Footer>

@@ -42,6 +42,9 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   // 유저 정보로 폼 초기화
   useEffect(() => {
+    if (!open) return;
+    setError(null);
+    setSuccess(false);
     if (userDetail) {
       setFormData({
         name: userDetail.name || "",
@@ -51,7 +54,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         mbti: userDetail.mbti || "",
       });
     }
-  }, [userDetail]);
+  }, [userDetail, open]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>,
@@ -115,7 +118,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       onOpenChange={(isOpen) => {
         if (!isOpen) handleClose?.();
       }}
-      isDismissable={handleClose !== undefined}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
     >
       <Modal.Container size="md" scroll="inside" className="w-full">
         <Modal.Dialog style={{ width: "100%", maxWidth: "44rem", minWidth: 0 }}>

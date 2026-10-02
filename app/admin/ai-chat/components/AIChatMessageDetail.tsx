@@ -149,7 +149,7 @@ export default function AIChatMessageDetail({
                   style={{
                     padding: 24,
                     marginBottom: 24,
-                    backgroundColor: "grey.50",
+                    backgroundColor: "#f9fafb",
                   }}
                 >
                   <p>세션 정보</p>
@@ -283,7 +283,7 @@ export default function AIChatMessageDetail({
             )}
           </Modal.Body>
           <Modal.Footer
-            style={{ padding: 16, borderTop: 1, borderColor: "#e4e4e7" }}
+            style={{ padding: 16, borderTop: "1px solid #e4e4e7" }}
           >
             <Button onClick={onClose} variant={"primary"}>
               닫기

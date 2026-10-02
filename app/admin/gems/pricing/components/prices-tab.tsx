@@ -422,9 +422,10 @@ function CreatePriceDialog({
 		<Modal.Backdrop
 			isOpen={true}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) onClose?.();
+				if (!isOpen && !saving) onClose?.();
 			}}
-			isDismissable={onClose !== undefined}
+			isDismissable={!saving}
+			isKeyboardDismissDisabled={saving}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -570,7 +571,12 @@ function CreatePriceDialog({
 						</div>
 					</Modal.Body>
 					<Modal.Footer>
-						<Button onClick={onClose} variant={"tertiary"} size={"md"}>
+						<Button
+							onClick={onClose}
+							variant={"tertiary"}
+							isDisabled={saving}
+							size={"md"}
+						>
 							취소
 						</Button>
 						<Button
@@ -641,9 +647,10 @@ function EditPriceDialog({
 		<Modal.Backdrop
 			isOpen={true}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) onClose?.();
+				if (!isOpen && !saving) onClose?.();
 			}}
-			isDismissable={onClose !== undefined}
+			isDismissable={!saving}
+			isKeyboardDismissDisabled={saving}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -729,7 +736,12 @@ function EditPriceDialog({
 						</div>
 					</Modal.Body>
 					<Modal.Footer>
-						<Button onClick={onClose} variant={"tertiary"} size={"md"}>
+						<Button
+							onClick={onClose}
+							variant={"tertiary"}
+							isDisabled={saving}
+							size={"md"}
+						>
 							취소
 						</Button>
 						<Button
@@ -785,9 +797,10 @@ function ToggleActiveDialog({
 		<Modal.Backdrop
 			isOpen={true}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) onClose?.();
+				if (!isOpen && !saving) onClose?.();
 			}}
-			isDismissable={onClose !== undefined}
+			isDismissable={!saving}
+			isKeyboardDismissDisabled={saving}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
@@ -826,12 +839,17 @@ function ToggleActiveDialog({
 						</div>
 					</Modal.Body>
 					<Modal.Footer>
-						<Button onClick={onClose} variant={"tertiary"} size={"md"}>
+						<Button
+							onClick={onClose}
+							variant={"tertiary"}
+							isDisabled={saving}
+							size={"md"}
+						>
 							취소
 						</Button>
 						<Button
 							onClick={submit}
-							variant={"primary"}
+							variant={next ? "primary" : "danger"}
 							isDisabled={!memo.trim() || saving}
 							size={"md"}
 						>

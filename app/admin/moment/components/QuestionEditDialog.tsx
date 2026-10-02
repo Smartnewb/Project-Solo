@@ -88,8 +88,10 @@ export default function QuestionEditDialog({
   return (
     <Modal.Backdrop
       isOpen={open}
+      isDismissable={!processing}
+      isKeyboardDismissDisabled={processing}
       onOpenChange={(isOpen) => {
-        if (!isOpen) handleClose();
+        if (!isOpen && !processing) handleClose();
       }}
     >
       <Modal.Container>

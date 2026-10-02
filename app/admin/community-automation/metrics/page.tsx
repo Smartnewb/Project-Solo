@@ -5,13 +5,13 @@ import type { MetricsSummary, QueueDepth } from '@/app/services/admin/community-
 import { metrics as metricsApi } from '@/app/services/admin/community-automation';
 function StatCard({ label, value, color }: {
     label: string;
-    value: number;
+    value: number | undefined;
     color?: string;
 }) {
     return (<div className="rounded-xl border p-4">
 			<div className="p-4">
-				<p>{label}</p>
-				<p>{value}</p>
+				<p className="text-sm text-gray-600">{label}</p>
+				<p className="text-2xl font-semibold tabular-nums">{value?.toLocaleString() ?? "—"}</p>
 			</div>
 		</div>);
 }
