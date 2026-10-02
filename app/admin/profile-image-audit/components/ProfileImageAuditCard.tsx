@@ -6,6 +6,7 @@ import type { ProfileImageAuditItem, ProfileImageAuditProfileRank } from '@/app/
 import { PROFILE_RANK_OPTIONS } from '../constants';
 import { formatAuditStatus, formatAgeGender, formatImageKind, formatImageSlot, formatProfileRank, formatReviewedType, formatReviewStatus, formatValidationSummary, parseProfileRank, } from '../profile-image-audit-utils';
 import { ProfileImageAuditDetailDrawer } from './ProfileImageAuditDetailDrawer';
+import { BlindPhotoComparison } from './BlindPhotoComparison';
 type Props = {
     readonly item: ProfileImageAuditItem;
     readonly selected: boolean;
@@ -26,7 +27,11 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
         setImageFailed(true);
     };
     return (<div data-testid="profile-image-audit-card" style={{ boxShadow: selected ? '0 0 0 2px rgba(37,99,235,0.18)' : 'none', overflow: 'hidden' }} className="rounded-xl border p-4">
-      <div style={{ position: 'relative', aspectRatio: '3 / 4', backgroundColor: '#e5e7eb' }}>
+      {item.presentationMode === 'BLIND' ? <div className="relative">
+        <BlindPhotoComparison item={item} />
+        <Button onPress={() => setViewerOpen(true)} variant="tertiary" size="sm" className="mt-2 w-full" aria-label={`${item.profileImageId} 크게 보기`}>나란히 크게 보기</Button>
+        {item.selectable !== false && <Checkbox aria-label={`${item.profileImageId} 선택`} isSelected={selected} onChange={() => onToggle(item.profileImageId)} className="absolute right-0 top-0"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content></Checkbox>}
+      </div> : <div style={{ position: 'relative', aspectRatio: '3 / 4', backgroundColor: '#e5e7eb' }}>
         {imageFailed ? (<div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: 13, fontWeight: 700 }}>
             이미지 로드 실패
           </div>) : (<Button onPress={() => setViewerOpen(true)} aria-label={`${item.profileImageId} 크게 보기`} style={{ width: '100%', height: '100%', display: 'block' }}>
@@ -34,7 +39,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
           </Button>)}
         <Checkbox isSelected={selected} {...{ 'aria-label': `${item.profileImageId} 선택` }} style={{ position: 'absolute', top: 6, left: 6, zIndex: 2, backgroundColor: 'rgba(255,255,255,0.88)', borderRadius: '50%' }} onChange={checked => onToggle(item.profileImageId)}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>
         <Chip size="sm">{formatImageSlot(item)}</Chip>
-      </div>
+      </div>}
       <div style={{ padding: 12 }} className="p-4">
         <div>
           <p className="font-bold" title={item.userName || '이름 미등록'}>{item.userName || '이름 미등록'}</p><p className="text-sm text-gray-600" title={item.userId}>회원 ID: {item.userId}</p>
@@ -55,6 +60,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
               </ListBox.Item>))}
           </ListBox></Select.Popover></Select>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <Chip size="sm">{item.presentationMode === 'BLIND' ? '블라인드' : '일반 사진'}</Chip>
             <Chip size="sm">{formatProfileRank(item.profileRank)}</Chip>
             <Chip size="sm">{formatImageKind(item)}</Chip>
             <Chip size="sm">{formatReviewedType(item.reviewedType)}</Chip>
@@ -67,6 +73,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
             {item.suspendedAt && <Chip size="sm">{"정지"}</Chip>}
             <Chip size="sm">{`${item.approvedImageCount}/${item.totalActiveImageCount}장`}</Chip>
           </div>
+          {item.selectable === false && <p className="text-xs text-gray-500">캐릭터 확인용입니다. 원본 사진 심사 작업에는 포함되지 않습니다.</p>}
           <Button aria-label="심사 상세 보기" onPress={() => setDetailOpen(true)} style={{ alignSelf: 'flex-start', border: '1px solid #cbd5e1', borderRadius: 1, paddingInline: 8, paddingBlock: 4, fontSize: 13, fontWeight: 800, color: '#1d4ed8' }}>
             상세
           </Button>
@@ -75,12 +82,12 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
       <Modal.Backdrop isOpen={viewerOpen} onOpenChange={next => {
             if (!next)
                 (() => setViewerOpen(false))();
-        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 1200, minWidth: 0 }} aria-label="프로필 이미지 크게 보기">
-        <Modal.Body style={{ padding: 0, backgroundColor: '#020617', position: 'relative' }}>
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: item.presentationMode === 'BLIND' ? 920 : 1200, minWidth: 0, backgroundColor: '#fff' }} aria-label="프로필 이미지 크게 보기">
+        <Modal.Body style={{ padding: item.presentationMode === 'BLIND' ? 20 : 0, backgroundColor: item.presentationMode === 'BLIND' ? '#fff' : '#020617', position: 'relative' }}>
           <Button aria-label="큰 이미지 닫기" onPress={() => setViewerOpen(false)} variant="tertiary" isIconOnly={true} style={{ position: 'absolute', top: 10, right: 10, zIndex: 2, color: '#fff', backgroundColor: 'rgba(15,23,42,0.72)' }}>
             <X></X>
           </Button>
-          <img src={src} alt={`${item.profileImageId} 프로필 이미지 크게 보기`} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}/>
+          {item.presentationMode === 'BLIND' ? <BlindPhotoComparison item={item} /> : <img src={src} alt={`${item.profileImageId} 프로필 이미지 크게 보기`} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}/>}
         </Modal.Body>
       </Modal.Dialog></Modal.Container></Modal.Backdrop>
       <ProfileImageAuditDetailDrawer item={item} open={detailOpen} onClose={() => setDetailOpen(false)}></ProfileImageAuditDetailDrawer>

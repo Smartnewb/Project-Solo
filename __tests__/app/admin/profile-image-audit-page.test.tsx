@@ -193,6 +193,74 @@ describe('ProfileImageAuditPage', () => {
     await waitFor(() => expect(mockedAudit.list).toHaveBeenCalledTimes(2));
   });
 
+  it('removes a restored rejected photo from the rejected list after marking it normal', async () => {
+    const user = userEvent.setup();
+    let restored = false;
+    mockedAudit.list.mockImplementation(async (params) => ({
+      data: params?.auditStatus === 'rejected' && !restored
+        ? [{ ...profileImageAuditItemFixture, reviewStatus: 'rejected', auditStatus: 'rejected' }]
+        : [],
+      meta: { page: 1, limit: 18, total: restored ? 0 : 1, totalPages: 1 },
+    }));
+    mockedAudit.bulkMarkOk.mockImplementation(async () => {
+      restored = true;
+      return profileImageAuditBulkActionFixture;
+    });
+    render(<ProfileImageAuditPage />);
+    await screen.findByRole('heading', { name: '프로필 이미지 전수검사' });
+    await selectHeroValue('검수 상태', 'rejected');
+    await user.click(await screen.findByRole('checkbox', { name: 'profile-image-1 선택' }));
+
+    await user.click(screen.getByRole('button', { name: '정상 처리' }));
+    await user.click(await screen.findByRole('button', { name: '처리' }));
+
+    await waitFor(() => expect(screen.queryByTestId('profile-image-audit-card')).not.toBeInTheDocument());
+    expect(mockedAudit.bulkMarkOk).toHaveBeenCalledTimes(1);
+    expect(mockedAudit.bulkMarkOk).toHaveBeenCalledWith({ profileImageIds: ['profile-image-1'] });
+    expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({ auditStatus: 'rejected' }));
+  });
+
+  it('filters blind profiles and displays the linked original and character side by side', async () => {
+    const user = userEvent.setup();
+    mockedAudit.list.mockResolvedValue({
+      ...profileImageAuditListFixture,
+      data: [{ ...profileImageAuditItemFixture, presentationMode: 'BLIND',
+        kind: 'profile_image', selectable: true,
+        originalImageUrl: 'https://example.com/original.jpg',
+        blindImageUrl: 'https://example.com/character.jpg' }],
+    });
+    render(<ProfileImageAuditPage />);
+    await selectHeroValue('프로필 공개 방식', 'BLIND');
+
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({ presentationMode: 'BLIND' })));
+    const comparison = await screen.findByTestId('blind-photo-comparison');
+    expect(within(comparison).getByRole('img', { name: 'profile-image-1 원본 사진' })).toHaveAttribute('src', 'https://example.com/original.jpg');
+    expect(within(comparison).getByRole('img', { name: 'profile-image-1 블라인드 캐릭터' })).toHaveAttribute('src', 'https://example.com/character.jpg');
+    await user.click(screen.getByRole('button', { name: 'profile-image-1 크게 보기' }));
+    expect(screen.getAllByTestId('blind-photo-comparison')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: '큰 이미지 닫기' }));
+    await selectHeroValue('프로필 공개 방식', 'PHOTO');
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({ presentationMode: 'PHOTO' })));
+  });
+
+  it('shows an unretained original without selecting reference-only characters for bulk actions', async () => {
+    const user = userEvent.setup();
+    mockedAudit.list.mockResolvedValue({
+      ...profileImageAuditListFixture,
+      data: [{ ...profileImageAuditItemFixture, profileImageId: 'blind-asset:asset-1',
+        presentationMode: 'BLIND', kind: 'blind_asset', selectable: false,
+        originalImageUrl: null, blindImageUrl: 'https://example.com/character.jpg' }],
+    });
+    render(<ProfileImageAuditPage />);
+
+    expect(await screen.findByText('원본 미보관')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'blind-asset:asset-1 선택' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '전체선택' }));
+    expect(screen.getByRole('button', { name: '정상 처리' })).toBeDisabled();
+    expect(mockedAudit.bulkMarkOk).not.toHaveBeenCalled();
+  });
+
   it('warns and confirms reupload when a bulk selection removes all approved photos', async () => {
     const user = userEvent.setup();
     render(<ProfileImageAuditPage />);

@@ -30,6 +30,15 @@ describe('profile image audit service boundaries', () => {
     window.fetch = originalFetch;
   });
 
+  it('forwards the blind profile filter to the server query', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(profileImageAuditListFixture));
+    await profileImageAudit.list({ presentationMode: 'BLIND' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin-proxy/admin/v2/profile-image-audit/images?presentationMode=BLIND',
+      expect.any(Object),
+    );
+  });
+
   it('keeps the existing individual image approval wrapper behind admin proxy', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ data: { success: true } }));
 

@@ -63,6 +63,8 @@ export default function ProfileImageAuditV2() {
         setPage(1);
     };
     const toggleSelection = (profileImageId: string) => {
+        if (items.find(item => item.profileImageId === profileImageId)?.selectable === false)
+            return;
         setSelectedIds((current) => {
             const next = new Set(current);
             if (next.has(profileImageId)) {
@@ -75,7 +77,7 @@ export default function ProfileImageAuditV2() {
         });
     };
     const selectVisibleItems = () => {
-        setSelectedIds(new Set(items.map((item) => item.profileImageId)));
+        setSelectedIds(new Set(items.filter(item => item.selectable !== false).map((item) => item.profileImageId)));
     };
     const handleRankChange = async (item: ProfileImageAuditItem, rank: ProfileImageAuditProfileRank) => {
         if ((item.profileRank ?? 'UNKNOWN') === rank || rankUpdatingUserId !== null)

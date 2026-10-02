@@ -26,6 +26,16 @@ export function AuditFiltersBar({ filters, onChange }: Props) {
             </ListBox.Item>))}
         </ListBox></Select.Popover></Select>
       </div>
+      <div style={{ minWidth: 140 }}>
+        <Select value={filters.presentationMode ?? ''} aria-label="프로필 공개 방식" onChange={(key) => update({ presentationMode: key ? String(key) as 'PHOTO' | 'BLIND' : undefined })} className="min-w-[140px]">
+          <Label>프로필 공개 방식</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+          <Select.Popover><ListBox>
+            <ListBox.Item id="" textValue="전체">전체</ListBox.Item>
+            <ListBox.Item id="BLIND" textValue="블라인드 (캐릭터)">블라인드 (캐릭터)</ListBox.Item>
+            <ListBox.Item id="PHOTO" textValue="일반 (원본 사진)">일반 (원본 사진)</ListBox.Item>
+          </ListBox></Select.Popover>
+        </Select>
+      </div>
       <div style={{ minWidth: 120 }}>
         <Select value={filters.gender ?? ''} aria-label={"성별"} onChange={(key) => {
             const value = String(key ?? "");

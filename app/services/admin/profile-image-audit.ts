@@ -75,6 +75,11 @@ export type ProfileImageAuditRejectedImage = {
 };
 
 export type ProfileImageAuditItem = {
+  readonly presentationMode?: 'PHOTO' | 'BLIND';
+  readonly kind?: 'profile_image' | 'blind_asset';
+  readonly selectable?: boolean;
+  readonly originalImageUrl?: string | null;
+  readonly blindImageUrl?: string | null;
   readonly userName?: string | null;
   readonly profileImageId: string;
   readonly imageId: string;
@@ -123,6 +128,7 @@ export type ProfileImageAuditListResponse = {
 };
 
 export type ProfileImageAuditListParams = {
+  readonly presentationMode?: 'PHOTO' | 'BLIND';
   readonly page?: number;
   readonly limit?: number;
   readonly search?: string;
@@ -203,6 +209,7 @@ export type ProfileImageAuditBlacklistHandoff = {
 
 function toListQueryParams(params: ProfileImageAuditListParams): AdminQueryParams {
   return {
+    presentationMode: params.presentationMode,
     page: params.page,
     limit: params.limit,
     search: params.search,
