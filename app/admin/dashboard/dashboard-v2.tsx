@@ -41,13 +41,17 @@ export default function DashboardV2() {
 				<ActionRequired />
 				<div className={"grid grid-cols-12 gap-4"}>
 					<div className={"min-w-0 col-span-12 md:col-span-7"}>
-						<TodayMetrics kpi={summary?.kpi ?? null} loading={isLoading} />
+						<TodayMetrics
+							overview={summary?.overview}
+							conversionRate={summary?.matchingFunnel?.overallConversionRate}
+							loading={isLoading}
+						/>
 						<div style={{ marginTop: 24 }}>
 							<WeeklyTrend compact />
 						</div>
 					</div>
 					<div className={"min-w-0 col-span-12 md:col-span-5"}>
-						<RevenueOverview kpi={summary?.kpi ?? null} loading={isLoading} />
+						<RevenueOverview revenue={summary?.revenue} loading={isLoading} />
 					</div>
 				</div>
 				<GemSystemFunnel />

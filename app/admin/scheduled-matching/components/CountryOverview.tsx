@@ -4,6 +4,7 @@ import { RefreshCw as RefreshIcon, Play as PlayArrowIcon, Square as StopIcon, Ma
 import React, { useState, useEffect, useCallback } from 'react';
 import { scheduledMatchingService } from '../service';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
+import { useAdminSession } from '@/shared/contexts/admin-session-context';
 import type { Country, ScheduledMatchingConfig, JobStatus, BatchHistory, ScheduleMatchingResponse } from '../types';
 import type { MatchingPoolStatsResponse, MatchingPoolCountry, MatchTypeStats } from '@/types/admin';
 type MatchingType = 'scheduled' | 'rematching';
@@ -129,6 +130,7 @@ function RunningBatchAlert({ batch, onCancel, cancelling }: RunningBatchAlertPro
 }
 export default function CountryOverview() {
     const confirm = useConfirm();
+    const { session } = useAdminSession();
     const [configs, setConfigs] = useState<ScheduledMatchingConfig[]>([]);
     const [jobStatuses, setJobStatuses] = useState<JobStatus[]>([]);
     const [runningBatches, setRunningBatches] = useState<BatchHistory[]>([]);
@@ -152,6 +154,10 @@ export default function CountryOverview() {
     const [scheduleResult, setScheduleResult] = useState<ScheduleMatchingResponse | null>(null);
     const [scheduleError, setScheduleError] = useState<string | null>(null);
     const [scheduleConfirmOpen, setScheduleConfirmOpen] = useState(false);
+    // POST /admin/matching/schedule 는 body 에 country 가 없고 X-Country 헤더(세션 국가)로만 대상 국가가 정해진다.
+    // 세션 국가와 선택 국가가 다르면 엉뚱한 국가가 실행되므로 실행을 막는다.
+    const sessionCountry = session?.selectedCountry?.toUpperCase();
+    const scheduleCountryMismatch = sessionCountry !== scheduleCountry;
     const fetchData = useCallback(async () => {
         try {
             setError(null);
@@ -258,8 +264,10 @@ export default function CountryOverview() {
         }
     };
     const handleScheduleMatching = async () => {
+        setScheduleConfirmOpen(false);
+        if (scheduleCountryMismatch)
+            return;
         try {
-            setScheduleConfirmOpen(false);
             setScheduleExecuting(true);
             setScheduleError(null);
             setScheduleResult(null);
@@ -341,11 +349,14 @@ export default function CountryOverview() {
             대상일: {formatDate(new Date())}
           </p>
 
-          <Button onPress={() => setScheduleConfirmOpen(true)} isDisabled={scheduleExecuting} variant="tertiary">
+          <Button onPress={() => setScheduleConfirmOpen(true)} isDisabled={scheduleExecuting || scheduleCountryMismatch} variant="tertiary">
             {scheduleExecuting ? (<Spinner size="sm" style={{ marginRight: 8 }}></Spinner>) : (<PlayArrowIcon style={{ fontSize: 18, marginRight: 4 }}></PlayArrowIcon>)}
             스케줄 매칭 실행
           </Button>
         </div>
+        {scheduleCountryMismatch && (<p role="status" className="text-sm" style={{ marginTop: -16, marginBottom: 16 }}>
+            이 실행은 상단에서 선택한 운영 국가({sessionCountry ?? '확인 불가'})로만 동작합니다. {scheduleCountry === 'KR' ? '한국' : '일본'}에 실행하려면 운영 국가를 먼저 전환해주세요.
+          </p>)}
 
         <hr style={{ marginBlock: 16 }}></hr>
 

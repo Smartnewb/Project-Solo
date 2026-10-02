@@ -1,5 +1,5 @@
 'use client';
-import { Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, TextArea, Description, Select, ListBox, Checkbox } from '@heroui/react';
+import { Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, Select, ListBox, Checkbox } from '@heroui/react';
 import { FileText as ArticleIcon, MessageSquare as CommentIcon, Trash2 as DeleteIcon, Heart as FavoriteIcon, MessagesSquare as ForumIcon, Inbox as MoveToInboxIcon, User as PersonIcon, RefreshCw as RefreshIcon, Flag as ReportIcon, Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -10,8 +10,6 @@ import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-cont
 import communityService, { Category } from '@/app/services/community';
 import type { GhostCommentBody } from '@/app/services/community';
 import UserDetailModal, { type UserDetail } from '@/components/admin/appearance/UserDetailModal';
-import { useAdminForm } from '@/app/admin/hooks/forms';
-import { articleBlindSchema, ArticleBlindFormValues } from '@/app/admin/hooks/forms/schemas/community.schema';
 import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 import { CommunityPostAppDetailPanel } from './components/CommunityPostAppDetailPanel';
 // 사용자 상세를 불러오는 동안 모달에 넘기는 빈 값 (loading/error 상태가 화면을 대신한다)
@@ -41,11 +39,6 @@ function ArticleList() {
     const [openBlindDialog, setOpenBlindDialog] = useState(false);
     const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
     const [actionLoading, setActionLoading] = useState(false);
-    const blindForm = useAdminForm<ArticleBlindFormValues>({
-        schema: articleBlindSchema,
-        defaultValues: { blindReason: '' },
-    });
-    const blindReason = blindForm.watch('blindReason');
     // 게시글 삭제 관련 상태
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState<string>('');
@@ -138,7 +131,6 @@ function ArticleList() {
     // 블라인드 다이얼로그 열기
     const handleOpenBlindDialog = (action: 'blind' | 'unblind') => {
         setBlindAction(action);
-        blindForm.reset({ blindReason: '' });
         setOpenBlindDialog(true);
     };
     // 블라인드 다이얼로그 닫기
@@ -474,7 +466,6 @@ function ArticleList() {
 						선택한 {selectedArticles.length}개의 게시글을{' '}
 						{blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리하시겠습니까?
 					</p>
-					{blindAction === 'blind' && (<TextField className="mb-4"><Label>{"블라인드 사유"}</Label><TextArea rows={3} value={blindReason} onChange={(e) => blindForm.setValue('blindReason', e.target.value)} placeholder="블라인드 사유를 입력하세요 (선택사항)"></TextArea><Description>사유는 현재 저장되지 않습니다</Description></TextField>)}
 				</Modal.Body>
 				<Modal.Footer>
 					<Button onPress={handleCloseBlindDialog} isDisabled={actionLoading} variant="tertiary">

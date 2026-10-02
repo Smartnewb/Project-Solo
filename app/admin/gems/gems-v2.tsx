@@ -85,7 +85,6 @@ function GemsManagementPageContent() {
 	const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 	const [pendingData, setPendingData] = useState<GemsFormData | null>(null);
 	const [overLimitDialogOpen, setOverLimitDialogOpen] = useState(false);
-	const [overLimitReason, setOverLimitReason] = useState("");
 	const [userSearchTerm, setUserSearchTerm] = useState<string>("");
 	const [userSearchResults, setUserSearchResults] = useState<
 		UserSearchResult[]
@@ -225,7 +224,6 @@ function GemsManagementPageContent() {
 		if (!pendingData) return;
 		setConfirmDialogOpen(false);
 		if (pendingData.gemAmount > MAX_GEM_GRANT) {
-			setOverLimitReason("");
 			setOverLimitDialogOpen(true);
 			return;
 		}
@@ -234,13 +232,9 @@ function GemsManagementPageContent() {
 	const handleOverLimitConfirm = () => {
 		if (!pendingData) return;
 		setOverLimitDialogOpen(false);
-		const grantData = {
-			...pendingData,
-			message: pendingData.message
-				? `${pendingData.message} [상한 초과 사유: ${overLimitReason}]`
-				: `[상한 초과 사유: ${overLimitReason}]`,
-		};
-		executeBulkGrant(grantData);
+		// 백엔드 bulk-grant 는 message 하나를 원장 사유 + 푸시 본문으로 같이 쓴다.
+		// 내부 사유 전용 필드가 없으므로 message 에 섞지 않는다 (사용자 푸시 오염 방지).
+		executeBulkGrant(pendingData);
 	};
 	const executeBulkGrant = (data: GemsFormData) => {
 		setResult(null);
@@ -838,17 +832,11 @@ function GemsManagementPageContent() {
 						</Modal.Header>
 						<Modal.Body>
 							<p style={{ marginBottom: 16 }}>
-								{MAX_GEM_GRANT}개 초과의 구슬을 지급하려고 합니다. 사유를 입력해주세요.
+								{MAX_GEM_GRANT}개 초과의 구슬({pendingData?.gemAmount ?? "—"}개)을 지급하려고 합니다. 상한 초과 지급이 맞는지 다시 확인해주세요.
 							</p>
-							<TextField className="w-full">
-								<Label>{"지급 사유"}</Label>
-								<TextArea
-									value={overLimitReason}
-									onChange={(e) => setOverLimitReason(e.target.value)}
-									rows={3}
-									autoFocus
-								/>
-							</TextField>
+							<p style={{ fontSize: 13, color: "#6b7280" }}>
+								푸시 메시지에는 입력한 메시지만 전송됩니다. 서버에 내부 사유 전용 필드가 없어 상한 초과 사유는 별도로 기록되지 않습니다.
+							</p>
 						</Modal.Body>
 						<Modal.Footer>
 							<Button
@@ -861,7 +849,6 @@ function GemsManagementPageContent() {
 							<Button
 								onClick={handleOverLimitConfirm}
 								variant={"primary"}
-								isDisabled={!overLimitReason.trim()}
 								size={"md"}
 							>
 								확인

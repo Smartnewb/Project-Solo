@@ -205,7 +205,10 @@ export default function MatchingMonitorV2() {
 					</div>
 				) : data ? (
 					<>
-						<HealthScoreBanner data={data.healthScore} />
+						<HealthScoreBanner
+							data={data.healthScore}
+							periodComparison={data.periodComparison}
+						/>
 
 						<Tabs
 							selectedKey={activeTab}

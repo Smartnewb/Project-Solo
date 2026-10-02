@@ -12,6 +12,7 @@ import AdminService from "@/app/services/admin";
 import type { ReportHistoryEntry } from '@/app/services/admin';
 import { safeToLocaleDateString } from '@/app/utils/formatters';
 import { sanitizeUrl } from '@/shared/lib/safe-url';
+import { ReportAvatar } from "./report-avatar";
 import UserDetailModal, { type UserDetail, } from "@/components/admin/appearance/UserDetailModal";
 // Evidence/profile image URLs are user-controlled; refuse javascript:/data: schemes.
 function openExternalUrl(url: string) {
@@ -24,8 +25,8 @@ interface Reporter {
     name: string;
     email: string;
     phoneNumber: string;
-    age: number;
-    gender: "MALE" | "FEMALE";
+    age: number | null;
+    gender: "MALE" | "FEMALE" | null;
     profileImageUrl: string;
 }
 interface Reported {
@@ -33,8 +34,8 @@ interface Reported {
     name: string;
     email: string;
     phoneNumber: string;
-    age: number;
-    gender: "MALE" | "FEMALE";
+    age: number | null;
+    gender: "MALE" | "FEMALE" | null;
     profileImageUrl: string;
 }
 interface Report {
@@ -392,8 +393,8 @@ function ReportsManagementContent() {
         };
         return (<Chip size="sm">{statusInfo.label}</Chip>);
     };
-    const getGenderText = (gender: string) => {
-        return gender === "MALE" ? "남성" : "여성";
+    const getGenderText = (gender: string | null) => {
+        return gender === "MALE" ? "남성" : gender === "FEMALE" ? "여성" : "성별 —";
     };
     const formatDate = (dateString: string) => {
         return safeToLocaleDateString(dateString, "ko-KR", {
@@ -671,7 +672,7 @@ function ReportsManagementContent() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="min-w-0">
                 <div style={{ display: "flex", justifyContent: "center" }}>
-                  <img src={selectedReport.reporter.profileImageUrl || undefined} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+                  <ReportAvatar src={selectedReport.reporter.profileImageUrl}></ReportAvatar>
                 </div>
               </div>
               <div className="min-w-0">
@@ -730,7 +731,7 @@ function ReportsManagementContent() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="min-w-0">
                 <div style={{ display: "flex", justifyContent: "center" }}>
-                  <img src={selectedReport.reported.profileImageUrl || undefined} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+                  <ReportAvatar src={selectedReport.reported.profileImageUrl}></ReportAvatar>
                 </div>
               </div>
               <div className="min-w-0">
@@ -863,28 +864,28 @@ function ReportsManagementContent() {
                     </td>
                     <td className="border-b px-4 py-3">
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <img src={report.reporter.profileImageUrl || undefined} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+                        <ReportAvatar src={report.reporter.profileImageUrl}></ReportAvatar>
                         <div>
                           <p>
                             {report.reporter.name}
                           </p>
                           <p>
                             {getGenderText(report.reporter.gender)},{" "}
-                            {report.reporter.age}세
+                            {report.reporter.age != null ? `${report.reporter.age}세` : "나이 —"}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="border-b px-4 py-3">
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <img src={report.reported.profileImageUrl || undefined} alt="프로필" className="h-9 w-9 rounded-full object-cover"></img>
+                        <ReportAvatar src={report.reported.profileImageUrl}></ReportAvatar>
                         <div>
                           <p>
                             {report.reported.name}{(report.reportCount ?? 0) > 1 && <Chip size="sm">누적 {report.reportCount}건</Chip>}
                           </p>
                           <p>
                             {getGenderText(report.reported.gender)},{" "}
-                            {report.reported.age}세
+                            {report.reported.age != null ? `${report.reported.age}세` : "나이 —"}
                           </p>
                         </div>
                       </div>

@@ -7,8 +7,11 @@ import { ListBox, Select, Input, Button, Modal } from "@heroui/react";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { adminGet } from "@/shared/lib/http/admin-fetch";
+import AdminService from "@/app/services/admin";
+import { adminGet, getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { useToast } from "@/shared/ui/admin/toast";
+import AccountStatusModal from "@/components/admin/appearance/modals/AccountStatusModal";
 import {
   formatDateWithoutTimezoneConversion,
   formatDateTimeWithoutTimezoneConversion,
@@ -47,8 +50,8 @@ interface User {
   id: string;
   userId: string;
   email: string;
-  role: string;
-  classification: string | null;
+  rank: string | null; // 외모 등급 S/A/B/C/UNKNOWN (null 은 미분류)
+  isSuspended: boolean;
   gender: "MALE" | "FEMALE";
   createdAt: string;
   lastActiveAt?: string | null; // 마지막 접속 시간
@@ -81,6 +84,13 @@ const getGenderText = (gender: string) => {
 function UsersV2Content() {
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
+  // 모달이 열린 동안 목록이 재조회돼도 isSuspended 가 뒤집히지 않도록 스냅샷으로 보관한다.
+  const [statusTarget, setStatusTarget] = useState<{
+    userId: string;
+    name: string;
+    isSuspended: boolean;
+  } | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +100,7 @@ function UsersV2Content() {
     userId: string;
     name: string;
   } | null>(null);
-  const [filter, setFilter] = useState<string>("all"); // 'all', 'blocked', 'reported', 'active'
+  const [filter, setFilter] = useState<string>("all"); // 'all', 'blacklisted' — 백엔드 UserFilter 에 reported/active 가 없어 옵션에서 뺐다
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedGender, setSelectedGender] = useState<
     "all" | "MALE" | "FEMALE"
@@ -139,6 +149,9 @@ function UsersV2Content() {
       if (searchTerm.trim()) params.search = searchTerm.trim();
       if (selectedGender !== "all") params.gender = selectedGender;
       if (filter !== "all") params.filter = filter;
+      if (selectedClass !== "all")
+        params.appearanceGrade =
+          selectedClass === "unclassified" ? "UNKNOWN" : selectedClass;
 
       // Nest.js API 호출
       const response = await adminGet<ApiResponse>("/admin/v2/users", params);
@@ -189,25 +202,30 @@ function UsersV2Content() {
 
   // 이미지 클릭 함수는 인라인으로 구현하여 직접 사용
 
-  const handleBlockUser = async (userId: string) => {};
+  const handleClassificationChange = async (user: User, key: string) => {
+    // 빈 키는 "미분류" 선택이며 서버에서는 UNKNOWN 으로 저장된다.
+    const rank = key === "" ? "UNKNOWN" : key;
+    if (!["S", "A", "B", "C", "UNKNOWN"].includes(rank)) {
+      toast.error(`알 수 없는 등급 값입니다: ${key}`);
+      return;
+    }
+    const label = rank === "UNKNOWN" ? "미분류" : `${rank}급`;
+    const ok = await confirm({
+      title: "등급 변경",
+      message: `${user.name || user.userId} 님의 등급을 ${label}(으)로 변경할까요?`,
+      confirmText: "변경",
+    });
+    if (!ok) return;
 
-  const handleUnblockUser = async (userId: string) => {};
-
-  const handleClassificationChange = async (
-    userId: string,
-    classification: string,
-    gender: string,
-  ) => {
     try {
-      setLoading(true);
-
-      if (error) {
-        throw error;
-      }
-    } catch (err: any) {
-      toast.error(`등급 변경 중 오류가 발생했습니다: ${err.message}`);
-    } finally {
-      setLoading(false);
+      await AdminService.userAppearance.setUserAppearanceGrade(
+        user.userId,
+        rank as "S" | "A" | "B" | "C" | "UNKNOWN",
+      );
+      toast.success(`${user.name || user.userId} 님의 등급을 ${label}(으)로 변경했습니다.`);
+      await fetchUsers();
+    } catch (err: unknown) {
+      toast.error(getAdminErrorMessage(err, "등급 변경 중 오류가 발생했습니다."));
     }
   };
 
@@ -439,8 +457,7 @@ function UsersV2Content() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {users.map((user) => {
-                // 실제 필드가 없으므로 false로 처리
-                const isBlocked = false; // user.is_blocked;
+                const isBlocked = user.isSuspended;
                 const hasReports = false; // user.reports_count && user.reports_count > 0;
                 const hasInstagramError = user.statusAt === "instagramerror";
 
@@ -468,19 +485,12 @@ function UsersV2Content() {
                       <div className="relative">
                         <Select
                           className="appearance-none bg-transparent border border-gray-300 rounded-md py-1 px-3 pr-8 focus:outline-none focus:ring-primary-DEFAULT focus:border-primary-DEFAULT text-sm"
-                          selectedKey={String(
-                            (user.classification || "") ?? "",
-                          )}
-                          isDisabled // 등급 변경 API 미연결(handleClassificationChange 미구현)
+                          selectedKey={
+                            user.rank && user.rank !== "UNKNOWN" ? user.rank : ""
+                          }
+                          isDisabled={loading}
                           onSelectionChange={(key) =>
-                            ((e) =>
-                              handleClassificationChange(
-                                user.userId,
-                                e.target.value,
-                                user.gender || "",
-                              ))({
-                              target: { value: String(key ?? "") },
-                            } as React.ChangeEvent<HTMLSelectElement>)
+                            handleClassificationChange(user, String(key ?? ""))
                           }
                           aria-label="필터"
                         >
@@ -514,9 +524,6 @@ function UsersV2Content() {
                             </ListBox>
                           </Select.Popover>
                         </Select>
-                        <p className="mt-1 text-xs text-gray-500">
-                          등급 변경 미구현
-                        </p>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                           <svg
                             className="w-4 h-4"
@@ -580,13 +587,9 @@ function UsersV2Content() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-1">
-                        {user.role === "blocked" ? (
+                        {user.isSuspended ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                             차단됨
-                          </span>
-                        ) : user.role === "admin" ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffd1da] text-[#e00b41]">
-                            관리자
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -614,20 +617,30 @@ function UsersV2Content() {
                         {isBlocked ? (
                           <Button
                             variant="secondary"
-                            onClick={() => handleUnblockUser(user.userId)}
+                            onClick={() =>
+                              setStatusTarget({
+                                userId: user.userId,
+                                name: user.name || user.userId,
+                                isSuspended: user.isSuspended,
+                              })
+                            }
                             className="text-[#ff385c] hover:text-green-700"
-                            isDisabled // 차단 해제 API 미연결(handleUnblockUser 미구현)
                           >
-                            차단해제 (미구현)
+                            차단해제
                           </Button>
                         ) : (
                           <Button
                             variant="secondary"
-                            onClick={() => handleBlockUser(user.userId)}
+                            onClick={() =>
+                              setStatusTarget({
+                                userId: user.userId,
+                                name: user.name || user.userId,
+                                isSuspended: user.isSuspended,
+                              })
+                            }
                             className="text-red-500 hover:text-red-700"
-                            isDisabled // 차단 API 미연결(handleBlockUser 미구현)
                           >
-                            차단 (미구현)
+                            차단
                           </Button>
                         )}
 
@@ -706,22 +719,10 @@ function UsersV2Content() {
                     모든 사용자
                   </ListBox.Item>
                   <ListBox.Item
-                    id={String("blocked")}
+                    id={String("blacklisted")}
                     textValue={"차단된 사용자"}
                   >
                     차단된 사용자
-                  </ListBox.Item>
-                  <ListBox.Item
-                    id={String("reported")}
-                    textValue={"신고된 사용자"}
-                  >
-                    신고된 사용자
-                  </ListBox.Item>
-                  <ListBox.Item
-                    id={String("active")}
-                    textValue={"활발한 사용자"}
-                  >
-                    활발한 사용자
                   </ListBox.Item>
                 </ListBox>
               </Select.Popover>
@@ -1227,6 +1228,20 @@ function UsersV2Content() {
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>
+      )}
+
+      {statusTarget && (
+        <AccountStatusModal
+          open
+          onClose={() => setStatusTarget(null)}
+          userId={statusTarget.userId}
+          userName={statusTarget.name}
+          isSuspended={statusTarget.isSuspended}
+          onSuccess={(message) => {
+            toast.success(message);
+            void fetchUsers();
+          }}
+        />
       )}
 
       {/* Ghost 노출 이력 Sheet */}

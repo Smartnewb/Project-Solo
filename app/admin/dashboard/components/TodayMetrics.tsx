@@ -1,22 +1,22 @@
 "use client";
 import { Card, Skeleton } from "@heroui/react";
 import { TrendingUp, UserPlus, Users } from "lucide-react";
-import { KPI } from "../types";
+import type { DashboardOverview } from "../types";
 interface TodayMetricsProps {
-	kpi: KPI | null;
+	overview?: Pick<DashboardOverview, "totalUsers" | "dailySignups">;
+	conversionRate?: number | null;
 	loading?: boolean;
 }
 interface MetricItemProps {
 	label: string;
-	value: number | string;
+	value: number | string | null | undefined;
 	icon: React.ReactNode;
 	color: string;
 	bgColor: string;
 	loading?: boolean;
 	suffix?: string;
 }
-const formatNumber = (value: number | undefined | null) =>
-	(value ?? 0).toLocaleString();
+const formatNumber = (value: number) => value.toLocaleString();
 function MetricItem({
 	label,
 	value,
@@ -47,8 +47,12 @@ function MetricItem({
 					<Skeleton style={{ width: 80, height: 28 }} className="rounded-xl" />
 				) : (
 					<h2 style={{}} className={"text-lg font-semibold text-neutral-900"}>
-						{typeof value === "number" ? formatNumber(value) : value}
-						{suffix && (
+						{value == null
+							? "—"
+							: typeof value === "number"
+								? formatNumber(value)
+								: value}
+						{suffix && value != null && (
 							<span
 								style={{ color: "#6b7280", marginLeft: 4 }}
 								className={"text-sm text-neutral-700"}
@@ -62,20 +66,24 @@ function MetricItem({
 		</div>
 	);
 }
-export default function TodayMetrics({ kpi, loading }: TodayMetricsProps) {
+export default function TodayMetrics({
+	overview,
+	conversionRate,
+	loading,
+}: TodayMetricsProps) {
 	return (
 		<Card>
 			<Card.Content>
 				<div className="flex items-center gap-2 mb-4">
 					<h2 className={"text-lg font-semibold text-neutral-900"}>
-						📊 오늘의 핵심 지표
+						오늘의 핵심 지표
 					</h2>
 				</div>
 				<div className={"grid grid-cols-12 gap-4"}>
 					<div className={"min-w-0 col-span-12 sm:col-span-4"}>
 						<MetricItem
 							label="오늘 가입"
-							value={kpi?.dailySignups ?? 0}
+							value={overview?.dailySignups}
 							icon={<UserPlus size={18} />}
 							color="#3b82f6"
 							bgColor="#eff6ff"
@@ -86,7 +94,7 @@ export default function TodayMetrics({ kpi, loading }: TodayMetricsProps) {
 					<div className={"min-w-0 col-span-12 sm:col-span-4"}>
 						<MetricItem
 							label="총 회원 수"
-							value={kpi?.totalUsers ?? 0}
+							value={overview?.totalUsers}
 							icon={<Users size={18} />}
 							color="#8b5cf6"
 							bgColor="#f5f3ff"
@@ -96,8 +104,8 @@ export default function TodayMetrics({ kpi, loading }: TodayMetricsProps) {
 					</div>
 					<div className={"min-w-0 col-span-12 sm:col-span-4"}>
 						<MetricItem
-							label="매칭률"
-							value={`${(kpi?.matchingRate ?? 0).toFixed(1)}`}
+							label="가입 대비 채팅 전환율"
+							value={conversionRate == null ? null : conversionRate.toFixed(1)}
 							icon={<TrendingUp size={18} />}
 							color="#10b981"
 							bgColor="#ecfdf5"
