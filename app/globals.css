@@ -458,3 +458,10 @@
     white-space: nowrap;
   }
 }
+
+/* 오류 상태 필드의 Description 은 오류 문구로 보이게 한다 (많은 폼이 에러를 Description 에 넣는다). */
+@layer components {
+  [data-invalid="true"] [data-slot="description"] {
+    color: var(--danger, #dc2626);
+  }
+}

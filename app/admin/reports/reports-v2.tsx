@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from 'next/navigation';
 import { Controller } from "react-hook-form";
 import { useToast } from "@/shared/ui/admin/toast/toast-context";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { useAdminForm } from "@/app/admin/hooks/forms";
 import { reportStatusSchema, ReportStatusFormValues } from "@/app/admin/hooks/forms/schemas/report.schema";
 import AdminService from "@/app/services/admin";
@@ -109,9 +110,12 @@ function getDefaultActionForStatus(status: ReportStatus | 'dismissed'): ReportAc
         return 'warned';
     return 'escalated';
 }
+// 로딩/오류 중에도 모달을 열어 상태를 보여주기 위한 빈 상세(참조 고정).
+const EMPTY_USER_DETAIL = {} as UserDetail;
 const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사진"];
 function ReportsManagementContent() {
     const toast = useToast();
+    const confirm = useConfirm();
     const searchParams = useSearchParams();
     const deepLinkedReportId = searchParams?.get('reportId') ?? null;
     const lastOpenedReportIdRef = useRef<string | null>(null);
@@ -142,6 +146,8 @@ function ReportsManagementContent() {
     });
     const watchedStatus = statusForm.watch('status');
     const watchedAction = statusForm.watch('action');
+    // useAdminForm 은 렌더마다 새 객체를 돌려준다. effect/callback 의존성에는 안정적인 setValue 만 쓴다.
+    const setStatusFormValue = statusForm.setValue;
     const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
@@ -151,6 +157,10 @@ function ReportsManagementContent() {
         setDetailDialogOpen(true);
         setDetailLoading(true);
         setActiveTab(0);
+        // 이전 신고에서 입력한 제재 옵션이 다음 신고로 넘어가지 않게 초기화한다.
+        setStatusFormValue('suspendDays', 7);
+        setStatusFormValue('suspendPermanent', false);
+        setStatusFormValue('approverId', '');
         setChatHistory(null);
         setProfileImages([]);
         setReportHistory([]);
@@ -173,14 +183,14 @@ function ReportsManagementContent() {
                 }
                 : (detailResponse as ReportDetail);
             setSelectedReport(reportDetail);
-            statusForm.setValue('status', reportDetail.status);
-            statusForm.setValue('action', getDefaultActionForStatus(reportDetail.status));
+            setStatusFormValue('status', reportDetail.status);
+            setStatusFormValue('action', getDefaultActionForStatus(reportDetail.status));
         }
         catch {
             if (fallbackReport) {
                 setSelectedReport(fallbackReport);
-                statusForm.setValue('status', fallbackReport.status);
-                statusForm.setValue('action', getDefaultActionForStatus(fallbackReport.status));
+                setStatusFormValue('status', fallbackReport.status);
+                setStatusFormValue('action', getDefaultActionForStatus(fallbackReport.status));
             }
             else {
                 setDetailDialogOpen(false);
@@ -190,7 +200,7 @@ function ReportsManagementContent() {
         finally {
             setDetailLoading(false);
         }
-    }, [statusForm]);
+    }, [setStatusFormValue]);
     const fetchReports = async () => {
         try {
             setLoading(true);
@@ -243,8 +253,8 @@ function ReportsManagementContent() {
     useEffect(() => {
         if (!watchedStatus)
             return;
-        statusForm.setValue('action', getDefaultActionForStatus(watchedStatus));
-    }, [statusForm, watchedStatus]);
+        setStatusFormValue('action', getDefaultActionForStatus(watchedStatus));
+    }, [setStatusFormValue, watchedStatus]);
     const handleChangePage = (_event: unknown, newPage: number) => {
         setPage(newPage);
     };
@@ -312,6 +322,20 @@ function ReportsManagementContent() {
     const handleStatusChange = statusForm.handleFormSubmit(async (data) => {
         if (!selectedReport)
             return;
+        if (data.action === 'suspended' || data.action === 'banned') {
+            const actionLabel = ACTION_OPTIONS.find((option) => option.value === data.action)?.label ?? data.action;
+            const duration = data.action === 'suspended'
+                ? (data.suspendPermanent ? '영구' : `${data.suspendDays}일`)
+                : '영구';
+            const ok = await confirm({
+                title: '제재 확인',
+                message: `${selectedReport.reported.name}님에게 '${actionLabel}' 처리를 합니다.\n기간: ${duration}`,
+                confirmText: '처리',
+                severity: 'error',
+            });
+            if (!ok)
+                return;
+        }
         setStatusUpdating(true);
         try {
             await AdminService.reports.updateReportStatus(selectedReport.id, data.status, { type: 'profile', action: data.action, suspendDays: data.suspendDays as 3 | 7 | 14 | 30 | undefined, suspendPermanent: data.suspendPermanent, approverId: data.approverId });
@@ -340,7 +364,9 @@ function ReportsManagementContent() {
             setUserDetail(data);
         }
         catch (err: unknown) {
-            setUserDetailError(err instanceof Error ? err.message : "사용자 정보를 불러오는데 실패했습니다.");
+            const message = err instanceof Error ? err.message : "사용자 정보를 불러오는데 실패했습니다.";
+            setUserDetailError(message);
+            toast.error(message);
         }
         finally {
             setUserDetailLoading(false);
@@ -910,7 +936,7 @@ function ReportsManagementContent() {
         </Modal.Footer>
       </Modal.Dialog></Modal.Container></Modal.Backdrop>
 
-      {userDetail && (<UserDetailModal open={userDetailModalOpen} onClose={handleCloseUserDetailModal} userId={selectedUserId} userDetail={userDetail} loading={userDetailLoading} error={userDetailError} onRefresh={fetchReports}></UserDetailModal>)}
+      {userDetailModalOpen && (<UserDetailModal open={userDetailModalOpen} onClose={handleCloseUserDetailModal} userId={selectedUserId} userDetail={userDetail ?? EMPTY_USER_DETAIL} loading={userDetailLoading} error={userDetailError} onRefresh={fetchReports}></UserDetailModal>)}
     </div>);
 }
 export default function ReportsManagement() {

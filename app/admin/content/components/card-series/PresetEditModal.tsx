@@ -3,6 +3,7 @@ import { Button, Spinner, Modal, TextField, Label, Input, Description } from '@h
 import { Trash2 as DeleteIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import AdminService from '@/app/services/admin';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 import type { BackgroundPreset } from '@/types/admin';
 interface PresetEditModalProps {
     open: boolean;
@@ -12,6 +13,7 @@ interface PresetEditModalProps {
     onDelete: (id: string) => void;
 }
 export default function PresetEditModal({ open, preset, onClose, onSuccess, onDelete }: PresetEditModalProps) {
+    const confirm = useConfirm();
     const [name, setName] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [order, setOrder] = useState<number>(0);
@@ -54,10 +56,16 @@ export default function PresetEditModal({ open, preset, onClose, onSuccess, onDe
             setSaving(false);
         }
     };
-    const handleDeleteClick = () => {
+    const handleDeleteClick = async () => {
         if (!preset)
             return;
-        if (confirm(`"${preset.displayName}" 프리셋을 삭제하시겠습니까?`)) {
+        const ok = await confirm({
+            title: '프리셋 삭제',
+            message: `‘${preset.displayName}’ 프리셋을 삭제합니다.`,
+            confirmText: '삭제',
+            severity: 'error',
+        });
+        if (ok) {
             onDelete(preset.id);
             handleClose();
         }
@@ -70,13 +78,13 @@ export default function PresetEditModal({ open, preset, onClose, onSuccess, onDe
     };
     if (!preset)
         return null;
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
+    return (<Modal.Backdrop isOpen={open} isDismissable={!saving} isKeyboardDismissDisabled={saving} onOpenChange={next => {
             if (!next)
                 handleClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>프리셋 수정</span>
-        <Button onPress={handleDeleteClick} variant="tertiary" isIconOnly={true} aria-label={"프리셋 삭제"}>
+        <Button onPress={handleDeleteClick} isDisabled={saving} variant="danger" isIconOnly={true} aria-label={"프리셋 삭제"}>
           <DeleteIcon></DeleteIcon>
         </Button>
       </Modal.Heading>
@@ -87,7 +95,7 @@ export default function PresetEditModal({ open, preset, onClose, onSuccess, onDe
             </aside>)}
 
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            <img src={preset.imageUrl || preset.thumbnailUrl} alt={preset.displayName} style={{ width: 100, height: 125, objectFit: 'cover', borderRadius: 1, border: '1px solid' }}></img>
+            <img src={preset.imageUrl || preset.thumbnailUrl} alt={preset.displayName} style={{ width: 100, height: 125, objectFit: 'cover', borderRadius: 4, border: '1px solid #e5e7eb' }}></img>
             <div style={{ flex: 1 }}>
               <p>
                 이미지 URL

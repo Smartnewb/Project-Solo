@@ -3,7 +3,15 @@ import { Button, Spinner, Chip, Modal, Select, ListBox, Slider } from '@heroui/r
 import { useCallback, useEffect, useState } from 'react';
 import type { GhostPersonaInfo, PersonaDiversityReport, CommunityTraits, ReactionSpeed, ActivityCurve, } from '@/app/services/admin/community-automation';
 import { personas as personasApi } from '@/app/services/admin/community-automation';
+import { useToast } from '@/shared/ui/admin/toast';
 export default function PersonasPage() {
+    const toast = useToast();
+    // 에러는 페이지 배너와 함께 토스트로도 알린다 (모달에 가려져 보이지 않기 때문).
+    function fail(e: unknown, fallback: string) {
+        const message = e instanceof Error ? e.message : fallback;
+        setError(message);
+        toast.error(message);
+    }
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [items, setItems] = useState<GhostPersonaInfo[]>([]);
@@ -48,7 +56,7 @@ export default function PersonasPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '트레이트 저장 실패');
+            fail(e, '트레이트 저장 실패');
         }
         finally {
             setTraitLoading(false);
@@ -64,7 +72,7 @@ export default function PersonasPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '트레이트 삭제 실패');
+            fail(e, '트레이트 삭제 실패');
         }
         finally {
             setDeleteLoading(false);
@@ -165,12 +173,12 @@ export default function PersonasPage() {
 				</>)}
 
 			{/* Trait Edit Dialog */}
-			<Modal.Backdrop isOpen={!!traitTarget} onOpenChange={next => {
-            if (!next)
-                (() => setTraitTarget(null))();
+			<Modal.Backdrop isOpen={!!traitTarget} isDismissable={!traitLoading} isKeyboardDismissDisabled={traitLoading} onOpenChange={next => {
+            if (!next && !traitLoading)
+                setTraitTarget(null);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>커뮤니티 트레이트 설정</Modal.Heading>
-				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: '16px !important' }}>
+				<Modal.Body style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: '16px' }}>
 					<div>
 						<label>반응 속도</label>
 						<Select value={traitForm.reactionSpeed ?? ''} aria-label={"반응 속도"} onChange={(key) => {
@@ -205,7 +213,7 @@ export default function PersonasPage() {
 					</div>
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setTraitTarget(null)} variant="tertiary">취소</Button>
+					<Button isDisabled={traitLoading} onPress={() => setTraitTarget(null)} variant="tertiary">취소</Button>
 					<Button isDisabled={traitLoading} onPress={handleTraitSave} variant="primary">
 						{traitLoading ? <Spinner size="sm"></Spinner> : '저장'}
 					</Button>
@@ -213,9 +221,9 @@ export default function PersonasPage() {
 			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* Delete Confirm Dialog */}
-			<Modal.Backdrop isOpen={!!deleteTarget} onOpenChange={next => {
-            if (!next)
-                (() => setDeleteTarget(null))();
+			<Modal.Backdrop isOpen={!!deleteTarget} isDismissable={!deleteLoading} isKeyboardDismissDisabled={deleteLoading} onOpenChange={next => {
+            if (!next && !deleteLoading)
+                setDeleteTarget(null);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>트레이트 오버라이드 삭제</Modal.Heading>
 				<Modal.Body>
@@ -223,8 +231,8 @@ export default function PersonasPage() {
 					<p>재시작 시 초기화되는 설정입니다.</p>
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setDeleteTarget(null)} variant="tertiary">취소</Button>
-					<Button isDisabled={deleteLoading} onPress={handleTraitDelete} variant="primary">
+					<Button isDisabled={deleteLoading} onPress={() => setDeleteTarget(null)} variant="tertiary">취소</Button>
+					<Button isDisabled={deleteLoading} onPress={handleTraitDelete} variant="danger">
 						{deleteLoading ? <Spinner size="sm"></Spinner> : '삭제'}
 					</Button>
 				</Modal.Footer>

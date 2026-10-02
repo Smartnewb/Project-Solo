@@ -16,7 +16,7 @@ export function ConfirmDialog() {
 						<Modal.Heading>{state.title ?? "확인"}</Modal.Heading>
 					</Modal.Header>
 					<Modal.Body>
-						<p className="text-muted">{state.message}</p>
+						<p className="whitespace-pre-line text-muted">{state.message}</p>
 					</Modal.Body>
 					<Modal.Footer>
 						<Button variant="secondary" onPress={handleCancel}>

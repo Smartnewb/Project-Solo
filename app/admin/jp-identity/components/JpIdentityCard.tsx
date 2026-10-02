@@ -33,7 +33,7 @@ function ValueCell({
 	return (
 		<td
 			style={{
-				color: muted ? "text.disabled" : "text.primary",
+				color: muted ? "#9ca3af" : "#111827",
 				fontWeight: muted ? 400 : 600,
 			}}
 		>
@@ -154,7 +154,7 @@ export function JpIdentityCard({
 									display: "flex",
 									alignItems: "center",
 									justifyContent: "center",
-									backgroundColor: "action.disabledBackground",
+									backgroundColor: "rgba(0, 0, 0, 0.12)",
 								}}
 							>
 								<Spinner aria-label="불러오는 중" size="sm" />
@@ -316,7 +316,7 @@ export function JpIdentityCard({
 							style={{
 								padding: 0,
 								position: "relative",
-								backgroundColor: "secondary.main",
+								backgroundColor: "#7A4AE2",
 								height: "88vh",
 							}}
 						>
@@ -327,8 +327,8 @@ export function JpIdentityCard({
 									top: 10,
 									right: 10,
 									zIndex: 2,
-									color: "secondary.contrastText",
-									backgroundColor: "action.active",
+									color: "#ffffff",
+									backgroundColor: "rgba(0, 0, 0, 0.54)",
 								}}
 								variant={"tertiary"}
 								isIconOnly={true}

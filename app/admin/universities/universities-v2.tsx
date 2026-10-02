@@ -17,6 +17,8 @@ import { Plus as AddIcon, Search as SearchIcon } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
 import AdminService from "@/app/services/admin";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
 import UniversityTable from "./components/UniversityTable";
 import UniversityFormDialog from "./components/UniversityFormDialog";
 import UniversityDetailDialog from "./components/UniversityDetailDialog";
@@ -52,6 +54,8 @@ function sortUniversitiesByLogo(
 }
 
 function UniversitiesPageContent() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [universities, setUniversities] = useState<UniversityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -188,7 +192,14 @@ function UniversitiesPageContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("이 대학을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+    const name = universities.find((u) => u.id === id)?.name;
+    const ok = await confirm({
+      title: "대학 삭제",
+      message: `${name ? `'${name}' ` : ""}대학을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+      confirmText: "삭제",
+      severity: "error",
+    });
+    if (!ok) {
       return;
     }
 
@@ -196,7 +207,7 @@ function UniversitiesPageContent() {
       await AdminService.universities.delete(id);
       loadUniversities();
     } catch (err: any) {
-      alert(err.response?.data?.message || "삭제에 실패했습니다.");
+      toast.error(err.response?.data?.message || "삭제에 실패했습니다.");
     }
   };
 
@@ -205,7 +216,9 @@ function UniversitiesPageContent() {
       await AdminService.universities.update(id, { isActive });
       loadUniversities();
     } catch (err: any) {
-      alert(err.response?.data?.message || "상태 변경에 실패했습니다.");
+      toast.error(
+        err.response?.data?.message || "상태 변경에 실패했습니다.",
+      );
     }
   };
 

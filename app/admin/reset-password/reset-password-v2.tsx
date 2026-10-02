@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { Controller } from "react-hook-form";
 
 import AdminService from "@/app/services/admin";
+import { useToast } from "@/shared/ui/admin/toast";
 import { safeToLocaleString } from "@/app/utils/formatters";
 import { useAdminForm } from "@/app/admin/hooks/forms";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/app/admin/hooks/forms/schemas/reset-password.schema";
 
 function ResetPasswordPageContent() {
+  const toast = useToast();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -106,16 +108,21 @@ function ResetPasswordPageContent() {
       setConfirmDialogOpen(false);
       setPasswordDialogOpen(true);
     } catch (err: any) {
-      alert(err.response?.data?.message || "비밀번호 초기화에 실패했습니다.");
+      toast.error(
+        err.response?.data?.message || "비밀번호 초기화에 실패했습니다.",
+      );
     } finally {
       setResetLoading(false);
     }
   };
 
-  const handleCopyPassword = () => {
-    if (temporaryPassword) {
-      navigator.clipboard.writeText(temporaryPassword);
-      alert("임시 비밀번호가 복사되었습니다.");
+  const handleCopyPassword = async () => {
+    if (!temporaryPassword) return;
+    try {
+      await navigator.clipboard.writeText(temporaryPassword);
+      toast.success("임시 비밀번호가 복사되었습니다.");
+    } catch {
+      toast.error("복사에 실패했습니다. 비밀번호를 직접 선택해 복사해주세요.");
     }
   };
 
@@ -298,8 +305,10 @@ function ResetPasswordPageContent() {
       {/* 확인 다이얼로그 */}
       <Modal.Backdrop
         isOpen={confirmDialogOpen}
+        isDismissable={!resetLoading}
+        isKeyboardDismissDisabled={resetLoading}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setConfirmDialogOpen(false))();
+          if (!isOpen && !resetLoading) setConfirmDialogOpen(false);
         }}
       >
         <Modal.Container>
@@ -337,8 +346,10 @@ function ResetPasswordPageContent() {
       {/* 임시 비밀번호 표시 다이얼로그 */}
       <Modal.Backdrop
         isOpen={passwordDialogOpen}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) handlePasswordDialogClose();
+        isDismissable={false}
+        isKeyboardDismissDisabled
+        onOpenChange={() => {
+          // 임시 비밀번호는 한 번만 표시되므로 확인 버튼으로만 닫는다.
         }}
       >
         <Modal.Container>
@@ -359,7 +370,7 @@ function ResetPasswordPageContent() {
                   onClick={handleCopyPassword}
                   variant={"secondary"}
                   isIconOnly
-                  aria-label="작업 실행"
+                  aria-label="임시 비밀번호 복사"
                 >
                   <ContentCopyIcon size={16} />
                 </Button>

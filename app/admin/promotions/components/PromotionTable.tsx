@@ -50,14 +50,14 @@ export function PromotionTable({ promotions, onEdit, onDelete, onToggleActive, l
                         {p.targetAppleSku}
                       </p>)}
                   </td>
-                  <td className="border-b px-4 py-3">{p.discountRate}%</td>
+                  <td className="whitespace-nowrap border-b px-4 py-3">{(p.derivedDiscountRate ?? p.discountRate) != null ? `${p.derivedDiscountRate ?? p.discountRate}%` : "—"}</td>
                   <td className="border-b px-4 py-3">
                     <p>
                       {formatDate(p.startsAt)} ~ {formatDate(p.expiresAt)}
                     </p>
                   </td>
                   <td className="border-b px-4 py-3">
-                    {deleted ? (<Chip size="sm">{"삭제됨"}</Chip>) : (<Checkbox isSelected={p.isActive} isDisabled={loading} onChange={checked => onToggleActive(p.id, checked)}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>)}
+                    {deleted ? (<Chip size="sm">{"삭제됨"}</Chip>) : (<Checkbox isSelected={p.isActive} isDisabled={loading} onChange={checked => onToggleActive(p.id, checked)}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control><span className="whitespace-nowrap text-sm">{p.isActive ? "활성" : "비활성"}</span></Checkbox.Content></Checkbox>)}
                   </td>
                   <td className="border-b px-4 py-3">
                     <Button onPress={() => onEdit(p)} isDisabled={deleted} variant="tertiary" isIconOnly={true}>

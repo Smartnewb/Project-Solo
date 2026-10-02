@@ -648,9 +648,9 @@ function ProfileReviewV2Content() {
 
       <RejectReasonModal open={bulkRejectModalOpen} onClose={() => {
             setBulkRejectModalOpen(false);
-        }} onConfirm={handleBulkRejectConfirm}></RejectReasonModal>
+        }} onConfirm={handleBulkRejectConfirm} count={selectedUserIds.length}></RejectReasonModal>
 
-      <Modal.Backdrop isOpen={processing} isDismissable={false}><Modal.Container size="lg"><Modal.Dialog aria-label="프로필 이미지 처리 중" style={{ width: '100%', maxWidth: 600, minWidth: 0 }}><Modal.Body>
+      <Modal.Backdrop isOpen={processing} isDismissable={false} isKeyboardDismissDisabled><Modal.Container size="lg"><Modal.Dialog aria-label="프로필 이미지 처리 중" style={{ width: '100%', maxWidth: 600, minWidth: 0 }}><Modal.Body>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: "white", borderRadius: 2, minWidth: 200 }}>
           <Spinner size="sm"></Spinner>
           <p style={{ marginTop: 16, fontWeight: 600 }}>

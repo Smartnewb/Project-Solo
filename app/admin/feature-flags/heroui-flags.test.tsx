@@ -5,6 +5,19 @@ import userEvent from "@testing-library/user-event";
 import AdminService from "@/app/services/admin";
 import FeatureFlagsV2 from "./feature-flags-v2";
 
+const mockConfirm = jest.fn().mockResolvedValue(true);
+jest.mock("@/shared/ui/admin/confirm-dialog", () => ({
+	useConfirm: () => mockConfirm,
+}));
+jest.mock("@/shared/ui/admin/toast", () => ({
+	useToast: () => ({
+		success: jest.fn(),
+		error: jest.fn(),
+		warning: jest.fn(),
+		info: jest.fn(),
+	}),
+}));
+
 const flag = {
 	id: "1",
 	name: "html_notice",
@@ -36,6 +49,7 @@ test("flag switch invokes exact toggle; edit dialog retains roles and descriptio
 		await screen.findByRole("switch", { name: "html_notice 활성화" }),
 	);
 	await waitFor(() => expect(toggle).toHaveBeenCalledWith("html_notice", true));
+	expect(mockConfirm).toHaveBeenCalled();
 	expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 	await user.click(
 		screen.getByRole("button", { name: "html_notice 설정 수정" }),

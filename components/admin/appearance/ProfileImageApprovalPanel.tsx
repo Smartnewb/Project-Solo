@@ -19,6 +19,7 @@ import React, { useState, useEffect } from "react";
 
 import AdminService from "@/app/services/admin";
 import UserDetailModal from "./UserDetailModal";
+import { useToast } from "@/shared/ui/admin/toast";
 
 // 프로필 이미지 승인 대기 사용자 타입
 interface PendingProfileImageUser {
@@ -34,6 +35,7 @@ interface PendingProfileImageUser {
 }
 
 const ProfileImageApprovalPanel: React.FC = () => {
+  const toast = useToast();
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const query = window.matchMedia("(max-width: 767px)");
@@ -66,6 +68,13 @@ const ProfileImageApprovalPanel: React.FC = () => {
   // 이미지 확대 모달 관련 상태
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>("");
+  const [selectedImageUserName, setSelectedImageUserName] = useState("");
+
+  // 거절 모달을 열거나 닫을 때(백드롭/Esc 포함) 이전 사유가 남지 않게 초기화
+  useEffect(() => {
+    setRejectionReason("");
+    setCustomRejectionReason("");
+  }, [rejectionModalOpen]);
 
   // 거절 사유 템플릿
   const rejectionReasons = [
@@ -153,7 +162,9 @@ const ProfileImageApprovalPanel: React.FC = () => {
       setSelectedUserId(null);
     } catch (error: any) {
       console.error("프로필 이미지 승인 오류:", error);
-      setError(error.message || "승인 처리 중 오류가 발생했습니다.");
+      const message = error.message || "승인 처리 중 오류가 발생했습니다.";
+      setError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -184,15 +195,18 @@ const ProfileImageApprovalPanel: React.FC = () => {
       setCustomRejectionReason("");
     } catch (error: any) {
       console.error("프로필 이미지 거절 오류:", error);
-      setError(error.message || "거절 처리 중 오류가 발생했습니다.");
+      const message = error.message || "거절 처리 중 오류가 발생했습니다.";
+      setError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
   };
 
   // 이미지 클릭 핸들러
-  const handleImageClick = (imageUrl: string) => {
+  const handleImageClick = (imageUrl: string, userName: string) => {
     setSelectedImageUrl(imageUrl);
+    setSelectedImageUserName(userName);
     setImageModalOpen(true);
   };
 
@@ -306,8 +320,8 @@ const ProfileImageApprovalPanel: React.FC = () => {
                         <HeroActionButton
                           variant="ghost"
                           className="h-auto min-w-0 p-0"
-                          onClick={() => handleImageClick(image.imageUrl)}
-                          aria-label="프로필 상세 보기"
+                          onClick={() => handleImageClick(image.imageUrl, user.userName)}
+                          aria-label={`${user.userName} 프로필 이미지 확대`}
                         >
                           <Avatar
                             style={{ width: 60, height: 60, cursor: "pointer" }}
@@ -414,8 +428,8 @@ const ProfileImageApprovalPanel: React.FC = () => {
                             <HeroActionButton
                               variant="ghost"
                               className="h-auto min-w-0 p-0"
-                              onClick={() => handleImageClick(image.imageUrl)}
-                              aria-label="프로필 상세 보기"
+                              onClick={() => handleImageClick(image.imageUrl, user.userName)}
+                              aria-label={`${user.userName} 프로필 이미지 확대`}
                             >
                               <Avatar
                                 style={{
@@ -500,9 +514,10 @@ const ProfileImageApprovalPanel: React.FC = () => {
       <Modal.Backdrop
         isOpen={approvalModalOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setApprovalModalOpen(false))?.();
+          if (!isOpen && !actionLoading) setApprovalModalOpen(false);
         }}
-        isDismissable={(() => setApprovalModalOpen(false)) !== undefined}
+        isDismissable={!actionLoading}
+        isKeyboardDismissDisabled={actionLoading}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -518,7 +533,7 @@ const ProfileImageApprovalPanel: React.FC = () => {
               <Button
                 onClick={() => setApprovalModalOpen(false)}
                 variant={"ghost"}
-                isDisabled={undefined}
+                isDisabled={actionLoading}
                 size={"md"}
                 className="rounded-xl"
               >
@@ -545,9 +560,10 @@ const ProfileImageApprovalPanel: React.FC = () => {
       <Modal.Backdrop
         isOpen={rejectionModalOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setRejectionModalOpen(false))?.();
+          if (!isOpen && !actionLoading) setRejectionModalOpen(false);
         }}
-        isDismissable={(() => setRejectionModalOpen(false)) !== undefined}
+        isDismissable={!actionLoading}
+        isKeyboardDismissDisabled={actionLoading}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -590,7 +606,7 @@ const ProfileImageApprovalPanel: React.FC = () => {
                         <ListBox.Item
                           key={reason.value}
                           id={reason.value}
-                          textValue={"reason.label"}
+                          textValue={reason.label}
                         >
                           {reason.label}
                         </ListBox.Item>
@@ -623,7 +639,7 @@ const ProfileImageApprovalPanel: React.FC = () => {
               <Button
                 onClick={() => setRejectionModalOpen(false)}
                 variant={"ghost"}
-                isDisabled={undefined}
+                isDisabled={actionLoading}
                 size={"md"}
                 className="rounded-xl"
               >
@@ -631,7 +647,7 @@ const ProfileImageApprovalPanel: React.FC = () => {
               </Button>
               <Button
                 onClick={handleReject}
-                variant={"primary"}
+                variant={"danger"}
                 isDisabled={
                   actionLoading ||
                   !rejectionReason.trim() ||
@@ -659,7 +675,9 @@ const ProfileImageApprovalPanel: React.FC = () => {
         isDismissable={(() => setImageModalOpen(false)) !== undefined}
       >
         <Modal.Container size="md" scroll="inside">
-          <Modal.Dialog>
+          <Modal.Dialog
+            aria-label={`${selectedImageUserName} 프로필 이미지 확대`}
+          >
             <Modal.Body
               style={{ padding: 0, display: "flex", justifyContent: "center" }}
             >

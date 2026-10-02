@@ -10,6 +10,15 @@ jest.mock("@/shared/ui/admin/confirm-dialog", () => ({
   useConfirm: () => jest.fn(),
 }));
 
+jest.mock("@/shared/ui/admin/toast", () => ({
+  useToast: () => ({
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn(),
+    info: jest.fn(),
+  }),
+}));
+
 jest.mock("@tanstack/react-query", () => ({
   useMutation: () => ({
     mutate: jest.fn(),

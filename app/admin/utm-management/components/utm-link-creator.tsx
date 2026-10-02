@@ -520,8 +520,14 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
       setCreatedLink(result);
 
       const url = result.shortUrl || result.destinationUrl;
-      const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 2 });
-      setQrDataUrl(dataUrl);
+      try {
+        const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 2 });
+        setQrDataUrl(dataUrl);
+      } catch {
+        // 링크는 이미 생성됐으므로 QR 실패가 생성 실패로 보이지 않게 분리한다.
+        setQrDataUrl("");
+        toast.warning("링크는 생성됐지만 QR 생성에 실패했습니다");
+      }
 
       setResultOpen(true);
       toast.success("UTM 링크가 생성되었습니다.");
@@ -1424,11 +1430,11 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
                         marginTop: 4,
                       }}
                     >
-                      <TextField aria-label={"입력"}>
+                      <TextField aria-label={"최종 도착 URL"}>
                         <Input
                           value={createdLink.destinationUrl}
                           readOnly
-                          aria-label={"입력"}
+                          aria-label={"최종 도착 URL"}
                         />
                       </TextField>
                       <Button
@@ -1457,11 +1463,11 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
                           marginTop: 4,
                         }}
                       >
-                        <TextField aria-label={"입력"}>
+                        <TextField aria-label={"추적 URL"}>
                           <Input
                             value={createdLink.shortUrl}
                             readOnly
-                            aria-label={"입력"}
+                            aria-label={"추적 URL"}
                           />
                         </TextField>
                         <Button

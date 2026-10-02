@@ -273,8 +273,10 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
+            gap: 12,
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-end",
             marginBottom: 16,
           }}
         >
@@ -681,8 +683,10 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
 
       <Modal.Backdrop
         isOpen={editOpen}
+        isDismissable={!editSaving}
+        isKeyboardDismissDisabled={editSaving}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setEditOpen(false))();
+          if (!isOpen && !editSaving) setEditOpen(false);
         }}
       >
         <Modal.Container>

@@ -19,6 +19,8 @@ import {
 import { useState, useEffect } from "react";
 
 import AdminService from "@/app/services/admin";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
 import DepartmentCsvUpload from "./DepartmentCsvUpload";
 import type {
   UniversityDetail,
@@ -44,6 +46,9 @@ export default function DepartmentManagement({
   university,
   onChanged,
 }: DepartmentManagementProps) {
+  const confirm = useConfirm();
+  const toast = useToast();
+  const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<DepartmentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -76,6 +81,7 @@ export default function DepartmentManagement({
       );
       setDepartments(data.items);
     } catch {
+      toast.error("학과 목록을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
     }
@@ -105,25 +111,37 @@ export default function DepartmentManagement({
     setFormDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("이 학과를 삭제하시겠습니까?")) return;
+  const handleDelete = async (dept: DepartmentItem) => {
+    const id = dept.id;
+    const ok = await confirm({
+      title: "학과 삭제",
+      message: `'${dept.name}' 학과를 삭제합니다.\n삭제하시겠습니까?`,
+      confirmText: "삭제",
+      severity: "error",
+    });
+    if (!ok) return;
 
     try {
       await AdminService.universities.departments.delete(university.id, id);
       loadDepartments();
       onChanged();
     } catch (err: any) {
-      alert(err.response?.data?.message || "삭제에 실패했습니다.");
+      toast.error(err.response?.data?.message || "삭제에 실패했습니다.");
     }
   };
 
   const handleSubmit = async () => {
     if (!formData.name) {
-      alert("학과명을 입력해주세요.");
+      toast.warning("학과명을 입력해주세요.");
+      return;
+    }
+    if (Number.isNaN(formData.displayOrder)) {
+      toast.warning("정렬 순서를 숫자로 입력해주세요.");
       return;
     }
 
     try {
+      setSaving(true);
       if (editDepartment) {
         const updateData: UpdateDepartmentRequest = {};
         if (formData.name !== editDepartment.name)
@@ -161,7 +179,9 @@ export default function DepartmentManagement({
       loadDepartments();
       onChanged();
     } catch (err: any) {
-      alert(err.response?.data?.message || "저장에 실패했습니다.");
+      toast.error(err.response?.data?.message || "저장에 실패했습니다.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -281,7 +301,7 @@ export default function DepartmentManagement({
                             onClick={() => handleEdit(dept)}
                             variant={"secondary"}
                             isIconOnly
-                            aria-label="작업 실행"
+                            aria-label="학과 수정"
                           >
                             <EditIcon size={16} />
                           </Button>
@@ -289,10 +309,10 @@ export default function DepartmentManagement({
                       </Tooltip>
                       <Tooltip>
                         <Button
-                            onClick={() => handleDelete(dept.id)}
+                            onClick={() => handleDelete(dept)}
                             variant={"secondary"}
                             isIconOnly
-                            aria-label="작업 실행"
+                            aria-label="학과 삭제"
                           >
                             <DeleteIcon size={16} />
                           </Button>
@@ -308,8 +328,10 @@ export default function DepartmentManagement({
       )}
       <Modal.Backdrop
         isOpen={formDialogOpen}
+        isDismissable={!saving}
+        isKeyboardDismissDisabled={saving}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setFormDialogOpen(false))();
+          if (!isOpen && !saving) setFormDialogOpen(false);
         }}
       >
         <Modal.Container>
@@ -387,11 +409,16 @@ export default function DepartmentManagement({
               <Button
                 onClick={() => setFormDialogOpen(false)}
                 variant={"secondary"}
+                isDisabled={saving}
               >
                 취소
               </Button>
-              <Button onClick={handleSubmit} variant={"primary"}>
-                {editDepartment ? "수정" : "추가"}
+              <Button
+                onClick={handleSubmit}
+                variant={"primary"}
+                isDisabled={saving}
+              >
+                {saving ? <Spinner aria-label="저장 중" /> : editDepartment ? "수정" : "추가"}
               </Button>
             </Modal.Footer>
           </Modal.Dialog>

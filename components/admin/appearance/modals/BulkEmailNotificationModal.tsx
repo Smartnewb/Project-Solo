@@ -10,7 +10,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { X } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import AdminService from "@/app/services/admin";
 
@@ -35,9 +35,26 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
   const [progress, setProgress] = useState(0);
   const [totalEmails, setTotalEmails] = useState(0);
   const [sentEmails, setSentEmails] = useState(0);
+  // 부분 실패 시 재발송 대상 (이미 발송된 사용자에게 중복 발송 방지)
+  const [failedIds, setFailedIds] = useState<string[] | null>(null);
+  const targetIds = failedIds ?? userIds;
+
+  useEffect(() => {
+    if (!open) return;
+    setSubject("");
+    setMessage("");
+    setError(null);
+    setSuccess(false);
+    setProgress(0);
+    setTotalEmails(0);
+    setSentEmails(0);
+    setFailedIds(null);
+  }, [open]);
+
+  const sendLabel = `${targetIds.length}명에게 발송`;
 
   const handleSubmit = async () => {
-    if (userIds.length === 0 || !subject.trim() || !message.trim()) {
+    if (targetIds.length === 0 || !subject.trim() || !message.trim()) {
       setError("제목과 내용을 모두 입력해주세요.");
       return;
     }
@@ -46,15 +63,15 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
       setLoading(true);
       setError(null);
       setProgress(0);
-      setTotalEmails(userIds.length);
+      setTotalEmails(targetIds.length);
       setSentEmails(0);
 
       // 각 사용자에게 이메일 발송
       let successCount = 0;
-      let failCount = 0;
+      const failed: string[] = [];
 
-      for (let i = 0; i < userIds.length; i++) {
-        const userId = userIds[i];
+      for (let i = 0; i < targetIds.length; i++) {
+        const userId = targetIds[i];
         try {
           await AdminService.userAppearance.sendEmailNotification(
             userId,
@@ -64,24 +81,27 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
           successCount++;
         } catch (err) {
           console.error(`사용자 ${userId}에게 이메일 발송 실패:`, err);
-          failCount++;
+          failed.push(userId);
         }
 
         // 진행 상태 업데이트
         setSentEmails(i + 1);
-        setProgress(Math.round(((i + 1) / userIds.length) * 100));
+        setProgress(Math.round(((i + 1) / targetIds.length) * 100));
       }
 
       // 결과 메시지 설정
+      const failCount = failed.length;
       if (failCount === 0) {
+        setFailedIds(null);
         setSuccess(true);
       } else {
+        setFailedIds(failed);
         setError(
-          `${userIds.length}명 중 ${successCount}명에게 이메일을 발송했습니다. ${failCount}명 발송 실패.`,
+          `${targetIds.length}명 중 ${successCount}명에게 이메일을 발송했습니다. ${failCount}명 발송 실패. 다시 누르면 실패한 ${failCount}명에게만 재발송합니다.`,
         );
       }
 
-      if (onSuccess) onSuccess();
+      if (successCount > 0 && onSuccess) onSuccess();
 
       // 성공 후 3초 후에 모달 닫기
       if (failCount === 0) {
@@ -105,6 +125,7 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
       setProgress(0);
       setTotalEmails(0);
       setSentEmails(0);
+      setFailedIds(null);
       onClose();
     }
   };
@@ -115,7 +136,8 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
       onOpenChange={(isOpen) => {
         if (!isOpen) handleClose?.();
       }}
-      isDismissable={handleClose !== undefined}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
     >
       <Modal.Container size="md" scroll="inside" className="w-full">
         <Modal.Dialog style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}>
@@ -133,7 +155,7 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
             </Modal.Heading>
             <Button
               onClick={handleClose}
-              aria-label="close"
+              aria-label="닫기"
               variant={"ghost"}
               isDisabled={loading}
               isIconOnly={true}
@@ -152,6 +174,7 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
                   className={"text-sm text-neutral-700"}
                 >
                   선택된 사용자 {userIds.length}명
+                  {failedIds ? ` (재발송 대상 ${failedIds.length}명)` : ""}
                 </div>
               </div>
               <TextField
@@ -212,7 +235,7 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
               {success && (
                 <Alert style={{ marginTop: 8 }} status={"success"} role="alert">
                   <Alert.Content>
-                    {userIds.length}명의 사용자에게 이메일이 성공적으로
+                    {targetIds.length}명의 사용자에게 이메일이 성공적으로
                     발송되었습니다.
                   </Alert.Content>
                 </Alert>
@@ -237,17 +260,19 @@ const BulkEmailNotificationModal: React.FC<BulkEmailNotificationModalProps> = ({
               onClick={handleSubmit}
               style={{ borderRadius: 8, position: "relative" }}
               variant={"primary"}
-              isDisabled={loading || !subject.trim() || !message.trim()}
+              isDisabled={
+                loading || success || !subject.trim() || !message.trim()
+              }
               size={"md"}
               className="rounded-xl"
             >
               {loading ? (
                 <>
                   <Spinner aria-label="불러오는 중" size="sm" />
-                  <span style={{ opacity: 0 }}>발송하기</span>
+                  <span style={{ opacity: 0 }}>{sendLabel}</span>
                 </>
               ) : (
-                "발송하기"
+                sendLabel
               )}
             </Button>
           </Modal.Footer>

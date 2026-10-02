@@ -3,6 +3,7 @@ import { GraduationCap as SchoolIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 
 import AdminService from "@/app/services/admin";
+import { useToast } from "@/shared/ui/admin/toast";
 import DepartmentManagement from "./DepartmentManagement";
 import LogoUpload from "./LogoUpload";
 import type { UniversityItem, UniversityDetail } from "@/types/admin";
@@ -23,6 +24,7 @@ export default function UniversityDetailDialog({
   university,
   onRefresh,
 }: UniversityDetailDialogProps) {
+  const toast = useToast();
   const [tabValue, setTabValue] = useState<TabValue>("info");
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState<UniversityDetail | null>(null);
@@ -39,6 +41,7 @@ export default function UniversityDetailDialog({
       const data = await AdminService.universities.getById(university.id);
       setDetail(data);
     } catch {
+      toast.error(`'${university.name}' 대학 상세 정보를 불러오지 못했습니다.`);
     } finally {
       setLoading(false);
     }

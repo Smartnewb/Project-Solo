@@ -3,6 +3,7 @@ import { Button, Spinner, Chip, Modal, TextField, Label, Input, Select, ListBox,
 import { RefreshCw as RefreshIcon, Search as SearchIcon, CircleCheck as CheckCircleIcon, CircleX as CancelIcon, Play as PlayArrowIcon, Eye as VisibilityIcon, TriangleAlert as WarningIcon } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { scheduledMatchingService } from '../service';
+import { useToast } from '@/shared/ui/admin/toast';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import type { ManualMatchType, MatchPriority, MatchingStatus, ManualMatching as ManualMatchingType, ManualMatchingRequest, ValidateMatchingResponse, ManualMatchingListParams, } from '../types';
 const MATCH_TYPE_OPTIONS: {
@@ -47,6 +48,7 @@ const formatDateTime = (dateString: string) => {
     return safeToLocaleString(dateString);
 };
 export default function ManualMatching() {
+    const toast = useToast();
     // Form state
     const [userId1, setUserId1] = useState('');
     const [userId2, setUserId2] = useState('');
@@ -75,6 +77,17 @@ export default function ManualMatching() {
     const [cancelDialog, setCancelDialog] = useState<ManualMatchingType | null>(null);
     const [executeDialog, setExecuteDialog] = useState<ManualMatchingType | null>(null);
     const [cancelReason, setCancelReason] = useState('');
+    const [cancelling, setCancelling] = useState(false);
+    const [executing, setExecuting] = useState(false);
+    const matchingTargetLabel = (m: ManualMatchingType) => m.users.map((u) => u.name).join(' · ');
+    const closeCancelDialog = () => {
+        setCancelDialog(null);
+        setCancelReason('');
+    };
+    const openCancelDialog = (m: ManualMatchingType) => {
+        setCancelReason('');
+        setCancelDialog(m);
+    };
     // Fetch list
     const fetchMatchings = useCallback(async () => {
         try {
@@ -175,24 +188,29 @@ export default function ManualMatching() {
     };
     // Cancel matching
     const handleCancel = async () => {
-        if (!cancelDialog || !cancelReason.trim())
+        if (!cancelDialog || !cancelReason.trim() || cancelling)
             return;
         try {
+            setCancelling(true);
             await scheduledMatchingService.cancelManualMatching(cancelDialog.id, cancelReason.trim());
             setSuccess('매칭이 취소되었습니다.');
-            setCancelDialog(null);
-            setCancelReason('');
+            closeCancelDialog();
             fetchMatchings();
         }
         catch {
             setError('매칭 취소에 실패했습니다.');
+            toast.error('매칭 취소에 실패했습니다.');
+        }
+        finally {
+            setCancelling(false);
         }
     };
     // Execute matching immediately
     const handleExecute = async () => {
-        if (!executeDialog)
+        if (!executeDialog || executing)
             return;
         try {
+            setExecuting(true);
             await scheduledMatchingService.executeManualMatching(executeDialog.id);
             setSuccess('매칭이 실행되었습니다.');
             setExecuteDialog(null);
@@ -200,6 +218,10 @@ export default function ManualMatching() {
         }
         catch {
             setError('매칭 실행에 실패했습니다.');
+            toast.error('매칭 실행에 실패했습니다.');
+        }
+        finally {
+            setExecuting(false);
         }
     };
     // Get default scheduled time (1 hour from now)
@@ -399,7 +421,7 @@ export default function ManualMatching() {
                             </Button>
                           </span>
                           <span title={"취소"}>
-                            <Button onPress={() => setCancelDialog(matching)} aria-label="수동 매칭 취소" variant="tertiary" isIconOnly={true}>
+                            <Button onPress={() => openCancelDialog(matching)} aria-label="수동 매칭 취소" variant="tertiary" isIconOnly={true}>
                               <CancelIcon style={{ fontSize: 18 }}></CancelIcon>
                             </Button>
                           </span>
@@ -519,43 +541,43 @@ export default function ManualMatching() {
       </Modal.Dialog></Modal.Container></Modal.Backdrop>
 
       {/* Execute Dialog */}
-      <Modal.Backdrop isOpen={!!executeDialog} onOpenChange={next => {
-            if (!next)
+      <Modal.Backdrop isOpen={!!executeDialog} isDismissable={!executing} isKeyboardDismissDisabled={executing} onOpenChange={next => {
+            if (!next && !executing)
                 (() => setExecuteDialog(null))();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
         <Modal.Heading>수동 매칭 즉시 실행</Modal.Heading>
         <Modal.Body>
           <p>
-            예약된 수동 매칭을 지금 실행합니다. 실행 후에는 매칭 상태가 변경됩니다.
+            {executeDialog ? `${matchingTargetLabel(executeDialog)} 매칭(예약 ${formatDateTime(executeDialog.scheduledAt)})을 지금 실행합니다. ` : ''}실행 후에는 매칭 상태가 변경됩니다.
           </p>
         </Modal.Body>
         <Modal.Footer>
-          <Button onPress={() => setExecuteDialog(null)} variant="tertiary">
+          <Button onPress={() => setExecuteDialog(null)} isDisabled={executing} variant="tertiary">
             닫기
           </Button>
-          <Button onPress={handleExecute} variant="tertiary">
+          <Button onPress={handleExecute} isDisabled={executing} variant="primary">
             즉시 실행
           </Button>
         </Modal.Footer>
       </Modal.Dialog></Modal.Container></Modal.Backdrop>
 
       {/* Cancel Dialog */}
-      <Modal.Backdrop isOpen={!!cancelDialog} onOpenChange={next => {
-            if (!next)
-                (() => setCancelDialog(null))();
+      <Modal.Backdrop isOpen={!!cancelDialog} isDismissable={!cancelling} isKeyboardDismissDisabled={cancelling} onOpenChange={next => {
+            if (!next && !cancelling)
+                closeCancelDialog();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
         <Modal.Heading>매칭 취소</Modal.Heading>
         <Modal.Body>
           <p style={{ marginBottom: 16 }}>
-            이 매칭을 취소하시겠습니까?
+            {cancelDialog ? `${matchingTargetLabel(cancelDialog)} 매칭을 취소하시겠습니까?` : '이 매칭을 취소하시겠습니까?'}
           </p>
           <TextField isRequired={true} className="mb-4"><Label>{"취소 사유"}</Label><Input value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} required placeholder="취소 사유를 입력하세요"></Input></TextField>
         </Modal.Body>
         <Modal.Footer>
-          <Button onPress={() => setCancelDialog(null)} variant="tertiary">
+          <Button onPress={closeCancelDialog} isDisabled={cancelling} variant="tertiary">
             닫기
           </Button>
-          <Button onPress={handleCancel} isDisabled={!cancelReason.trim()} variant="tertiary">
+          <Button onPress={handleCancel} isDisabled={!cancelReason.trim() || cancelling} variant="danger">
             취소 확인
           </Button>
         </Modal.Footer>

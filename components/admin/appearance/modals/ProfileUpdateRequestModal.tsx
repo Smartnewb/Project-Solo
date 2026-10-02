@@ -10,7 +10,7 @@ import {
   TextField,
 } from "@heroui/react";
 import { Edit } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import AdminService from "@/app/services/admin";
 
@@ -32,6 +32,16 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [useTemplate, setUseTemplate] = useState(false);
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setMessage("");
+    setError(null);
+    setSuccess(false);
+    setUseTemplate(false);
+    setTouched(false);
+  }, [open, userId]);
 
   const handleUseTemplate = () => {
     setUseTemplate(!useTemplate);
@@ -63,7 +73,7 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
       }, 1000);
     } catch (error: any) {
       setError(
-        error.message || "프로필 수정 요청 발송 중 오류가 발생했습니다.",
+        error.message || "프로필 수정 요청 기록 중 오류가 발생했습니다.",
       );
     } finally {
       setLoading(false);
@@ -76,6 +86,7 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
       setError(null);
       setSuccess(false);
       setUseTemplate(false);
+      setTouched(false);
       onClose();
     }
   };
@@ -86,7 +97,8 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
       onOpenChange={(isOpen) => {
         if (!isOpen) handleClose?.();
       }}
-      isDismissable={handleClose !== undefined}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
     >
       <Modal.Container size="md" scroll="inside" className="w-full">
         <Modal.Dialog style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}>
@@ -94,7 +106,7 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
             <Modal.Heading>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Edit />
-                프로필 수정 요청
+                프로필 수정 요청 기록
               </div>
             </Modal.Heading>
           </Modal.Header>
@@ -141,19 +153,20 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
                 <TextField
                   className="w-full"
                   isDisabled={loading}
-                  isInvalid={message.trim() === ""}
+                  isInvalid={touched && message.trim() === ""}
                 >
                   <Label>{"요청 메시지"}</Label>
                   <TextArea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
+                    onBlur={() => setTouched(true)}
                     placeholder="프로필 수정 요청 내용을 입력하세요"
                     required
                     rows={4}
                     aria-label={"요청 메시지"}
                   />
                   <Description>
-                    {message.trim() === "" ? "메시지를 입력해주세요" : ""}
+                    {touched && message.trim() === "" ? "메시지를 입력해주세요" : ""}
                   </Description>
                 </TextField>
               </div>
@@ -177,7 +190,7 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
               className="rounded-xl"
             >
               {loading ? <Spinner aria-label="불러오는 중" size="sm" /> : null}
-              {loading ? "발송 중..." : "발송하기"}
+              {loading ? "기록 중..." : "기록하기"}
             </Button>
           </Modal.Footer>
         </Modal.Dialog>

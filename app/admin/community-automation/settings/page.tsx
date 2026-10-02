@@ -3,7 +3,15 @@ import { Button, Spinner, Chip, Modal, TextField, Label, Input, Checkbox } from 
 import { useCallback, useEffect, useState } from 'react';
 import type { CommunitySettings, KillSwitchStatus } from '@/app/services/admin/community-automation';
 import { communitySettings as settingsApi } from '@/app/services/admin/community-automation';
+import { useToast } from '@/shared/ui/admin/toast';
 export default function SettingsPage() {
+    const toast = useToast();
+    // 에러는 페이지 배너와 함께 토스트로도 알린다 (모달에 가려져 보이지 않기 때문).
+    function fail(e: unknown, fallback: string) {
+        const message = e instanceof Error ? e.message : fallback;
+        setError(message);
+        toast.error(message);
+    }
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [killSwitch, setKillSwitch] = useState<KillSwitchStatus | null>(null);
@@ -56,7 +64,7 @@ export default function SettingsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '킬 스위치 처리 실패');
+            fail(e, '킬 스위치 처리 실패');
         }
         finally {
             setKillActionLoading(false);
@@ -70,7 +78,7 @@ export default function SettingsPage() {
             setForm(updated);
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '설정 저장 실패');
+            fail(e, '설정 저장 실패');
         }
         finally {
             setSettingsLoading(false);
@@ -85,7 +93,7 @@ export default function SettingsPage() {
             setResetConfirmOpen(false);
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '초기화 실패');
+            fail(e, '초기화 실패');
         }
         finally {
             setResetLoading(false);
@@ -112,7 +120,7 @@ export default function SettingsPage() {
 					<div style={{ display: "flex", gap: 16 }}>
 						{killSwitch?.killed ? (<Button onPress={() => { setKillConfirmAction('restore'); setKillConfirmOpen(true); }} variant="primary">
 								자동화 재개
-							</Button>) : (<Button onPress={() => { setKillConfirmAction('kill'); setKillConfirmOpen(true); }} variant="primary">
+							</Button>) : (<Button onPress={() => { setKillConfirmAction('kill'); setKillConfirmOpen(true); }} variant="danger">
 								긴급 중단
 							</Button>)}
 					</div>
@@ -145,9 +153,9 @@ export default function SettingsPage() {
 			</div>
 
 			{/* Kill Confirm Dialog */}
-			<Modal.Backdrop isOpen={killConfirmOpen} onOpenChange={next => {
-            if (!next)
-                (() => setKillConfirmOpen(false))();
+			<Modal.Backdrop isOpen={killConfirmOpen} isDismissable={!killActionLoading} isKeyboardDismissDisabled={killActionLoading} onOpenChange={next => {
+            if (!next && !killActionLoading)
+                setKillConfirmOpen(false);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>
 					{killConfirmAction === 'kill' ? '긴급 중단 확인' : '자동화 재개 확인'}
@@ -158,25 +166,25 @@ export default function SettingsPage() {
 						</p>) : (<p>커뮤니티 자동화를 재개합니다.</p>)}
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setKillConfirmOpen(false)} variant="tertiary">취소</Button>
-					<Button isDisabled={killActionLoading} onPress={handleKillConfirm} variant="primary">
+					<Button isDisabled={killActionLoading} onPress={() => setKillConfirmOpen(false)} variant="tertiary">취소</Button>
+					<Button isDisabled={killActionLoading} onPress={handleKillConfirm} variant={killConfirmAction === 'kill' ? 'danger' : 'primary'}>
 						{killActionLoading ? <Spinner size="sm"></Spinner> : '확인'}
 					</Button>
 				</Modal.Footer>
 			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* Reset Confirm Dialog */}
-			<Modal.Backdrop isOpen={resetConfirmOpen} onOpenChange={next => {
-            if (!next)
-                (() => setResetConfirmOpen(false))();
+			<Modal.Backdrop isOpen={resetConfirmOpen} isDismissable={!resetLoading} isKeyboardDismissDisabled={resetLoading} onOpenChange={next => {
+            if (!next && !resetLoading)
+                setResetConfirmOpen(false);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
 				<Modal.Heading>기본값으로 초기화</Modal.Heading>
 				<Modal.Body>
 					<p>설정을 기본값으로 초기화하시겠습니까?</p>
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setResetConfirmOpen(false)} variant="tertiary">취소</Button>
-					<Button isDisabled={resetLoading} onPress={handleReset} variant="primary">
+					<Button isDisabled={resetLoading} onPress={() => setResetConfirmOpen(false)} variant="tertiary">취소</Button>
+					<Button isDisabled={resetLoading} onPress={handleReset} variant="danger">
 						{resetLoading ? <Spinner size="sm"></Spinner> : '초기화'}
 					</Button>
 				</Modal.Footer>

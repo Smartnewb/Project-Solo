@@ -32,11 +32,11 @@ export default function LayoutModeSelector({ value, onChange, disabled = false }
       {MODE_OPTIONS.map((option) => {
             const selected = value === option.value;
             return (<Button variant="tertiary" aria-label={option.title} isDisabled={disabled} aria-pressed={selected} key={option.value} onPress={() => onChange(option.value)} style={{ flex: 1, padding: 16, cursor: 'pointer', borderRadius: 2, border: selected ? '2px solid' : '1px solid', backgroundColor: selected ? 'rgba(122, 74, 226, 0.04)' : 'transparent', transition: 'all 0.15s', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            <div style={{ color: selected ? 'primary.main' : 'grey.500', marginTop: 4 }}>
+            <div style={{ color: selected ? '#7A4AE2' : '#6b7280', marginTop: 4 }}>
               {option.icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ color: selected ? 'primary.main' : 'text.primary', marginBottom: 4 }}>
+              <p style={{ color: selected ? '#7A4AE2' : '#111827', marginBottom: 4 }}>
                 {option.title}
               </p>
               <p style={{ display: 'block', lineHeight: 1.4 }}>

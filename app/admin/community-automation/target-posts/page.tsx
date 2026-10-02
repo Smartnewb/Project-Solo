@@ -7,6 +7,8 @@ import type { GhostCommentBody, GhostLikeBody } from '@/app/services/community';
 import communityService from '@/app/services/community';
 import { activities as activitiesApi, campaigns as campaignsApi, COMMUNITY_AUTOMATION_CATEGORY_OPTIONS, CommunityAutomationCategory, reviewQueue as reviewApi, targetPosts as targetPostsApi, } from '@/app/services/admin/community-automation';
 import { CommunityPostAppDetailPanel } from '@/app/admin/community/components/CommunityPostAppDetailPanel';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
+import { useToast } from '@/shared/ui/admin/toast';
 const STATUS_LABEL: Record<ContentStatus | 'none', string> = {
     none: '미생성',
     draft: '초안',
@@ -150,6 +152,14 @@ function getOpsQueueColor(queue: TargetPostOpsQueue | null | undefined) {
     }
 }
 export default function TargetPostsPage() {
+    const confirm = useConfirm();
+    const toast = useToast();
+    // 에러는 페이지 배너와 함께 토스트로도 알린다 (드로어/모달에 가려져 보이지 않기 때문).
+    function fail(e: unknown, fallback: string) {
+        const message = e instanceof Error ? e.message : fallback;
+        setError(message);
+        toast.error(message);
+    }
     const [loading, setLoading] = useState(true);
     const [detailLoading, setDetailLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
@@ -245,7 +255,7 @@ export default function TargetPostsPage() {
             setScheduledComments(items);
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '예약 댓글 타임라인을 불러오지 못했습니다.');
+            fail(e, '예약 댓글 타임라인을 불러오지 못했습니다.');
         }
         finally {
             setScheduledCommentsLoading(false);
@@ -291,7 +301,7 @@ export default function TargetPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '게시글 상태 변경 실패');
+            fail(e, '게시글 상태 변경 실패');
         }
         finally {
             setActionLoading(false);
@@ -300,7 +310,17 @@ export default function TargetPostsPage() {
     async function deletePosts(ids: string[]) {
         if (ids.length === 0)
             return;
-        const confirmed = window.confirm(`${ids.length}개 게시글을 제거하시겠습니까? 이 작업은 되돌릴 수 없습니다.`);
+        const targetTitle = ids.length === 1
+            ? (selectedPost?.id === ids[0] ? selectedPost.title : items.find((item) => item.id === ids[0])?.title) || '제목 없음'
+            : null;
+        const confirmed = await confirm({
+            title: '게시글 제거',
+            message: targetTitle !== null
+                ? `‘${targetTitle}’ 게시글을 제거합니다.\n이 작업은 되돌릴 수 없습니다.`
+                : `선택한 게시글 ${ids.length}개를 제거합니다.\n이 작업은 되돌릴 수 없습니다.`,
+            confirmText: '제거',
+            severity: 'error',
+        });
         if (!confirmed)
             return;
         setActionLoading(true);
@@ -310,14 +330,13 @@ export default function TargetPostsPage() {
             await Promise.all(ids.map((id) => communityService.deleteArticle(id)));
             setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
             if (selectedPost && ids.includes(selectedPost.id)) {
-                setSelected(null);
-                setScheduledComments([]);
+                closeDetail();
             }
             setSuccess(`${ids.length}개 게시글을 제거했습니다.`);
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '게시글 제거 실패');
+            fail(e, '게시글 제거 실패');
         }
         finally {
             setActionLoading(false);
@@ -341,24 +360,36 @@ export default function TargetPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '게시글 카테고리 이동 실패');
+            fail(e, '게시글 카테고리 이동 실패');
         }
         finally {
             setActionLoading(false);
         }
+    }
+    function resetDetailInputs() {
+        setTone('자연스러운 대학생 말투');
+        setInstruction('');
+        setManualText('');
+        setHotPromotionComment('');
+    }
+    function closeDetail() {
+        setSelected(null);
+        setScheduledComments([]);
+        resetDetailInputs();
     }
     async function openDetail(articleId: string) {
         setDetailLoading(true);
         setError(null);
         setSuccess(null);
         setCreatedContents([]);
+        resetDetailInputs();
         try {
             const detail = await targetPostsApi.get(articleId);
             setSelected(detail);
             await loadScheduledComments(articleId);
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '상세를 불러오지 못했습니다.');
+            fail(e, '상세를 불러오지 못했습니다.');
         }
         finally {
             setDetailLoading(false);
@@ -390,7 +421,7 @@ export default function TargetPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'LLM 댓글 생성 실패');
+            fail(e, 'LLM 댓글 생성 실패');
         }
         finally {
             setActionLoading(false);
@@ -436,7 +467,7 @@ export default function TargetPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '검수 처리 실패');
+            fail(e, '검수 처리 실패');
         }
         finally {
             setActionLoading(false);
@@ -465,7 +496,7 @@ export default function TargetPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '직접 입력 댓글 생성 실패');
+            fail(e, '직접 입력 댓글 생성 실패');
         }
         finally {
             setActionLoading(false);
@@ -541,17 +572,24 @@ export default function TargetPostsPage() {
                 curatorComment: hotPromotionComment.trim() || undefined,
             });
             setSuccess(`인기 게시글로 등업했습니다. hotId=${result.hotId}`);
-            setHotPromotionOpen(false);
-            setHotPromotionComment('');
+            closeHotPromotion();
             await refreshDetail();
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : '인기 게시글 등업 실패');
+            fail(e, '인기 게시글 등업 실패');
         }
         finally {
             setActionLoading(false);
         }
+    }
+    function openHotPromotion() {
+        setHotPromotionComment('');
+        setHotPromotionOpen(true);
+    }
+    function closeHotPromotion() {
+        setHotPromotionOpen(false);
+        setHotPromotionComment('');
     }
     async function loadLiveCommentSuggestions() {
         if (!selectedPost)
@@ -595,7 +633,7 @@ export default function TargetPostsPage() {
             await load();
         }
         catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'AI 활동 생성 실패');
+            fail(e, 'AI 활동 생성 실패');
         }
         finally {
             setActionLoading(false);
@@ -820,10 +858,13 @@ export default function TargetPostsPage() {
 
 			<Drawer.Backdrop isOpen={Boolean(selected) || detailLoading} onOpenChange={open => {
             if (!open) {
-                setSelected(null);
-                setScheduledComments([]);
+                closeDetail();
             }
         }}><Drawer.Content placement="right" className="w-full"><Drawer.Dialog style={{ width: 'min(960px, 100vw)', maxWidth: '100%', height: '100%', minWidth: 0 }} aria-label="게시글 자동 활동 상세" className="overflow-y-auto">
+				<Drawer.Header>
+					<Drawer.Heading>게시글 자동 활동 상세</Drawer.Heading>
+					<Drawer.CloseTrigger aria-label="닫기" />
+				</Drawer.Header>
 				<div style={{ padding: 24 }}>
 					{detailLoading || !selected ? (<div style={{ display: "flex", paddingBlock: 64 }}>
 							<Spinner size="sm"></Spinner>
@@ -890,7 +931,7 @@ export default function TargetPostsPage() {
 												</p>
 											</div>
 											<div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-												<Button isDisabled={actionLoading} onPress={() => setHotPromotionOpen(true)} variant="primary" style={{ boxShadow: 'none', fontWeight: 800 }}>{<WhatshotIcon></WhatshotIcon>}
+												<Button isDisabled={actionLoading} onPress={openHotPromotion} variant="primary" style={{ boxShadow: 'none', fontWeight: 800 }}>{<WhatshotIcon></WhatshotIcon>}
 													인기글 등업
 												</Button>
 												<Button isDisabled={actionLoading} onPress={() => applyPostVisibility([selected.post.id], true)} variant="secondary">
@@ -947,7 +988,7 @@ export default function TargetPostsPage() {
 																			생성 {formatDate(item.createdAt)}
 																		</p>
 																	</div>
-																	{timingText && (<p style={{ color: item.status === 'scheduled' ? '#175CD3' : 'text.secondary', fontWeight: item.status === 'scheduled' ? 800 : 600, lineHeight: 1.35, wordBreak: 'keep-all' }}>
+																	{timingText && (<p style={{ color: item.status === 'scheduled' ? '#175CD3' : '#6b7280', fontWeight: item.status === 'scheduled' ? 800 : 600, lineHeight: 1.35, wordBreak: 'keep-all' }}>
 																			{timingText}
 																		</p>)}
 																</div>
@@ -988,12 +1029,12 @@ export default function TargetPostsPage() {
 						</div>)}
 				</div>
 				</Drawer.Dialog></Drawer.Content></Drawer.Backdrop>
-				<Modal.Backdrop isOpen={activityDialogOpen} onOpenChange={next => {
-            if (!next)
-                (() => !actionLoading && setActivityDialogOpen(false))();
+				<Modal.Backdrop isOpen={activityDialogOpen} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
+                setActivityDialogOpen(false);
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Heading style={{ fontWeight: 900 }}>AI 활동 추가</Modal.Heading>
-					<Modal.Body style={{ paddingTop: '12px !important' }}>
+					<Modal.Body style={{ paddingTop: '12px' }}>
 						<div>
 							<div>
 								<label>활동 유형</label>
@@ -1064,12 +1105,12 @@ export default function TargetPostsPage() {
 						</Button>
 					</Modal.Footer>
 				</Modal.Dialog></Modal.Container></Modal.Backdrop>
-				<Modal.Backdrop isOpen={hotPromotionOpen} onOpenChange={next => {
-            if (!next)
-                (() => !actionLoading && setHotPromotionOpen(false))();
+				<Modal.Backdrop isOpen={hotPromotionOpen} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
+                closeHotPromotion();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 					<Modal.Heading style={{ fontWeight: 900 }}>인기 게시글로 등업할까요?</Modal.Heading>
-					<Modal.Body style={{ paddingTop: '12px !important' }}>
+					<Modal.Body style={{ paddingTop: '12px' }}>
 						<div>
 							<p>
 								원본 게시글은 그대로 두고 hot_articles 참조만 추가합니다. 확인하면 앱 인기 탭에 이 게시글이 노출됩니다.
@@ -1078,7 +1119,7 @@ export default function TargetPostsPage() {
 						</div>
 					</Modal.Body>
 					<Modal.Footer style={{ paddingInline: 24, paddingBottom: 16 }}>
-						<Button isDisabled={actionLoading} onPress={() => setHotPromotionOpen(false)} variant="tertiary">
+						<Button isDisabled={actionLoading} onPress={closeHotPromotion} variant="tertiary">
 							취소
 						</Button>
 						<Button isDisabled={actionLoading} onPress={promoteSelectedPostToHot} variant="primary" style={{ fontWeight: 800 }}>{actionLoading ? <Spinner size="sm"></Spinner> : <WhatshotIcon></WhatshotIcon>}
@@ -1086,8 +1127,8 @@ export default function TargetPostsPage() {
 						</Button>
 					</Modal.Footer>
 				</Modal.Dialog></Modal.Container></Modal.Backdrop>
-				<Modal.Backdrop isOpen={Boolean(reviewDialogMode)} onOpenChange={next => {
-            if (!next)
+				<Modal.Backdrop isOpen={Boolean(reviewDialogMode)} isDismissable={!actionLoading} isKeyboardDismissDisabled={actionLoading} onOpenChange={next => {
+            if (!next && !actionLoading)
                 closeReviewDialog();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading style={{ fontWeight: 900 }}>
@@ -1101,14 +1142,14 @@ export default function TargetPostsPage() {
                         ? '댓글 후보 재생성'
                         : ''}
 				</Modal.Heading>
-				<Modal.Body style={{ paddingTop: '12px !important' }}>
+				<Modal.Body style={{ paddingTop: '12px' }}>
 					{reviewDialogMode === 'regenerate' ? (<p>
 							이 후보를 기준으로 재생성을 요청합니다. 현재 상태는 상세 후보 목록에서 다시 확인할 수 있습니다.
 						</p>) : (<TextField className="mb-4"><Label>{reviewDialogMode === 'inject' ? '최종 댓글 텍스트' : '사유'}</Label><TextArea value={reviewDialogText} onChange={(event) => setReviewDialogText(event.target.value)}></TextArea></TextField>)}
 				</Modal.Body>
 				<Modal.Footer style={{ paddingInline: 24, paddingBottom: 16 }}>
-					<Button onPress={closeReviewDialog} variant="tertiary">취소</Button>
-					<Button isDisabled={actionLoading || (reviewDialogMode === 'inject' && !reviewDialogText.trim())} onPress={confirmReviewDialog} variant="primary" style={{ fontWeight: 800 }}>
+					<Button isDisabled={actionLoading} onPress={closeReviewDialog} variant="tertiary">취소</Button>
+					<Button isDisabled={actionLoading || (reviewDialogMode !== 'regenerate' && !reviewDialogText.trim())} onPress={confirmReviewDialog} variant={reviewDialogMode === 'reject' || reviewDialogMode === 'withdraw' ? 'danger' : 'primary'} style={{ fontWeight: 800 }}>
 						{actionLoading ? <Spinner size="sm"></Spinner> : '확인'}
 					</Button>
 				</Modal.Footer>

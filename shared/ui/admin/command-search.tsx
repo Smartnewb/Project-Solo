@@ -109,6 +109,8 @@ export function CommandSearch() {
 	}, [selectedIndex, open]);
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
+		// 한글 조합 확정 Enter 로 바로 이동하지 않게 한다.
+		if (e.nativeEvent.isComposing) return;
 		switch (e.key) {
 			case "ArrowDown":
 				e.preventDefault();
@@ -165,6 +167,7 @@ export function CommandSearch() {
 							onChange={(e) => setQuery(e.target.value)}
 							onKeyDown={handleKeyDown}
 							placeholder="메뉴 검색..."
+							aria-label="메뉴 검색"
 							className="flex-1 text-sm bg-transparent outline-none placeholder-gray-400"
 						/>
 						<kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-100 rounded border border-gray-200">

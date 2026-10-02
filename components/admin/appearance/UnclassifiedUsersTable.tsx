@@ -23,6 +23,7 @@ import {
   isBlindApprovedUser,
 } from "@/app/admin/users/appearance/types";
 import { appearanceGradeEventBus } from "@/app/admin/users/appearance/event-bus";
+import { useToast } from "@/shared/ui/admin/toast";
 import UserDetailModal, { UserDetail } from "./UserDetailModal";
 
 const GRADE_COLORS: Record<AppearanceGrade, string> = {
@@ -116,6 +117,7 @@ export default function UnclassifiedUsersTable({
   onRefresh,
   onUsersRemove,
 }: UnclassifiedUsersTableProps) {
+  const toast = useToast();
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const [gradeMenuAnchorEl, setGradeMenuAnchorEl] =
@@ -240,7 +242,7 @@ export default function UnclassifiedUsersTable({
       }
       handleCloseGradeMenu();
     } catch (err: unknown) {
-      setLocalError(getErrorMessage(err, "등급 설정 중 오류가 발생했습니다."));
+      reportError(getErrorMessage(err, "등급 설정 중 오류가 발생했습니다."));
     } finally {
       setSavingGrade(false);
     }
@@ -289,7 +291,7 @@ export default function UnclassifiedUsersTable({
       setSelectedUsers([]);
       setBulkGradeModalOpen(false);
     } catch (err: unknown) {
-      setLocalError(
+      reportError(
         getErrorMessage(err, "일괄 등급 설정 중 오류가 발생했습니다."),
       );
     } finally {
@@ -326,7 +328,7 @@ export default function UnclassifiedUsersTable({
       }
       onRefresh();
     } catch (err: unknown) {
-      setLocalError(getErrorMessage(err, "일괄 승인 중 오류가 발생했습니다."));
+      reportError(getErrorMessage(err, "일괄 승인 중 오류가 발생했습니다."));
     } finally {
       setApproving(false);
     }
@@ -379,6 +381,34 @@ export default function UnclassifiedUsersTable({
   };
 
   const displayError = localError || error;
+  const combinedClosable =
+    combinedPhase === "select" || combinedPhase === "done";
+
+  // 모달 뒤 페이지에만 보이던 오류를 토스트로도 알린다
+  const reportError = (message: string) => {
+    setLocalError(message);
+    toast.error(message);
+  };
+
+  const openBulkApprove = () => {
+    setApproveResults([]);
+    setApproveCompleted(false);
+    setApproveProgress(0);
+    setApproveCurrent(0);
+    setApproveTotal(0);
+    setBulkApproveModalOpen(true);
+  };
+
+  const closeBulkApprove = () => {
+    setBulkApproveModalOpen(false);
+    setApproveResults([]);
+    setApproveCompleted(false);
+  };
+
+  const closeCombined = () => {
+    setCombinedWorkflowModalOpen(false);
+    setCombinedApproveResults([]);
+  };
 
   return (
     <div>
@@ -439,7 +469,7 @@ export default function UnclassifiedUsersTable({
           {isGradeRequiredCohort && (
             <>
               <Button
-                onClick={() => setBulkApproveModalOpen(true)}
+                onClick={openBulkApprove}
                 style={{
                   borderRadius: 8,
                   textTransform: "none",
@@ -457,6 +487,10 @@ export default function UnclassifiedUsersTable({
                   setCombinedGrade("UNKNOWN");
                   setCombinedPhase("select");
                   setCombinedPhaseError(null);
+                  setCombinedApproveResults([]);
+                  setCombinedApproveProgress(0);
+                  setCombinedApproveCurrent(0);
+                  setCombinedApproveTotal(0);
                   setCombinedWorkflowModalOpen(true);
                 }}
                 style={{
@@ -784,12 +818,19 @@ export default function UnclassifiedUsersTable({
       <Modal.Backdrop
         isOpen={Boolean(gradeMenuAnchorEl)}
         onOpenChange={(isOpen) => {
-          if (!isOpen) handleCloseGradeMenu?.();
+          if (!isOpen && !savingGrade) handleCloseGradeMenu();
         }}
-        isDismissable={handleCloseGradeMenu !== undefined}
+        isDismissable={!savingGrade}
+        isKeyboardDismissDisabled={savingGrade}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
+            <Modal.Header>
+              <Modal.Heading>
+                {selectedUser?.name ?? "사용자"} 등급 변경
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
             {(["S", "A", "B", "C", "UNKNOWN"] as AppearanceGrade[]).map(
               (grade) => (
                 <Button
@@ -821,6 +862,16 @@ export default function UnclassifiedUsersTable({
                 </Button>
               ),
             )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                onClick={handleCloseGradeMenu}
+                variant={"ghost"}
+                isDisabled={savingGrade}
+              >
+                닫기
+              </Button>
+            </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
@@ -828,12 +879,10 @@ export default function UnclassifiedUsersTable({
       <Modal.Backdrop
         isOpen={bulkGradeModalOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen)
-            (() => !savingBulkGrade && setBulkGradeModalOpen(false))?.();
+          if (!isOpen && !savingBulkGrade) setBulkGradeModalOpen(false);
         }}
-        isDismissable={
-          (() => !savingBulkGrade && setBulkGradeModalOpen(false)) !== undefined
-        }
+        isDismissable={!savingBulkGrade}
+        isKeyboardDismissDisabled={savingBulkGrade}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -878,9 +927,7 @@ export default function UnclassifiedUsersTable({
                           <ListBox.Item
                             key={grade}
                             id={grade}
-                            textValue={
-                              "GRADE_LABELS[grade]등급\n                  "
-                            }
+                            textValue={`${GRADE_LABELS[grade]}등급`}
                           >
                             {GRADE_LABELS[grade]}등급
                           </ListBox.Item>
@@ -922,11 +969,10 @@ export default function UnclassifiedUsersTable({
       <Modal.Backdrop
         isOpen={bulkApproveModalOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => !approving && setBulkApproveModalOpen(false))?.();
+          if (!isOpen && !approving) closeBulkApprove();
         }}
-        isDismissable={
-          (() => !approving && setBulkApproveModalOpen(false)) !== undefined
-        }
+        isDismissable={!approving}
+        isKeyboardDismissDisabled={approving}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -1013,7 +1059,7 @@ export default function UnclassifiedUsersTable({
               {!approving && !approveCompleted ? (
                 <>
                   <Button
-                    onClick={() => setBulkApproveModalOpen(false)}
+                    onClick={closeBulkApprove}
                     variant={"ghost"}
                     isDisabled={undefined}
                     size={"md"}
@@ -1033,11 +1079,7 @@ export default function UnclassifiedUsersTable({
                 </>
               ) : (
                 <Button
-                  onClick={() => {
-                    setBulkApproveModalOpen(false);
-                    setApproveResults([]);
-                    setApproveCompleted(false);
-                  }}
+                  onClick={closeBulkApprove}
                   variant={"primary"}
                   isDisabled={!approveCompleted}
                   size={"md"}
@@ -1054,16 +1096,10 @@ export default function UnclassifiedUsersTable({
       <Modal.Backdrop
         isOpen={combinedWorkflowModalOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen)
-            (() =>
-              combinedPhase === "select" &&
-              setCombinedWorkflowModalOpen(false))?.();
+          if (!isOpen && combinedClosable) closeCombined();
         }}
-        isDismissable={
-          (() =>
-            combinedPhase === "select" &&
-            setCombinedWorkflowModalOpen(false)) !== undefined
-        }
+        isDismissable={combinedClosable}
+        isKeyboardDismissDisabled={!combinedClosable}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -1106,9 +1142,7 @@ export default function UnclassifiedUsersTable({
                               <ListBox.Item
                                 key={grade}
                                 id={grade}
-                                textValue={
-                                  "GRADE_LABELS[grade]등급\n                    "
-                                }
+                                textValue={`${GRADE_LABELS[grade]}등급`}
                               >
                                 {GRADE_LABELS[grade]}등급
                               </ListBox.Item>
@@ -1248,7 +1282,7 @@ export default function UnclassifiedUsersTable({
               {combinedPhase === "select" ? (
                 <>
                   <Button
-                    onClick={() => setCombinedWorkflowModalOpen(false)}
+                    onClick={closeCombined}
                     variant={"ghost"}
                     isDisabled={undefined}
                     size={"md"}
@@ -1268,10 +1302,7 @@ export default function UnclassifiedUsersTable({
                 </>
               ) : (
                 <Button
-                  onClick={() => {
-                    setCombinedWorkflowModalOpen(false);
-                    setCombinedApproveResults([]);
-                  }}
+                  onClick={closeCombined}
                   variant={"primary"}
                   isDisabled={combinedPhase !== "done"}
                   size={"md"}

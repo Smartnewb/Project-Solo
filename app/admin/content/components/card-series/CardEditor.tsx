@@ -6,6 +6,7 @@ import { Controller, type Control, useWatch } from 'react-hook-form';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 import AdminService from '@/app/services/admin';
+import { useToast } from '@/shared/ui/admin/toast';
 import type { CardNewsFormData, CardNewsLayoutMode } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 import { isQuillEmpty } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
@@ -40,7 +41,7 @@ function CharProgress({ current, max }: {
     const color = ratio >= 1 ? 'error' : ratio >= 0.8 ? 'warning' : 'primary';
     return (<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
       <progress value={Math.min(ratio * 100, 100)} style={{ flex: 1, height: 4, borderRadius: 2 }} aria-label="처리 중"></progress>
-      <p style={{ color: ratio >= 1 ? 'error.main' : ratio >= 0.8 ? 'warning.main' : 'text.secondary', minWidth: 48, textAlign: 'right' }}>
+      <p style={{ color: ratio >= 1 ? '#dc2626' : ratio >= 0.8 ? '#b45309' : '#6b7280', minWidth: 48, textAlign: 'right' }}>
         {current}/{max}
       </p>
     </div>);
@@ -97,6 +98,7 @@ function SectionImageUpload({ imageUrl, required, uploading, dragOver, onDragOve
     </div>);
 }
 export default function CardEditor({ index, control, layoutMode, onDelete, canDelete, onImageUploaded, onImageRemoved, onDuplicate, dragHandleProps, }: CardEditorProps) {
+    const toast = useToast();
     const [uploadingImage, setUploadingImage] = useState(false);
     const [expanded, setExpanded] = useState(true);
     const [memoExpanded, setMemoExpanded] = useState(false);
@@ -106,11 +108,11 @@ export default function CardEditor({ index, control, layoutMode, onDelete, canDe
     const content = useWatch({ control, name: `sections.${index}.content` });
     const uploadFile = useCallback(async (file: File) => {
         if (!file.type.match(/^image\/(jpeg|png)$/)) {
-            alert('JPG 또는 PNG 파일만 업로드 가능합니다.');
+            toast.error('JPG 또는 PNG 파일만 업로드 가능합니다.');
             return;
         }
         if (file.size > 10 * 1024 * 1024) {
-            alert('파일 크기는 10MB 이하여야 합니다.');
+            toast.error('파일 크기는 10MB 이하여야 합니다.');
             return;
         }
         try {
@@ -119,12 +121,12 @@ export default function CardEditor({ index, control, layoutMode, onDelete, canDe
             onImageUploaded(index, response.url);
         }
         catch (error: any) {
-            alert(error.message || '이미지 업로드에 실패했습니다.');
+            toast.error(error.message || '이미지 업로드에 실패했습니다.');
         }
         finally {
             setUploadingImage(false);
         }
-    }, [index, onImageUploaded]);
+    }, [index, onImageUploaded, toast]);
     const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file)
@@ -158,17 +160,17 @@ export default function CardEditor({ index, control, layoutMode, onDelete, canDe
         !isQuillEmpty(content),
     ].filter(Boolean).length;
     return (<section style={{ marginBottom: 16, overflow: 'hidden' }} className="rounded-xl border bg-white p-4">
-      <div  style={{ display: 'flex', alignItems: 'center', paddingInline: 16, paddingBlock: 12, cursor: 'pointer', backgroundColor: expanded ? 'transparent' : 'grey.50', transition: 'background-color 0.2s' }}><Button variant="tertiary" onPress={() => setExpanded(prev => !prev)}>상세 펼치기</Button>
+      <div  style={{ display: 'flex', alignItems: 'center', paddingInline: 16, paddingBlock: 12, cursor: 'pointer', backgroundColor: expanded ? 'transparent' : '#f9fafb', transition: 'background-color 0.2s' }}><Button variant="tertiary" onPress={() => setExpanded(prev => !prev)}>상세 펼치기</Button>
         <div {...(dragHandleProps || {})} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', cursor: dragHandleProps ? 'grab' : 'default', marginRight: 8 }}>
           <DragIndicatorIcon style={{ color: "#6b7280" }}></DragIndicatorIcon>
         </div>
 
-        <p style={{ flex: 1 }}>
+        <div style={{ flex: 1 }}>
           카드 {index + 1}
-          {!expanded && (<p style={{ marginLeft: 8, color: "#6b7280" }}>
+          {!expanded && (<span style={{ marginLeft: 8, color: "#6b7280" }}>
               — {summaryText}
-            </p>)}
-        </p>
+            </span>)}
+        </div>
 
         <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {onDuplicate && (<span title={"카드 복제"}>
@@ -229,14 +231,14 @@ export default function CardEditor({ index, control, layoutMode, onDelete, canDe
 
               <hr style={{ marginBlock: 16 }}></hr>
 
-              <div style={{ border: '1px solid', borderRadius: 1, overflow: 'hidden' }}>
-                <Button variant="tertiary" aria-label="상세 펼치기" onPress={() => setMemoExpanded(prev => !prev)} style={{ display: 'flex', alignItems: 'center', paddingInline: 16, paddingBlock: 8, cursor: 'pointer', backgroundColor: 'grey.50' }}>
-                  <p style={{ flex: 1, color: "#6b7280" }}>
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+                <Button variant="tertiary" aria-label="상세 펼치기" onPress={() => setMemoExpanded(prev => !prev)} style={{ display: 'flex', alignItems: 'center', paddingInline: 16, paddingBlock: 8, cursor: 'pointer', backgroundColor: '#f9fafb' }}>
+                  <span style={{ flex: 1, color: "#6b7280" }}>
                     관리용 메모 (앱 미노출)
-                    <p style={{ marginLeft: 8, color: 'text.disabled' }}>
+                    <span style={{ marginLeft: 8, color: '#9ca3af' }}>
                       — {memoFilledCount}개 작성됨
-                    </p>
-                  </p>
+                    </span>
+                  </span>
                   {memoExpanded ? <ExpandLessIcon></ExpandLessIcon> : <ExpandMoreIcon></ExpandMoreIcon>}
                 </Button>
                 <div hidden={!memoExpanded}>

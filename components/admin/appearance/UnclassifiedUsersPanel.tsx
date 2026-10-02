@@ -24,6 +24,7 @@ import {
   isBlindApprovedUser,
   isGradeRequiredUser,
 } from "@/app/admin/users/appearance/types";
+import { useToast } from "@/shared/ui/admin/toast";
 import UserDetailModal, { UserDetail } from "./UserDetailModal";
 import UnclassifiedUsersTable from "./UnclassifiedUsersTable";
 import RegionFilter, {
@@ -103,6 +104,7 @@ export default function UnclassifiedUsersPanel({
   description = "등급이 아직 정리되지 않은 사용자를 등급 정리 대상과 블라인드 승인 대상으로 분리합니다.",
   initialViewMode = "table",
 }: UnclassifiedUsersPanelProps) {
+  const toast = useToast();
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
   const [activeCohort, setActiveCohort] = useState<
     "GRADE_REQUIRED" | "BLIND_APPROVED"
@@ -276,6 +278,7 @@ export default function UnclassifiedUsersPanel({
   const handleSaveGrade = async (newGrade: AppearanceGrade) => {
     if (!selectedUser) {
       setError("선택된 사용자가 없습니다.");
+      toast.error("선택된 사용자가 없습니다.");
       return;
     }
 
@@ -284,6 +287,7 @@ export default function UnclassifiedUsersPanel({
 
     if (!userId) {
       setError("선택된 사용자의 ID가 없습니다.");
+      toast.error("선택된 사용자의 ID가 없습니다.");
       return;
     }
 
@@ -316,7 +320,9 @@ export default function UnclassifiedUsersPanel({
 
       handleCloseGradeMenu();
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "등급 설정 중 오류가 발생했습니다."));
+      const message = getErrorMessage(err, "등급 설정 중 오류가 발생했습니다.");
+      setError(message);
+      toast.error(message);
     } finally {
       setSavingGrade(false);
     }
@@ -717,12 +723,19 @@ export default function UnclassifiedUsersPanel({
       <Modal.Backdrop
         isOpen={Boolean(gradeMenuAnchorEl)}
         onOpenChange={(isOpen) => {
-          if (!isOpen) handleCloseGradeMenu?.();
+          if (!isOpen && !savingGrade) handleCloseGradeMenu();
         }}
-        isDismissable={handleCloseGradeMenu !== undefined}
+        isDismissable={!savingGrade}
+        isKeyboardDismissDisabled={savingGrade}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
+            <Modal.Header>
+              <Modal.Heading>
+                {selectedUser?.name ?? "사용자"} 등급 설정
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
             <Button
               onClick={() => handleSaveGrade("S")}
               style={{
@@ -803,6 +816,16 @@ export default function UnclassifiedUsersPanel({
             >
               미분류
             </Button>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                onClick={handleCloseGradeMenu}
+                variant={"ghost"}
+                isDisabled={savingGrade}
+              >
+                닫기
+              </Button>
+            </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>

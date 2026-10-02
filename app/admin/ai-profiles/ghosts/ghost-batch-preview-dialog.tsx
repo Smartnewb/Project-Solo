@@ -406,7 +406,7 @@ export function GhostBatchPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="flex h-[92vh] max-w-7xl flex-col p-0">
+      <DialogContent className="flex max-h-[92vh] max-w-7xl flex-col p-0">
         {phase === "setup" ? (
           <SetupPhase
             vendorId={vendorId}

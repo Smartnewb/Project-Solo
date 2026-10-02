@@ -7,14 +7,25 @@ interface ModalProps
 	isOpen: boolean;
 	onClose: () => void;
 	children: React.ReactNode;
+	/** 요청 진행 중 등 닫히면 안 될 때 false (바깥 클릭/Esc 차단) */
+	isDismissable?: boolean;
 }
-function Modal({ isOpen, onClose, children, className, ...props }: ModalProps) {
+function Modal({
+	isOpen,
+	onClose,
+	children,
+	className,
+	isDismissable = true,
+	...props
+}: ModalProps) {
 	return (
 		<HeroModal.Backdrop
 			isOpen={isOpen}
 			onOpenChange={(open) => {
-				if (!open) onClose();
+				if (!open && isDismissable) onClose();
 			}}
+			isDismissable={isDismissable}
+			isKeyboardDismissDisabled={!isDismissable}
 		>
 			<HeroModal.Container size="lg" scroll="outside">
 				<HeroModal.Dialog

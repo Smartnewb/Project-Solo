@@ -4,6 +4,7 @@ import {fireEvent,render,screen,waitFor} from '@testing-library/react';
 import '@testing-library/jest-dom';
 const mockList=jest.fn(),mockCreate=jest.fn(),mockExecute=jest.fn(),mockCancel=jest.fn(),mockValidate=jest.fn();
 jest.mock('@/app/admin/scheduled-matching/service',()=>({scheduledMatchingService:{getManualMatchingList:(...args:unknown[])=>mockList(...args),createManualMatching:(...args:unknown[])=>mockCreate(...args),executeManualMatching:(...args:unknown[])=>mockExecute(...args),cancelManualMatching:(...args:unknown[])=>mockCancel(...args),validateManualMatching:(...args:unknown[])=>mockValidate(...args)}}));
+jest.mock('@/shared/ui/admin/toast',()=>({useToast:()=>({success:jest.fn(),error:jest.fn(),warning:jest.fn(),info:jest.fn()})}));
 import ManualMatching from '@/app/admin/scheduled-matching/components/ManualMatching';
 const matching={id:'job',status:'scheduled',matchType:'cs_support',users:[{id:'kr-user',name:'KR',gender:'MALE'},{id:'jp-user',name:'JP',gender:'FEMALE'}],scheduledAt:'2026-10-12T03:00:00Z',reason:'CS 지원',createdBy:{name:'admin'},createdAt:'2026-10-02T03:00:00Z'};
 beforeEach(()=>{jest.clearAllMocks();mockList.mockResolvedValue({data:[matching],pagination:{total:30}});});

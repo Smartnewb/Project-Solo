@@ -89,7 +89,7 @@ export function formatDateTimeWithoutTimezoneConversion(dateString: string): str
   if (!dateString) return '날짜 정보 없음';
 
   // ISO 형식 날짜 문자열에서 날짜와 시간 부분만 추출 (예: "2023-06-01T15:30:00.000Z")
-  const match = dateString.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  const match = dateString.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
   if (match) {
     const [_, date, time] = match;
     return `${date} ${time}`;

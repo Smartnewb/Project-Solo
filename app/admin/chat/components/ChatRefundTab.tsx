@@ -220,7 +220,7 @@ export default function ChatRefundTab() {
           <TextField isDisabled={processing}><Label>SMS 내용</Label><TextArea value={smsContent} onChange={e => setSmsContent(e.target.value)} rows={4} /><Description>필요시 SMS 내용을 수정할 수 있습니다.</Description></TextField>
           {error && <p role="alert" className="text-red-700">{error}</p>}
         </>}</Modal.Body>
-        <Modal.Footer><Button variant="secondary" isDisabled={processing} onPress={() => setPreviewModalOpen(false)}>취소</Button><Button isDisabled={processing} onPress={() => void handleProcessRefund()}>{processing ? <Spinner size="sm" /> : <Landmark size={16} />}{processing ? '처리 중...' : '환불 처리'}</Button></Modal.Footer>
+        <Modal.Footer><Button variant="secondary" isDisabled={processing} onPress={() => setPreviewModalOpen(false)}>취소</Button><Button variant="danger" isDisabled={processing} onPress={() => void handleProcessRefund()}>{processing ? <Spinner size="sm" /> : <Landmark size={16} />}{processing ? '처리 중...' : '환불 처리'}</Button></Modal.Footer>
       </Modal.Dialog></Modal.Container>
     </Modal.Backdrop>
   </div>;

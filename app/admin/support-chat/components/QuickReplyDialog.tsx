@@ -20,6 +20,7 @@ import {
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import type { SupportDomain } from "@/app/types/support-chat";
 import {
   QUICK_REPLY_VARIABLES,
@@ -58,6 +59,7 @@ export default function QuickReplyDialog({
   nickname,
   onSelect,
 }: QuickReplyDialogProps) {
+  const confirm = useConfirm();
   const [replies, setReplies] = useState<QuickReply[]>([]);
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -96,8 +98,14 @@ export default function QuickReplyDialog({
     setNewContent("");
   };
 
-  const handleRemove = (id: string) => {
-    setReplies(removeQuickReply(id));
+  const handleRemove = async (reply: QuickReply) => {
+    const ok = await confirm({
+      title: "템플릿 삭제",
+      message: `‘${reply.title}’ 템플릿을 삭제합니다.`,
+      confirmText: "삭제",
+      severity: "error",
+    });
+    if (ok) setReplies(removeQuickReply(reply.id));
   };
 
   return (
@@ -129,56 +137,59 @@ export default function QuickReplyDialog({
           <Modal.Body>
             <ul style={{ paddingBlock: 0 }}>
               {sorted.map((reply) => (
-                <Button
-                  variant="secondary"
+                <li
                   key={reply.id}
-                  onClick={() => handleSelect(reply)}
-                  className="w-full justify-start h-auto p-3 mb-1"
+                  style={{ display: "flex", gap: 4, alignItems: "stretch" }}
+                  className="mb-1"
                 >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        marginBottom: 4,
-                      }}
-                    >
-                      <p style={{ fontWeight: 700 }}>{reply.title}</p>
-                      {reply.domain !== "all" && (
-                        <Chip size="sm">{reply.domain}</Chip>
-                      )}
-                      {reply.builtin && <Chip size="sm">{"기본"}</Chip>}
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleSelect(reply)}
+                    className="flex-1 min-w-0 justify-start h-auto p-3"
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginBottom: 4,
+                        }}
+                      >
+                        <p style={{ fontWeight: 700 }}>{reply.title}</p>
+                        {reply.domain !== "all" && (
+                          <Chip size="sm">{reply.domain}</Chip>
+                        )}
+                        {reply.builtin && <Chip size="sm">{"기본"}</Chip>}
+                      </div>
+                      <p
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {reply.content}
+                      </p>
                     </div>
-                    <p
-                      style={{
-                        whiteSpace: "pre-wrap",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {reply.content}
-                    </p>
-                  </div>
+                  </Button>
                   {!reply.builtin && (
                     <Tooltip>
                       <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemove(reply.id);
-                          }}
-                          aria-label="템플릿 삭제"
-                          variant={"secondary"}
-                          isIconOnly
-                        >
-                          <DeleteIcon size={16} />
-                        </Button>
+                        onClick={() => handleRemove(reply)}
+                        aria-label={`템플릿 삭제: ${reply.title}`}
+                        variant={"secondary"}
+                        isIconOnly
+                        className="h-auto"
+                      >
+                        <DeleteIcon size={16} />
+                      </Button>
                       <Tooltip.Content>{"삭제"}</Tooltip.Content>
                     </Tooltip>
                   )}
-                </Button>
+                </li>
               ))}
             </ul>
             <hr style={{ marginBlock: 12 }} />

@@ -30,7 +30,7 @@ jest.mock('@/shared/ui/admin/toast/toast-context', () => ({
 }));
 
 jest.mock('@/shared/ui/admin/confirm-dialog/confirm-dialog-context', () => ({
-  useConfirm: jest.fn(() => ({ confirm: jest.fn() })),
+  useConfirm: jest.fn(() => jest.fn().mockResolvedValue(true)),
 }));
 
 jest.mock('@/app/admin/hooks/forms', () => ({

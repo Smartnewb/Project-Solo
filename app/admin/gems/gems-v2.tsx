@@ -764,9 +764,10 @@ function GemsManagementPageContent() {
 			<Modal.Backdrop
 				isOpen={confirmDialogOpen}
 				onOpenChange={(isOpen) => {
-					if (!isOpen) (() => setConfirmDialogOpen(false))?.();
+					if (!isOpen && !bulkGrantGems.isPending) setConfirmDialogOpen(false);
 				}}
-				isDismissable={true}
+				isDismissable={!bulkGrantGems.isPending}
+				isKeyboardDismissDisabled={bulkGrantGems.isPending}
 			>
 				<Modal.Container size="md" scroll="inside">
 					<Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
@@ -788,10 +789,12 @@ function GemsManagementPageContent() {
 										• 대상:{" "}
 										{inputMethod === "phoneNumbers"
 											? `${getUserCount()}개 전화번호`
-											: "CSV 파일"}
+											: `CSV 파일 (${csvFile?.name ?? ""}) — 수신자 수는 서버에서 집계됩니다`}
 									</p>
 									<p className={"text-sm text-neutral-700"}>
-										• 지급 구슬: {pendingData?.gemAmount ?? 0}개
+										• 지급 구슬: 1인당 {pendingData?.gemAmount ?? 0}개
+										{inputMethod === "phoneNumbers" &&
+											` (총 ${(getUserCount() as number) * (pendingData?.gemAmount ?? 0)}개)`}
 									</p>
 									<p
 										style={{ marginTop: 8 }}
@@ -835,7 +838,7 @@ function GemsManagementPageContent() {
 						</Modal.Header>
 						<Modal.Body>
 							<p style={{ marginBottom: 16 }}>
-								100개 이상의 구슬을 지급하려고 합니다. 사유를 입력해주세요.
+								{MAX_GEM_GRANT}개 초과의 구슬을 지급하려고 합니다. 사유를 입력해주세요.
 							</p>
 							<TextField className="w-full">
 								<Label>{"지급 사유"}</Label>

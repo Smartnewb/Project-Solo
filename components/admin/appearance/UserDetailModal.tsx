@@ -57,6 +57,8 @@ import BirthdayEditModal from "./modals/BirthdayEditModal";
 import AccountStatusModal from "./modals/AccountStatusModal";
 import { ReferralPostSignupSection } from "./referral/ReferralPostSignupSection";
 import { sanitizeUrl } from "@/shared/lib/safe-url";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
 
 const SHOW_REMATCH_TICKET_ADMIN = false;
 
@@ -282,6 +284,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     "profile",
   );
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
+  const toast = useToast();
 
   const blacklistHistoryQuery = useQuery({
     queryKey: ["blacklist-history", userId],
@@ -319,7 +323,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [gemsInfo, setGemsInfo] = useState<any>(null);
   const [gemsLoading, setGemsLoading] = useState(false);
   const [gemsError, setGemsError] = useState<string | null>(null);
-  const [gemsCount, setGemsCount] = useState<number>(1);
+  // 빈 문자열 = 입력 비움(제출 차단). 임의 값으로 보정하지 않는다.
+  const [gemsCount, setGemsCount] = useState<number | "">(1);
   const [gemsActionLoading, setGemsActionLoading] = useState(false);
   const [gemsAddModalOpen, setGemsAddModalOpen] = useState(false);
   const [gemsRemoveModalOpen, setGemsRemoveModalOpen] = useState(false);
@@ -629,9 +634,21 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     }
   };
 
+  const handleOpenGemsAddModal = () => {
+    setGemsCount(1);
+    setGemsError(null);
+    setGemsAddModalOpen(true);
+  };
+
+  const handleOpenGemsRemoveModal = () => {
+    setGemsCount(1);
+    setGemsError(null);
+    setGemsRemoveModalOpen(true);
+  };
+
   // 구슬 추가
   const handleAddGems = async () => {
-    if (!userId) return;
+    if (!userId || gemsCount === "") return;
 
     try {
       setGemsActionLoading(true);
@@ -650,7 +667,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsCount(1);
     } catch (error: any) {
       console.error("구슬 추가 중 오류:", error);
-      setGemsError(error.message || "구슬 추가 중 오류가 발생했습니다.");
+      const message = error.message || "구슬 추가 중 오류가 발생했습니다.";
+      setGemsError(message);
+      toast.error(message);
     } finally {
       setGemsActionLoading(false);
     }
@@ -658,7 +677,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 구슬 제거
   const handleRemoveGems = async () => {
-    if (!userId) return;
+    if (!userId || gemsCount === "") return;
 
     try {
       setGemsActionLoading(true);
@@ -677,7 +696,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setGemsCount(1);
     } catch (error: any) {
       console.error("구슬 제거 중 오류:", error);
-      setGemsError(error.message || "구슬 제거 중 오류가 발생했습니다.");
+      const message = error.message || "구슬 제거 중 오류가 발생했습니다.";
+      setGemsError(message);
+      toast.error(message);
     } finally {
       setGemsActionLoading(false);
     }
@@ -755,6 +776,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 회원 탈퇴 확인 다이얼로그 열기
   const handleDeleteUser = () => {
     handleCloseMenu();
+    setActionError(null);
     setDeleteConfirmModalOpen(true);
     setSendEmailOnDelete(true);
   };
@@ -766,7 +788,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     try {
       setActionLoading(true);
       setActionError(null);
-      setDeleteConfirmModalOpen(false);
 
       await AdminService.userAppearance.deleteUser(
         userId,
@@ -779,10 +800,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       if (sendEmailOnDelete) successMessages.push("이메일 발송됨");
 
       setActionSuccess(successMessages.join(" / "));
+      setDeleteConfirmModalOpen(false);
       if (onRefresh) onRefresh();
       onClose();
     } catch (error: any) {
-      setActionError(error.message || "회원 탈퇴 중 오류가 발생했습니다.");
+      const message = error.message || "회원 탈퇴 중 오류가 발생했습니다.";
+      setActionError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -819,6 +843,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         setUniVerificationStatus("verified");
       }
       setActionError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -862,7 +887,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       if (onRefresh) onRefresh();
     } catch (error: any) {
       console.error("승인 취소 중 오류:", error);
-      setActionError(error.message || "승인 취소 중 오류가 발생했습니다.");
+      const message = error.message || "승인 취소 중 오류가 발생했습니다.";
+      setActionError(message);
+      toast.error(message);
     } finally {
       setRevokeActionLoading(false);
     }
@@ -871,6 +898,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 승인 취소 모달 열기
   const handleOpenRevokeApprovalModal = () => {
     handleCloseMenu();
+    setActionError(null);
     setRevokeApprovalModalOpen(true);
     setRevokeReason("");
     setCustomRevokeReason("");
@@ -896,11 +924,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setResetPasswordResultOpen(true);
     } catch (error: any) {
       console.error("비밀번호 초기화 중 오류:", error);
-      setActionError(
+      const message =
         error.response?.data?.message ||
-          error.message ||
-          "비밀번호 초기화에 실패했습니다.",
-      );
+        error.message ||
+        "비밀번호 초기화에 실패했습니다.";
+      setActionError(message);
+      toast.error(message);
       setResetPasswordConfirmOpen(false);
     } finally {
       setResetPasswordLoading(false);
@@ -908,10 +937,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   };
 
   // 임시 비밀번호 복사
-  const handleCopyTemporaryPassword = () => {
-    if (temporaryPassword) {
-      navigator.clipboard.writeText(temporaryPassword);
-      setActionSuccess("임시 비밀번호가 복사되었습니다.");
+  const handleCopyTemporaryPassword = async () => {
+    if (!temporaryPassword) return;
+    try {
+      await navigator.clipboard.writeText(temporaryPassword);
+      toast.success("임시 비밀번호가 복사되었습니다.");
+    } catch (error) {
+      console.error("임시 비밀번호 복사 실패:", error);
+      toast.error("복사에 실패했습니다. 비밀번호를 직접 선택해 복사해 주세요.");
     }
   };
 
@@ -1104,12 +1137,27 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             onOpenChange={(isOpen) => {
               if (!isOpen) handleCloseMenu?.();
             }}
-            isDismissable={handleCloseMenu !== undefined}
+            isDismissable
           >
             <Modal.Container size="md" scroll="inside" className="w-full">
               <Modal.Dialog
                 style={{ width: "100%", maxWidth: "32rem", minWidth: 0 }}
               >
+                <Modal.Header className="relative pr-12">
+                  <Modal.Heading className="text-base font-semibold">
+                    {`${userDetail?.name ?? "사용자"} 관리`}
+                  </Modal.Heading>
+                  <Button
+                    onClick={handleCloseMenu}
+                    aria-label="관리 메뉴 닫기"
+                    variant={"ghost"}
+                    isIconOnly={true}
+                    size={"md"}
+                    className="absolute right-0 top-0 rounded-lg"
+                  >
+                    <X />
+                  </Button>
+                </Modal.Header>
                 <Button
                   onClick={handleOpenEditProfileModal}
                   variant={"ghost"}
@@ -1762,17 +1810,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                                     paddingBottom: 2,
                                     fontSize: "0.75rem",
                                   }}
-                                  onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        `${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`,
-                                      )
-                                    ) {
-                                      handleUniversityApproval();
-                                    }
+                                  onClick={async () => {
+                                    const ok = await confirm({
+                                      title: "대학교 인증 승인",
+                                      message: `${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`,
+                                      confirmText: "승인",
+                                    });
+                                    if (ok) await handleUniversityApproval();
                                   }}
                                   variant={"primary"}
-                                  isDisabled={undefined}
+                                  isDisabled={actionLoading}
                                   size={"sm"}
                                   className="rounded-xl"
                                 >
@@ -2212,7 +2259,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                               </div>
                               <div style={{ display: "flex", gap: 4 }}>
                                 <Button
-                                  onClick={() => setGemsAddModalOpen(true)}
+                                  onClick={handleOpenGemsAddModal}
                                   style={{
                                     minWidth: "auto",
                                     paddingLeft: 6,
@@ -2230,7 +2277,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                                 </Button>
                                 {gemsInfo.gemBalance > 0 && (
                                   <Button
-                                    onClick={() => setGemsRemoveModalOpen(true)}
+                                    onClick={handleOpenGemsRemoveModal}
                                     style={{
                                       minWidth: "auto",
                                       paddingLeft: 6,
@@ -2273,7 +2320,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                                 </div>
                               </div>
                               <Button
-                                onClick={() => setGemsAddModalOpen(true)}
+                                onClick={handleOpenGemsAddModal}
                                 style={{
                                   minWidth: "auto",
                                   paddingLeft: 6,
@@ -2310,7 +2357,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                                   <div
                                     style={{
                                       fontWeight: "bold",
-                                      color: "secondary.main",
+                                      color: "#7A4AE2",
                                       marginBottom: 8,
                                     }}
                                     className={
@@ -2683,11 +2730,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <Modal.Backdrop
             isOpen={deleteConfirmModalOpen}
             onOpenChange={(isOpen) => {
-              if (!isOpen) (() => setDeleteConfirmModalOpen(false))?.();
+              if (!isOpen && !actionLoading) setDeleteConfirmModalOpen(false);
             }}
-            isDismissable={
-              (() => setDeleteConfirmModalOpen(false)) !== undefined
-            }
+            isDismissable={!actionLoading}
+            isKeyboardDismissDisabled={actionLoading}
           >
             <Modal.Container size="md" scroll="inside" className="w-full">
               <Modal.Dialog
@@ -2735,7 +2781,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   <div className="flex items-center gap-2">
                     <Checkbox
                       isSelected={sendEmailOnDelete}
-                      isDisabled={undefined}
+                      isDisabled={actionLoading}
                       isIndeterminate={undefined}
                       onChange={(isSelected) =>
                         setSendEmailOnDelete(isSelected)
@@ -2749,12 +2795,21 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       </Checkbox.Content>
                     </Checkbox>
                   </div>
+                  {actionError && (
+                    <Alert
+                      style={{ marginTop: 8 }}
+                      status="danger"
+                      role="alert"
+                    >
+                      <Alert.Content>{actionError}</Alert.Content>
+                    </Alert>
+                  )}
                 </Modal.Body>
                 <Modal.Footer className="flex-wrap gap-2">
                   <Button
                     onClick={() => setDeleteConfirmModalOpen(false)}
                     variant={"ghost"}
-                    isDisabled={undefined}
+                    isDisabled={actionLoading}
                     size={"md"}
                     className="rounded-xl"
                   >
@@ -2762,7 +2817,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   </Button>
                   <Button
                     onClick={handleConfirmDeleteUser}
-                    variant={"primary"}
+                    variant={"danger"}
                     isDisabled={actionLoading}
                     size={"md"}
                     className="rounded-xl"
@@ -2968,9 +3023,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <Modal.Backdrop
             isOpen={gemsAddModalOpen}
             onOpenChange={(isOpen) => {
-              if (!isOpen) (() => setGemsAddModalOpen(false))?.();
+              if (!isOpen && !gemsActionLoading) setGemsAddModalOpen(false);
             }}
-            isDismissable={(() => setGemsAddModalOpen(false)) !== undefined}
+            isDismissable={!gemsActionLoading}
+            isKeyboardDismissDisabled={gemsActionLoading}
           >
             <Modal.Container size="md" scroll="inside" className="w-full">
               <Modal.Dialog
@@ -2988,8 +3044,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   </div>
                   <TextField
                     className="w-full"
-                    isDisabled={undefined}
-                    isInvalid={undefined}
+                    isDisabled={gemsActionLoading}
+                    isInvalid={gemsCount === ""}
                   >
                     <Label>{"추가할 구슬 개수"}</Label>
                     <Input
@@ -3001,9 +3057,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           | HTMLTextAreaElement
                           | HTMLSelectElement
                         >,
-                      ) =>
-                        setGemsCount(Math.max(1, parseInt(e.target.value) || 1))
-                      }
+                      ) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        setGemsCount(Number.isNaN(parsed) ? "" : Math.max(1, parsed));
+                      }}
                       style={{ marginBottom: 8 }}
                       aria-label={"추가할 구슬 개수"}
                       {...{ min: 1, max: 1000 }}
@@ -3023,7 +3080,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   <Button
                     onClick={() => setGemsAddModalOpen(false)}
                     variant={"ghost"}
-                    isDisabled={undefined}
+                    isDisabled={gemsActionLoading}
                     size={"md"}
                     className="rounded-xl"
                   >
@@ -3032,7 +3089,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   <Button
                     onClick={handleAddGems}
                     variant={"primary"}
-                    isDisabled={gemsActionLoading}
+                    isDisabled={gemsActionLoading || gemsCount === ""}
                     size={"md"}
                     className="rounded-xl"
                   >
@@ -3050,9 +3107,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <Modal.Backdrop
             isOpen={gemsRemoveModalOpen}
             onOpenChange={(isOpen) => {
-              if (!isOpen) (() => setGemsRemoveModalOpen(false))?.();
+              if (!isOpen && !gemsActionLoading) setGemsRemoveModalOpen(false);
             }}
-            isDismissable={(() => setGemsRemoveModalOpen(false)) !== undefined}
+            isDismissable={!gemsActionLoading}
+            isKeyboardDismissDisabled={gemsActionLoading}
           >
             <Modal.Container size="md" scroll="inside" className="w-full">
               <Modal.Dialog
@@ -3082,8 +3140,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   )}
                   <TextField
                     className="w-full"
-                    isDisabled={undefined}
-                    isInvalid={undefined}
+                    isDisabled={gemsActionLoading}
+                    isInvalid={gemsCount === ""}
                   >
                     <Label>{"제거할 구슬 개수"}</Label>
                     <Input
@@ -3095,9 +3153,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           | HTMLTextAreaElement
                           | HTMLSelectElement
                         >,
-                      ) =>
-                        setGemsCount(Math.max(1, parseInt(e.target.value) || 1))
-                      }
+                      ) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        setGemsCount(Number.isNaN(parsed) ? "" : Math.max(1, parsed));
+                      }}
                       style={{ marginBottom: 8 }}
                       aria-label={"제거할 구슬 개수"}
                       {...{
@@ -3120,7 +3179,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   <Button
                     onClick={() => setGemsRemoveModalOpen(false)}
                     variant={"ghost"}
-                    isDisabled={undefined}
+                    isDisabled={gemsActionLoading}
                     size={"md"}
                     className="rounded-xl"
                   >
@@ -3128,8 +3187,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   </Button>
                   <Button
                     onClick={handleRemoveGems}
-                    variant={"primary"}
-                    isDisabled={gemsActionLoading}
+                    variant={"danger"}
+                    isDisabled={gemsActionLoading || gemsCount === ""}
                     size={"md"}
                     className="rounded-xl"
                   >
@@ -3147,11 +3206,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <Modal.Backdrop
             isOpen={revokeApprovalModalOpen}
             onOpenChange={(isOpen) => {
-              if (!isOpen) (() => setRevokeApprovalModalOpen(false))?.();
+              if (!isOpen && !revokeActionLoading) {
+                setRevokeApprovalModalOpen(false);
+                setRevokeReason("");
+                setCustomRevokeReason("");
+              }
             }}
-            isDismissable={
-              (() => setRevokeApprovalModalOpen(false)) !== undefined
-            }
+            isDismissable={!revokeActionLoading}
+            isKeyboardDismissDisabled={revokeActionLoading}
           >
             <Modal.Container size="md" scroll="inside" className="w-full">
               <Modal.Dialog
@@ -3199,7 +3261,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           target: { value },
                         } as React.ChangeEvent<HTMLSelectElement>)
                       }
-                      isDisabled={undefined}
+                      isDisabled={revokeActionLoading}
                       aria-label={"승인 취소 사유"}
                       className="w-full"
                     >
@@ -3214,7 +3276,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                             <ListBox.Item
                               key={reason.value}
                               id={reason.value}
-                              textValue={"reason.label"}
+                              textValue={reason.label}
                             >
                               {reason.label}
                             </ListBox.Item>
@@ -3273,7 +3335,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   </Button>
                   <Button
                     onClick={handleRevokeApproval}
-                    variant={"primary"}
+                    variant={"danger"}
                     isDisabled={
                       revokeActionLoading ||
                       !revokeReason.trim() ||
@@ -3296,11 +3358,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <Modal.Backdrop
             isOpen={resetPasswordConfirmOpen}
             onOpenChange={(isOpen) => {
-              if (!isOpen) (() => setResetPasswordConfirmOpen(false))?.();
+              if (!isOpen && !resetPasswordLoading)
+                setResetPasswordConfirmOpen(false);
             }}
-            isDismissable={
-              (() => setResetPasswordConfirmOpen(false)) !== undefined
-            }
+            isDismissable={!resetPasswordLoading}
+            isKeyboardDismissDisabled={resetPasswordLoading}
           >
             <Modal.Container size="md" scroll="inside" className="w-full">
               <Modal.Dialog
@@ -3349,10 +3411,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           {/* 임시 비밀번호 결과 다이얼로그 */}
           <Modal.Backdrop
             isOpen={resetPasswordResultOpen}
-            onOpenChange={(isOpen) => {
-              if (!isOpen) handleResetPasswordResultClose?.();
-            }}
-            isDismissable={handleResetPasswordResultClose !== undefined}
+            isDismissable={false}
+            isKeyboardDismissDisabled
           >
             <Modal.Container size="md" scroll="inside" className="w-full">
               <Modal.Dialog
@@ -3384,6 +3444,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </TextField>
                     <Button
                       onClick={handleCopyTemporaryPassword}
+                      aria-label="임시 비밀번호 복사"
                       variant={"ghost"}
                       isDisabled={undefined}
                       isIconOnly={true}

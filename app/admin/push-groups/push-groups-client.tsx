@@ -85,17 +85,17 @@ export default function PushGroupsClient() {
 
       {loading ? (<div style={{ display: 'flex', justifyContent: 'center', paddingBlock: 32 }}>
           <Spinner size="sm"></Spinner>
-        </div>) : (<div>
+        </div>) : (<div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left">
               <tr className="border-b">
-                <th scope="col" className="border-b px-4 py-3">그룹명</th>
-                <th scope="col" className="border-b px-4 py-3">타입</th>
-                <th scope="col" className="border-b px-4 py-3">국가스코프</th>
-                <th scope="col" className="border-b px-4 py-3">대상자수</th>
-                <th scope="col" className="border-b px-4 py-3">생성일</th>
-                <th scope="col" className="border-b px-4 py-3">생성자</th>
-                <th scope="col" className="border-b px-4 py-3">액션</th>
+                <th scope="col" className="whitespace-nowrap border-b px-4 py-3">그룹명</th>
+                <th scope="col" className="whitespace-nowrap border-b px-4 py-3">타입</th>
+                <th scope="col" className="whitespace-nowrap border-b px-4 py-3">국가스코프</th>
+                <th scope="col" className="whitespace-nowrap border-b px-4 py-3">대상자수</th>
+                <th scope="col" className="whitespace-nowrap border-b px-4 py-3">생성일</th>
+                <th scope="col" className="whitespace-nowrap border-b px-4 py-3">생성자</th>
+                <th scope="col" className="whitespace-nowrap border-b px-4 py-3">액션</th>
               </tr>
             </thead>
             <tbody>
@@ -110,18 +110,18 @@ export default function PushGroupsClient() {
                 const preview = previewByGroup[group.id];
                 return (<tr key={group.id} className="border-b">
                     <td className="border-b px-4 py-3">{group.name}</td>
-                    <td className="border-b px-4 py-3">
+                    <td className="whitespace-nowrap border-b px-4 py-3">
                       <Chip size="sm">{GROUP_TYPE_LABEL[group.type]}</Chip>
                     </td>
-                    <td className="border-b px-4 py-3">{COUNTRY_SCOPE_LABEL[group.countryScope]}</td>
-                    <td className="border-b px-4 py-3">
+                    <td className="whitespace-nowrap border-b px-4 py-3">{COUNTRY_SCOPE_LABEL[group.countryScope]}</td>
+                    <td className="whitespace-nowrap border-b px-4 py-3">
                       {preview?.loading ? (<Spinner size="sm"></Spinner>) : preview?.total !== undefined ? (<p>{preview.total.toLocaleString()}명</p>) : (<Button onPress={() => handlePreview(group.id)} variant="tertiary">
                           확인
                         </Button>)}
                     </td>
-                    <td className="border-b px-4 py-3">{safeToLocaleDateString(group.createdAt)}</td>
-                    <td className="border-b px-4 py-3">{group.createdBy ?? '-'}</td>
-                    <td className="border-b px-4 py-3">
+                    <td className="whitespace-nowrap border-b px-4 py-3">{safeToLocaleDateString(group.createdAt)}</td>
+                    <td className="max-w-[180px] truncate border-b px-4 py-3 font-mono text-xs" title={group.createdBy ?? undefined}>{group.createdBy ?? '-'}</td>
+                    <td className="whitespace-nowrap border-b px-4 py-3">
                       <div>
                         <Button onPress={() => router.push(`/admin/push-groups/${group.id}`)} variant="secondary">
                           상세

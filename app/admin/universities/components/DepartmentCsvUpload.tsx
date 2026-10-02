@@ -6,9 +6,10 @@ import {
   TriangleAlert as WarningIcon,
   Info as InfoIcon,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import AdminService from "@/app/services/admin";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import type { UploadDepartmentsCsvResponse } from "@/types/admin";
 
 interface DepartmentCsvUploadProps {
@@ -26,6 +27,8 @@ export default function DepartmentCsvUpload({
   universityName,
   onSuccess,
 }: DepartmentCsvUploadProps) {
+  const confirm = useConfirm();
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [uploading, setUploading] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -34,6 +37,13 @@ export default function DepartmentCsvUpload({
     null,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(
+    () => () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    },
+    [],
+  );
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -84,11 +94,13 @@ export default function DepartmentCsvUpload({
   const handleUpload = async () => {
     if (!selectedFile) return;
 
-    if (
-      !confirm(
-        "기존 학과가 모두 삭제되고 CSV 파일의 내용으로 교체됩니다. 계속하시겠습니까?",
-      )
-    ) {
+    const ok = await confirm({
+      title: "학과 전체 교체",
+      message: `'${universityName}'의 기존 학과가 모두 삭제되고 CSV 파일(${selectedFile.name})의 내용으로 교체됩니다.\n계속하시겠습니까?`,
+      confirmText: "교체",
+      severity: "error",
+    });
+    if (!ok) {
       return;
     }
 
@@ -106,7 +118,8 @@ export default function DepartmentCsvUpload({
       }
       setSelectedFile(null);
 
-      setTimeout(() => {
+      successTimerRef.current = setTimeout(() => {
+        successTimerRef.current = null;
         onSuccess();
       }, 2000);
     } catch (err: any) {
@@ -124,13 +137,22 @@ export default function DepartmentCsvUpload({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-      onClose();
+      if (successTimerRef.current) {
+        // 업로드는 이미 반영됐으므로 대기 중이던 목록 갱신을 즉시 수행한다.
+        clearTimeout(successTimerRef.current);
+        successTimerRef.current = null;
+        onSuccess();
+      } else {
+        onClose();
+      }
     }
   };
 
   return (
     <Modal.Backdrop
       isOpen={open}
+      isDismissable={!uploading}
+      isKeyboardDismissDisabled={uploading}
       onOpenChange={(isOpen) => {
         if (!isOpen) handleClose();
       }}

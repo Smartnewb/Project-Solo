@@ -91,7 +91,10 @@ export default function CommerceProductDialog({
 			sortOrder: product.sort_order,
 			uiMetadata: product.ui_metadata,
 		});
-	}, [counterpart, open, product]);
+		// 폼은 다이얼로그가 열릴 때/편집 대상 버전이 바뀔 때만 초기화한다. product·counterpart 객체는
+		// refetch 마다 새 참조라 deps 에 넣으면 입력 중인 값이 덮어써진다.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open, product?.id, product?.product_version_id]);
 	const entitlement = form.entitlements[0] ?? INITIAL_FORM.entitlements[0];
 	const kr = form.localizations[0];
 	const jp = form.localizations[1];
@@ -128,9 +131,10 @@ export default function CommerceProductDialog({
 		<Modal.Backdrop
 			isOpen={open}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) (loading ? undefined : onClose)?.();
+				if (!isOpen && !loading) onClose();
 			}}
-			isDismissable={loading ? undefined : onClose !== undefined}
+			isDismissable={!loading}
+			isKeyboardDismissDisabled={Boolean(loading)}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>

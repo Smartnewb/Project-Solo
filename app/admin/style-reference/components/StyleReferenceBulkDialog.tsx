@@ -39,8 +39,8 @@ export function StyleReferenceBulkDialog({ open, onClose, onSubmit, isLoading }:
             setParseError(e?.response?.data?.message ?? '일괄 등록에 실패했습니다.');
         }
     };
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
-            if (!next)
+    return (<Modal.Backdrop isOpen={open} isDismissable={!isLoading} isKeyboardDismissDisabled={isLoading} onOpenChange={next => {
+            if (!next && !isLoading)
                 handleClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>일괄 등록</Modal.Heading>
@@ -66,14 +66,19 @@ export function StyleReferenceBulkDialog({ open, onClose, onSubmit, isLoading }:
                 ✓ 등록 완료: {result.created}개
                 {result.analyzed > 0 && ` (AI 분석: ${result.analyzed}개)`}
               </p>
-              {result.errors.length > 0 && (<p>
-                  ✗ 실패: {result.errors.length}개
-                </p>)}
+              {result.errors.length > 0 && (<>
+                  <p>
+                    ✗ 실패: {result.errors.length}개
+                  </p>
+                  <ul style={{ marginTop: 4, paddingLeft: 16, listStyle: 'disc', maxHeight: 160, overflowY: 'auto', fontSize: 12 }}>
+                    {result.errors.map((message, index) => (<li key={index}>{message}</li>))}
+                  </ul>
+                </>)}
             </aside>)}
         </div>
       </Modal.Body>
       <Modal.Footer>
-        <Button onPress={handleClose} variant="tertiary">{result ? '닫기' : '취소'}</Button>
+        <Button onPress={handleClose} isDisabled={isLoading} variant="tertiary">{result ? '닫기' : '취소'}</Button>
         {!result && (<Button isDisabled={isLoading || !jsonText.trim()} variant="primary" onPress={() => void handleSubmit()}>
             {isLoading ? '등록 중...' : '일괄 등록'}
           </Button>)}

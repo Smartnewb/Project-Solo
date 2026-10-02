@@ -48,6 +48,8 @@ import {
   SOURCE_LABELS,
 } from "@/app/types/support-chat";
 import { useAdminSession } from "@/shared/contexts/admin-session-context";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
+import { useToast } from "@/shared/ui/admin/toast";
 
 interface ChatDetailDialogProps {
   open: boolean;
@@ -55,6 +57,8 @@ interface ChatDetailDialogProps {
   onClose: () => void;
   onSessionUpdated: () => void;
 }
+
+const CLOSING_MESSAGE = "문의해 주셔서 감사합니다. 좋은 하루 되세요!";
 
 const SENDER_CONFIG: Record<
   SupportSenderType,
@@ -77,6 +81,8 @@ export default function ChatDetailDialog({
 }: ChatDetailDialogProps) {
   const { session: adminSession } = useAdminSession();
   const { markRead } = useReadState();
+  const confirm = useConfirm();
+  const toast = useToast();
   const detailRequestRef = useRef(0);
   const completedDetailRef = useRef(0);
   const [loading, setLoading] = useState(false);
@@ -244,12 +250,9 @@ export default function ChatDetailDialog({
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message:
-          err instanceof Error ? err.message : "세션 인수에 실패했습니다.",
-        severity: "error",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "세션 인수에 실패했습니다.",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -258,10 +261,17 @@ export default function ChatDetailDialog({
   const handleResolve = async () => {
     if (!session) return;
 
+    const ok = await confirm({
+      title: "해결 완료 처리",
+      message: `세션을 해결 완료로 처리하고 고객에게 아래 메시지를 전송합니다.\n\n${CLOSING_MESSAGE}`,
+      confirmText: "해결 완료",
+    });
+    if (!ok) return;
+
     setActionLoading(true);
     try {
       await supportChatService.resolveSession(sessionId, {
-        closingMessage: "문의해 주셔서 감사합니다. 좋은 하루 되세요!",
+        closingMessage: CLOSING_MESSAGE,
       });
       setSnackbar({
         open: true,
@@ -271,12 +281,9 @@ export default function ChatDetailDialog({
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message:
-          err instanceof Error ? err.message : "세션 해결 처리에 실패했습니다.",
-        severity: "error",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "세션 해결 처리에 실패했습니다.",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -297,12 +304,9 @@ export default function ChatDetailDialog({
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message:
-          err instanceof Error ? err.message : "메시지 전송에 실패했습니다.",
-        severity: "error",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "메시지 전송에 실패했습니다.",
+      );
     } finally {
       sendingRef.current = false;
       setSending(false);
@@ -340,19 +344,24 @@ export default function ChatDetailDialog({
       });
       onSessionUpdated();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message:
-          err instanceof Error ? err.message : "답변 수정에 실패했습니다.",
-        severity: "error",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "답변 수정에 실패했습니다.",
+      );
     } finally {
       setEditSaving(false);
     }
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!window.confirm("이 답변을 삭제할까요?")) return;
+    const target = session?.messages.find((m) => m.id === messageId);
+    const preview = target?.content.slice(0, 80) ?? "";
+    const ok = await confirm({
+      title: "답변 삭제",
+      message: `이 답변을 삭제합니다.\n\n${preview}${(target?.content.length ?? 0) > 80 ? "…" : ""}`,
+      confirmText: "삭제",
+      severity: "error",
+    });
+    if (!ok) return;
 
     setDeletingMessageId(messageId);
     try {
@@ -366,12 +375,9 @@ export default function ChatDetailDialog({
       });
       onSessionUpdated();
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message:
-          err instanceof Error ? err.message : "답변 삭제에 실패했습니다.",
-        severity: "error",
-      });
+      toast.error(
+        err instanceof Error ? err.message : "답변 삭제에 실패했습니다.",
+      );
     } finally {
       setDeletingMessageId(null);
     }
@@ -559,13 +565,17 @@ export default function ChatDetailDialog({
     session?.status === "waiting_admin" || session?.status === "bot_handling";
   const canResolve = session?.status === "admin_handling";
   const canSendMessage = session?.status === "admin_handling";
+  const busy =
+    actionLoading || sending || editSaving || deletingMessageId !== null;
 
   return (
     <>
       <Modal.Backdrop
         isOpen={open}
+        isDismissable={!busy}
+        isKeyboardDismissDisabled={busy}
         onOpenChange={(isOpen) => {
-          if (!isOpen) onClose();
+          if (!isOpen && !busy) onClose();
         }}
       >
         <Modal.Container>
@@ -610,7 +620,8 @@ export default function ChatDetailDialog({
                 onClick={onClose}
                 variant={"secondary"}
                 isIconOnly
-                aria-label="작업"
+                isDisabled={busy}
+                aria-label="닫기"
               >
                 <CloseIcon size={16} />
               </Button>
@@ -620,7 +631,7 @@ export default function ChatDetailDialog({
                 padding: 0,
                 display: "flex",
                 flexDirection: "column",
-                height: 500,
+                height: "min(500px, 60dvh)",
               }}
             >
               {error && (
@@ -693,7 +704,7 @@ export default function ChatDetailDialog({
                     <div
                       style={{
                         padding: 16,
-                        backgroundColor: "info.lighter",
+                        backgroundColor: "#e0f2fe",
                         borderBottom: "1px solid #e4e4e7",
                         borderColor: "#e4e4e7",
                       }}
@@ -825,7 +836,7 @@ export default function ChatDetailDialog({
                 </Button>
               )}
               <div style={{ flex: 1 }}></div>
-              <Button onClick={onClose} variant={"secondary"}>
+              <Button onClick={onClose} variant={"secondary"} isDisabled={busy}>
                 닫기
               </Button>
             </Modal.Footer>

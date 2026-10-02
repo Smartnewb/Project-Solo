@@ -7,6 +7,12 @@ import { useSupportChatSocket } from "@/app/admin/support-chat/hooks/useSupportC
 import service from "@/app/services/support-chat";
 import type { SupportSessionDetail } from "@/app/types/support-chat";
 
+jest.mock("@/shared/ui/admin/confirm-dialog", () => ({
+  useConfirm: () => jest.fn().mockResolvedValue(true),
+}));
+jest.mock("@/shared/ui/admin/toast", () => ({
+  useToast: () => ({ success: jest.fn(), error: jest.fn(), warning: jest.fn(), info: jest.fn() }),
+}));
 jest.mock("@/shared/contexts/admin-session-context", () => ({
   useAdminSession: () => ({ session: { user: { id: "admin" } } }),
 }));

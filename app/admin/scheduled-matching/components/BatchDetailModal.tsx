@@ -19,6 +19,7 @@ const DETAIL_STATUS_CONFIG: Record<DetailStatus, {
     filter_exhausted: { label: '필터 소진', color: 'warning' },
     error: { label: '오류', color: 'error' },
 };
+const BATCH_DETAIL_LIMIT = 100;
 export default function BatchDetailModal({ batchId, open, onClose }: BatchDetailModalProps) {
     const [data, setData] = useState<BatchDetailsWithStats | null>(null);
     const [loading, setLoading] = useState(false);
@@ -32,7 +33,7 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
         try {
             setLoading(true);
             setError(null);
-            const result = await scheduledMatchingService.getBatchDetails(batchId, 100, 0);
+            const result = await scheduledMatchingService.getBatchDetails(batchId, BATCH_DETAIL_LIMIT, 0);
             setData(result);
         }
         catch {
@@ -141,7 +142,7 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
                 <p>실패 원인 분석</p>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   {Object.entries(failureAnalysis).map(([status, count]) => {
-                    const config = DETAIL_STATUS_CONFIG[status as DetailStatus];
+                    const config = DETAIL_STATUS_CONFIG[status as DetailStatus] as (typeof DETAIL_STATUS_CONFIG)[DetailStatus] | undefined;
                     const percentage = ((count / batch.failureCount) * 100).toFixed(1);
                     return (<Chip key={status} size="sm">{`${config?.label || status}: ${count}명 (${percentage}%)`}</Chip>);
                 })}
@@ -149,7 +150,10 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
               </section>)}
 
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p>개별 매칭 결과</p>
+              <div>
+                <p>개별 매칭 결과</p>
+                {(data.stats.totalDetails > BATCH_DETAIL_LIMIT || data.details.length >= BATCH_DETAIL_LIMIT) && (<p className="text-sm text-neutral-700">최근 {BATCH_DETAIL_LIMIT}건만 표시됩니다.</p>)}
+              </div>
               <div style={{ minWidth: 120 }}>
                 <Select value={statusFilter} aria-label="상태 필터" onChange={(key) => {
                 const value = String(key ?? "");
@@ -183,7 +187,7 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
                         <p>결과가 없습니다.</p>
                       </td>
                     </tr>) : (paginatedDetails.map((detail) => {
-                const statusConfig = DETAIL_STATUS_CONFIG[detail.status];
+                const statusConfig = DETAIL_STATUS_CONFIG[detail.status] as (typeof DETAIL_STATUS_CONFIG)[DetailStatus] | undefined;
                 return (<tr key={detail.id} className="border-b">
                           <td className="border-b px-4 py-3">
                             <p>
@@ -196,7 +200,7 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
                               </p>) : ('-')}
                           </td>
                           <td className="border-b px-4 py-3">
-                            <Chip size="sm">{statusConfig.label}</Chip>
+                            <Chip size="sm">{statusConfig?.label ?? detail.status}</Chip>
                           </td>
                           <td className="border-b px-4 py-3">
                             {detail.selectedScore ? detail.selectedScore.toFixed(2) : '-'}

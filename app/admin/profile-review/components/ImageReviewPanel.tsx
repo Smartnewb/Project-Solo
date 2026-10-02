@@ -300,7 +300,7 @@ export default function ImageReviewPanel({ user, onApprove, onReject, onImageApp
 
       {/* 승인/거절 버튼 */}
       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-        <Button fullWidth onPress={handleReject} variant="secondary" style={{ height: 44 }}>
+        <Button fullWidth isDisabled={processing} onPress={handleReject} variant="secondary" style={{ height: 44 }}>
           반려하기
         </Button>
         <Button fullWidth isDisabled={!rankSelected || processing} onPress={handleApprove} variant="primary" style={{ height: 44, backgroundColor: rankSelected
@@ -570,8 +570,8 @@ export default function ImageReviewPanel({ user, onApprove, onReject, onImageApp
       </Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>
 
       {/* 개별 이미지 거절 사유 입력 모달 */}
-      <Modal.Backdrop isOpen={rejectImageModalOpen} onOpenChange={next => {
-            if (!next)
+      <Modal.Backdrop isOpen={rejectImageModalOpen} isDismissable={!processing} isKeyboardDismissDisabled={processing} onOpenChange={next => {
+            if (!next && !processing)
                 handleRejectImageModalClose();
         }}><Modal.Container size="lg"><Modal.Dialog aria-label="이미지 거절 사유 선택" style={{ width: '100%', maxWidth: 900, minWidth: 0 }}><Modal.Body>
         <div style={{ padding: 32 }}>
@@ -599,12 +599,10 @@ export default function ImageReviewPanel({ user, onApprove, onReject, onImageApp
             </div>
           </div>
 
-          <hr style={{ marginBottom: 24 }}>
-            <p>
+          <hr style={{ marginBottom: 24 }} />
+            <p className="mb-2 text-sm font-semibold text-gray-700">
               카테고리별 사유
             </p>
-          </hr>
-
           {/* 카테고리별 템플릿 */}
           <div style={{ marginBottom: 24 }}>
             {/* 프로필 이미지 문제 */}
@@ -666,24 +664,21 @@ export default function ImageReviewPanel({ user, onApprove, onReject, onImageApp
             </div>
           </div>
 
-          <hr style={{ marginBottom: 24 }}>
-            <p>
+          <hr style={{ marginBottom: 24 }} />
+            <p className="mb-2 text-sm font-semibold text-gray-700">
               또는 직접 입력
             </p>
-          </hr>
-
           {/* 직접 입력 */}
           <TextField className="mb-4"><TextArea aria-label="사진 거절 사유" rows={4} value={imageRejectionReason} onChange={(e) => setImageRejectionReason(e.target.value)} placeholder="거절 사유를 자세히 입력해주세요..."></TextArea></TextField>
-
-          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-            <Button onPress={handleRejectImageModalClose} variant="tertiary">
-              취소
-            </Button>
-            <Button onPress={handleRejectImageConfirm} variant="primary">
-              거절하기
-            </Button>
-          </div>
         </div>
-      </Modal.Body></Modal.Dialog></Modal.Container></Modal.Backdrop>
+      </Modal.Body>
+      <Modal.Footer style={{ paddingInline: 24, paddingBottom: 16 }}>
+        <Button onPress={handleRejectImageModalClose} isDisabled={processing} variant="tertiary">
+          취소
+        </Button>
+        <Button onPress={handleRejectImageConfirm} isDisabled={processing} variant="danger">
+          거절하기
+        </Button>
+      </Modal.Footer></Modal.Dialog></Modal.Container></Modal.Backdrop>
     </section>);
 }

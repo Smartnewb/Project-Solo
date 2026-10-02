@@ -280,7 +280,7 @@ export function CommunityPostAppDetailPanel({ post, comments, ghostCandidates = 
             setTimelineActionId(null);
         }
     }
-    return (<div style={{ display: 'grid', gap: 24 }}>
+    return (<div className="grid items-start gap-6 lg:grid-cols-[390px_minmax(0,1fr)]">
 			<section style={{ borderRadius: 4, overflow: 'hidden', backgroundColor: '#FFFFFF', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.08)', maxWidth: 390, width: '100%' }} className="rounded-xl border bg-white p-4">
 				<div style={{ backgroundColor: '#FFFFFF', color: '#191F28', paddingInline: 16, paddingBlock: 11.2 }}>
 					<p>커뮤니티</p>
@@ -352,7 +352,7 @@ export function CommunityPostAppDetailPanel({ post, comments, ghostCandidates = 
 				</div>
 			</section>
 
-			<div>
+			<div className="min-w-0">
 				<section style={{ padding: 16, borderRadius: '16px', backgroundColor: '#FFFFFF' }} className="rounded-xl border bg-white p-4">
 					{timelineEnabled && (<Tabs style={{ minHeight: 40, marginBottom: 16 }} selectedKey={operationTab} onSelectionChange={value => setOperationTab(value as typeof operationTab)}><Tabs.List aria-label="관리 항목">
 							<Tabs.Tab style={{ minHeight: 40, fontWeight: 700 }} id={"compose"}>{"AI 댓글"}<Tabs.Indicator></Tabs.Indicator></Tabs.Tab>

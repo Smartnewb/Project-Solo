@@ -269,7 +269,7 @@ export default function ReviewInboxV2() {
                     const tone = bucketTone[item.bucket];
                     const createdAtLabel = formatDateTime(item.createdAt);
                     const sourceIdLabel = formatShortId(item.sourceId);
-                    return (<Button key={item.id} type="button" onPress={() => handleSelectItem(item.bucket, item.id)} aria-pressed={isSelected} aria-label={`${item.title} ${sourceIdLabel ? `ID ${sourceIdLabel}` : ''} 상세 보기`} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%', border: `1px solid ${isSelected ? tone.color : '#e5e7eb'}`, backgroundColor: isSelected ? tone.light : '#fff', borderRadius: 2.5, padding: 16, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s ease' }} variant="secondary">
+                    return (<Button key={item.id} type="button" onPress={() => handleSelectItem(item.bucket, item.id)} aria-pressed={isSelected} aria-label={`${item.title} ${sourceIdLabel ? `ID ${sourceIdLabel}` : ''} 상세 보기`} className="h-auto whitespace-normal" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%', border: `1px solid ${isSelected ? tone.color : '#e5e7eb'}`, backgroundColor: isSelected ? tone.light : '#fff', borderRadius: 2.5, padding: 16, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s ease' }} variant="secondary">
                           <div style={{ width: 6, alignSelf: 'stretch', borderRadius: 999, backgroundColor: tone.color, flexShrink: 0 }}></div>
 
                           <div style={{ minWidth: 0, flex: 1 }}>
@@ -286,7 +286,7 @@ export default function ReviewInboxV2() {
                               {sourceIdLabel ? <Chip size="sm">{`ID ${sourceIdLabel}`}</Chip> : null}
                               {item.handlerLabel ? (<Chip size="sm">{item.handlerLabel}</Chip>) : null}
                             </div>
-                            <p style={{ display: 'block', marginTop: 8, color: isSelected ? tone.color : 'text.secondary' }}>
+                            <p style={{ display: 'block', marginTop: 8, color: isSelected ? tone.color : '#6b7280' }}>
                               왜 지금 검토가 필요한가: {item.why}
                             </p>
                           </div>

@@ -36,6 +36,7 @@ export default function PresetSelectModal({ open, onClose, onSelect, selectedPre
             setLoading(false);
         }
     };
+    const canSelect = !!tempSelectedId && presets.some(p => p.id === tempSelectedId);
     const handleSelect = () => {
         if (!tempSelectedId) {
             setError('프리셋을 선택해주세요.');
@@ -69,7 +70,7 @@ export default function PresetSelectModal({ open, onClose, onSelect, selectedPre
                 등록된 프리셋이 없습니다.
               </p>
             </div>) : (<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {presets.map((preset) => (<div key={preset.id} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {presets.map((preset) => (<div key={preset.id}>
                   <div style={{ position: 'relative', border: tempSelectedId === preset.id ? '3px solid #1976d2' : '1px solid #e0e0e0', cursor: 'pointer', transition: 'all 0.2s' }} className="rounded-xl border p-4">
                     <Button onPress={() => setTempSelectedId(preset.id)} className="rounded-xl border p-4" type="button" variant="secondary">
                       <img height="160" src={preset.imageUrl || preset.thumbnailUrl} alt={preset.displayName} style={{ objectFit: 'cover' }}></img>
@@ -91,7 +92,7 @@ export default function PresetSelectModal({ open, onClose, onSelect, selectedPre
         <Button onPress={handleClose} variant="tertiary">
           취소
         </Button>
-        <Button onPress={handleSelect} isDisabled={loading || !tempSelectedId} variant="primary">
+        <Button onPress={handleSelect} isDisabled={loading || !canSelect} variant="primary">
           선택
         </Button>
       </Modal.Footer>

@@ -1,6 +1,7 @@
 import { Label as HeroSelectLabel } from "@heroui/react";
 import {
   Button,
+  Description,
   FieldError,
   Input,
   Label,
@@ -15,6 +16,7 @@ import { useState, useEffect } from "react";
 import { Controller } from "react-hook-form";
 
 import AdminService from "@/app/services/admin";
+import { useToast } from "@/shared/ui/admin/toast";
 import type {
   UniversityItem,
   CreateUniversityRequest,
@@ -46,6 +48,7 @@ export default function UniversityFormDialog({
   regions,
   types,
 }: UniversityFormDialogProps) {
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [foundations, setFoundations] = useState<TypeMetaItem[]>([]);
 
@@ -94,7 +97,9 @@ export default function UniversityFormDialog({
     try {
       const data = await AdminService.universities.meta.getFoundations();
       setFoundations(data);
-    } catch {}
+    } catch {
+      toast.error("설립 구분 목록을 불러오지 못했습니다.");
+    }
   };
 
   const onFormSubmit = handleFormSubmit(async (data: UniversityFormValues) => {
@@ -140,8 +145,10 @@ export default function UniversityFormDialog({
   return (
     <Modal.Backdrop
       isOpen={open}
+      isDismissable={!loading}
+      isKeyboardDismissDisabled={loading}
       onOpenChange={(isOpen) => {
-        if (!isOpen) onClose();
+        if (!isOpen && !loading) onClose();
       }}
     >
       <Modal.Container>
@@ -187,10 +194,11 @@ export default function UniversityFormDialog({
                   <TextField isInvalid={!!fieldState.error}>
                     <Label>{"대학 코드"}</Label>
                     <Input {...field} />
-                    <FieldError>
-                      {fieldState.error?.message ||
-                        "로고 URL 생성에 사용됩니다"}
-                    </FieldError>
+                    {fieldState.error ? (
+                      <FieldError>{fieldState.error.message}</FieldError>
+                    ) : (
+                      <Description>로고 URL 생성에 사용됩니다</Description>
+                    )}
                   </TextField>
                 )}
               />

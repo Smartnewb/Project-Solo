@@ -6,6 +6,9 @@ import CommerceProductDialog from "./commerce-product-dialog";
 import ProviderOperationsDialog from "./provider-operations-dialog";
 import type { CommerceCatalogProduct } from "@/types/admin";
 
+jest.mock("@/shared/ui/admin/confirm-dialog", () => ({
+	useConfirm: () => jest.fn().mockResolvedValue(true),
+}));
 beforeAll(() => {
 	HTMLElement.prototype.scrollIntoView = jest.fn();
 	global.ResizeObserver = class {

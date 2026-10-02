@@ -31,8 +31,8 @@ export function SendConfirmModal({ open, filter, count, message, type, regions, 
         .join(', ') || '전체';
     const cost = count ? (type === 'LMS' ? count.estimatedCost.lms : count.estimatedCost.sms) : 0;
     const excludedCount = count?.excludedUsers?.length ?? 0;
-    return (<Modal.Backdrop isOpen={open} onOpenChange={next => {
-            if (!next)
+    return (<Modal.Backdrop isOpen={open} isDismissable={!loading} isKeyboardDismissDisabled={!!loading} onOpenChange={next => {
+            if (!next && !loading)
                 onClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 			<Modal.Heading>발송 확인</Modal.Heading>

@@ -138,8 +138,8 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
         }
     };
     const typeLabel = CONTENT_TYPE_LABELS[type];
-    return (<Modal.Backdrop isOpen={open && !!item} onOpenChange={next => {
-            if (!next)
+    return (<Modal.Backdrop isOpen={open && !!item} isDismissable={!isPending} isKeyboardDismissDisabled={isPending} onOpenChange={next => {
+            if (!next && !isPending)
                 onClose();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
       <Modal.Heading>{typeLabel} 발행</Modal.Heading>
@@ -168,7 +168,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
         <Button onPress={onClose} isDisabled={isPending} variant="tertiary">
           취소
         </Button>
-        <Button onPress={handleConfirm} isDisabled={isPending || (supportsPush && pushEnabled && !pushMessage.trim())} variant="tertiary">
+        <Button onPress={handleConfirm} isDisabled={isPending || (supportsPush && pushEnabled && !pushMessage.trim())} variant="primary">
           {isPending ? '발행 중...' : '발행'}
         </Button>
       </Modal.Footer>

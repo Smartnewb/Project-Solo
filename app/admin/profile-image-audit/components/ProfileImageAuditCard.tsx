@@ -1,6 +1,6 @@
 'use client';
 import { Button, Chip, Modal, TextField, Label, Checkbox, Select, ListBox } from '@heroui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import type { ProfileImageAuditItem, ProfileImageAuditProfileRank } from '@/app/services/admin';
 import { PROFILE_RANK_OPTIONS } from '../constants';
@@ -16,6 +16,11 @@ type Props = {
 export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, rankUpdating }: Props) {
     const [src, setSrc] = useState(item.imageUrl);
     const [imageFailed, setImageFailed] = useState(false);
+    // 같은 카드 인스턴스가 다른 URL 을 받으면 이전 src/실패 상태가 남지 않게 초기화한다.
+    useEffect(() => {
+        setSrc(item.imageUrl);
+        setImageFailed(false);
+    }, [item.imageUrl]);
     const [viewerOpen, setViewerOpen] = useState(false);
     const [detailOpen, setDetailOpen] = useState(false);
     const handleImageError = () => {

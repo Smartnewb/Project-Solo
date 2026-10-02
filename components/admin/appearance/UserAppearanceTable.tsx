@@ -34,6 +34,7 @@ import {
 } from "@/app/utils/formatters";
 import { appearanceGradeEventBus } from "@/app/admin/users/appearance/event-bus";
 import { sanitizeUrl } from "@/shared/lib/safe-url";
+import { useToast } from "@/shared/ui/admin/toast";
 import UserDetailModal, { UserDetail } from "./UserDetailModal";
 import BulkEmailNotificationModal from "./modals/BulkEmailNotificationModal";
 
@@ -123,6 +124,7 @@ const UserAppearanceTable = forwardRef<
   UserAppearanceTableRef,
   UserAppearanceTableProps
 >(({ initialFilters, userStatus }, ref) => {
+  const toast = useToast();
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +161,12 @@ const UserAppearanceTable = forwardRef<
   const [userToApprove, setUserToApprove] =
     useState<UserProfileWithAppearance | null>(null);
   const [approvingUniversity, setApprovingUniversity] = useState(false);
+
+  // 모달 뒤 페이지에만 보이던 오류를 토스트로도 알린다
+  const reportError = (message: string) => {
+    setError(message);
+    toast.error(message);
+  };
 
   const fetchUsers = async () => {
     try {
@@ -243,7 +251,7 @@ const UserAppearanceTable = forwardRef<
       setUniversityApprovalDialogOpen(false);
       setUserToApprove(null);
     } catch (error: any) {
-      setError(error.message || "대학교 인증 승인 중 오류가 발생했습니다.");
+      reportError(error.message || "대학교 인증 승인 중 오류가 발생했습니다.");
     } finally {
       setApprovingUniversity(false);
     }
@@ -270,7 +278,7 @@ const UserAppearanceTable = forwardRef<
       appearanceGradeEventBus.publish();
       handleCloseGradeMenu();
     } catch (err: any) {
-      setError(err.message || "등급 설정 중 오류가 발생했습니다.");
+      reportError(err.message || "등급 설정 중 오류가 발생했습니다.");
     } finally {
       setSavingGrade(false);
     }
@@ -296,6 +304,7 @@ const UserAppearanceTable = forwardRef<
 
   const handleOpenBulkEditModal = () => {
     if (selectedUsers.length === 0) return;
+    setBulkSelectedGrade("UNKNOWN");
     setBulkEditModalOpen(true);
   };
 
@@ -341,7 +350,7 @@ const UserAppearanceTable = forwardRef<
       setSelectedUsers([]);
       setBulkEditModalOpen(false);
     } catch (err: any) {
-      setError(err.message || "일괄 등급 설정 중 오류가 발생했습니다.");
+      reportError(err.message || "일괄 등급 설정 중 오류가 발생했습니다.");
     } finally {
       setSavingBulkGrade(false);
     }
@@ -935,12 +944,19 @@ const UserAppearanceTable = forwardRef<
       <Modal.Backdrop
         isOpen={Boolean(gradeMenuAnchorEl)}
         onOpenChange={(isOpen) => {
-          if (!isOpen) handleCloseGradeMenu?.();
+          if (!isOpen && !savingGrade) handleCloseGradeMenu();
         }}
-        isDismissable={handleCloseGradeMenu !== undefined}
+        isDismissable={!savingGrade}
+        isKeyboardDismissDisabled={savingGrade}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
+            <Modal.Header>
+              <Modal.Heading>
+                {selectedUser?.name ?? "사용자"} 등급 변경
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
             {(["S", "A", "B", "C", "UNKNOWN"] as AppearanceGrade[]).map(
               (grade) => (
                 <Button
@@ -954,7 +970,7 @@ const UserAppearanceTable = forwardRef<
                     color: GRADE_COLORS[grade],
                   }}
                   variant={"ghost"}
-                  isDisabled={undefined}
+                  isDisabled={savingGrade}
                   className="w-full justify-start"
                 >
                   <div
@@ -970,6 +986,16 @@ const UserAppearanceTable = forwardRef<
                 </Button>
               ),
             )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                onClick={handleCloseGradeMenu}
+                variant={"ghost"}
+                isDisabled={savingGrade}
+              >
+                닫기
+              </Button>
+            </Modal.Footer>
           </Modal.Dialog>
         </Modal.Container>
       </Modal.Backdrop>
@@ -977,9 +1003,10 @@ const UserAppearanceTable = forwardRef<
       <Modal.Backdrop
         isOpen={bulkEditModalOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen) (() => setBulkEditModalOpen(false))?.();
+          if (!isOpen && !savingBulkGrade) setBulkEditModalOpen(false);
         }}
-        isDismissable={(() => setBulkEditModalOpen(false)) !== undefined}
+        isDismissable={!savingBulkGrade}
+        isKeyboardDismissDisabled={savingBulkGrade}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>
@@ -1024,9 +1051,7 @@ const UserAppearanceTable = forwardRef<
                           <ListBox.Item
                             key={grade}
                             id={grade}
-                            textValue={
-                              "GRADE_LABELS[grade]등급\n                    "
-                            }
+                            textValue={`${GRADE_LABELS[grade]}등급`}
                           >
                             {GRADE_LABELS[grade]}등급
                           </ListBox.Item>
@@ -1090,18 +1115,13 @@ const UserAppearanceTable = forwardRef<
       <Modal.Backdrop
         isOpen={universityApprovalDialogOpen}
         onOpenChange={(isOpen) => {
-          if (!isOpen)
-            (() => {
-              setUniversityApprovalDialogOpen(false);
-              setUserToApprove(null);
-            })?.();
-        }}
-        isDismissable={
-          (() => {
+          if (!isOpen && !approvingUniversity) {
             setUniversityApprovalDialogOpen(false);
             setUserToApprove(null);
-          }) !== undefined
-        }
+          }
+        }}
+        isDismissable={!approvingUniversity}
+        isKeyboardDismissDisabled={approvingUniversity}
       >
         <Modal.Container size="md" scroll="inside">
           <Modal.Dialog>

@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLoveCourtMutations, useLoveCourtSubmission, useLoveCourtSubmissions, } from '@/app/admin/hooks';
 import type { LoveCourtOptionStatus, LoveCourtSubmission, LoveCourtSubmissionStatus, UpdateLoveCourtOptionCandidateBody, } from '@/app/services/admin/love-court';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
+import { useToast } from '@/shared/ui/admin/toast';
 type StatusFilter = 'all' | LoveCourtSubmissionStatus;
 type OptionStatusFilter = 'all' | LoveCourtOptionStatus;
 const STATUS_LABEL: Record<LoveCourtSubmissionStatus, string> = {
@@ -105,7 +107,15 @@ function OptionStatusChip({ status }: {
 }) {
     return (<Chip size="sm">{OPTION_STATUS_LABEL[status]}</Chip>);
 }
+// 운영자가 확인 후 수정할 수 있는 삭제 사유 초안 (자동 전송되지 않고 입력창에 미리 채워진다).
+const DEFAULT_DELETE_REASON = '운영자 검수 기준에 따라 공개하지 않음';
 export default function LoveCourtAdminPage() {
+    const confirm = useConfirm();
+    const toast = useToast();
+    function fail(message: string) {
+        setLocalError(message);
+        toast.error(message);
+    }
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [optionStatusFilter, setOptionStatusFilter] = useState<OptionStatusFilter>('review_required');
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -176,7 +186,7 @@ export default function LoveCourtAdminPage() {
             return;
         const options = normalizeOptions(editOptions);
         if (options.length < 2 || options.length > 4) {
-            setLocalError('선택지는 2-4개여야 합니다.');
+            fail('선택지는 2-4개여야 합니다.');
             return;
         }
         setLocalError(null);
@@ -187,7 +197,7 @@ export default function LoveCourtAdminPage() {
             });
         }
         catch (error) {
-            setLocalError(getAdminErrorMessage(error, '선택지 저장 실패'));
+            fail(getAdminErrorMessage(error, '선택지 저장 실패'));
         }
     }
     async function handleApprove() {
@@ -198,7 +208,7 @@ export default function LoveCourtAdminPage() {
             await mutations.approveOptions.mutateAsync(selected.id);
         }
         catch (error) {
-            setLocalError(getAdminErrorMessage(error, '승인 실패'));
+            fail(getAdminErrorMessage(error, '승인 실패'));
         }
     }
     async function handleRegenerate() {
@@ -209,15 +219,21 @@ export default function LoveCourtAdminPage() {
             await mutations.regenerateOptions.mutateAsync(selected.id);
         }
         catch (error) {
-            setLocalError(getAdminErrorMessage(error, '선택지 재생성 실패'));
+            fail(getAdminErrorMessage(error, '선택지 재생성 실패'));
         }
     }
     async function handleGenerateVerdict(submission: LoveCourtSubmission) {
         if (!submission.caseId) {
-            setLocalError('Case ID가 없어 판결을 생성할 수 없습니다.');
+            fail('Case ID가 없어 판결을 생성할 수 없습니다.');
             return;
         }
-        if (!window.confirm('현재 공개 중인 재판을 즉시 종료하고 AI 판결을 생성할까요? 다음 대기 재판이 있으면 바로 공개됩니다.')) {
+        const confirmed = await confirm({
+            title: 'AI 판결 생성 후 종료',
+            message: `‘${submission.title ?? submission.id}’ 재판을 즉시 종료하고 AI 판결을 생성합니다.\n다음 대기 재판이 있으면 바로 공개됩니다.`,
+            confirmText: '종료 및 판결 생성',
+            severity: 'error',
+        });
+        if (!confirmed) {
             return;
         }
         setLocalError(null);
@@ -225,26 +241,38 @@ export default function LoveCourtAdminPage() {
             await mutations.generateVerdict.mutateAsync(submission.caseId);
         }
         catch (error) {
-            setLocalError(getAdminErrorMessage(error, 'AI 판결 생성 실패'));
+            fail(getAdminErrorMessage(error, 'AI 판결 생성 실패'));
         }
+    }
+    function openDelete() {
+        setDeleteReason(DEFAULT_DELETE_REASON);
+        setDeleteOpen(true);
+    }
+    function closeDelete() {
+        setDeleteOpen(false);
+        setDeleteReason('');
     }
     async function handleDelete() {
         if (!selected)
             return;
+        const reasonMessage = deleteReason.trim();
+        if (!reasonMessage) {
+            fail('삭제 사유를 입력해 주세요.');
+            return;
+        }
         setLocalError(null);
         try {
             await mutations.deleteSubmission.mutateAsync({
                 submissionId: selected.id,
                 body: {
                     reasonCode: 'operator_rejected',
-                    reasonMessage: deleteReason || '운영자 검수 기준에 따라 공개하지 않음',
+                    reasonMessage,
                 },
             });
-            setDeleteOpen(false);
-            setDeleteReason('');
+            closeDelete();
         }
         catch (error) {
-            setLocalError(getAdminErrorMessage(error, '삭제 실패'));
+            fail(getAdminErrorMessage(error, '삭제 실패'));
         }
     }
     return (<div>
@@ -438,7 +466,7 @@ export default function LoveCourtAdminPage() {
 								{selected.status === 'published' && (<Button isDisabled={!selected.caseId || isBusy} onPress={() => handleGenerateVerdict(selected)} variant="primary">{<GavelIcon></GavelIcon>}
 										AI 판결 생성 후 종료
 									</Button>)}
-								<Button isDisabled={!selected || isBusy} onPress={() => setDeleteOpen(true)} variant="secondary">{<DeleteOutlineIcon></DeleteOutlineIcon>}
+								<Button isDisabled={!selected || isBusy} onPress={openDelete} variant="secondary">{<DeleteOutlineIcon></DeleteOutlineIcon>}
 									삭제
 								</Button>
 							</div>
@@ -465,19 +493,19 @@ export default function LoveCourtAdminPage() {
 				</section>
 			</div>
 
-			<Modal.Backdrop isOpen={deleteOpen} onOpenChange={next => {
-            if (!next)
-                (() => !isBusy && setDeleteOpen(false))();
+			<Modal.Backdrop isOpen={deleteOpen} isDismissable={!isBusy} isKeyboardDismissDisabled={isBusy} onOpenChange={next => {
+            if (!next && !isBusy)
+                closeDelete();
         }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 600, minWidth: 0 }}>
 				<Modal.Heading>제출건 삭제</Modal.Heading>
 				<Modal.Body>
 					<TextField className="mb-4"><Label>{"사유"}</Label><TextArea autoFocus value={deleteReason} onChange={(event) => setDeleteReason(event.target.value)}></TextArea></TextField>
 				</Modal.Body>
 				<Modal.Footer>
-					<Button onPress={() => setDeleteOpen(false)} isDisabled={isBusy} variant="tertiary">
+					<Button onPress={closeDelete} isDisabled={isBusy} variant="tertiary">
 						취소
 					</Button>
-					<Button onPress={handleDelete} isDisabled={isBusy} variant="primary">
+					<Button onPress={handleDelete} isDisabled={isBusy || !deleteReason.trim()} variant="danger">
 						삭제
 					</Button>
 				</Modal.Footer>

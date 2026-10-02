@@ -185,7 +185,8 @@ export default function UniversityTransferModal({
       onOpenChange={(isOpen) => {
         if (!isOpen) (saving ? undefined : onClose)?.();
       }}
-      isDismissable={(saving ? undefined : onClose) !== undefined}
+      isDismissable={!saving}
+      isKeyboardDismissDisabled={saving}
     >
       <Modal.Container size="md" scroll="inside" className="w-full">
         <Modal.Dialog style={{ width: "100%", maxWidth: "44rem", minWidth: 0 }}>

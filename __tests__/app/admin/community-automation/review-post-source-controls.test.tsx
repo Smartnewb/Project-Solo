@@ -4,6 +4,9 @@ import {fireEvent,render,screen,waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 const stats=jest.fn(),jobs=jest.fn(),create=jest.fn();
+const mockConfirm=jest.fn(),mockToast={success:jest.fn(),error:jest.fn(),warning:jest.fn(),info:jest.fn()};
+jest.mock('@/shared/ui/admin/confirm-dialog',()=>({useConfirm:()=>mockConfirm}));
+jest.mock('@/shared/ui/admin/toast',()=>({useToast:()=>mockToast}));
 jest.mock('@/app/services/admin/community-automation',()=>({reviewSources:{stats:(...a:unknown[])=>stats(...a),listPostJobs:(...a:unknown[])=>jobs(...a),createPostJob:(...a:unknown[])=>create(...a)}}));
 import Page from '@/app/admin/community-automation/review-posts/page';
 it('retains multiple-source arrays, trimmed seed and local schedule through validation controls',async()=>{

@@ -7,6 +7,7 @@ import {
 import { useState, useRef } from "react";
 
 import AdminService from "@/app/services/admin";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import type { UniversityDetail } from "@/types/admin";
 
 interface LogoUploadProps {
@@ -18,6 +19,7 @@ export default function LogoUpload({
   university,
   onUploaded,
 }: LogoUploadProps) {
+  const confirm = useConfirm();
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -77,7 +79,13 @@ export default function LogoUpload({
   };
 
   const handleDelete = async () => {
-    if (!confirm("로고를 삭제하시겠습니까?")) return;
+    const ok = await confirm({
+      title: "로고 삭제",
+      message: `'${university.name}' 대학의 로고를 삭제하시겠습니까?`,
+      confirmText: "삭제",
+      severity: "error",
+    });
+    if (!ok) return;
 
     try {
       setDeleting(true);
@@ -133,7 +141,7 @@ export default function LogoUpload({
                 <Button
                   onClick={handleDelete}
                   style={{ marginTop: 8 }}
-                  variant={"secondary"}
+                  variant={"danger"}
                   isDisabled={deleting}
                 >
                   {<DeleteIcon size={16} />}

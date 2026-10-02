@@ -6,6 +6,7 @@ import type { RecipientCount, RecipientFilter, SmsJobType } from '@/app/services
 import { useBulkSendMutation, useJobStatus } from './hooks/useBulkSendJob';
 import { useRecipientCount } from './hooks/useRecipientCount';
 import { useRegions, useUniversitiesByRegions } from './hooks/useRegions';
+import { useToast } from '@/shared/ui/admin/toast';
 import { MessageComposer } from './components/MessageComposer';
 import { RecipientSelector } from './components/RecipientSelector';
 import { RecipientModeToggle, RecipientMode } from './components/RecipientModeToggle';
@@ -30,6 +31,7 @@ function SmspageContent() {
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const { data: regionLookup = [] } = useRegions();
     const { data: universityLookup = [] } = useUniversitiesByRegions(currentFilter.regionCodes ?? []);
+    const toast = useToast();
     const sendMutation = useBulkSendMutation();
     const jobStatus = useJobStatus(activeJobId);
     const isSending = sendMutation.isPending;
@@ -47,15 +49,15 @@ function SmspageContent() {
     };
     const handleOpenConfirm = () => {
         if (!message.trim()) {
-            alert('메시지를 입력하세요.');
+            toast.warning('메시지를 입력하세요.');
             return;
         }
         if (effectiveValidCount <= 0) {
-            alert('발송 대상이 없습니다. 조건을 확인하세요.');
+            toast.warning('발송 대상이 없습니다. 조건을 확인하세요.');
             return;
         }
         if (!effectiveCount) {
-            alert('대상자 카운트 조회 중입니다. 잠시 후 다시 시도하세요.');
+            toast.info('대상자 카운트 조회 중입니다. 잠시 후 다시 시도하세요.');
             return;
         }
         setConfirmCount(effectiveCount);
@@ -77,11 +79,11 @@ function SmspageContent() {
             setActiveJobId(res.jobId);
             setShowConfirm(false);
             setIdempotencyKey(null);
-            alert(`발송 시작 (jobId: ${res.jobId}, 대상 ${res.expectedCount}명)`);
+            toast.success(`발송 시작 (jobId: ${res.jobId}, 대상 ${res.expectedCount}명)`);
         }
         catch (e: any) {
-            setIdempotencyKey(null);
-            alert(e?.message ?? '발송 실패');
+            // 같은 키를 유지한다. 서버에는 접수됐는데 응답만 실패한 경우에도 재시도가 중복 발송되지 않는다.
+            toast.error(e?.message ?? '발송 실패');
         }
     };
     // === JSX ===

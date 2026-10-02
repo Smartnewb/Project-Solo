@@ -336,7 +336,7 @@ export function RoomDetailDrawer({
 			}}
 		>
 			<Drawer.Content placement="right" className="w-full">
-				<Drawer.Dialog style={{ width: 'min(760px, 100vw)', maxWidth: '100%', height: '100%', minWidth: 0 }} aria-label="미팅 방 상세">
+				<Drawer.Dialog style={{ width: 'min(760px, 100vw)', maxWidth: '100%', height: '100%', minWidth: 0, overflowY: 'auto' }} aria-label="미팅 방 상세">
 					<div
 						style={{ width: "100%", minWidth: 0, padding: 16 }}
 						data-testid="meeting-room-detail"
@@ -626,7 +626,7 @@ export function RoomDetailDrawer({
 									</Button>
 									<Button
 										onClick={handleForceMajeureSubmit}
-										variant={"primary"}
+										variant={"danger"}
 										size={"md"}
 									>
 										전액 환불
@@ -643,7 +643,8 @@ export function RoomDetailDrawer({
 									if (!canceling) setCancelStep("closed");
 								})?.();
 						}}
-						isDismissable={true}
+						isDismissable={!canceling}
+						isKeyboardDismissDisabled={canceling}
 					>
 						<Modal.Container size="md" scroll="inside">
 							<Modal.Dialog style={{ width: '100%', maxWidth: 444, minWidth: 0 }}>
@@ -688,7 +689,7 @@ export function RoomDetailDrawer({
 											</Button>
 											<Button
 												onClick={handleCancelSubmit}
-												variant={"primary"}
+												variant={"danger"}
 												isDisabled={canceling}
 												size={"md"}
 											>

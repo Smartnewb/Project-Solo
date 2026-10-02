@@ -13,6 +13,7 @@ import {
 	TextField,
 } from "@heroui/react";
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import type {
 	CommerceCatalogProduct,
 	CommerceProviderMapping,
@@ -85,6 +86,7 @@ function appleTypeFor(product: CommerceCatalogProduct) {
 		return "NON_RENEWING_SUBSCRIPTION" as const;
 	return "CONSUMABLE" as const;
 }
+const DEFAULT_REVIEW_NOTE = "표준 상품 카탈로그의 디지털 상품입니다.";
 export default function ProviderOperationsDialog({
 	open,
 	product,
@@ -98,6 +100,7 @@ export default function ProviderOperationsDialog({
 	onAppleScreenshot,
 	onAppleSubmit,
 }: ProviderOperationsDialogProps) {
+	const confirm = useConfirm();
 	const screenshotInputRef = useRef<HTMLInputElement>(null);
 	const [provider, setProvider] = useState<Provider>("APPLE_IAP");
 	const appleMapping = mappingFor(product, "APPLE_IAP");
@@ -111,9 +114,14 @@ export default function ProviderOperationsDialog({
 	const [priceKRW, setPriceKRW] = useState(0);
 	const [priceJPY, setPriceJPY] = useState(0);
 	const [legacyCompatible, setLegacyCompatible] = useState(true);
-	const [reviewNote, setReviewNote] = useState(
-		"표준 상품 카탈로그의 디지털 상품입니다.",
-	);
+	const [reviewNote, setReviewNote] = useState(DEFAULT_REVIEW_NOTE);
+	// 상품이 바뀌거나 다이얼로그를 다시 열면 이전 상품에서 입력한 값이 남지 않게 초기화한다.
+	useEffect(() => {
+		if (!open) return;
+		setReviewNote(DEFAULT_REVIEW_NOTE);
+		setLegacyCompatible(true);
+		setPurchaseOptionId("standard-buy");
+	}, [open, product?.product_version_id]);
 	useEffect(() => {
 		if (!open || !product) return;
 		const activeMapping = provider === "APPLE_IAP" ? appleMapping : playMapping;
@@ -157,9 +165,10 @@ export default function ProviderOperationsDialog({
 		<Modal.Backdrop
 			isOpen={open}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) (isBusy ? undefined : onClose)?.();
+				if (!isOpen && !isBusy) onClose();
 			}}
-			isDismissable={isBusy ? undefined : onClose !== undefined}
+			isDismissable={!isBusy}
+			isKeyboardDismissDisabled={isBusy}
 		>
 			<Modal.Container size="md" scroll="inside">
 				<Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
@@ -310,7 +319,14 @@ export default function ProviderOperationsDialog({
 							)}
 							{isDraft && !mapping && (
 								<Button
-									onClick={() => {
+									onClick={async () => {
+										const ok = await confirm({
+											title: `${providerLabel} 상품 등록`,
+											message: `'${product.product_key}' 상품을 ${providerLabel} 스토어에 등록합니다.\nKR ${priceKRW.toLocaleString()}원 / JP ${priceJPY.toLocaleString()}엔 가격으로 실제 스토어에 반영됩니다.`,
+											confirmText: "등록",
+											severity: "warning",
+										});
+										if (!ok) return;
 										if (provider === "APPLE_IAP") {
 											onRegisterApple({
 												productId,
@@ -385,7 +401,15 @@ export default function ProviderOperationsDialog({
 										{provider === "GOOGLE_PLAY" &&
 											mapping.storeState !== "ACTIVE" && (
 												<Button
-													onClick={() => onPlayState("ACTIVE")}
+													onClick={async () => {
+														const ok = await confirm({
+															title: "구매 옵션 활성화",
+															message: `'${product.product_key}' Google Play 구매 옵션을 활성화합니다. 스토어에서 바로 구매 가능해집니다.`,
+															confirmText: "활성화",
+															severity: "warning",
+														});
+														if (ok) onPlayState("ACTIVE");
+													}}
 													variant={"primary"}
 													isDisabled={isBusy}
 													size={"md"}
@@ -396,7 +420,15 @@ export default function ProviderOperationsDialog({
 										{provider === "GOOGLE_PLAY" &&
 											mapping.storeState === "ACTIVE" && (
 												<Button
-													onClick={() => onPlayState("INACTIVE")}
+													onClick={async () => {
+														const ok = await confirm({
+															title: "구매 옵션 비활성화",
+															message: `'${product.product_key}' Google Play 구매 옵션을 비활성화합니다. 스토어에서 더 이상 구매할 수 없게 됩니다.`,
+															confirmText: "비활성화",
+															severity: "error",
+														});
+														if (ok) onPlayState("INACTIVE");
+													}}
 													variant={"secondary"}
 													isDisabled={isBusy}
 													size={"md"}

@@ -3,7 +3,7 @@ import { Label as HeroSelectLabel } from "@heroui/react";
 
 import {
   Button,
-  FieldError,
+  Description,
   Input,
   Label,
   ListBox,
@@ -112,8 +112,10 @@ export function StatusActionDialog({
   return (
     <Modal.Backdrop
       isOpen={open && !!episode}
+      isDismissable={!updateStatus.isPending}
+      isKeyboardDismissDisabled={updateStatus.isPending}
       onOpenChange={(isOpen) => {
-        if (!isOpen) onClose();
+        if (!isOpen && !updateStatus.isPending) onClose();
       }}
     >
       <Modal.Container>
@@ -188,9 +190,9 @@ export function StatusActionDialog({
                               setPublishAt(event.target.value)
                             }
                           />
-                          <FieldError>
+                          <Description>
                             {"기본값은 다음 21:00입니다."}
-                          </FieldError>
+                          </Description>
                         </TextField>
                       )}
                     </>

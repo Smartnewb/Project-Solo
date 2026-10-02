@@ -6,11 +6,15 @@ import { useState, useEffect } from 'react';
 import { TemplateModal } from '../components/TemplateModal';
 import { SmsTemplate } from '../types';
 import { smsService } from '@/app/services/sms';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
+import { useToast } from '@/shared/ui/admin/toast';
 // MARK: - props
 interface TemplateManagerProps {
     onTemplateSelect?: (template: SmsTemplate | null) => void;
 }
 export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
+    const confirm = useConfirm();
+    const toast = useToast();
     // === 상태관리 ===
     const [template, setTemplates] = useState<SmsTemplate[]>([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -27,7 +31,9 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
             const data = await smsService.getTemplates();
             setTemplates(data);
         }
-        catch { }
+        catch (error) {
+            toast.error('템플릿 목록을 불러오지 못했습니다.');
+        }
         finally {
             setIsLoading(false);
         }
@@ -47,7 +53,7 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
         return () => document.removeEventListener('click', handleClickOutside);
     }, [activeMenuId]);
     // === 템플릿 저장/추가/수정  === 
-    const handleSaveTemplate = async (newTemplate: SmsTemplate) => {
+    const handleSaveTemplate = async (newTemplate: SmsTemplate): Promise<boolean> => {
         try {
             setIsLoading(true);
             if (modalMode === 'edit' && editingTemplate) {
@@ -60,7 +66,7 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
                 if (selectedTemplateId === editingTemplate.id) {
                     onTemplateSelect?.(updatedTemplate);
                 }
-                alert('템플릿이 수정되었습니다.');
+                toast.success('템플릿이 수정되었습니다.');
             }
             else {
                 // 생성
@@ -69,14 +75,16 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
                     content: newTemplate.content,
                 });
                 setTemplates(prev => [savedTemplate, ...prev]);
-                alert('템플릿이 저장되었습니다.');
+                toast.success('템플릿이 저장되었습니다.');
             }
             setIsModalOpen(false);
             setEditingTemplate(null);
             setModalMode('create');
+            return true;
         }
         catch (error) {
-            alert(modalMode === 'edit' ? '템플릿 수정에 실패했습니다.' : '템플릿 저장에 실패했습니다.');
+            toast.error(modalMode === 'edit' ? '템플릿 수정에 실패했습니다.' : '템플릿 저장에 실패했습니다.');
+            return false;
         }
         finally {
             setIsLoading(false);
@@ -96,7 +104,13 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
     };
     // === 템플릿 삭제 === 
     const handleDeleteTemplate = async (templateId: string, templateTitle: string) => {
-        if (!confirm(`"${templateTitle}" 템플릿을 삭제하시겠습니까?`)) {
+        const ok = await confirm({
+            title: '템플릿 삭제',
+            message: `"${templateTitle}" 템플릿을 삭제하시겠습니까?`,
+            confirmText: '삭제',
+            severity: 'error',
+        });
+        if (!ok) {
             return;
         }
         try {
@@ -108,10 +122,10 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
                 onTemplateSelect?.(null);
             }
             setActiveMenuId(null);
-            alert('템플릿이 삭제되었습니다.');
+            toast.success('템플릿이 삭제되었습니다.');
         }
         catch (error) {
-            alert('템플릿 삭제에 실패했습니다.');
+            toast.error('템플릿 삭제에 실패했습니다.');
         }
         finally {
             setIsLoading(false);
@@ -185,7 +199,7 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
                                                 <Button onClick={(e) => {
                     e.stopPropagation();
                     setActiveMenuId(activeMenuId === t.id ? null : t.id);
-                }} className='p-1 hover:bg-gray-100 rounded transition-colors' variant="secondary">
+                }} aria-label="템플릿 메뉴" className='p-1 hover:bg-gray-100 rounded transition-colors' variant="secondary">
                                                     <MoreVertical className='w-4 h-4 text-gray-500'></MoreVertical>
                                                 </Button>
 

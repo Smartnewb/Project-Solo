@@ -5,6 +5,8 @@ const mockCount=jest.fn(()=>({data:{validPhone:3,totalMatched:5,smsConsented:4,e
 jest.mock('@/app/admin/sms/hooks/useRegions',()=>({useRegions:()=>({data:[{code:'seoul',name:'서울'},{code:'tokyo',name:'도쿄'}]}),useUniversitiesByRegions:()=>({data:[{id:'school',name:'서울대학교'}]})}));
 jest.mock('@/app/admin/sms/hooks/useRecipientCount',()=>({useRecipientCount:(...args:unknown[])=>mockCount(...args as [])}));
 jest.mock('@/app/admin/sms/hooks/useUserSearch',()=>({useUserSearch:()=>({data:{data:[{id:'u1',name:'홍길동',phoneNumber:'01012345678',gender:'MALE'}]},isLoading:false,isError:false})}));
+jest.mock('@/shared/ui/admin/confirm-dialog',()=>({useConfirm:()=>jest.fn().mockResolvedValue(false)}));
+jest.mock('@/shared/ui/admin/toast',()=>({useToast:()=>({success:jest.fn(),error:jest.fn(),warning:jest.fn(),info:jest.fn()})}));
 import {MessageComposer} from '@/app/admin/sms/components/MessageComposer';
 import {RecipientSelector} from '@/app/admin/sms/components/RecipientSelector';
 import {UserSearchSelector} from '@/app/admin/sms/components/UserSearchSelector';
