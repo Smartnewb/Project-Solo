@@ -74,12 +74,18 @@ export type ProfileImageAuditRejectedImage = {
   readonly rejectedAt: string;
 };
 
+export type ProfileImageAuditPopulation = 'regular_photo' | 'character_original';
+export type ProfileImageAuditCharacterVersion = 'v1' | 'v2';
+
 export type ProfileImageAuditItem = {
   readonly presentationMode?: 'PHOTO' | 'BLIND';
+  readonly population?: ProfileImageAuditPopulation;
   readonly kind?: 'profile_image' | 'blind_asset';
   readonly selectable?: boolean;
   readonly originalImageUrl?: string | null;
+  readonly originalImageStatus?: 'AVAILABLE' | 'STATIC_PRESET' | 'TRANSIENT_DELETED' | 'UNAVAILABLE';
   readonly blindImageUrl?: string | null;
+  readonly characterVersion?: ProfileImageAuditCharacterVersion | null;
   readonly userName?: string | null;
   readonly profileImageId: string;
   readonly imageId: string;
@@ -128,12 +134,13 @@ export type ProfileImageAuditListResponse = {
 };
 
 export type ProfileImageAuditListParams = {
+  readonly population?: ProfileImageAuditPopulation;
   readonly presentationMode?: 'PHOTO' | 'BLIND';
   readonly page?: number;
   readonly limit?: number;
   readonly search?: string;
   readonly gender?: string;
-  readonly profileRank?: Exclude<ProfileImageAuditProfileRank, 'UNKNOWN'>;
+  readonly profileRank?: ProfileImageAuditProfileRank;
   readonly university?: string;
   readonly reviewedType?: ProfileImageAuditReviewedType;
   readonly from?: string;
@@ -209,6 +216,7 @@ export type ProfileImageAuditBlacklistHandoff = {
 
 function toListQueryParams(params: ProfileImageAuditListParams): AdminQueryParams {
   return {
+    population: params.population,
     presentationMode: params.presentationMode,
     page: params.page,
     limit: params.limit,

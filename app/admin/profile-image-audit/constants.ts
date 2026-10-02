@@ -16,6 +16,7 @@ export const REJECT_REASON_OPTIONS: readonly string[] = [
 export const DELETE_REASON = '전체 프로필 이미지 전수검사 중 부적절 이미지 즉시 삭제';
 
 export const DEFAULT_FILTERS: AuditFilters = {
+  population: 'regular_photo',
   auditStatus: 'unreviewed',
   gender: undefined,
   isMain: undefined,

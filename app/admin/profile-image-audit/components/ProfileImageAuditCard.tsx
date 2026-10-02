@@ -65,7 +65,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
               </ListBox.Item>))}
           </ListBox></Select.Popover></Select>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <Chip size="sm">{item.presentationMode === 'BLIND' ? '블라인드' : '일반 사진'}</Chip>
+            <Chip size="sm">{item.characterVersion === 'v1' ? '캐릭터 v1' : item.characterVersion === 'v2' ? '캐릭터 v2' : item.presentationMode === 'BLIND' ? '블라인드' : '일반 사진'}</Chip>
             <Chip size="sm">{formatProfileRank(item.profileRank)}</Chip>
             <Chip size="sm">{formatImageKind(item)}</Chip>
             <Chip size="sm">{formatReviewedType(item.reviewedType)}</Chip>

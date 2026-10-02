@@ -170,7 +170,10 @@ export default function ProfileImageAuditV2() {
           <Images></Images>
           <h1 className="text-2xl font-bold">프로필 이미지 전수검사</h1>
           <p>
-            · 총 {total.toLocaleString()}장
+            {filters.population === 'character_original'
+              ? '사진을 올려 캐릭터를 만든 회원의 원본 사진입니다. 예전 방식(v1)과 최신 방식(v2)이 함께 나오고, 사진을 올리지 않은 기본 캐릭터는 빠집니다. 이 사진으로 외모 등급을 매기면 됩니다.'
+              : '캐릭터 없이 본인 사진으로 공개된 회원만 봅니다. 기존 전수검사입니다.'}
+            {' '}· 총 {total.toLocaleString()}장
           </p>
         </div>
         <Button onPress={load} isDisabled={loading || busy} variant="secondary">{<RefreshCw></RefreshCw>}

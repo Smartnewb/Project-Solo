@@ -9,16 +9,39 @@ const photo = (text: string, color: string) => `data:image/svg+xml,${encodeURICo
 
 test.use({ channel: 'chrome' });
 
-test('filters blind profiles, compares originals and characters, and restores rejected originals', async ({ page, context, baseURL }, testInfo) => {
+test('separates regular photos from photo-made character originals and restores a rejected original', async ({ page, context, baseURL }, testInfo) => {
+  test.setTimeout(90_000);
   if (!baseURL || !['localhost', '127.0.0.1'].includes(new URL(baseURL).hostname)) throw new Error('Blind audit QA requires an isolated loopback server');
   const origin = new URL(baseURL).origin;
   const original = photo('Original', '#dbeafe');
   const character = photo('Character', '#ede9fe');
+  const characterOriginal = (
+    id: string,
+    characterVersion: 'v1' | 'v2',
+    auditStatus: ProfileImageAuditItem['auditStatus'] = 'unreviewed',
+  ): ProfileImageAuditItem => ({
+    ...profileImageAuditItemFixture,
+    profileImageId: id,
+    userId: `user-${id}`,
+    presentationMode: 'BLIND',
+    population: 'character_original',
+    characterVersion,
+    kind: 'profile_image',
+    selectable: true,
+    imageUrl: original,
+    thumbnailUrl: original,
+    originalImageUrl: original,
+    originalImageStatus: 'AVAILABLE',
+    blindImageUrl: character,
+    auditStatus,
+    reviewStatus: auditStatus === 'rejected' ? 'rejected' : 'approved',
+  });
   const items: ProfileImageAuditItem[] = [
-    { ...profileImageAuditItemFixture, profileImageId: 'qa-blind-original', presentationMode: 'BLIND', kind: 'profile_image', selectable: true, imageUrl: original, thumbnailUrl: original, originalImageUrl: original, blindImageUrl: character },
-    { ...profileImageAuditItemFixture, profileImageId: 'blind_asset:qa-asset', presentationMode: 'BLIND', kind: 'blind_asset', selectable: false, imageUrl: character, thumbnailUrl: character, originalImageUrl: null, blindImageUrl: character },
-    { ...profileImageAuditItemFixture, profileImageId: 'qa-photo', presentationMode: 'PHOTO', kind: 'profile_image', selectable: true, imageUrl: original, thumbnailUrl: original },
-    { ...profileImageAuditItemFixture, profileImageId: 'qa-rejected', presentationMode: 'BLIND', kind: 'profile_image', selectable: true, imageUrl: original, thumbnailUrl: original, originalImageUrl: original, blindImageUrl: character, reviewStatus: 'rejected', auditStatus: 'rejected' },
+    { ...profileImageAuditItemFixture, profileImageId: 'qa-photo', presentationMode: 'PHOTO', population: 'regular_photo', kind: 'profile_image', selectable: true, imageUrl: original, thumbnailUrl: original, characterVersion: null },
+    { ...profileImageAuditItemFixture, profileImageId: 'qa-photo-ok', presentationMode: 'PHOTO', population: 'regular_photo', kind: 'profile_image', selectable: true, imageUrl: original, thumbnailUrl: original, characterVersion: null, auditStatus: 'ok' },
+    characterOriginal('qa-character-v1', 'v1'),
+    characterOriginal('qa-character-v2', 'v2'),
+    characterOriginal('qa-rejected', 'v2', 'rejected'),
   ];
   const requests: { method: string; url: string; body?: unknown }[] = [];
   const unexpected: string[] = [];
@@ -34,7 +57,9 @@ test('filters blind profiles, compares originals and characters, and restores re
     if (url.pathname === '/api/admin/session') return route.fulfill({ json: { user: { id: 'qa-admin', email: 'blind-qa@example.test', roles: ['admin'] }, selectedCountry: 'kr' } });
     if (url.pathname === LIST_PATH && request.method() === 'GET') {
       requests.push({ method: 'GET', url: url.href });
-      const data = items.filter(item => (!url.searchParams.get('presentationMode') || item.presentationMode === url.searchParams.get('presentationMode')) && (!url.searchParams.get('auditStatus') || item.auditStatus === url.searchParams.get('auditStatus')));
+      const population = url.searchParams.get('population') ?? 'regular_photo';
+      const auditStatus = url.searchParams.get('auditStatus');
+      const data = items.filter(item => item.population === population && (!auditStatus || item.auditStatus === auditStatus));
       return route.fulfill({ json: { data, meta: { page: 1, limit: 18, total: data.length, totalPages: 1 } } });
     }
     if (url.pathname === `${LIST_PATH}/bulk-mark-ok` && request.method() === 'POST') {
@@ -48,48 +73,65 @@ test('filters blind profiles, compares originals and characters, and restores re
     return route.continue();
   });
   const listResponse = () => page.waitForResponse(response => new URL(response.url()).pathname === LIST_PATH && response.request().method() === 'GET');
-  const select = async (label: string, option: string) => {
+  const select = async (label: string, option: string, key: string, value: string) => {
     await page.getByRole('button', { name: new RegExp(label) }).click();
-    const key = label === '프로필 공개 방식' ? 'presentationMode' : 'auditStatus';
-    const value = ({ '블라인드 (캐릭터)': 'BLIND', '일반 (원본 사진)': 'PHOTO', '거절됨': 'rejected', '정상 처리': 'ok' } as Record<string, string>)[option];
     const response = page.waitForResponse(result => new URL(result.url()).pathname === LIST_PATH && new URL(result.url()).searchParams.get(key) === value);
     await page.getByRole('option', { name: option, exact: true }).click();
     return response;
   };
-  await page.goto('/admin/profile-image-audit');
+  const initial = listResponse();
+  await page.goto('/admin/profile-image-audit', { waitUntil: 'domcontentloaded' });
+  const initialResponse = await initial;
   await expect(page.getByRole('heading', { name: '프로필 이미지 전수검사', exact: true })).toBeVisible();
-  const blindResponse = await select('프로필 공개 방식', '블라인드 (캐릭터)');
-  expect(new URL(blindResponse.url()).searchParams.get('presentationMode')).toBe('BLIND');
-  await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(2);
-  const comparison = page.getByTestId('blind-photo-comparison').first();
-  const originalBounds = await comparison.getByRole('img', { name: 'qa-blind-original 원본 사진' }).boundingBox();
-  const characterBounds = await comparison.getByRole('img', { name: 'qa-blind-original 블라인드 캐릭터' }).boundingBox();
-  expect(originalBounds && characterBounds && originalBounds.x + originalBounds.width <= characterBounds.x).toBeTruthy();
-  await expect(page.getByText('원본 미보관')).toBeVisible();
-  await expect(page.getByRole('checkbox', { name: 'blind_asset:qa-asset 선택' })).toHaveCount(0);
-  await page.getByRole('button', { name: '전체선택', exact: true }).click();
-  await expect(page.getByText('선택 1장', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'qa-blind-original 크게 보기' }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
+  expect(new URL(initialResponse.url()).searchParams.get('population')).toBe('regular_photo');
+  expect(new URL(initialResponse.url()).searchParams.get('auditStatus')).toBe('unreviewed');
+  await expect(page.getByText('캐릭터 없이 본인 사진으로 공개된 회원만 봅니다.')).toBeVisible();
+  await expect(page.getByTestId('profile-image-audit-card')).toHaveCount(1);
+  await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(0);
+  await expect(page.getByTestId('profile-image-audit-card').getByText('일반 사진', { exact: true })).toBeVisible();
+  await expect(page.getByText('기본 캐릭터 · 원본 사진 없음')).toHaveCount(0);
+  const characterResponse = await select('볼 회원', '사진으로 만든 캐릭터', 'population', 'character_original');
+  const characterParams = new URL(characterResponse.url()).searchParams;
+  expect(characterParams.get('population')).toBe('character_original');
+  expect(characterParams.get('includeAlreadyAudited')).toBe('true');
+  expect(characterParams.has('auditStatus')).toBe(false);
+  expect(characterParams.has('presentationMode')).toBe(false);
+  await expect(page.getByText('사진을 올려 캐릭터를 만든 회원의 원본 사진입니다.')).toBeVisible();
+  await expect(page.getByText('사진을 올리지 않은 기본 캐릭터는 빠집니다.')).toBeVisible();
   await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(3);
+  await expect(page.getByText('캐릭터 v1', { exact: true })).toHaveCount(1);
+  await expect(page.getByText('캐릭터 v2', { exact: true })).toHaveCount(2);
+  await expect(page.locator('[data-original-image-status]')).toHaveCount(0);
+  const comparison = page.getByTestId('blind-photo-comparison').first();
+  const originalBounds = await comparison.getByRole('img', { name: 'qa-character-v1 원본 사진' }).boundingBox();
+  const characterBounds = await comparison.getByRole('img', { name: 'qa-character-v1 블라인드 캐릭터' }).boundingBox();
+  expect(originalBounds && characterBounds && originalBounds.x + originalBounds.width <= characterBounds.x).toBeTruthy();
+  await expect(page.getByRole('img', { name: 'qa-character-v1 원본 사진', exact: true })).toHaveAttribute('src', original);
+  await page.getByRole('button', { name: '전체선택', exact: true }).click();
+  await expect(page.getByText('선택 3장 · 3명')).toBeVisible();
+  await page.getByRole('button', { name: 'qa-character-v1 크게 보기' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(4);
   await page.getByRole('dialog').evaluate(async () => {
     const animations = document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity);
     await Promise.all(animations.map(animation => animation.finished));
   });
-  await page.screenshot({ path: testInfo.outputPath('blind-comparison-modal.png') });
+  await page.screenshot({ path: testInfo.outputPath('character-original-modal.png') });
   await page.getByRole('button', { name: '큰 이미지 닫기' }).click();
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.screenshot({ path: testInfo.outputPath('blind-desktop.png'), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('character-original-desktop.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(comparison).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({ path: testInfo.outputPath('blind-mobile.png'), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('character-original-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const normalResponse = await select('프로필 공개 방식', '일반 (원본 사진)');
-  expect(new URL(normalResponse.url()).searchParams.get('presentationMode')).toBe('PHOTO');
+  const regularResponse = await select('볼 회원', '일반 사진', 'population', 'regular_photo');
+  expect(new URL(regularResponse.url()).searchParams.get('population')).toBe('regular_photo');
+  expect(new URL(regularResponse.url()).searchParams.get('auditStatus')).toBe('unreviewed');
   await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(0);
-  await select('프로필 공개 방식', '블라인드 (캐릭터)');
-  await select('검수 상태', '거절됨');
+  await expect(page.getByTestId('profile-image-audit-card')).toHaveCount(1);
+  await select('볼 회원', '사진으로 만든 캐릭터', 'population', 'character_original');
+  await select('검수 상태', '거절됨', 'auditStatus', 'rejected');
   const rejected = page.getByRole('checkbox', { name: 'qa-rejected 선택' });
   await rejected.focus(); await page.keyboard.press('Space');
   await page.getByRole('button', { name: '정상 처리', exact: true }).click();
@@ -97,8 +139,9 @@ test('filters blind profiles, compares originals and characters, and restores re
   await page.getByRole('button', { name: '처리', exact: true }).click();
   await refreshed;
   await expect(page.getByTestId('profile-image-audit-card')).toHaveCount(0);
-  await select('검수 상태', '정상 처리');
+  await select('검수 상태', '정상 처리', 'auditStatus', 'ok');
   await expect(page.getByTestId('profile-image-audit-card')).toHaveCount(1);
+  await expect(page.getByText('캐릭터 v2', { exact: true })).toBeVisible();
   expect(unexpected).toEqual([]);
   expect(runtimeErrors).toEqual([]);
   expect(requests.filter(request => request.method === 'POST')).toHaveLength(1);

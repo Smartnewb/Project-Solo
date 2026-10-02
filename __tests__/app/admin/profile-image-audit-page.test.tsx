@@ -1,6 +1,6 @@
 import {selectHeroValue,heroSelectTrigger} from '@/app/admin/content/test-utils/hero-select';
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import ProfileImageAuditPage from '@/app/admin/profile-image-audit/profile-image-audit-v2';
@@ -132,7 +132,7 @@ describe('ProfileImageAuditPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: '프로필 이미지 전수검사' })).toBeInTheDocument();
     expect(mockedAudit.list).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, limit: 18, auditStatus: 'unreviewed' }),
+      expect.objectContaining({ page: 1, limit: 18, auditStatus: 'unreviewed', population: 'regular_photo' }),
     );
     expect(await screen.findByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
@@ -230,9 +230,11 @@ describe('ProfileImageAuditPage', () => {
         blindImageUrl: 'https://example.com/character.jpg' }],
     });
     render(<ProfileImageAuditPage />);
-    await selectHeroValue('프로필 공개 방식', 'BLIND');
+    await selectHeroValue('볼 회원', 'character_original');
 
-    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({ presentationMode: 'BLIND' })));
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({
+      population: 'character_original', includeAlreadyAudited: true, auditStatus: undefined,
+    })));
     const comparison = await screen.findByTestId('blind-photo-comparison');
     expect(within(comparison).getByRole('img', { name: 'profile-image-1 원본 사진' })).toHaveAttribute('src', 'https://example.com/original.jpg');
     expect(within(comparison).getByRole('img', { name: 'profile-image-1 블라인드 캐릭터' })).toHaveAttribute('src', 'https://example.com/character.jpg');
@@ -240,8 +242,10 @@ describe('ProfileImageAuditPage', () => {
     expect(screen.getAllByTestId('blind-photo-comparison')).toHaveLength(2);
 
     await user.click(screen.getByRole('button', { name: '큰 이미지 닫기' }));
-    await selectHeroValue('프로필 공개 방식', 'PHOTO');
-    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({ presentationMode: 'PHOTO' })));
+    await selectHeroValue('볼 회원', 'regular_photo');
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({
+      population: 'regular_photo', auditStatus: 'unreviewed',
+    })));
   });
 
   it('displays two characters linked to one original while selecting the original only once', async () => {
@@ -273,11 +277,44 @@ describe('ProfileImageAuditPage', () => {
     });
     render(<ProfileImageAuditPage />);
 
-    expect(await screen.findByText('원본 미보관')).toBeInTheDocument();
+    const comparison = await screen.findByTestId('blind-photo-comparison');
+    expect(comparison.querySelector('[data-original-image-status="UNAVAILABLE"]')).toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: 'blind-asset:asset-1 선택' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '전체선택' }));
     expect(screen.getByRole('button', { name: '정상 처리' })).toBeDisabled();
     expect(mockedAudit.bulkMarkOk).not.toHaveBeenCalled();
+  });
+
+  it.each(['STATIC_PRESET', 'TRANSIENT_DELETED', 'UNAVAILABLE'] as const)(
+    'shows the source status for a reference-only character: %s', async (originalImageStatus) => {
+      mockedAudit.list.mockResolvedValue({
+        ...profileImageAuditListFixture,
+        data: [{ ...profileImageAuditItemFixture, profileImageId: 'blind-asset:source-status',
+          presentationMode: 'BLIND', kind: 'blind_asset', selectable: false,
+          originalImageUrl: null, originalImageStatus, blindImageUrl: 'https://example.com/character.jpg' }],
+      });
+      render(<ProfileImageAuditPage />);
+      const comparison = await screen.findByTestId('blind-photo-comparison');
+      expect(comparison.querySelector(`[data-original-image-status="${originalImageStatus}"]`)).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: 'blind-asset:source-status 선택' })).not.toBeInTheDocument();
+    },
+  );
+
+  it('shows a retained original on a reference-only card and distinguishes image load failure', async () => {
+    mockedAudit.list.mockResolvedValue({
+      ...profileImageAuditListFixture,
+      data: [{ ...profileImageAuditItemFixture, profileImageId: 'blind-asset:retained-original',
+        presentationMode: 'BLIND', kind: 'blind_asset', selectable: false,
+        originalImageUrl: 'https://example.com/retained-original.jpg', originalImageStatus: 'AVAILABLE',
+        blindImageUrl: 'https://example.com/character.jpg' }],
+    });
+    render(<ProfileImageAuditPage />);
+    const comparison = await screen.findByTestId('blind-photo-comparison');
+    const original = within(comparison).getByRole('img', { name: 'blind-asset:retained-original 원본 사진' });
+    expect(original).toHaveAttribute('src', 'https://example.com/retained-original.jpg');
+    fireEvent.error(original);
+    expect(comparison.querySelector('[data-original-image-status="LOAD_FAILED"]')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'blind-asset:retained-original 선택' })).not.toBeInTheDocument();
   });
 
   it('warns and confirms reupload when a bulk selection removes all approved photos', async () => {
