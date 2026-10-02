@@ -2,18 +2,6 @@
 
 // === 통합 요약 API 응답 타입 ===
 
-export interface ActionItem {
-	type: string;
-	description: string;
-	count: number;
-	priority: "high" | "medium" | "low";
-}
-
-export interface Alert {
-	type: "info" | "warning" | "error";
-	message: string;
-}
-
 export type AlertType =
 	| "SIGNUP_DROP"
 	| "REPORT_SURGE"
@@ -21,24 +9,38 @@ export type AlertType =
 	| "REVENUE_DROP"
 	| "MATCHING_FAILURE_SURGE";
 
-export interface KPI {
+// 백엔드 DashboardSummaryData (solo-nestjs-api: admin/v2/dashboard/dto/dashboard-summary.dto.ts)
+export interface DashboardOverview {
+	pendingApprovals: number;
+	pendingReports: number;
 	totalUsers: number;
 	dailySignups: number;
-	matchingRate: number;
-	monthlyRevenue: number;
 }
 
-export interface MatchingStatus {
-	pendingToday: number;
-	completedToday: number;
-	failedToday: number;
+export interface DashboardRevenue {
+	today: number;
+	thisWeek: number;
+	thisMonth: number;
+}
+
+export interface DashboardFunnelStep {
+	name: string;
+	count: number;
+	conversionRate: number;
 }
 
 export interface DashboardSummaryResponse {
-	actionItems: ActionItem[];
-	alerts: Alert[];
-	kpi: KPI;
-	matchingStatus: MatchingStatus;
+	overview: DashboardOverview;
+	matchingFunnel: {
+		steps: DashboardFunnelStep[];
+		// 가입자 대비 채팅 시작 사용자 비율(%). 기간 미지정 시 최근 30일
+		overallConversionRate: number;
+	};
+	gemSystemFunnel: {
+		scheduled: { steps: DashboardFunnelStep[] };
+		rematching: { steps: DashboardFunnelStep[] };
+	};
+	revenue: DashboardRevenue;
 }
 
 // === 매칭 퍼널 API 타입 ===

@@ -3,14 +3,13 @@ import { Button, Card, Separator, Skeleton } from "@heroui/react";
 import { ArrowRight } from "lucide-react";
 import { useMemo } from "react";
 import Link from "next/link";
-import { KPI } from "../types";
+import type { DashboardRevenue } from "../types";
 import { useRevenueSummary } from "@/app/admin/hooks/use-revenue-v2";
 interface RevenueOverviewProps {
-	kpi: KPI | null;
+	revenue?: Pick<DashboardRevenue, "thisMonth">;
 	loading?: boolean;
 }
-const formatCurrency = (value: number | undefined | null) => {
-	const v = value ?? 0;
+const formatAmount = (v: number) => {
 	if (v >= 100000000) {
 		return `${(v / 100000000).toFixed(1)}억`;
 	}
@@ -22,8 +21,10 @@ const formatCurrency = (value: number | undefined | null) => {
 	}
 	return `${v.toLocaleString()}`;
 };
+const formatCurrency = (value: number | undefined | null) =>
+	value == null ? "—" : `₩${formatAmount(value)}`;
 export default function RevenueOverview({
-	kpi,
+	revenue,
 	loading,
 }: RevenueOverviewProps) {
 	const { startDate, endDate } = useMemo(() => {
@@ -41,15 +42,15 @@ export default function RevenueOverview({
 		endDate,
 	);
 	const isLoading = loading || v2Loading;
-	const totalRevenue = v2Summary?.totalRevenue ?? kpi?.monthlyRevenue ?? 0;
-	const pgRevenue = v2Summary?.pgRevenue ?? 0;
-	const iapRevenue = v2Summary?.iapRevenue ?? 0;
+	const totalRevenue = v2Summary?.totalRevenue ?? revenue?.thisMonth;
+	const pgRevenue = v2Summary?.pgRevenue;
+	const iapRevenue = v2Summary?.iapRevenue;
 	return (
 		<Card>
 			<Card.Content>
 				<div className="flex items-center justify-between mb-3">
 					<h2 className={"text-lg font-semibold text-neutral-900"}>
-						💰 매출 현황
+						매출 현황
 					</h2>
 					<Link href="/admin/sales" passHref>
 						<Button
@@ -98,7 +99,7 @@ export default function RevenueOverview({
 								style={{ color: "#059669", fontSize: "1.75rem" }}
 								className={"text-sm text-neutral-700"}
 							>
-								₩{formatCurrency(totalRevenue)}
+								{formatCurrency(totalRevenue)}
 							</p>
 						</div>
 						<Separator></Separator>
@@ -113,7 +114,7 @@ export default function RevenueOverview({
 								>
 									<span className={"text-sm text-neutral-700"}>PG 매출</span>
 									<p className={"text-sm text-neutral-700"}>
-										₩{formatCurrency(pgRevenue)}
+										{formatCurrency(pgRevenue)}
 									</p>
 								</div>
 							</div>
@@ -127,7 +128,7 @@ export default function RevenueOverview({
 								>
 									<span className={"text-sm text-neutral-700"}>IAP 매출</span>
 									<p className={"text-sm text-neutral-700"}>
-										₩{formatCurrency(iapRevenue)}
+										{formatCurrency(iapRevenue)}
 									</p>
 								</div>
 							</div>
