@@ -13,6 +13,12 @@ function ComparisonImages({ item }: { readonly item: ProfileImageAuditItem }) {
   const [blindFailed, setBlindFailed] = useState(false);
   const original = item.originalImageUrl;
   const blind = item.blindImageUrl;
+  const originalStatus = item.originalImageStatus ?? 'UNAVAILABLE';
+  const originalPlaceholder = originalStatus === 'STATIC_PRESET'
+    ? '기본 캐릭터 · 원본 사진 없음'
+    : originalStatus === 'TRANSIENT_DELETED'
+      ? '생성용 원본 삭제됨'
+      : '원본 연결 없음';
 
   return (
     <div data-testid="blind-photo-comparison" className="grid min-w-0 grid-cols-2 gap-2">
@@ -21,7 +27,7 @@ function ComparisonImages({ item }: { readonly item: ProfileImageAuditItem }) {
         <div className="flex aspect-[3/4] items-center justify-center overflow-hidden rounded-lg bg-gray-100">
           {original && !originalFailed
             ? <Image src={original} alt={`${item.profileImageId} 원본 사진`} width={480} height={640} unoptimized onError={() => setOriginalFailed(true)} className="h-full w-full object-contain" />
-            : <span className="px-2 text-center text-xs text-gray-500">{originalFailed ? '원본 로드 실패' : '원본 미보관'}</span>}
+            : <span className="px-2 text-center text-xs text-gray-500" data-original-image-status={originalFailed ? 'LOAD_FAILED' : originalStatus}>{originalFailed ? '원본 로드 실패' : originalPlaceholder}</span>}
         </div>
       </figure>
       <figure className="min-w-0">

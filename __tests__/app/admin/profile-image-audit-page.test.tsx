@@ -1,6 +1,6 @@
 import {selectHeroValue,heroSelectTrigger} from '@/app/admin/content/test-utils/hero-select';
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import ProfileImageAuditPage from '@/app/admin/profile-image-audit/profile-image-audit-v2';
@@ -273,11 +273,44 @@ describe('ProfileImageAuditPage', () => {
     });
     render(<ProfileImageAuditPage />);
 
-    expect(await screen.findByText('원본 미보관')).toBeInTheDocument();
+    const comparison = await screen.findByTestId('blind-photo-comparison');
+    expect(comparison.querySelector('[data-original-image-status="UNAVAILABLE"]')).toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: 'blind-asset:asset-1 선택' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '전체선택' }));
     expect(screen.getByRole('button', { name: '정상 처리' })).toBeDisabled();
     expect(mockedAudit.bulkMarkOk).not.toHaveBeenCalled();
+  });
+
+  it.each(['STATIC_PRESET', 'TRANSIENT_DELETED', 'UNAVAILABLE'] as const)(
+    'shows the source status for a reference-only character: %s', async (originalImageStatus) => {
+      mockedAudit.list.mockResolvedValue({
+        ...profileImageAuditListFixture,
+        data: [{ ...profileImageAuditItemFixture, profileImageId: 'blind-asset:source-status',
+          presentationMode: 'BLIND', kind: 'blind_asset', selectable: false,
+          originalImageUrl: null, originalImageStatus, blindImageUrl: 'https://example.com/character.jpg' }],
+      });
+      render(<ProfileImageAuditPage />);
+      const comparison = await screen.findByTestId('blind-photo-comparison');
+      expect(comparison.querySelector(`[data-original-image-status="${originalImageStatus}"]`)).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: 'blind-asset:source-status 선택' })).not.toBeInTheDocument();
+    },
+  );
+
+  it('shows a retained original on a reference-only card and distinguishes image load failure', async () => {
+    mockedAudit.list.mockResolvedValue({
+      ...profileImageAuditListFixture,
+      data: [{ ...profileImageAuditItemFixture, profileImageId: 'blind-asset:retained-original',
+        presentationMode: 'BLIND', kind: 'blind_asset', selectable: false,
+        originalImageUrl: 'https://example.com/retained-original.jpg', originalImageStatus: 'AVAILABLE',
+        blindImageUrl: 'https://example.com/character.jpg' }],
+    });
+    render(<ProfileImageAuditPage />);
+    const comparison = await screen.findByTestId('blind-photo-comparison');
+    const original = within(comparison).getByRole('img', { name: 'blind-asset:retained-original 원본 사진' });
+    expect(original).toHaveAttribute('src', 'https://example.com/retained-original.jpg');
+    fireEvent.error(original);
+    expect(comparison.querySelector('[data-original-image-status="LOAD_FAILED"]')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'blind-asset:retained-original 선택' })).not.toBeInTheDocument();
   });
 
   it('warns and confirms reupload when a bulk selection removes all approved photos', async () => {

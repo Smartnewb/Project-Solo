@@ -16,7 +16,10 @@ test('filters blind profiles, compares originals and characters, and restores re
   const character = photo('Character', '#ede9fe');
   const items: ProfileImageAuditItem[] = [
     { ...profileImageAuditItemFixture, profileImageId: 'qa-blind-original', presentationMode: 'BLIND', kind: 'profile_image', selectable: true, imageUrl: original, thumbnailUrl: original, originalImageUrl: original, blindImageUrl: character },
-    { ...profileImageAuditItemFixture, profileImageId: 'blind_asset:qa-asset', presentationMode: 'BLIND', kind: 'blind_asset', selectable: false, imageUrl: character, thumbnailUrl: character, originalImageUrl: null, blindImageUrl: character },
+    { ...profileImageAuditItemFixture, profileImageId: 'blind_asset:qa-asset', presentationMode: 'BLIND', kind: 'blind_asset', selectable: false, imageUrl: character, thumbnailUrl: character, originalImageUrl: null, originalImageStatus: 'TRANSIENT_DELETED', blindImageUrl: character },
+    { ...profileImageAuditItemFixture, profileImageId: 'blind_asset:qa-preset', presentationMode: 'BLIND', kind: 'blind_asset', selectable: false, imageUrl: character, originalImageUrl: null, originalImageStatus: 'STATIC_PRESET', blindImageUrl: character },
+    { ...profileImageAuditItemFixture, profileImageId: 'blind_asset:qa-unavailable', presentationMode: 'BLIND', kind: 'blind_asset', selectable: false, imageUrl: character, originalImageUrl: null, originalImageStatus: 'UNAVAILABLE', blindImageUrl: character },
+    { ...profileImageAuditItemFixture, profileImageId: 'blind_asset:qa-retained', presentationMode: 'BLIND', kind: 'blind_asset', selectable: false, imageUrl: character, originalImageUrl: original, originalImageStatus: 'AVAILABLE', blindImageUrl: character },
     { ...profileImageAuditItemFixture, profileImageId: 'qa-photo', presentationMode: 'PHOTO', kind: 'profile_image', selectable: true, imageUrl: original, thumbnailUrl: original },
     { ...profileImageAuditItemFixture, profileImageId: 'qa-rejected', presentationMode: 'BLIND', kind: 'profile_image', selectable: true, imageUrl: original, thumbnailUrl: original, originalImageUrl: original, blindImageUrl: character, reviewStatus: 'rejected', auditStatus: 'rejected' },
   ];
@@ -60,18 +63,22 @@ test('filters blind profiles, compares originals and characters, and restores re
   await expect(page.getByRole('heading', { name: '프로필 이미지 전수검사', exact: true })).toBeVisible();
   const blindResponse = await select('프로필 공개 방식', '블라인드 (캐릭터)');
   expect(new URL(blindResponse.url()).searchParams.get('presentationMode')).toBe('BLIND');
-  await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(2);
+  await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(5);
   const comparison = page.getByTestId('blind-photo-comparison').first();
   const originalBounds = await comparison.getByRole('img', { name: 'qa-blind-original 원본 사진' }).boundingBox();
   const characterBounds = await comparison.getByRole('img', { name: 'qa-blind-original 블라인드 캐릭터' }).boundingBox();
   expect(originalBounds && characterBounds && originalBounds.x + originalBounds.width <= characterBounds.x).toBeTruthy();
-  await expect(page.getByText('원본 미보관')).toBeVisible();
+  await expect(page.locator('[data-original-image-status="TRANSIENT_DELETED"]')).toBeVisible();
+  await expect(page.locator('[data-original-image-status="STATIC_PRESET"]')).toBeVisible();
+  await expect(page.locator('[data-original-image-status="UNAVAILABLE"]')).toBeVisible();
+  await expect(page.getByRole('img', { name: 'blind_asset:qa-retained 원본 사진', exact: true })).toHaveAttribute('src', original);
+  await expect(page.getByRole('checkbox', { name: 'blind_asset:qa-retained 선택' })).toHaveCount(0);
   await expect(page.getByRole('checkbox', { name: 'blind_asset:qa-asset 선택' })).toHaveCount(0);
   await page.getByRole('button', { name: '전체선택', exact: true }).click();
   await expect(page.getByText('선택 1장', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'qa-blind-original 크게 보기' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(3);
+  await expect(page.getByTestId('blind-photo-comparison')).toHaveCount(6);
   await page.getByRole('dialog').evaluate(async () => {
     const animations = document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity);
     await Promise.all(animations.map(animation => animation.finished));

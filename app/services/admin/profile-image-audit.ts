@@ -79,6 +79,7 @@ export type ProfileImageAuditItem = {
   readonly kind?: 'profile_image' | 'blind_asset';
   readonly selectable?: boolean;
   readonly originalImageUrl?: string | null;
+  readonly originalImageStatus?: 'AVAILABLE' | 'STATIC_PRESET' | 'TRANSIENT_DELETED' | 'UNAVAILABLE';
   readonly blindImageUrl?: string | null;
   readonly userName?: string | null;
   readonly profileImageId: string;
