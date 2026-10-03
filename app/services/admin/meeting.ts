@@ -39,8 +39,15 @@ export type MeetingCheckinMethod = 'GPS' | 'MANUAL_ADMIN';
 /** 현재 쓰는 값. 예전 방에는 다른 값이 남아 있을 수 있어 `canceledReason` 은 string 으로 둔다. */
 export type MeetingRoomCanceledReason = 'FREE_CANCEL' | 'COMPANY_CANCEL' | 'UNFILLED_VACANCY';
 
-/** meeting_rooms 행. `GET admin/meeting/rooms` (최근 100개) 와 상세의 `room`. */
+export interface MeetingAdminAction {
+	action: string;
+	adminId: string;
+	at: string;
+}
+
+/** meeting_rooms 행. */
 export interface MeetingRoomRow {
+	lastAdminAction: MeetingAdminAction | null;
 	id: string;
 	hostUserId: string;
 	hostTeamId: string;
@@ -70,6 +77,7 @@ export interface MeetingRoomRow {
 }
 
 export interface MeetingRoomMember {
+	lastAdminAction: MeetingAdminAction | null;
 	memberId: string;
 	userId: string;
 	/** users.name (탈퇴 등으로 없으면 null). */
@@ -144,6 +152,7 @@ export interface MeetingRoomDetail {
  * SETTLING 은 결제사에서 실제 환불 여부를 먼저 확인해야 한다(바로 재시도하면 두 번 환불될 수 있음).
  */
 export interface MeetingRefundFailure {
+	refundedAmount: number;
 	roomId: string;
 	memberId: string;
 	userId: string;
@@ -172,7 +181,8 @@ const memberPath = (roomId: string, memberKey: string) =>
 	`${roomPath(roomId)}/members/${encodeURIComponent(memberKey)}`;
 
 export const meeting = {
-	listRooms: (): Promise<MeetingRoomRow[]> => adminGet<MeetingRoomRow[]>(`${BASE}/rooms`),
+	listRooms: (params: { query?: string; status?: MeetingRoomStatus; cursor?: string } = {}): Promise<{ rooms: MeetingRoomRow[]; nextCursor: string | null }> =>
+		adminGet<{ rooms: MeetingRoomRow[]; nextCursor: string | null }>(`${BASE}/rooms`, params),
 
 	getRoom: (roomId: string): Promise<MeetingRoomDetail> => adminGet<MeetingRoomDetail>(roomPath(roomId)),
 

@@ -50,7 +50,7 @@ export function RefundFailuresTable({
 		if (retryingKey || item.status !== "REFUND_FAILED") return;
 		const ok = await confirm({
 			title: "환불 다시 시도",
-			message: `${formatKrw(item.amount)}을 다시 환불할게요. 결제사(PortOne)에 환불 요청이 바로 나가요.`,
+			message: `${formatKrw(item.amount - item.refundedAmount)}을 다시 환불할게요. 결제사(PortOne)에 환불 요청이 바로 나가요.`,
 			confirmText: "환불 재시도",
 			severity: "warning",
 		});
@@ -62,7 +62,7 @@ export function RefundFailuresTable({
 				item.memberId,
 			);
 			toast.success(
-				`환불했어요. (${formatKrw(result?.amount ?? item.amount)})`,
+				`환불했어요. (${formatKrw(result.amount)})`,
 			);
 		} catch (retryError) {
 			toast.error(meetingErrorMessage(retryError, "환불 재시도에 실패했어요."));

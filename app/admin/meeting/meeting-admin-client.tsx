@@ -11,7 +11,7 @@ import {
 	Tabs,
 	TextField,
 } from "@heroui/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AdminService from "@/app/services/admin";
 import type {
 	MeetingRefundFailure,
@@ -41,23 +41,6 @@ const LIST_COLUMNS = [
 	"생성",
 	"방 ID",
 ];
-function matchesSearch(room: MeetingRoomRow, term: string): boolean {
-	if (!term) return true;
-	const haystack = [
-		room.id,
-		room.title,
-		room.placeName,
-		room.placeRegionLabel,
-		room.hostRegionCode,
-		room.hostUserId,
-	]
-		.filter(
-			(value): value is string => typeof value === "string" && value.length > 0,
-		)
-		.join(" ")
-		.toLowerCase();
-	return haystack.includes(term.toLowerCase());
-}
 export default function MeetingAdminClient() {
 	const [tab, setTab] = useState<TabValue>("rooms");
 	const [rooms, setRooms] = useState<MeetingRoomRow[]>([]);
@@ -68,23 +51,43 @@ export default function MeetingAdminClient() {
 	const [failuresError, setFailuresError] = useState<string | null>(null);
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
 	const [search, setSearch] = useState("");
+	const [query, setQuery] = useState("");
+	const [cursors, setCursors] = useState<string[]>([]);
+	const [nextCursor, setNextCursor] = useState<string | null>(null);
+	const cursor = cursors[cursors.length - 1];
 	const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 	// 상세에서 처리(환불·취소 등)가 끝나면 방 목록과 환불 실패 목록을 같이 새로 읽는다.
 	const [refreshKey, setRefreshKey] = useState(0);
-	const fetchRooms = useCallback(async () => {
+	useEffect(() => {
+		let active = true;
 		setRoomsLoading(true);
 		setRoomsError(null);
-		try {
-			setRooms(await AdminService.meeting.listRooms());
-		} catch (fetchError) {
-			setRoomsError(
-				meetingErrorMessage(fetchError, "미팅 방 목록을 불러오지 못했어요."),
-			);
-			setRooms([]);
-		} finally {
-			setRoomsLoading(false);
-		}
-	}, []);
+		const fetchRooms = async () => {
+			try {
+				const result = await AdminService.meeting.listRooms({
+					query: query || undefined,
+					status: statusFilter === "ALL" ? undefined : statusFilter,
+					cursor,
+				});
+				if (!active) return;
+				setRooms(result.rooms);
+				setNextCursor(result.nextCursor);
+			} catch (fetchError) {
+				if (!active) return;
+				setRoomsError(
+					meetingErrorMessage(fetchError, "미팅 방 목록을 불러오지 못했어요."),
+				);
+				setRooms([]);
+				setNextCursor(null);
+			} finally {
+				if (active) setRoomsLoading(false);
+			}
+		};
+		void fetchRooms();
+		return () => {
+			active = false;
+		};
+	}, [query, statusFilter, cursor, refreshKey]);
 	const fetchFailures = useCallback(async () => {
 		setFailuresLoading(true);
 		setFailuresError(null);
@@ -100,20 +103,11 @@ export default function MeetingAdminClient() {
 		}
 	}, []);
 	useEffect(() => {
-		fetchRooms();
 		fetchFailures();
-	}, [fetchRooms, fetchFailures, refreshKey]);
+	}, [fetchFailures, refreshKey]);
 	const handleChanged = useCallback(() => {
 		setRefreshKey((current) => current + 1);
 	}, []);
-	const filteredRooms = useMemo(() => {
-		const term = search.trim();
-		return rooms.filter(
-			(room) =>
-				(statusFilter === "ALL" || room.status === statusFilter) &&
-				matchesSearch(room, term),
-		);
-	}, [rooms, statusFilter, search]);
 	return (
 		<div style={{ padding: 24 }}>
 			<div
@@ -180,6 +174,7 @@ export default function MeetingAdminClient() {
 										onChange={(key) => {
 											const value = String(key ?? "");
 											setStatusFilter(value as StatusFilter);
+											setCursors([]);
 										}}
 										className="w-full"
 									>
@@ -206,20 +201,29 @@ export default function MeetingAdminClient() {
 										</Select.Popover>
 									</Select>
 								</div>
-								<TextField className="w-full">
-									<Label>{"검색 (방 ID·제목·장소·호스트 ID)"}</Label>
+								<form
+									style={{ width: "100%", display: "flex", gap: 8, alignItems: "flex-end" }}
+									onSubmit={(event) => {
+										event.preventDefault();
+										setQuery(search.trim());
+										setCursors([]);
+									}}
+								>
+									<TextField className="w-full" style={{ flex: 1, minWidth: 0 }}>
+									<Label>{"참가자 검색 (유저 ID·이름·전화번호 끝 4자리)"}</Label>
 									<Input
 										value={search}
 										onChange={(event) => setSearch(event.target.value)}
-										style={{ minWidth: "100%" }}
+										style={{ width: "100%", minWidth: 0 }}
 									/>
-								</TextField>
+									</TextField>
+									<Button type="submit" variant="primary">검색</Button>
+								</form>
 								<p
 									style={{ marginLeft: "auto" }}
 									className={"text-sm text-neutral-700"}
 								>
-									{filteredRooms.length.toLocaleString("ko-KR")}개 / 전체{" "}
-									{rooms.length.toLocaleString("ko-KR")}개 (최근 100개)
+									{cursors.length + 1}페이지 · {rooms.length.toLocaleString("ko-KR")}개
 								</p>
 							</div>
 							{roomsError && (
@@ -259,7 +263,7 @@ export default function MeetingAdminClient() {
 													<Spinner aria-label="불러오는 중" size="sm" />
 												</td>
 											</tr>
-										) : filteredRooms.length === 0 ? (
+										) : rooms.length === 0 ? (
 											<tr>
 												<td
 													colSpan={LIST_COLUMNS.length}
@@ -273,7 +277,7 @@ export default function MeetingAdminClient() {
 												</td>
 											</tr>
 										) : (
-											filteredRooms.map((room) => (
+											rooms.map((room) => (
 												<tr
 													key={room.id}
 													style={{ cursor: "pointer" }}
@@ -324,6 +328,10 @@ export default function MeetingAdminClient() {
 										)}
 									</tbody>
 								</table>
+							</div>
+							<div style={{ display: "flex", gap: 8, padding: 16 }}>
+								<Button isDisabled={roomsLoading || cursors.length === 0} onPress={() => setCursors((current) => current.slice(0, -1))}>이전 페이지</Button>
+								<Button isDisabled={roomsLoading || !nextCursor} onPress={() => { if (nextCursor) setCursors((current) => [...current, nextCursor]); }}>다음 페이지</Button>
 							</div>
 						</div>
 					</Tabs.Panel>

@@ -471,13 +471,19 @@ export function RoomDetailDrawer({
 														style={{ display: "grid", gap: 12, marginTop: 4 }}
 													>
 														{views.map((view) => (
+															<div key={view.member.memberId}>
 															<MemberCard
-																key={view.member.memberId}
 																view={view}
 																roomStatus={room.status}
 																busy={busyMemberId === view.member.memberId}
 																onAction={handleMemberAction}
 															/>
+															{view.member.lastAdminAction && (
+																<p className="text-sm text-neutral-700" style={{ padding: "0 16px 16px", overflowWrap: "anywhere" }}>
+																	마지막 관리자 조치: {view.member.lastAdminAction.action} · 관리자 {view.member.lastAdminAction.adminId} · {formatKst(view.member.lastAdminAction.at)}
+																</p>
+															)}
+															</div>
 														))}
 													</div>
 												</div>

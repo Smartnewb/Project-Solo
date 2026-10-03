@@ -34,6 +34,7 @@ const failed: MeetingRefundFailure = {
 	userId: 'user-1',
 	status: 'REFUND_FAILED',
 	amount: 10000,
+	refundedAmount: 3000,
 	lastError: 'PG timeout',
 	updatedAt: '2026-10-01T01:00:00.000Z',
 };
@@ -44,6 +45,7 @@ const stuck: MeetingRefundFailure = {
 	userId: 'user-2',
 	status: 'SETTLING',
 	amount: 30000,
+	refundedAmount: 0,
 	lastError: null,
 	updatedAt: '2026-10-01T00:30:00.000Z',
 };
@@ -84,6 +86,8 @@ describe('RefundFailuresTable', () => {
 		await user.click(screen.getByRole('button', { name: '환불 재시도' }));
 
 		await waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1));
+		expect(mockConfirm.mock.calls[0][0].message).toContain('7,000');
+		expect(mockConfirm.mock.calls[0][0].message).not.toContain('10,000');
 		expect(mockedRefund).not.toHaveBeenCalled();
 		expect(onChanged).not.toHaveBeenCalled();
 	});
