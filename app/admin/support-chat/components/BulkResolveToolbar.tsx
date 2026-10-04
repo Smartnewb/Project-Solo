@@ -4,6 +4,7 @@ import { Button, Modal } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 
 import supportChatService from "@/app/services/support-chat";
+import { createRequestQueue } from "../lib/request-queue";
 import type { SupportSessionSummary } from "@/app/types/support-chat";
 
 export function useSessionSelection(
@@ -42,32 +43,55 @@ export default function BulkResolveToolbar({
   const [targets, setTargets] = useState<SupportSessionSummary[] | null>(null);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
+  const queue = useRef<ReturnType<typeof createRequestQueue> | null>(null);
+  if (!queue.current) queue.current = createRequestQueue();
+  const operation = useRef<{ cancelled: boolean } | null>(null);
+  const mounted = useRef(false);
   const [result, setResult] = useState<{
     failed: number;
     completed: number;
   } | null>(null);
 
   useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     setTargets(null);
     setResult(null);
+    return () => {
+      if (operation.current) operation.current.cancelled = true;
+    };
   }, [scope]);
 
   const resolveSelected = async () => {
     if (!targets?.length || pendingRef.current) return;
     // Freeze the explicitly confirmed IDs. A refresh or checkbox change cannot add targets.
     const confirmed = targets;
+    const current = { cancelled: false };
+    operation.current = current;
     pendingRef.current = true;
     setPending(true);
     const results = await Promise.allSettled(
-      confirmed.map(async (session) => {
-        const response = await supportChatService.resolveSession(
-          session.sessionId,
-          { resolutionReason: "solved" },
-        );
-        if (!response.success)
-          throw new Error("해결 완료 처리에 실패했습니다.");
-      }),
+      confirmed.map((session) =>
+        queue.current!.run(async () => {
+          const response = await supportChatService.resolveSession(
+            session.sessionId,
+            { resolutionReason: "solved" },
+          );
+          if (!response.success)
+            throw new Error("해결 완료 처리에 실패했습니다.");
+        }, () => !current.cancelled),
+      ),
     );
+    operation.current = null;
+    pendingRef.current = false;
+    if (!mounted.current) return;
+    setPending(false);
+    if (current.cancelled) return;
     const failed = confirmed.filter(
       (_, index) => results[index].status === "rejected",
     );
@@ -77,8 +101,6 @@ export default function BulkResolveToolbar({
       failed: failed.length,
     });
     setTargets(null);
-    pendingRef.current = false;
-    setPending(false);
     onSessionUpdated();
   };
 
