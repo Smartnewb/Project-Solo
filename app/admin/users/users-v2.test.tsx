@@ -7,6 +7,7 @@ import { adminGet } from "@/shared/lib/http/admin-fetch";
 import { ToastProvider } from "@/shared/ui/admin/toast/toast-context";
 import { ConfirmDialogProvider } from "@/shared/ui/admin/confirm-dialog/confirm-dialog-context";
 import { ConfirmDialog } from "@/shared/ui/admin/confirm-dialog/confirm-dialog";
+import { CountryProvider } from "@/contexts/CountryContext";
 import UsersV2 from "./users-v2";
 
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
@@ -56,7 +57,7 @@ function Subject() {
 	return (
 		<ToastProvider>
 			<ConfirmDialogProvider>
-				<UsersV2 />
+				<CountryProvider><UsersV2 /></CountryProvider>
 				<ConfirmDialog />
 			</ConfirmDialogProvider>
 		</ToastProvider>
@@ -85,4 +86,17 @@ test("block/unblock buttons are enabled from isSuspended and grade change confir
 	await user.click(await screen.findByRole("option", { name: "S급" }));
 	await user.click(await screen.findByRole("button", { name: "변경" }));
 	await waitFor(() => expect(grade).toHaveBeenCalledWith("u1", "S"));
+});
+
+
+test("목록 정지 액션은 사용자 모달 제재 탭을 열고 회원 정보로 돌아갈 수 있다", async () => {
+ const user = userEvent.setup();
+ (adminGet as jest.Mock).mockResolvedValue({ data: rows, meta: { page: 1, limit: 10, total: 2, totalPages: 1 } });
+ render(<Subject />);
+ await user.click(await screen.findByRole("button", { name: "차단" }));
+ expect(screen.getByRole("tab", { name: "제재·환불 안내" })).toHaveAttribute("aria-selected", "true");
+ expect(screen.getByLabelText("회원 공개 정지 사유")).toBeVisible();
+ await user.click(screen.getByRole("tab", { name: "회원 정보" }));
+ expect(screen.getByText("등록된 선호도 정보가 없습니다.")).toBeVisible();
+ expect(screen.getByLabelText("회원 공개 정지 사유")).not.toBeVisible();
 });

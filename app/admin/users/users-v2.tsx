@@ -4,13 +4,15 @@ import { Label as HeroSelectLabel } from "@heroui/react";
 import { Button as HeroActionButton } from "@heroui/react";
 import { ListBox, Select, Input, Button, Modal } from "@heroui/react";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AdminService from "@/app/services/admin";
 import { adminGet, getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
 import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { useToast } from "@/shared/ui/admin/toast";
+import { useCountry } from "@/contexts/CountryContext";
+import SanctionNoticePanel from "@/components/admin/appearance/modals/SanctionNoticePanel";
 import AccountStatusModal from "@/components/admin/appearance/modals/AccountStatusModal";
 import {
   formatDateWithoutTimezoneConversion,
@@ -83,6 +85,11 @@ const getGenderText = (gender: string) => {
 
 function UsersV2Content() {
   const router = useRouter();
+  const { country } = useCountry();
+  const countryRef = useRef(country);
+  countryRef.current = country;
+  const [detailTab, setDetailTab] = useState<"info" | "sanction">("info");
+  const [sanctionBusy, setSanctionBusy] = useState(false);
   const toast = useToast();
   const confirm = useConfirm();
   // 모달이 열린 동안 목록이 재조회돼도 isSuspended 가 뒤집히지 않도록 스냅샷으로 보관한다.
@@ -115,7 +122,9 @@ function UsersV2Content() {
   useEffect(() => {
     setPage(1); // 필터 변경 시 페이지 초기화
     fetchUsers();
-  }, [filter, selectedGender, selectedClass]);
+  }, [filter, selectedGender, selectedClass, country]);
+
+  useEffect(() => { setSelectedUser(null); setStatusTarget(null); setSanctionBusy(false); }, [country]);
 
   // 페이지 변경 시 데이터 가져오기
   useEffect(() => {
@@ -137,7 +146,8 @@ function UsersV2Content() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  async function fetchUsers() {
+  async function fetchUsers(propagateError = false) {
+    const requestCountry = country;
     try {
       setLoading(true);
       setError(null); // 오류 상태 초기화
@@ -155,19 +165,24 @@ function UsersV2Content() {
 
       // Nest.js API 호출
       const response = await adminGet<ApiResponse>("/admin/v2/users", params);
+      if (countryRef.current !== requestCountry) return;
       const userList = response.data ?? [];
       const pagination = response.meta;
 
       setUsers(userList);
       setTotalCount(pagination.total);
     } catch (err: any) {
+      if (countryRef.current !== requestCountry) return;
       setError(err.message || "사용자 목록을 불러오는 중 오류가 발생했습니다.");
+      if (propagateError) throw err;
     } finally {
-      setLoading(false);
+      if (countryRef.current === requestCountry) setLoading(false);
     }
   }
 
-  const handleUserSelect = async (user: User) => {
+  const handleUserSelect = async (user: User, tab: "info" | "sanction" = "info") => {
+    if (sanctionBusy) return;
+    setDetailTab(tab);
     if (user.profileImages) {
       user.profileImages.forEach((img, index) => {});
 
@@ -196,6 +211,7 @@ function UsersV2Content() {
   };
 
   const handleCloseDetails = () => {
+    if (sanctionBusy) return;
     setSelectedUser(null);
     setSelectedImage(null);
   };
@@ -632,11 +648,7 @@ function UsersV2Content() {
                           <Button
                             variant="secondary"
                             onClick={() =>
-                              setStatusTarget({
-                                userId: user.userId,
-                                name: user.name || user.userId,
-                                isSuspended: user.isSuspended,
-                              })
+handleUserSelect(user, "sanction")
                             }
                             className="text-red-500 hover:text-red-700"
                           >
@@ -843,7 +855,7 @@ function UsersV2Content() {
           <div className="flex space-x-2">
             <Button
               variant="secondary"
-              onClick={fetchUsers}
+              onClick={() => fetchUsers()}
               className="bg-primary-DEFAULT hover:bg-primary-dark text-white py-2 px-4 rounded"
               isDisabled={loading}
             >
@@ -918,6 +930,8 @@ function UsersV2Content() {
       {selectedUser && (
         <Modal.Backdrop
           isOpen
+          isDismissable={!sanctionBusy}
+          isKeyboardDismissDisabled={sanctionBusy}
           onOpenChange={(isOpen) => {
             if (!isOpen) handleCloseDetails();
           }}
@@ -953,6 +967,7 @@ function UsersV2Content() {
                   <Button
                     variant="secondary"
                     onClick={handleCloseDetails}
+                    isDisabled={sanctionBusy}
                     aria-label="사용자 상세 닫기"
                     className="text-gray-500 hover:text-gray-700 p-2"
                   >
@@ -976,6 +991,29 @@ function UsersV2Content() {
 
             {/* 컨텐츠 */}
             <Modal.Body>
+              <p className="text-sm mb-3 break-all">{selectedUser.name} · {selectedUser.userId} · {country.toUpperCase()} · {selectedUser.isSuspended ? "정지" : "정상"}</p>
+              <div role="tablist" aria-label="사용자 상세" className="flex gap-2 mb-4">
+                {([['info', '회원 정보'], ['sanction', '제재·환불 안내']] as const).map(([tab, label]) => <button key={tab} type="button" role="tab" id={`user-${tab}-tab`} aria-selected={detailTab === tab} aria-controls={`user-${tab}-panel`} tabIndex={detailTab === tab ? 0 : -1} disabled={sanctionBusy} className={`rounded-lg px-4 py-2 ${detailTab === tab ? "bg-gray-900 text-white" : "bg-gray-100"}`} onClick={() => setDetailTab(tab)} onKeyDown={event => {
+                  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key) || sanctionBusy) return;
+                  event.preventDefault();
+                  const next = event.key === "Home" ? "info" : event.key === "End" ? "sanction" : detailTab === "info" ? "sanction" : "info";
+                  setDetailTab(next); document.getElementById(`user-${next}-tab`)?.focus();
+                }}>{label}</button>)}
+              </div>
+              <div role="tabpanel" id="user-sanction-panel" aria-labelledby="user-sanction-tab" hidden={detailTab !== "sanction"}>
+                <SanctionNoticePanel key={`${country}:${selectedUser.userId}`} country={country} userId={selectedUser.userId} userName={selectedUser.name} isSuspended={selectedUser.isSuspended} onBusyChange={setSanctionBusy} onLater={handleCloseDetails} onChanged={async (message) => {
+                  const userId = selectedUser.userId;
+                  const requestCountry = country;
+                  toast.success(message);
+                  // Keep successful sanction visible even if subsequent refresh fails.
+                  setSelectedUser(current => current?.userId === userId ? { ...current, isSuspended: !message.includes("해제") } : current);
+                  const detail = await AdminService.userAppearance.getUserDetails(userId);
+                  if (countryRef.current !== requestCountry) return;
+                  setSelectedUser(current => current?.userId === userId ? { ...current, ...detail, userId } : current);
+                  await fetchUsers(true);
+                }} />
+              </div>
+              <div role="tabpanel" id="user-info-panel" aria-labelledby="user-info-tab" hidden={detailTab !== "info"}>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 왼쪽 컬럼 */}
                 <div className="space-y-6">
@@ -1213,6 +1251,7 @@ function UsersV2Content() {
                   </div>
                 </div>
               </div>
+              </div>
             </Modal.Body>
 
             {/* 하단 버튼 */}
@@ -1220,6 +1259,7 @@ function UsersV2Content() {
               <Button
                 variant="secondary"
                 onClick={handleCloseDetails}
+                isDisabled={sanctionBusy}
                 className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 닫기

@@ -7,6 +7,29 @@ import type {
 } from '@/types/admin';
 import type { FormattedData } from './_shared';
 
+export type SanctionNoticeStatus = 'awaiting_notice' | 'queued' | 'submitted' | 'delivered' | 'failed' | 'submission_unknown' | 'review_required';
+export interface SanctionNoticePreview {
+ sanctionId: string;
+ kind: 'period' | 'indefinite';
+ reason: string;
+ suspendedUntil: string | null;
+ maskedPhone: string | null;
+ balanceSummary: null | { balance: number; paid: number; free: number; unknown: number };
+ paymentGroups: Array<{ paymentId: string; platform: 'APPLE' | 'GOOGLE' | 'DIRECT'; paidAt: string | null; currency: string; paymentAmount: number; quantity: number; remainingQuantity: number; referenceAmount: number; refundUrl: string | null }>;
+ reviewReasons: string[];
+ text: string;
+ templateVersion: string;
+ snapshotHash: string;
+ noticeStatus: SanctionNoticeStatus;
+ outboxId: string | null;
+ retryAllowed: boolean;
+}
+export interface SanctionNoticeState {
+ noticeStatus: SanctionNoticeStatus;
+ outboxId: string | null;
+ retryAllowed: boolean;
+}
+
 const ADMIN_USERS_MAX_LIMIT = 100;
 
 function normalizeAppearanceUser(user: any) {
@@ -397,6 +420,8 @@ export const userAppearance = {
 			permanent?: boolean;
 			/** default true — 약관 고지(인앱+SMS) */
 			sendNotice?: boolean;
+			noticeMode?: 'immediate' | 'prepare';
+			note?: string;
 		} = {},
 	) => {
 		const body: {
@@ -404,9 +429,13 @@ export const userAppearance = {
 			durationDays?: 3 | 7 | 14 | 30;
 			permanent?: boolean;
 			sendNotice: boolean;
+			noticeMode?: 'immediate' | 'prepare';
+			note?: string;
 		} = {
 			// 서버도 기본 true지만 클라이언트는 항상 명시 전송
 			sendNotice: options.sendNotice !== false,
+            ...(options.noticeMode ? { noticeMode: options.noticeMode } : {}),
+            ...(options.note?.trim() ? { note: options.note.trim() } : {}),
 		};
 
 		const reason = options.reason?.trim();
@@ -423,6 +452,19 @@ export const userAppearance = {
 		const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/suspend`, body);
 		return result.data;
 	},
+
+ getSanctionNoticePreview: async (userId: string, sanctionId = 'latest') => {
+  const result = await adminGet<{ data: SanctionNoticePreview }>(`/admin/v2/users/${userId}/sanctions/${sanctionId}/notice-preview`);
+  return result.data;
+ },
+ sendSanctionNotice: async (userId: string, sanctionId: string, draft: { snapshotHash: string; templateVersion: string; allowReviewRequired?: boolean }) => {
+  const result = await adminPost<{ data: SanctionNoticeState }>(`/admin/v2/users/${userId}/sanctions/${sanctionId}/notice`, draft);
+  return result.data;
+ },
+ getSanctionNoticeStatus: async (userId: string, sanctionId: string) => {
+  const result = await adminGet<{ data: SanctionNoticeState }>(`/admin/v2/users/${userId}/sanctions/${sanctionId}/notice`);
+  return result.data;
+ },
 
 	unsuspendUser: async (userId: string) => {
 		const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/unsuspend`, {});
