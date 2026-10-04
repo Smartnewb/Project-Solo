@@ -24,7 +24,7 @@ export function ProfileImageAuditGrid({ items, selectedIds, loading, onToggle, o
         </p>
       </div>);
     }
-    return (<div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
+    return (<div style={{ display: "grid", gap: 12, gridTemplateColumns: items.some(item => item.presentationMode === 'BLIND') ? "repeat(auto-fill, minmax(min(100%, 360px), 1fr))" : "repeat(auto-fill, minmax(220px, 1fr))" }}>
       {items.map((item) => (<ProfileImageAuditCard key={item.profileImageId} item={item} selected={selectedIds.has(item.profileImageId)} onToggle={onToggle} onRankChange={onRankChange} rankUpdating={rankUpdatingUserId === item.userId}></ProfileImageAuditCard>))}
     </div>);
 }

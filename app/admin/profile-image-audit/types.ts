@@ -8,6 +8,8 @@ export type AuditAction = 'mark-ok' | 'second-review' | 'reject' | 'delete';
 export type AuditFilters = Pick<
   ProfileImageAuditListParams,
   | 'search'
+  | 'population'
+  | 'presentationMode'
   | 'includeAlreadyAudited'
   | 'auditStatus'
   | 'gender'

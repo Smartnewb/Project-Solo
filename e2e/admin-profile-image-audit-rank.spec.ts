@@ -61,6 +61,7 @@ async function verifyResult(page: Page, response: Response, expected: {
   const params = new URL(response.url()).searchParams;
   expect(Object.fromEntries(params)).toEqual({
     page: String(expected.page), limit: '18',
+    population: 'regular_photo',
     auditStatus: expected.auditStatus ?? 'unreviewed',
     includeSuspended: 'false', includeBlacklisted: 'false',
     ...(expected.profileRank ? { profileRank: expected.profileRank } : {}),

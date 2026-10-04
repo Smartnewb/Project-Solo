@@ -1,6 +1,6 @@
 import {selectHeroValue,heroSelectTrigger} from '@/app/admin/content/test-utils/hero-select';
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import ProfileImageAuditPage from '@/app/admin/profile-image-audit/profile-image-audit-v2';
@@ -132,7 +132,7 @@ describe('ProfileImageAuditPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: '프로필 이미지 전수검사' })).toBeInTheDocument();
     expect(mockedAudit.list).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, limit: 18, auditStatus: 'unreviewed' }),
+      expect.objectContaining({ page: 1, limit: 18, auditStatus: 'unreviewed', population: 'regular_photo' }),
     );
     expect(await screen.findByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
@@ -191,6 +191,130 @@ describe('ProfileImageAuditPage', () => {
       expect.objectContaining({ profileImageIds: ['profile-image-1'], confirmationPhrase: '삭제' }),
     ));
     await waitFor(() => expect(mockedAudit.list).toHaveBeenCalledTimes(2));
+  });
+
+  it('removes a restored rejected photo from the rejected list after marking it normal', async () => {
+    const user = userEvent.setup();
+    let restored = false;
+    mockedAudit.list.mockImplementation(async (params) => ({
+      data: params?.auditStatus === 'rejected' && !restored
+        ? [{ ...profileImageAuditItemFixture, reviewStatus: 'rejected', auditStatus: 'rejected' }]
+        : [],
+      meta: { page: 1, limit: 18, total: restored ? 0 : 1, totalPages: 1 },
+    }));
+    mockedAudit.bulkMarkOk.mockImplementation(async () => {
+      restored = true;
+      return profileImageAuditBulkActionFixture;
+    });
+    render(<ProfileImageAuditPage />);
+    await screen.findByRole('heading', { name: '프로필 이미지 전수검사' });
+    await selectHeroValue('검수 상태', 'rejected');
+    await user.click(await screen.findByRole('checkbox', { name: 'profile-image-1 선택' }));
+
+    await user.click(screen.getByRole('button', { name: '정상 처리' }));
+    await user.click(await screen.findByRole('button', { name: '처리' }));
+
+    await waitFor(() => expect(screen.queryByTestId('profile-image-audit-card')).not.toBeInTheDocument());
+    expect(mockedAudit.bulkMarkOk).toHaveBeenCalledTimes(1);
+    expect(mockedAudit.bulkMarkOk).toHaveBeenCalledWith({ profileImageIds: ['profile-image-1'] });
+    expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({ auditStatus: 'rejected' }));
+  });
+
+  it('filters blind profiles and displays the linked original and character side by side', async () => {
+    const user = userEvent.setup();
+    mockedAudit.list.mockResolvedValue({
+      ...profileImageAuditListFixture,
+      data: [{ ...profileImageAuditItemFixture, presentationMode: 'BLIND',
+        kind: 'profile_image', selectable: true,
+        originalImageUrl: 'https://example.com/original.jpg',
+        blindImageUrl: 'https://example.com/character.jpg' }],
+    });
+    render(<ProfileImageAuditPage />);
+    await selectHeroValue('볼 회원', 'character_original');
+
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({
+      population: 'character_original', includeAlreadyAudited: true, auditStatus: undefined,
+    })));
+    const comparison = await screen.findByTestId('blind-photo-comparison');
+    expect(within(comparison).getByRole('img', { name: 'profile-image-1 원본 사진' })).toHaveAttribute('src', 'https://example.com/original.jpg');
+    expect(within(comparison).getByRole('img', { name: 'profile-image-1 블라인드 캐릭터' })).toHaveAttribute('src', 'https://example.com/character.jpg');
+    await user.click(screen.getByRole('button', { name: 'profile-image-1 크게 보기' }));
+    expect(screen.getAllByTestId('blind-photo-comparison')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: '큰 이미지 닫기' }));
+    await selectHeroValue('볼 회원', 'regular_photo');
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(expect.objectContaining({
+      population: 'regular_photo', auditStatus: 'unreviewed',
+    })));
+  });
+
+  it('displays two characters linked to one original while selecting the original only once', async () => {
+    const user = userEvent.setup();
+    const base = { ...profileImageAuditItemFixture, presentationMode: 'BLIND' as const,
+      originalImageUrl: 'https://example.com/original.jpg' };
+    mockedAudit.list.mockResolvedValue({ ...profileImageAuditListFixture, data: [
+      { ...base, kind: 'profile_image', selectable: true, blindImageUrl: 'https://example.com/character-1.jpg' },
+      { ...base, profileImageId: 'blind_asset:asset-2', kind: 'blind_asset', selectable: false, blindImageUrl: 'https://example.com/character-2.jpg' },
+    ] });
+    mockedAudit.bulkMarkOk.mockResolvedValue(profileImageAuditBulkActionFixture);
+    render(<ProfileImageAuditPage />);
+    const pairs = await screen.findAllByTestId('blind-photo-comparison');
+    expect(pairs).toHaveLength(2);
+    for (const pair of pairs) expect(within(pair).getByRole('img', { name: /원본 사진/ })).toHaveAttribute('src', base.originalImageUrl);
+    await user.click(screen.getByRole('button', { name: '전체선택' }));
+    await user.click(screen.getByRole('button', { name: '정상 처리' }));
+    await user.click(screen.getByRole('button', { name: '처리' }));
+    await waitFor(() => expect(mockedAudit.bulkMarkOk).toHaveBeenCalledWith({ profileImageIds: ['profile-image-1'] }));
+  });
+
+  it('shows an unretained original without selecting reference-only characters for bulk actions', async () => {
+    const user = userEvent.setup();
+    mockedAudit.list.mockResolvedValue({
+      ...profileImageAuditListFixture,
+      data: [{ ...profileImageAuditItemFixture, profileImageId: 'blind-asset:asset-1',
+        presentationMode: 'BLIND', kind: 'blind_asset', selectable: false,
+        originalImageUrl: null, blindImageUrl: 'https://example.com/character.jpg' }],
+    });
+    render(<ProfileImageAuditPage />);
+
+    const comparison = await screen.findByTestId('blind-photo-comparison');
+    expect(comparison.querySelector('[data-original-image-status="UNAVAILABLE"]')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'blind-asset:asset-1 선택' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '전체선택' }));
+    expect(screen.getByRole('button', { name: '정상 처리' })).toBeDisabled();
+    expect(mockedAudit.bulkMarkOk).not.toHaveBeenCalled();
+  });
+
+  it.each(['STATIC_PRESET', 'TRANSIENT_DELETED', 'UNAVAILABLE'] as const)(
+    'shows the source status for a reference-only character: %s', async (originalImageStatus) => {
+      mockedAudit.list.mockResolvedValue({
+        ...profileImageAuditListFixture,
+        data: [{ ...profileImageAuditItemFixture, profileImageId: 'blind-asset:source-status',
+          presentationMode: 'BLIND', kind: 'blind_asset', selectable: false,
+          originalImageUrl: null, originalImageStatus, blindImageUrl: 'https://example.com/character.jpg' }],
+      });
+      render(<ProfileImageAuditPage />);
+      const comparison = await screen.findByTestId('blind-photo-comparison');
+      expect(comparison.querySelector(`[data-original-image-status="${originalImageStatus}"]`)).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: 'blind-asset:source-status 선택' })).not.toBeInTheDocument();
+    },
+  );
+
+  it('shows a retained original on a reference-only card and distinguishes image load failure', async () => {
+    mockedAudit.list.mockResolvedValue({
+      ...profileImageAuditListFixture,
+      data: [{ ...profileImageAuditItemFixture, profileImageId: 'blind-asset:retained-original',
+        presentationMode: 'BLIND', kind: 'blind_asset', selectable: false,
+        originalImageUrl: 'https://example.com/retained-original.jpg', originalImageStatus: 'AVAILABLE',
+        blindImageUrl: 'https://example.com/character.jpg' }],
+    });
+    render(<ProfileImageAuditPage />);
+    const comparison = await screen.findByTestId('blind-photo-comparison');
+    const original = within(comparison).getByRole('img', { name: 'blind-asset:retained-original 원본 사진' });
+    expect(original).toHaveAttribute('src', 'https://example.com/retained-original.jpg');
+    fireEvent.error(original);
+    expect(comparison.querySelector('[data-original-image-status="LOAD_FAILED"]')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'blind-asset:retained-original 선택' })).not.toBeInTheDocument();
   });
 
   it('warns and confirms reupload when a bulk selection removes all approved photos', async () => {

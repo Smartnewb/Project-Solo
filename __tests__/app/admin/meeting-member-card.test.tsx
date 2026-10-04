@@ -7,7 +7,7 @@ function view(status: NonNullable<MemberView['deposit']>['status'], contactRestr
 	return {
 		member: {
 			memberId: 'member-1', userId: 'user-1', name: '검증 참가자', gender: 'MALE',
-			teamId: 'team-1', side: 'HOST', leftAt: null, contactRestricted,
+			teamId: 'team-1', side: 'HOST', leftAt: null, contactRestricted, lastAdminAction: null,
 		},
 		deposit: {
 			id: 'deposit-1', roomId: 'room-1', memberId: 'member-1', paymentId: 'payment-1',

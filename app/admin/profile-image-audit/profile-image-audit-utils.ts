@@ -93,7 +93,7 @@ export function getSelectedAuditGroup(
   items: readonly ProfileImageAuditItem[],
   selectedIds: ReadonlySet<string>,
 ): SelectedAuditGroup {
-  const selectedItems = items.filter((item) => selectedIds.has(item.profileImageId));
+  const selectedItems = items.filter((item) => item.selectable !== false && selectedIds.has(item.profileImageId));
   const selectedUserIds = Array.from(new Set(selectedItems.map((item) => item.userId)));
 
   return {

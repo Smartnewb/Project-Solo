@@ -20,10 +20,17 @@ describe('meeting admin service', () => {
 		await meeting.listRefundFailures();
 
 		expect(mockedGet.mock.calls).toEqual([
-			['/admin/meeting/rooms'],
+			['/admin/meeting/rooms', {}],
 			['/admin/meeting/rooms/room-1'],
 			['/admin/meeting/refund-failures'],
 		]);
+	});
+
+	it('passes participant search, status and page cursor to the API', async () => {
+		mockedGet.mockResolvedValue({ rooms: [], nextCursor: null });
+		const params = { query: 'guest-user-7', status: 'CONFIRMED' as const, cursor: 'page-2' };
+		await expect(meeting.listRooms(params)).resolves.toEqual({ rooms: [], nextCursor: null });
+		expect(mockedGet).toHaveBeenCalledWith('/admin/meeting/rooms', params);
 	});
 
 	it('calls checkin with the userId and every other member command with the memberId', async () => {

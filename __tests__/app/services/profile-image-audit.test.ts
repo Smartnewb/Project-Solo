@@ -30,6 +30,15 @@ describe('profile image audit service boundaries', () => {
     window.fetch = originalFetch;
   });
 
+  it('forwards the character original queue to the server query', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(profileImageAuditListFixture));
+    await profileImageAudit.list({ population: 'character_original', profileRank: 'UNKNOWN' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin-proxy/admin/v2/profile-image-audit/images?population=character_original&profileRank=UNKNOWN',
+      expect.any(Object),
+    );
+  });
+
   it('keeps the existing individual image approval wrapper behind admin proxy', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ data: { success: true } }));
 
