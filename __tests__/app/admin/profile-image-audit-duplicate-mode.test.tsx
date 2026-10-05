@@ -58,6 +58,14 @@ describe('ProfileImageAudit duplicate review mode', () => {
       data: [...userOneItems, userTwoItem],
       meta: { page: 1, limit: 100, total: 4, totalPages: 1 },
     });
+    mockedAudit.bulkMarkOk.mockImplementation(async ({ profileImageIds }) => ({
+      data: {
+        requested: profileImageIds.length,
+        succeeded: profileImageIds.length,
+        failed: 0,
+        results: profileImageIds.map((profileImageId) => ({ profileImageId, status: 'success' as const })),
+      },
+    }));
     mockedAudit.bulkReject.mockImplementation(async ({ profileImageIds }) => ({
       data: {
         requested: profileImageIds.length,
@@ -100,5 +108,39 @@ describe('ProfileImageAudit duplicate review mode', () => {
     expect(mockedAudit.bulkReject).toHaveBeenCalledWith({ profileImageIds: ['pi-c'], reason: '화질 불량' });
     expect(await screen.findByText('2장에 사진 변경을 요청했습니다.')).toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: 'pi-b 선택' })).not.toBeInTheDocument();
+  });
+
+  it('marks only rows up to the pressed one as ok, skipping change-requested photos', async () => {
+    render(<ProfileImageAuditPage />);
+    await screen.findAllByTestId('profile-image-audit-card');
+    fireEvent.click(screen.getByRole('button', { name: /중복검사/ }));
+    await screen.findAllByTestId('duplicate-review-row');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'pi-b 선택' }));
+    fireEvent.click(screen.getByRole('button', { name: /선택한 사진 변경 요청/ }));
+    await screen.findByText('1장에 사진 변경을 요청했습니다.');
+
+    fireEvent.click(screen.getByRole('button', { name: '김테스트까지 확인 완료' }));
+    expect(await screen.findByText('선택한 프로필 이미지 2장을 처리합니다.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '처리' }));
+
+    await waitFor(() => expect(mockedAudit.bulkMarkOk).toHaveBeenCalledTimes(1));
+    expect(mockedAudit.bulkMarkOk).toHaveBeenCalledWith({ profileImageIds: ['pi-a', 'pi-c'] });
+    expect(await screen.findByText('1명 확인 완료 · 사진 2장 정상 처리')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '김테스트까지 확인 완료' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '박테스트까지 확인 완료' })).toBeInTheDocument();
+  });
+
+  it('blocks completion while a selected photo has not been sent', async () => {
+    render(<ProfileImageAuditPage />);
+    await screen.findAllByTestId('profile-image-audit-card');
+    fireEvent.click(screen.getByRole('button', { name: /중복검사/ }));
+    await screen.findAllByTestId('duplicate-review-row');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'pi-b 선택' }));
+    fireEvent.click(screen.getByRole('button', { name: '박테스트까지 확인 완료' }));
+
+    expect(await screen.findByText('선택한 사진의 변경 요청을 먼저 보내거나 선택을 해제해주세요.')).toBeInTheDocument();
+    expect(mockedAudit.bulkMarkOk).not.toHaveBeenCalled();
   });
 });
