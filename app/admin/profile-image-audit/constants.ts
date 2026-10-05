@@ -3,6 +3,7 @@ import type {
   ProfileImageAuditStatus,
   ProfileImageAuditValidationDecision,
 } from '@/app/services/admin';
+import { PRESET_REASONS } from '@/app/admin/profile-review/components/RejectReasonModal';
 import type { AuditAction, AuditFilters } from './types';
 
 export const PAGE_SIZE = 18;
@@ -13,6 +14,14 @@ export const REJECT_REASON_OPTIONS: readonly string[] = [
   '얼굴이 드러나도록 사진을 변경해주세요.',
   '다른 사람이 찍어 준 사진으로 바꾸면 더 좋을 것 같아요!',
 ];
+export const DUPLICATE_REJECT_REASON = '중복 사진이라 사진 변경이 필요합니다.';
+export const DUPLICATE_MODE_REASON_OPTIONS: readonly string[] = Array.from(new Set([
+  DUPLICATE_REJECT_REASON,
+  ...REJECT_REASON_OPTIONS,
+  ...(PRESET_REASONS.INAPPROPRIATE_PROFILE_IMAGE ?? []),
+  ...(PRESET_REASONS.FAKE_PROFILE ?? []),
+]));
+export const DUPLICATE_MODE_PAGE_SIZE = 100;
 export const DELETE_REASON = '전체 프로필 이미지 전수검사 중 부적절 이미지 즉시 삭제';
 
 export const DEFAULT_FILTERS: AuditFilters = {
