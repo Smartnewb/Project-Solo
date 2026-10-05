@@ -1,4 +1,4 @@
-import { adminPatch, adminRequest, getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
+import { adminDelete, adminPatch, adminRequest, getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 
 export type FestivalCountry = 'kr' | 'jp';
 
@@ -20,6 +20,13 @@ export interface FestivalEvent {
 export interface FestivalParticipant {
   userId: string;
   joinedAt: string;
+  /** false: 메이트 신청(한 줄 소개)이 없다. 운영 철회 뒤에도 참가자 행은 남는다. 구 서버 응답에는 없다. */
+  mateRegistered?: boolean;
+}
+
+export interface FestivalWithdrawResult {
+  rejectedReceived: number;
+  cancelledSent: number;
 }
 
 export interface FestivalApplicantProfile {
@@ -58,6 +65,9 @@ export const festivalMate = {
       throw new Error('회원 ID 또는 국가가 일치하지 않습니다. 새로고침 후 다시 조회하세요.');
     }
     return result.data;
+  },
+  withdraw(eventId: string, userId: string) {
+    return adminDelete<FestivalWithdrawResult>(`/admin/offline-events/${encodeURIComponent(eventId)}/mates/${encodeURIComponent(userId)}`);
   },
   updateEvent(eventId: string, values: Pick<FestivalEvent, 'name' | 'location'>) {
     // Do not change audiences, application windows or matching policy through a metadata editor.

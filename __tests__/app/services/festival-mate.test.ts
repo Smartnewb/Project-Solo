@@ -4,16 +4,18 @@ import {
   type FestivalApplicantProfile,
   type FestivalEvent,
 } from '@/app/services/admin/festival-mate';
-import { adminPatch, adminRequest } from '@/shared/lib/http/admin-fetch';
+import { adminDelete, adminPatch, adminRequest } from '@/shared/lib/http/admin-fetch';
 
 jest.mock('@/shared/lib/http/admin-fetch', () => ({
   ...jest.requireActual('@/shared/lib/http/admin-fetch'),
   adminRequest: jest.fn(),
   adminPatch: jest.fn(),
+  adminDelete: jest.fn(),
 }));
 
 const request = jest.mocked(adminRequest);
 const patch = jest.mocked(adminPatch);
+const remove = jest.mocked(adminDelete);
 const profile = (userId: string): FestivalApplicantProfile => ({
   userId, name: `회원 ${userId}`, gender: 'MALE', universityName: '소속 대학교',
   status: 'approved', country: 'kr', isSuspended: false, isTest: false,
@@ -68,6 +70,15 @@ describe('festivalMate service', () => {
     expect(patch).toHaveBeenCalledWith('/admin/offline-events/event%2Fa', {
       name: values.name, location: values.location,
     });
+  });
+
+  it('withdraws one applicant through the encoded event and user identity', async () => {
+    remove.mockResolvedValue({ rejectedReceived: 2, cancelledSent: 0 });
+
+    const result = await festivalMate.withdraw('event/a', 'user/1');
+
+    expect(remove).toHaveBeenCalledWith('/admin/offline-events/event%2Fa/mates/user%2F1');
+    expect(result).toEqual({ rejectedReceived: 2, cancelledSent: 0 });
   });
 
   it('propagates HTTP failures instead of converting the list to zero applicants', async () => {

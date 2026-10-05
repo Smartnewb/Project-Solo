@@ -3,11 +3,11 @@
 import { useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Button, Spinner } from '@heroui/react';
-import { Download, GraduationCap, PartyPopper, RefreshCw } from 'lucide-react';
+import { Download, GraduationCap, PartyPopper, RefreshCw, UserMinus } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-import { festivalMate, loadFestivalApplicants, type FestivalCountry, type FestivalEvent } from '@/app/services/admin/festival-mate';
+import { festivalMate, loadFestivalApplicants, type FestivalApplicant, type FestivalCountry, type FestivalEvent } from '@/app/services/admin/festival-mate';
 import { userAppearance } from '@/app/services/admin/users';
 import type { UserDetail } from '@/components/admin/appearance/UserDetailModal';
 import { applicantsCsv, approvalLabel, festivalPhase, festivalYear, filterApplicants, formatFestivalTime, isTodayKst, membershipLabel, type ApplicantFilters } from './lib';
@@ -102,6 +102,8 @@ function FestivalWorkspace({ event, country, onHostRenamed }: { event: FestivalE
   const [location, setLocation] = useState(event.location);
   const [formError, setFormError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [withdrawing, setWithdrawing] = useState<FestivalApplicant | null>(null);
+  const [withdrawn, setWithdrawn] = useState('');
   const participantsQuery = useQuery({
     queryKey: ['festival-mate', country, event.id, 'participants'],
     queryFn: ({ signal }) => festivalMate.getParticipants(event.id, signal),
@@ -135,6 +137,14 @@ function FestivalWorkspace({ event, country, onHostRenamed }: { event: FestivalE
       setEditing(false);
       setSaved(true);
       await queryClient.invalidateQueries({ queryKey: ['festival-mate', country, 'events'] });
+    },
+  });
+  const withdrawMutation = useMutation({
+    mutationFn: (userId: string) => festivalMate.withdraw(event.id, userId),
+    onSuccess: async (result, userId) => {
+      setWithdrawn(`철회 완료 (${userId}): 받은 대기 제안 ${result.rejectedReceived}건 자동 거절, 보낸 대기 제안 ${result.cancelledSent}건 취소`);
+      setWithdrawing(null);
+      await queryClient.invalidateQueries({ queryKey: ['festival-mate', country, event.id] });
     },
   });
   const rows = applicantsQuery.data ?? [];
@@ -203,6 +213,21 @@ function FestivalWorkspace({ event, country, onHostRenamed }: { event: FestivalE
         <Button variant="secondary" isDisabled={refreshing || !visibleRows.length || !!participantsQuery.error} onPress={download}><Download size={16} />CSV 내려받기</Button>
       </div>
       {refreshing && <p role="status" className="text-sm text-gray-500">최신 정보 갱신 중…</p>}
+      {withdrawn && <p role="status" className="text-sm text-green-800">{withdrawn}</p>}
+      {withdrawing && <div role="alertdialog" aria-label="신청 철회 확인" className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+        <p className="font-medium">{withdrawing.profile?.name ?? withdrawing.userId} 님의 축제 메이트 신청을 철회할까요?</p>
+        <ul className="list-disc space-y-1 pl-5 text-xs">
+          <li>이 축제에서 후보로 보이지 않고, 제안을 보내거나 받을 수 없습니다.</li>
+          <li>받은 대기 제안은 모두 자동으로 거절됩니다. 보낸 사람에게 구슬은 돌려주지 않습니다.</li>
+          <li>직접 보낸 대기 제안은 취소됩니다. 수락되어 열린 채팅은 유지됩니다.</li>
+          <li>되돌릴 수 없습니다. 다시 참여하려면 본인이 앱에서 신청해야 합니다.</li>
+        </ul>
+        {withdrawMutation.error && <ErrorNotice message={`철회 실패: ${getAdminErrorMessage(withdrawMutation.error)}`} />}
+        <div className="flex gap-2">
+          <Button size="sm" isDisabled={withdrawMutation.isPending} onPress={() => withdrawMutation.mutate(withdrawing.userId)}>{withdrawMutation.isPending ? '철회 중…' : '철회하기'}</Button>
+          <Button size="sm" variant="secondary" isDisabled={withdrawMutation.isPending} onPress={() => setWithdrawing(null)}>취소</Button>
+        </div>
+      </div>}
       {failed > 0 && <div className="flex flex-wrap items-center gap-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"><span>{failed}명의 회원 정보 조회에 실패했습니다. 신청 기록은 유지됩니다.</span><Button variant="secondary" size="sm" isDisabled={refreshing} onPress={() => { void applicantsQuery.refetch(); }}>회원 정보 재조회</Button></div>}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Field label="검색"><input className={fieldClass} value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} placeholder="이름·닉네임·회원 ID" /></Field>
@@ -222,13 +247,18 @@ function FestivalWorkspace({ event, country, onHostRenamed }: { event: FestivalE
             <td className="whitespace-nowrap px-3 py-4">{formatFestivalTime(row.joinedAt)}</td>
             <td className="px-3 py-4"><p>{approvalLabel(row.profile?.status)}</p>{row.profile && <p className="mt-1 text-xs text-gray-500">사진 {row.profile.images?.length ?? 0}장 · 승인 {row.profile.images?.filter((image) => image.reviewStatus.toLowerCase() === 'approved').length ?? 0}장</p>}</td>
             <td className="px-3 py-4"><p>{membershipLabel(row)}</p>{row.error && <p className="mt-1 max-w-48 break-words text-xs text-red-700">{row.error}</p>}</td>
-            <td className="px-3 py-4"><Button size="sm" variant="secondary" isDisabled={!row.profile} onPress={() => setSelectedUserId(row.userId)} aria-label={`${row.profile?.name ?? row.userId} 회원 상세`}>회원 상세</Button></td>
+            <td className="px-3 py-4">
+              <Button size="sm" variant="secondary" isDisabled={!row.profile} onPress={() => setSelectedUserId(row.userId)} aria-label={`${row.profile?.name ?? row.userId} 회원 상세`}>회원 상세</Button>
+              {row.mateRegistered === false
+                ? <p className="mt-2 text-xs text-gray-500">메이트 신청 없음</p>
+                : <Button size="sm" variant="secondary" className="mt-2" onPress={() => { withdrawMutation.reset(); setWithdrawn(''); setWithdrawing(row); }} aria-label={`${row.profile?.name ?? row.userId} 신청 철회`}><UserMinus size={14} />신청 철회</Button>}
+            </td>
           </tr>)}</tbody>
         </table>
         {!visibleRows.length && <p className="p-8 text-center text-sm text-gray-500">{rows.length ? '필터에 맞는 신청자가 없습니다.' : '아직 사전 신청자가 없습니다.'}</p>}
       </div>
       <div className="flex items-center justify-between text-sm text-gray-600"><span>{currentPage} / {totalPages} 페이지</span><div className="flex gap-2"><Button variant="secondary" size="sm" isDisabled={currentPage <= 1} onPress={() => setPage(currentPage - 1)}>이전</Button><Button variant="secondary" size="sm" isDisabled={currentPage >= totalPages} onPress={() => setPage(currentPage + 1)}>다음</Button></div></div>
-      <p className="text-xs text-gray-500">회원 상세에서 기존 프로필·학교·계정 관리 기능을 사용할 수 있습니다. 축제 신청 취소·운영 메모 저장 기능은 현재 지원하지 않습니다.</p>
+      <p className="text-xs text-gray-500">회원 상세에서 기존 프로필·학교·계정 관리 기능을 사용할 수 있습니다. 신청 철회는 목록의 ‘신청 철회’ 버튼으로 합니다. 운영 메모 저장 기능은 현재 지원하지 않습니다.</p>
     </section>}
     {selectedUserId && detailQuery.isPending && <div role="status" className="flex items-center gap-2"><Spinner size="sm" />회원 상세 조회 중…<Button size="sm" variant="secondary" onPress={() => setSelectedUserId(null)}>닫기</Button></div>}
     {selectedUserId && detailQuery.error && <div className="space-y-2"><ErrorNotice message={`회원 상세 조회 실패: ${getAdminErrorMessage(detailQuery.error)}`} /><Button size="sm" variant="secondary" onPress={() => { void detailQuery.refetch(); }}>재시도</Button><Button size="sm" variant="secondary" onPress={() => setSelectedUserId(null)}>닫기</Button></div>}
