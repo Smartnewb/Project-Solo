@@ -1,7 +1,7 @@
 'use client';
 import { Button, Spinner, Modal, TextField, Label, Input, TextArea } from '@heroui/react';
 import { Bold as FormatBoldIcon, Italic as FormatItalicIcon, List as FormatListBulletedIcon, ListOrdered as FormatListNumberedIcon, Quote as FormatQuoteIcon, Link as LinkIcon, Image as ImageIcon, Heading as TitleIcon, Code as CodeIcon, Eye as VisibilityIcon, Pencil as EditIcon } from 'lucide-react';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, type ReactNode } from 'react';
 import DOMPurify from 'dompurify';
 import AdminService from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast';
@@ -10,8 +10,9 @@ interface MarkdownEditorProps {
     onChange: (value: string) => void;
     placeholder?: string;
     minHeight?: number;
+    renderPreview?: (value: string) => ReactNode;
 }
-export default function MarkdownEditor({ value, onChange, placeholder = '마크다운 형식으로 본문을 작성하세요...', minHeight = 400, }: MarkdownEditorProps) {
+export default function MarkdownEditor({ value, onChange, placeholder = '마크다운 형식으로 본문을 작성하세요...', minHeight = 400, renderPreview, }: MarkdownEditorProps) {
     const toast = useToast();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -200,7 +201,7 @@ export default function MarkdownEditor({ value, onChange, placeholder = '마크�
 
         {/* Preview Panel */}
         {(viewMode === 'preview' || viewMode === 'split') && (<div style={{ flex: 1, padding: 16, overflow: 'auto', backgroundColor: '#fff' }}>
-            {value ? (<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(value)) }}></div>) : (<p>미리보기가 여기에 표시됩니다...</p>)}
+            {value ? (renderPreview ? renderPreview(value) : <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(value)) }}></div>) : (<p>미리보기가 여기에 표시됩니다...</p>)}
           </div>)}
       </div>
 

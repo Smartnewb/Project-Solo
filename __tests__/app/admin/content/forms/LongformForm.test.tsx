@@ -80,6 +80,12 @@ jest.mock('@/app/admin/content/components/card-series/LongformPreview', () => ({
   ),
 }));
 
+// ESM renderer is exercised separately with native Node ESM.
+jest.mock('@/app/admin/content/components/card-series/LongformMarkdown', () => ({
+  __esModule: true,
+  default: ({ body }: { body: string }) => <div>{body}</div>,
+}));
+
 // Mock MarkdownEditor
 jest.mock('@/app/admin/content/components/article/MarkdownEditor', () => ({
   __esModule: true,
@@ -170,6 +176,7 @@ describe('LongformForm', () =>{
 
   it('submits with layoutMode=longform when payload is valid', async () => {
     mockCreate.mockResolvedValue({ id: 'new-id' });
+    const body = '본문 첫 줄\n본문 둘째 줄\n\n> 인용문\n\n- 목록\n\n**굵게**';
 
     render(<LongformForm mode="create" />);
     await waitFor(() => {
@@ -179,7 +186,7 @@ describe('LongformForm', () =>{
     fireEvent.change(screen.getByLabelText(/^제목/), { target: { value: '제목A' } });
     fireEvent.change(screen.getByLabelText(/설명/), { target: { value: '설명A' } });
     fireEvent.change(screen.getByTestId('body-editor'), {
-      target: { value: '본문 내용입니다.' },
+      target: { value: body },
     });
 
     await selectHeroValue('카테고리','story_relationship');
@@ -192,7 +199,7 @@ describe('LongformForm', () =>{
     });
     const payload = mockCreate.mock.calls[0][0];
     expect(payload.layoutMode).toBe('longform');
-    expect(payload.body).toBe('본문 내용입니다.');
+    expect(payload.body).toBe(body);
     expect(payload.title).toBe('제목A');
   });
 });

@@ -102,3 +102,46 @@ it("rejects details belonging to a different session", async () => {
   expect(hook.result.current.messagesBySession).toEqual({});
   expect(hook.result.current.errorsBySession.a).toBeDefined();
 });
+
+it("limits active details to four and completes queued details without losing cache", async () => {
+  const pending = Array.from({ length: 9 }, deferred);
+  let active = 0;
+  let maximum = 0;
+  fetchDetail.mockImplementation((id: string) => {
+    active++;
+    maximum = Math.max(maximum, active);
+    return pending[Number(id)].promise.finally(() => active--);
+  });
+  const sessions = pending.map((_, index) => summary(String(index)));
+  const hook = renderHook(({ sessions }) => useSessionMessages(sessions), {
+    initialProps: { sessions },
+  });
+  expect(fetchDetail).toHaveBeenCalledTimes(4);
+  for (let index = 0; index < pending.length; index++) {
+    await act(async () => pending[index].resolve(detail(String(index))));
+  }
+  expect(maximum).toBe(4);
+  expect(active).toBe(0);
+  expect(Object.keys(hook.result.current.messagesBySession)).toHaveLength(9);
+  hook.rerender({ sessions: [...sessions] });
+  expect(fetchDetail).toHaveBeenCalledTimes(9);
+});
+
+it("drops removed queued details and keeps the limit across filter changes and unmount", async () => {
+  const pending = Array.from({ length: 5 }, deferred);
+  fetchDetail.mockImplementation((id: string) => pending[Number(id)].promise);
+  const hook = renderHook(({ sessions }) => useSessionMessages(sessions), {
+    initialProps: { sessions: Array.from({ length: 8 }, (_, i) => summary(String(i))) },
+  });
+  hook.rerender({ sessions: [summary("4")] });
+  expect(fetchDetail).toHaveBeenCalledTimes(4);
+  await act(async () => pending[0].resolve(detail("0")));
+  expect(fetchDetail.mock.calls.map(([id]) => id)).toEqual(["0", "1", "2", "3", "4"]);
+  expect(hook.result.current.messagesBySession).toEqual({});
+  hook.rerender({ sessions: [summary("4"), summary("5"), summary("6")] });
+  hook.unmount();
+  await act(async () => {
+    pending.slice(1).forEach((request, index) => request.resolve(detail(String(index + 1))));
+  });
+  expect(fetchDetail).toHaveBeenCalledTimes(5);
+});

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import supportChatService from "@/app/services/support-chat";
+import { createRequestQueue } from "../lib/request-queue";
 import type {
   SupportMessage,
   SupportSessionSummary,
@@ -15,6 +16,7 @@ export function useSessionMessages(sessions: SupportSessionSummary[]) {
   >({});
   const [errorsBySession, setErrors] = useState<Record<string, string>>({});
   const requests = useRef(new Map<string, Request>());
+  const [queue] = useState(createRequestQueue);
 
   useEffect(
     () => () => {
@@ -58,10 +60,14 @@ export function useSessionMessages(sessions: SupportSessionSummary[]) {
         delete next[sessionId];
         return next;
       });
-      supportChatService
-        .getSessionDetail(sessionId)
+      queue
+        .run(
+          () => supportChatService.getSessionDetail(sessionId),
+          () => requests.current.get(sessionId) === request,
+        )
         .then((detail) => {
           if (requests.current.get(sessionId) !== request) return;
+          if (!detail) return;
           if (detail.sessionId !== sessionId)
             throw new Error(
               "Session detail does not match the requested session.",
@@ -83,7 +89,7 @@ export function useSessionMessages(sessions: SupportSessionSummary[]) {
           }));
         });
     }
-  }, [sessions]);
+  }, [sessions, queue]);
 
   return { messagesBySession, errorsBySession };
 }
