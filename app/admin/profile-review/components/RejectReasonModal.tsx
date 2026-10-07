@@ -17,7 +17,7 @@ const REJECTION_CATEGORIES = [
     { value: 'DUPLICATE_ACCOUNT', label: '중복 계정' },
     { value: 'OTHER', label: '기타' }
 ];
-const PRESET_REASONS: Record<string, string[]> = {
+export const PRESET_REASONS: Record<string, string[]> = {
     'INAPPROPRIATE_PROFILE_IMAGE': [
         '얼굴 식별 불가',
         '부적절한 노출',

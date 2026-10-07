@@ -17,6 +17,7 @@ import {
 	RefreshCw,
 	Bot,
 	Settings,
+	PartyPopper,
 	type LucideIcon,
 } from "lucide-react";
 import {
@@ -232,6 +233,11 @@ export const NAV_CATEGORIES: NavCategory[] = [
 			{ href: "/admin/app-preview", label: "앱 UI 시연" },
 		],
 	},
+	{
+		icon: "🎪",
+		label: "축제 메이트",
+		items: [{ href: "/admin/festival-mate", label: "축제·신청자 관리" }],
+	},
 ];
 
 function flattenNavLinks(): FavoriteNavLink[] {
@@ -326,6 +332,7 @@ const categoryIcons: Record<string, LucideIcon> = {
 	리텐션: RefreshCw,
 	"가상 매칭": Bot,
 	설정: Settings,
+	"축제 메이트": PartyPopper,
 };
 const rowClass = "h-10 [@media(pointer:coarse)]:h-11";
 function FavoriteButton({
