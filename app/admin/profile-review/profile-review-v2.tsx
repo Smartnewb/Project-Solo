@@ -6,6 +6,7 @@ import AdminService, { PendingUsersFilter } from "@/app/services/admin";
 import UserTableList from "./components/UserTableList";
 import ImageReviewPanel from "./components/ImageReviewPanel";
 import RejectReasonModal from "./components/RejectReasonModal";
+import { BlindAvatarSources } from "@/app/admin/users/blind-avatar-sources";
 import ReviewHistoryTab from "./components/ReviewHistoryTab";
 import { useClusterOptions, getIndividualRegionLabel } from "@/components/admin/common/RegionFilter";
 export interface PendingProfileImage {
@@ -638,6 +639,9 @@ function ProfileReviewV2Content() {
         {/* 우: 심사 패널 (60%) */}
         <div className="min-w-0 flex-1 overflow-auto">
           <ImageReviewPanel user={selectedUser} onApprove={handleApproveUser} onReject={handleRejectUser} onImageApproved={handleImageApproved} onImageRejected={handleImageRejected} processing={processing} setProcessing={setProcessing}></ImageReviewPanel>
+          {selectedUser?.userId && (<div className="mt-4">
+              <BlindAvatarSources key={selectedUser.userId} userId={selectedUser.userId}/>
+            </div>)}
         </div>
       </div>
 

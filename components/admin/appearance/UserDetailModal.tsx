@@ -56,6 +56,7 @@ import UniversityTransferModal from "./modals/UniversityTransferModal";
 import BirthdayEditModal from "./modals/BirthdayEditModal";
 import AccountStatusModal from "./modals/AccountStatusModal";
 import { ReferralPostSignupSection } from "./referral/ReferralPostSignupSection";
+import { BlindAvatarSources } from "@/app/admin/users/blind-avatar-sources";
 import { sanitizeUrl } from "@/shared/lib/safe-url";
 import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { useToast } from "@/shared/ui/admin/toast";
@@ -1470,6 +1471,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       return null;
                     }
                   })()}
+                  {userId && (
+                    <div className={"mt-4"}>
+                      <BlindAvatarSources key={userId} userId={userId} />
+                    </div>
+                  )}
                 </div>
                 {/* 사용자 정보 섹션 */}
                 <div className={"min-w-0"}>
