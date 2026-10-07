@@ -91,24 +91,25 @@ export function HtmlNoticeEditor({ articleId, initialState, metadata, metadataKe
         document.addEventListener('visibilitychange', resume);
         return () => { active = false; clearInterval(interval); window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume); };
     }, [articleId, serverState?.translation.status]);
-    const validate = async (applyText = copyDirty) => {
+    // Returns the fresh digest so save can validate inline; null when blocked or failed.
+    const validate = async (applyText = copyDirty): Promise<string | null> => {
         if (busy)
-            return;
+            return null;
         const key = inputKey;
         const textDraft = applyText ? currentCopy : null;
         if (applyText && (!textDraft || !textDraft.edits.every((segment) => segment.text.trim()))) {
             toast.error('문구를 비울 수 없습니다. 삭제가 필요하면 HTML을 수정한 뒤 검증해주세요.');
-            return;
+            return null;
         }
         const requestHtml = textDraft?.html ?? html;
         const requestCss = textDraft?.css ?? css;
         if (legacyLinkUrls.length && requestHtml === legacyInitialHtml) {
             toast.error(legacyWarning);
-            return;
+            return null;
         }
         if (new Blob([requestHtml]).size > 256 * 1024 || new Blob([requestCss]).size > 12 * 1024) {
             toast.error('HTML 256KB, CSS 12KB 이하로 입력해주세요.');
-            return;
+            return null;
         }
         setBusy(true);
         setPreview(null);
@@ -118,7 +119,7 @@ export function HtmlNoticeEditor({ articleId, initialState, metadata, metadataKe
                 ...(textDraft ? { textEdits: textDraft.edits } : {}),
             });
             if (!mounted.current || currentKey.current !== key)
-                return;
+                return null;
             if (legacyLinkUrls.some((url) => !result.kr.links?.some((link) => link.url === url)))
                 throw new Error(legacyWarning);
             if (textDraft && typeof result.editableHtml !== 'string')
@@ -137,22 +138,28 @@ export function HtmlNoticeEditor({ articleId, initialState, metadata, metadataKe
                 segments: result.textSegments, edits: result.textSegments.map((segment) => ({ ...segment })),
             } : null);
             setCopyNeedsValidation(false);
+            return result.previewDigest;
         }
         catch (error) {
             toast.error(getApiErrorMessage(error, 'HTML 검증에 실패했습니다.'));
+            return null;
         }
         finally {
             if (mounted.current)
                 setBusy(false);
         }
     };
+    // Metadata edits invalidate the digest, so save re-validates the current input itself instead of making the admin press 검증 again.
     const save = async (publish: boolean) => {
-        if (!validated || busy || copyDirty)
+        if (busy || copyDirty || !html.trim())
             return;
         const key = inputKey;
+        const digest = validated?.digest ?? await validate(false);
+        if (!digest || !mounted.current || currentKey.current !== key)
+            return;
         setBusy(true);
         try {
-            const detail = await onSave({ html, css, previewDigest: validated.digest, expectedRevision: baseRevision }, publish);
+            const detail = await onSave({ html, css, previewDigest: digest, expectedRevision: baseRevision }, publish);
             if (!mounted.current)
                 return;
             setServerState(detail.noticeHtmlState ?? undefined);
@@ -200,41 +207,6 @@ export function HtmlNoticeEditor({ articleId, initialState, metadata, metadataKe
         }
         catch (error) {
             toast.error(getApiErrorMessage(error, '이미지 업로드에 실패했습니다.'));
-        }
-        finally {
-            if (mounted.current)
-                setBusy(false);
-        }
-    };
-    const reloadLatest = async () => {
-        if (!articleId || busy)
-            return;
-        const approved = await confirm({ title: '최신 안전본 불러오기', message: '작성 중인 내용은 사라집니다. 서버의 최신 안전본을 불러올까요?' });
-        if (!approved)
-            return;
-        setBusy(true);
-        try {
-            const detail = await AdminService.cardNews.get(articleId);
-            if (!mounted.current)
-                return;
-            const state = detail.noticeHtmlState;
-            if (!state)
-                throw new Error('HTML 안전본을 찾을 수 없습니다.');
-            const source = state.variants.kr.editableHtml ?? state.variants.kr.safeHtml;
-            setHtml(source);
-            setCss(state.variants.kr.safeCss);
-            setLegacyInitialHtml(state.variants.kr.safeHtml);
-            setLegacyLinkUrls(state.variants.kr.editableHtml ? [] : (state.variants.kr.links ?? []).map((link) => link.url));
-            setSavedInput(JSON.stringify({ html: source, css: state.variants.kr.safeCss }));
-            setServerState(state);
-            setBaseRevision(state.revision);
-            setPreview(null);
-            setCopyDraft(null);
-            setCopyNeedsValidation(false);
-            onRestored(detail);
-        }
-        catch (error) {
-            toast.error(getApiErrorMessage(error, '최신본 조회에 실패했습니다.'));
         }
         finally {
             if (mounted.current)
@@ -293,9 +265,8 @@ export function HtmlNoticeEditor({ articleId, initialState, metadata, metadataKe
     <p className="text-sm text-gray-600">이미지 업로드 후 추가된 img의 alt에 설명을 입력해주세요. 이미지 안의 한국어는 자동 번역되지 않습니다.</p>
     <div className="flex flex-wrap gap-2">
       <Button type="button" variant="secondary" isDisabled={busy || !html.trim()} onPress={() => void validate()}>{busy ? '처리 중…' : '검증 및 미리보기'}</Button>
-      <Button type="button" variant="secondary" isDisabled={busy || !validated || copyDirty} onPress={() => void save(false)}>저장</Button>
-      <Button type="button" variant="secondary" isDisabled={busy || !validated || copyDirty} onPress={() => void save(true)}>저장 후 발행</Button>
-      {articleId && <Button type="button" variant="secondary" isDisabled={busy} onPress={() => void reloadLatest()}>최신 안전본 불러오기</Button>}
+      <Button type="button" variant="secondary" isDisabled={busy || !html.trim() || copyDirty} onPress={() => void save(false)}>저장</Button>
+      <Button type="button" variant="secondary" isDisabled={busy || !html.trim() || copyDirty} onPress={() => void save(true)}>저장 후 발행</Button>
       {serverState?.previous && <Button type="button" variant="secondary" isDisabled={busy} onPress={() => void restore()}>직전 안전본 복원</Button>}
     </div>
     <p className="text-sm text-gray-600">모바일 폭 미리보기 (최대 390px) · 서버 검증 결과 기준</p>

@@ -11,6 +11,7 @@ import PresetUploadModal from '../card-series/PresetUploadModal';
 import PresetEditModal from '../card-series/PresetEditModal';
 import { OgPreviewCard } from '../seo/OgPreviewCard';
 import { HtmlNoticeEditor } from './HtmlNoticeEditor';
+import { noticeBackground } from './notice-background';
 import type { BackgroundPreset, CreateCardNewsRequest, AdminCardNewsItem, NoticeHtmlInput, NoticeHtmlState } from '@/types/admin';
 import { Save, Send, ArrowLeft } from 'lucide-react';
 import { useAdminForm } from '@/app/admin/hooks/forms';
@@ -321,10 +322,12 @@ export function LongformForm({ mode, id, initialHtmlMode = false }: Props) {
             throw new Error(parsed.error.issues[0]?.message || '기본 정보를 확인해주세요.');
         if (values.categoryCode !== 'announcement')
             throw new Error('HTML은 공지 카테고리에서만 지원합니다.');
+        const banner = noticeBackground(backgroundType, selectedPresetId, customBackgroundUrl);
         const payload: CreateCardNewsRequest = {
             title: values.title.trim(), displayTitle: values.displayTitle?.trim() || null,
             subtitle: values.subtitle?.trim() || undefined, description: values.description.trim(),
             categoryCode: 'announcement', layoutMode: 'longform', hasReward: false, noticeHtmlInput,
+            ...(banner ? { backgroundImage: banner } : {}),
             ...(values.pushTitle?.trim() ? { pushNotificationTitle: values.pushTitle.trim() } : {}),
             ...(values.pushMessage?.trim() ? { pushNotificationMessage: values.pushMessage.trim() } : {}),
         };
@@ -388,11 +391,10 @@ export function LongformForm({ mode, id, initialHtmlMode = false }: Props) {
                 if (checked)
                     setValue('hasReward', false, { shouldDirty: true });
             }}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control>HTML 공지 · JP 자동 번역</Checkbox.Content></Checkbox>}
-            {!htmlMode && <>
-              <hr></hr><h3 className="font-semibold">Hero 이미지</h3>
+            <hr></hr><h3 className="font-semibold">{htmlMode ? '배너 이미지' : 'Hero 이미지'}</h3>
+            {htmlMode && <p className="text-sm text-gray-600">배너 이미지는 HTML 본문 안에는 표시되지 않습니다.</p>}
               <BackgroundSelector presets={backgroundPresets} selectedPresetId={selectedPresetId} customBackgroundUrl={customBackgroundUrl} backgroundType={backgroundType} loading={presetsLoading} uploadingBackground={uploadingBackground} onPresetSelect={handlePresetSelect} onPresetEdit={handlePresetEdit} onCustomUpload={handleBackgroundUpload} onCustomClear={() => setCustomBackgroundUrl('')} onBackgroundTypeChange={setBackgroundType} onAddPresetClick={() => setPresetUploadModalOpen(true)}></BackgroundSelector>
-              <Controller name="hasReward" control={control} render={({ field }) => <Checkbox isSelected={field.value} onChange={field.onChange}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>구슬 보상 제공</Checkbox.Content></Checkbox>}></Controller>
-            </>}
+            {!htmlMode && <Controller name="hasReward" control={control} render={({ field }) => <Checkbox isSelected={field.value} onChange={field.onChange}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>구슬 보상 제공</Checkbox.Content></Checkbox>}></Controller>}
           </section>
           {htmlMode ? <HtmlNoticeEditor key={id || 'new-html-notice'} articleId={htmlArticleId} initialState={initialNoticeState} metadata={{ title: watchedTitle.trim(), displayTitle: watchedValues.displayTitle?.trim() || null, subtitle: watchedSubtitle?.trim() || undefined, description: watchedDescription.trim(), categoryCode: 'announcement', layoutMode: 'longform', hasReward: false }} metadataKey={JSON.stringify(watchedValues)} onSave={saveHtml} onRestored={restoreHtmlMetadata} onDirty={setHtmlDirty}></HtmlNoticeEditor> : <section className="space-y-4 rounded-xl border bg-white p-6">
             <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">본문</h2><p className="text-sm text-gray-600">예상 읽기 시간 {readTimeMinutes}분</p></div>

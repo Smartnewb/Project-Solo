@@ -25,9 +25,20 @@ it('executes only a validated server document in an empty sandbox and invalidate
   expect(document.querySelector('script')).toBeNull();
   view.rerender(<HtmlNoticeEditor {...props} metadata={{...metadata,title:'Changed'}} metadataKey="metadata2" />);
   expect(screen.queryByTitle('검증된 KR 공지 미리보기')).not.toBeInTheDocument();
-  expect(screen.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
-  view.rerender(<HtmlNoticeEditor {...props} />);
-  expect(screen.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
+});
+it('메타데이터를 고친 뒤 저장 후 발행을 누르면 검증 버튼 없이 현재 입력으로 다시 검증하고 발행한다', async () => {
+  // given
+  const view = render(<HtmlNoticeEditor {...props} initialState={state} />);
+  fireEvent.click(screen.getByRole('button',{name:'검증 및 미리보기'}));
+  await screen.findByTitle('검증된 KR 공지 미리보기');
+  view.rerender(<HtmlNoticeEditor {...props} initialState={state} metadata={{...metadata,description:'New description'}} metadataKey="metadata2" />);
+  mockPreview.mockResolvedValue({...previewResult,previewDigest:'fresh-digest'});
+  props.onSave.mockResolvedValue({id:'notice',noticeHtmlState:state});
+  // when
+  fireEvent.click(screen.getByRole('button',{name:'저장 후 발행'}));
+  // then
+  await waitFor(() => expect(props.onSave).toHaveBeenCalledWith({html:'<p>original</p>',css:'',previewDigest:'fresh-digest',expectedRevision:1},true));
+  expect(mockPreview.mock.calls[1][0]).toMatchObject({description:'New description'});
 });
 it('ignores an asynchronous preview response for old metadata', async () => {
   let resolve!: (value: typeof previewResult) => void;
@@ -37,7 +48,6 @@ it('ignores an asynchronous preview response for old metadata', async () => {
   view.rerender(<HtmlNoticeEditor {...props} initialState={state} metadata={{...metadata,title:'Later'}} metadataKey="later" />);
   await act(async () => resolve(previewResult));
   expect(screen.queryByTitle('검증된 KR 공지 미리보기')).not.toBeInTheDocument();
-  expect(screen.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
 });
 it('polls JP completion without resetting unsaved edits or the editor base revision', async () => {
   jest.useFakeTimers();
@@ -55,14 +65,6 @@ it('polls JP completion without resetting unsaved edits or the editor base revis
   expect(props.onSave).toHaveBeenCalledWith({html:'<p>my unsaved edits</p>',css:'',previewDigest:'safe-digest',expectedRevision:1},false);
   view.unmount(); jest.useRealTimers();
 });
-it('requires a fresh validated preview after loading the latest safe revision', async () => {
-  mockGet.mockResolvedValue({id:'notice',noticeHtmlState:{...state,revision:3}});
-  render(<HtmlNoticeEditor {...props} articleId="notice" initialState={state} />);
-  fireEvent.click(screen.getByRole('button',{name:'최신 안전본 불러오기'}));
-  await waitFor(() => expect(props.onRestored).toHaveBeenCalled());
-  expect(screen.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
-});
-
 it('accepts a full HTML file above the old 50KB size but rejects files above 256KB', async () => {
   render(<HtmlNoticeEditor {...props} />);
   const source = '<html><head><style>p{color:black}</style></head><body>' + 'x'.repeat(60*1024) + '</body></html>';
@@ -147,7 +149,6 @@ it('blocks blank edits and invalidates the text editor when raw HTML changes', a
   expect(mockToast.error).toHaveBeenCalledWith('문구를 비울 수 없습니다. 삭제가 필요하면 HTML을 수정한 뒤 검증해주세요.');
   fireEvent.change(screen.getByLabelText('HTML'),{target:{value:'<p>raw change</p>'}});
   expect(screen.queryByLabelText('문구 1')).not.toBeInTheDocument();
-  expect(screen.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
 });
 it('refuses old server copy responses without editable source instead of dropping links', async () => {
   mockPreview.mockResolvedValue(copyPreview);
@@ -176,7 +177,9 @@ it('blocks legacy link loss even after raw edits until the original targets are 
   const legacy = {...state,variants:{kr:{...state.variants.kr,links:[{label:'Help',url:'https://example.com/help'}]}}};
   render(<HtmlNoticeEditor {...props} initialState={legacy} />);
   expect(screen.getByRole('alert')).toHaveTextContent('이전 공지의 링크를 보존하려면 원본 HTML 파일을 다시 올려주세요.');
-  expect(screen.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button',{name:'저장',exact:true}));
+  await act(async () => {});
+  expect(mockToast.error).toHaveBeenCalledWith('이전 공지의 링크를 보존하려면 원본 HTML 파일을 다시 올려주세요.');
   fireEvent.click(screen.getByRole('button',{name:'검증 및 미리보기'}));
   expect(mockPreview).not.toHaveBeenCalled();
   fireEvent.change(screen.getByLabelText('HTML'),{target:{value:'<p>changed but no links</p>'}});
@@ -184,7 +187,7 @@ it('blocks legacy link loss even after raw edits until the original targets are 
   fireEvent.click(screen.getByRole('button',{name:'검증 및 미리보기'}));
   await waitFor(() => expect(mockPreview).toHaveBeenCalledTimes(1));
   await waitFor(() => expect(screen.getByRole('button',{name:'검증 및 미리보기'})).not.toBeDisabled());
-  expect(screen.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
+  expect(screen.queryByTitle('검증된 KR 공지 미리보기')).not.toBeInTheDocument();
   expect(screen.queryByLabelText('문구 1')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('HTML'),{target:{value:'<p>changed</p><a href="https://example.com/help">Help</a>'}});
   mockPreview.mockResolvedValue({...copyPreview,kr:{...copyPreview.kr,links:legacy.variants.kr.links}});
@@ -192,12 +195,4 @@ it('blocks legacy link loss even after raw edits until the original targets are 
   await screen.findByLabelText('문구 1');
   expect(screen.getByRole('button',{name:'저장',exact:true})).not.toBeDisabled();
   expect(props.onSave).not.toHaveBeenCalled();
-});
-it('loads the latest editable source with approved links when refreshing a notice', async () => {
-  const editable = '<a href="https://example.com/latest">Latest</a>';
-  mockGet.mockResolvedValue({id:'notice',noticeHtmlState:{...state,variants:{kr:{...state.variants.kr,editableHtml:editable}}}});
-  render(<HtmlNoticeEditor {...props} articleId="notice" initialState={state} />);
-  fireEvent.click(screen.getByRole('button',{name:'최신 안전본 불러오기'}));
-  await waitFor(() => expect(screen.getByLabelText('HTML')).toHaveValue(editable));
-  expect(screen.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
 });
