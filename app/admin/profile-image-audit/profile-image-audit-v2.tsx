@@ -1,7 +1,7 @@
 'use client';
 import { Button, Input } from '@heroui/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Images, RefreshCw } from 'lucide-react';
+import { Copy, Images, RefreshCw } from 'lucide-react';
 import { profileImageAudit, userReview } from '@/app/services/admin';
 import type { ProfileImageAuditBulkActionResponse, ProfileImageAuditItem, ProfileImageAuditProfileRank, } from '@/app/services/admin';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
@@ -10,6 +10,7 @@ import { DEFAULT_FILTERS, DELETE_REASON, PAGE_SIZE, SIMPLE_REJECT_REASON, } from
 import { AuditBulkToolbar } from './components/AuditBulkToolbar';
 import { AuditFiltersBar } from './components/AuditFiltersBar';
 import { ConfirmAuditActionDialog } from './components/ConfirmAuditActionDialog';
+import { DuplicatePhotoReviewMode } from './components/DuplicatePhotoReviewMode';
 import { ProfileImageAuditGrid } from './components/ProfileImageAuditGrid';
 import { filterVisibleAuditItems, formatProfileRank, getBulkActionCounts, getSelectedAuditGroup, summarizeBulkActionFailure } from './profile-image-audit-utils';
 import type { AuditAction, AuditFilters } from './types';
@@ -28,6 +29,7 @@ export default function ProfileImageAuditV2() {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const [duplicateMode, setDuplicateMode] = useState(false);
     const selectedGroup = useMemo(() => getSelectedAuditGroup(items, selectedIds), [items, selectedIds]);
     const removesLastApprovedImage = selectedGroup.selectedItems.some(item => selectedGroup.selectedItems.filter(selected => selected.profileId === item.profileId).length >= item.approvedImageCount);
     const load = async () => {
@@ -56,8 +58,8 @@ export default function ProfileImageAuditV2() {
         }
     };
     useEffect(() => {
-        load();
-    }, [page, filters]);
+        if (!duplicateMode) load();
+    }, [page, filters, duplicateMode]);
     const handleFilterChange = (nextFilters: AuditFilters) => {
         setFilters(nextFilters);
         setPage(1);
@@ -176,13 +178,19 @@ export default function ProfileImageAuditV2() {
             {' '}· 총 {total.toLocaleString()}장
           </p>
         </div>
-        <Button onPress={load} isDisabled={loading || busy} variant="secondary">{<RefreshCw></RefreshCw>}
-          새로고침
-        </Button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <Button onPress={() => setDuplicateMode((current) => !current)} variant={duplicateMode ? 'primary' : 'secondary'} aria-pressed={duplicateMode}>{<Copy></Copy>}
+            {duplicateMode ? '중복검사 끝내기' : '중복검사'}
+          </Button>
+          {!duplicateMode && (<Button onPress={load} isDisabled={loading || busy} variant="secondary">{<RefreshCw></RefreshCw>}
+            새로고침
+          </Button>)}
+        </div>
       </div>
 
       <div>
         <AuditFiltersBar filters={filters} onChange={handleFilterChange}></AuditFiltersBar>
+        {duplicateMode ? <DuplicatePhotoReviewMode filters={filters}></DuplicatePhotoReviewMode> : (<>
         <AuditBulkToolbar group={selectedGroup} visibleCount={items.length} busy={busy} onSelectVisible={selectVisibleItems} onAction={setPendingAction} onBlacklist={openBlacklist}></AuditBulkToolbar>
         {notice && <aside role="alert" className="rounded-lg border p-3">{notice}</aside>}
         {error && <aside role="alert" className="rounded-lg border p-3">{error}</aside>}
@@ -190,6 +198,7 @@ export default function ProfileImageAuditV2() {
         {totalPages > 1 && (<div style={{ display: "flex", paddingTop: 8 }}>
             <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3"><Button variant="secondary" isDisabled={page <= 1} onPress={() => ((_, value) => setPage(value))({} as never, page - 1)}>이전</Button><Input type="number" aria-label="페이지 번호" min={1} max={totalPages} value={page} onChange={event => setPage(Number(event.target.value))} className="w-16 rounded border p-2"></Input><span>/ {totalPages}</span><Button variant="secondary" isDisabled={page >= totalPages} onPress={() => ((_, value) => setPage(value))({} as never, page + 1)}>다음</Button></nav>
           </div>)}
+        </>)}
       </div>
 
       <ConfirmAuditActionDialog action={pendingAction} selectedCount={selectedGroup.selectedIds.length} busy={busy} removesLastApprovedImage={removesLastApprovedImage} onClose={() => setPendingAction(null)} onConfirm={runAction}></ConfirmAuditActionDialog>

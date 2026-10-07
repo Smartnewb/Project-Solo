@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import BackgroundSelector from '../card-series/BackgroundSelector';
 import LongformPreview from '../card-series/LongformPreview';
+import LongformMarkdown from '../card-series/LongformMarkdown';
 import MarkdownEditor from '../article/MarkdownEditor';
 import PresetUploadModal from '../card-series/PresetUploadModal';
 import PresetEditModal from '../card-series/PresetEditModal';
@@ -398,7 +399,7 @@ export function LongformForm({ mode, id, initialHtmlMode = false }: Props) {
           </section>
           {htmlMode ? <HtmlNoticeEditor key={id || 'new-html-notice'} articleId={htmlArticleId} initialState={initialNoticeState} metadata={{ title: watchedTitle.trim(), displayTitle: watchedValues.displayTitle?.trim() || null, subtitle: watchedSubtitle?.trim() || undefined, description: watchedDescription.trim(), categoryCode: 'announcement', layoutMode: 'longform', hasReward: false }} metadataKey={JSON.stringify(watchedValues)} onSave={saveHtml} onRestored={restoreHtmlMetadata} onDirty={setHtmlDirty}></HtmlNoticeEditor> : <section className="space-y-4 rounded-xl border bg-white p-6">
             <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">본문</h2><p className="text-sm text-gray-600">예상 읽기 시간 {readTimeMinutes}분</p></div>
-            <Controller name="body" control={control} render={({ field, fieldState }) => <div><MarkdownEditor value={field.value} onChange={field.onChange} minHeight={600}/>{fieldState.error && <p role="alert">{fieldState.error.message}</p>}</div>}></Controller>
+            <Controller name="body" control={control} render={({ field, fieldState }) => <div><MarkdownEditor value={field.value} onChange={field.onChange} minHeight={600} renderPreview={(body) => <LongformMarkdown body={body} />}/>{fieldState.error && <p role="alert">{fieldState.error.message}</p>}</div>}></Controller>
           </section>}
           <section className="space-y-4 rounded-xl border bg-white p-6"><h2 className="text-lg font-semibold">푸시 알림 설정</h2>
             {(['pushTitle', 'pushMessage'] as const).map(name => <Controller key={name} name={name} control={control} render={({ field, fieldState }) => <TextField isInvalid={!!fieldState.error}><Label>{name === 'pushTitle' ? '푸시 알림 제목 (선택 사항)' : '푸시 알림 메시지 (선택 사항)'}</Label>{name === 'pushTitle' ? <Input {...field} value={field.value ?? ''} maxLength={50}/> : <TextArea {...field} value={field.value ?? ''} maxLength={100} rows={2}/>}<Description>{(field.value ?? '').length}/{name === 'pushTitle' ? 50 : 100}자</Description><FieldError>{fieldState.error?.message}</FieldError></TextField>}></Controller>)}

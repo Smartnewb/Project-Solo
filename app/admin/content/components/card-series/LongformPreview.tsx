@@ -1,8 +1,7 @@
 'use client';
 import { Chip } from '@heroui/react';
 import { Heart as FavoriteBorderIcon, Share as IosShareIcon } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import LongformMarkdown from './LongformMarkdown';
 interface LongformPreviewProps {
     title: string;
     subtitle?: string;
@@ -40,7 +39,7 @@ export default function LongformPreview({ title, subtitle, description, category
             </p>)}
 
           <div style={{ marginTop: 16 }}>
-            {body ? (<ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>) : (<p>
+            {body ? (<LongformMarkdown body={body} />) : (<p>
                 본문을 입력하면 여기에 미리보기가 표시됩니다.
               </p>)}
           </div>

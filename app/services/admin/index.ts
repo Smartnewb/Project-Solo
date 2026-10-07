@@ -1,4 +1,5 @@
 // Domain module imports
+export { festivalMate } from './festival-mate';
 export { stats, kpiReport } from './dashboard';
 export { userAppearance, deletedFemales, userEngagement } from './users';
 export { matching, forceMatching } from './matching';
