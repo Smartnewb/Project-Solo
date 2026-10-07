@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { adminGet, getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
-import { formatDateTimeWithoutTimezoneConversion } from "@/app/utils/formatters";
+import { formatDateTimeKR } from "@/app/utils/formatters";
 
 type BlindAvatarSource = {
   jobId: string;
@@ -57,7 +57,7 @@ export function BlindAvatarSources({ userId }: { readonly userId: string }) {
         {items?.map((item) => (
           <div key={item.jobId}>
             <p className="mb-1 text-xs text-gray-600">
-              슬롯 {item.slotIndex} · {item.status} · {formatDateTimeWithoutTimezoneConversion(item.createdAt)}
+              슬롯 {item.slotIndex} · {item.status} · {formatDateTimeKR(item.createdAt)}
               {item.failureReason ? ` · ${item.failureReason}` : ""}
             </p>
             <div className="grid grid-cols-2 gap-2">
