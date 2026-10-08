@@ -79,6 +79,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
             <Chip size="sm">{`${item.approvedImageCount}/${item.totalActiveImageCount}장`}</Chip>
           </div>
           {item.selectable === false && <p className="text-xs text-gray-500">캐릭터 확인용입니다. 원본 사진 심사 작업에는 포함되지 않습니다.</p>}
+          {item.kind === 'blind_asset' && item.selectable !== false && <p className="text-xs text-gray-500">캐릭터용으로 따로 올린 사진입니다. 정상 처리만 할 수 있습니다.</p>}
           <Button aria-label="심사 상세 보기" onPress={() => setDetailOpen(true)} style={{ alignSelf: 'flex-start', border: '1px solid #cbd5e1', borderRadius: 1, paddingInline: 8, paddingBlock: 4, fontSize: 13, fontWeight: 800, color: '#1d4ed8' }}>
             상세
           </Button>
