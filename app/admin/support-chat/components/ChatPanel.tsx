@@ -784,7 +784,7 @@ export default function ChatPanel({
               </div>
             </div>
           ) : (
-            <p style={{ whiteSpace: "pre-wrap" }}>{message.content}</p>
+            <p style={{ whiteSpace: "pre-wrap", wordBreak: "keep-all", overflowWrap: "break-word" }}>{message.content}</p>
           )}
           {message.metadata?.confidence !== undefined && (
             <p style={{ display: "block", marginTop: 4 }}>
