@@ -117,9 +117,12 @@ export default function ProfileImageAuditV2() {
                 response = await profileImageAudit.bulkFlagSecondReview({ profileImageIds: selectedGroup.selectedIds });
             }
             else if (pendingAction === 'reject') {
+                const characterOnly = selectedGroup.selectedItems.length > 0
+                    && selectedGroup.selectedItems.every((item) => item.kind === 'blind_asset');
                 response = await profileImageAudit.bulkReject({
                     profileImageIds: selectedGroup.selectedIds,
                     reason: rejectReason?.trim() || SIMPLE_REJECT_REASON,
+                    ...(characterOnly ? { confirmationPhrase: '캐릭터만 내리기' } : {}),
                 });
             }
             else {

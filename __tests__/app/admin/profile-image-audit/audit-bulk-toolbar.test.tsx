@@ -31,7 +31,17 @@ it('given an upload source card in the selection, allows only 정상 처리 amon
   expect(screen.getByRole('button', { name: /2차 검토/ })).toBeDisabled();
   expect(screen.getByRole('button', { name: /사진 변경 요청/ })).toBeDisabled();
   expect(screen.getByRole('button', { name: /즉시 삭제/ })).toBeDisabled();
-  expect(screen.getByText(/정상 처리만 할 수 있습니다/)).toBeInTheDocument();
+  expect(screen.getByText(/함께 고르면 변경 요청을 할 수 없습니다/)).toBeInTheDocument();
+});
+
+it('given only character cards, allows 사진 변경 요청 and keeps 2차 검토 and 즉시 삭제 locked', () => {
+  renderToolbar([item('blind_asset:asset-1', 'blind_asset')]);
+
+  expect(screen.getByRole('button', { name: /정상 처리/ })).toBeEnabled();
+  expect(screen.getByRole('button', { name: /사진 변경 요청/ })).toBeEnabled();
+  expect(screen.getByRole('button', { name: /2차 검토/ })).toBeDisabled();
+  expect(screen.getByRole('button', { name: /즉시 삭제/ })).toBeDisabled();
+  expect(screen.getByText(/고른 캐릭터만 내립니다/)).toBeInTheDocument();
 });
 
 it('given only profile photos, keeps every audit action available', () => {
