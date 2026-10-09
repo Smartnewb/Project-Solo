@@ -417,6 +417,7 @@ export default function ChatDetailDialog({
       <li
         key={message.id}
         style={{
+          display: "flex",
           flexDirection: "column",
           alignItems: isUser ? "flex-start" : "flex-end",
           paddingBlock: 8,
@@ -774,8 +775,18 @@ export default function ChatDetailDialog({
                   {canSendMessage && (
                     <>
                       <hr />
-                      <div style={{ padding: 16, display: "flex", gap: 8 }}>
-                        <TextField aria-label={"메시지를 입력하세요..."}>
+                      <div
+                        style={{
+                          padding: 16,
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "flex-end",
+                        }}
+                      >
+                        <TextField
+                          aria-label={"메시지를 입력하세요..."}
+                          className="flex-1 min-w-0"
+                        >
                           <TextArea
                             placeholder="메시지를 입력하세요..."
                             value={messageInput}

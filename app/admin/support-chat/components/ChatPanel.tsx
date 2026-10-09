@@ -656,6 +656,7 @@ export default function ChatPanel({
       <li
         key={message.id}
         style={{
+          display: "flex",
           flexDirection: "column",
           alignItems: isUser ? "flex-start" : "flex-end",
           paddingBlock: 8,
@@ -1202,7 +1203,10 @@ export default function ChatPanel({
               </Tooltip.Trigger>
               <Tooltip.Content>{"빠른 답변 템플릿"}</Tooltip.Content>
             </Tooltip>
-            <TextField aria-label={"메시지를 입력하세요..."}>
+            <TextField
+              aria-label={"메시지를 입력하세요..."}
+              className="flex-1 min-w-0"
+            >
               <TextArea
                 placeholder="메시지를 입력하세요..."
                 value={messageInput}
