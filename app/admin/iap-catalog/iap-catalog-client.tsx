@@ -116,6 +116,28 @@ export default function IapCatalogClient() {
 			);
 		},
 	});
+	const stage130Mutation = useMutation({
+		mutationFn: () => AdminService.iapCatalog.stage130PriceProduct(),
+		onSuccess: () => {
+			toast.success("14,900원 130구슬 상품을 판매 전 상태로 등록했습니다.");
+			queryClient.invalidateQueries({ queryKey: ["admin", "iap-catalog", "products"] });
+			queryClient.invalidateQueries({ queryKey: ["admin", "gem-products", "list"] });
+		},
+		onError: (error: unknown) => {
+			toast.error(getAdminErrorMessage(error, "신규 130구슬 상품 등록에 실패했습니다."));
+		},
+	});
+	const activate130Mutation = useMutation({
+		mutationFn: () => AdminService.iapCatalog.activate130PriceProduct(),
+		onSuccess: () => {
+			toast.success("130구슬 판매가를 앱 14,900원·웹 13,700원으로 전환했습니다.");
+			queryClient.invalidateQueries({ queryKey: ["admin", "iap-catalog", "products"] });
+			queryClient.invalidateQueries({ queryKey: ["admin", "gem-products", "list"] });
+		},
+		onError: (error: unknown) => {
+			toast.error(getAdminErrorMessage(error, "130구슬 판매 전환에 실패했습니다."));
+		},
+	});
 	const gemProducts = useMemo(
 		() => gemProductsQuery.data ?? [],
 		[gemProductsQuery.data],
@@ -230,7 +252,28 @@ export default function IapCatalogClient() {
 											)}
 										</td>
 										<td style={{ minWidth: 320 }}>
-											<div>
+											{country === "kr" && product.sku === "gem_v3_130_14900" &&
+												!product.mappedGemProductId && product.state === "APPROVED" && (
+													<Button
+													size="sm"
+													variant="secondary"
+													isDisabled={stage130Mutation.isPending}
+													onPress={() => stage130Mutation.mutate()}
+												>
+													14,900원 신규 상품 등록 (판매 전)
+													</Button>
+												)}
+											{country === "kr" && product.sku === "gem_v3_130_14900" &&
+												product.mappedGemProductId && product.state === "APPROVED" &&
+												!gemProducts.some((gem) => gem.id === product.mappedGemProductId) && (
+													<Button size="sm" variant="primary" isDisabled={activate130Mutation.isPending}
+														onPress={() => activate130Mutation.mutate()}>
+														14,900원 판매 전환 (Android 발행 포함)
+													</Button>
+												)}
+											{product.sku !== "gem_v3_130_14900" && (
+												<>
+													<div>
 												<Select
 													value={selectedProductId}
 													onChange={(key) => {
@@ -261,7 +304,7 @@ export default function IapCatalogClient() {
 																	id={gemProduct.id}
 																	textValue={String(
 																		formatGemProductLabel(gemProduct),
-																	)}
+							)}
 																	key={gemProduct.id}
 																>
 																	{formatGemProductLabel(gemProduct)}
@@ -275,10 +318,13 @@ export default function IapCatalogClient() {
 												<span className={"text-sm text-neutral-700"}>
 													현재 매핑: {product.mappedGemProductName}
 												</span>
+													)}
+												</>
 											)}
 										</td>
 										<td>
-											<Button
+											{product.sku !== "gem_v3_130_14900" && (
+												<Button
 												onClick={() =>
 													mapMutation.mutate({
 														sku: product.sku,
@@ -294,7 +340,8 @@ export default function IapCatalogClient() {
 												) : (
 													"매핑 저장"
 												)}
-											</Button>
+												</Button>
+											)}
 										</td>
 									</tr>
 								);

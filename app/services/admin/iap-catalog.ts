@@ -207,6 +207,22 @@ export const iapCatalog = {
     return unwrapAdminData(res);
   },
 
+  stage130PriceProduct: async (): Promise<AdminGemProduct> => {
+    const res = await adminPost<AdminDataResponse<AdminGemProduct>>(
+      '/v1/admin/iap/gem-products/130-new-price',
+      {},
+    );
+    return unwrapAdminData(res);
+  },
+
+  activate130PriceProduct: async (): Promise<{ appleSku: string; price: number; webPrice: number }> => {
+    const res = await adminPost<AdminDataResponse<{ appleSku: string; price: number; webPrice: number }>>(
+      '/v1/admin/iap/gem-products/130-new-price/activate',
+      {},
+    );
+    return unwrapAdminData(res);
+  },
+
   /**
    * Get cached Apple IAP price points for a given storefront.
    * GET /v1/admin/iap/price-points?storefront=KOR
