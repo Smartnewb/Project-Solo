@@ -33,6 +33,7 @@ import {
   FileText as TemplateIcon,
   Sparkles as AiDraftIcon,
   StickyNote as NoteIcon,
+  ImagePlus as PhotoIcon,
 } from "lucide-react";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -464,6 +465,43 @@ export default function ChatPanel({
     }
   };
 
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const handleSendPhoto = async (file: File | undefined) => {
+    if (photoInputRef.current) photoInputRef.current.value = "";
+    if (
+      !file ||
+      sendingRef.current ||
+      !sessionId ||
+      session?.status !== "admin_handling"
+    )
+      return;
+    if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) {
+      setSnackbar({
+        open: true,
+        message: "10MB 이하 사진 파일만 보낼 수 있습니다.",
+        severity: "error",
+      });
+      return;
+    }
+    sendingRef.current = true;
+    setSending(true);
+    try {
+      await supportChatService.sendPhoto(sessionId, file);
+      await fetchSessionDetail();
+      onSessionUpdated();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message:
+          err instanceof Error ? err.message : "사진 전송에 실패했습니다.",
+        severity: "error",
+      });
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
+  };
+
   const startEditMessage = (message: SupportMessage) => {
     setEditingMessageId(message.id);
     setEditingContent(message.content);
@@ -656,6 +694,7 @@ export default function ChatPanel({
       <li
         key={message.id}
         style={{
+          display: "flex",
           flexDirection: "column",
           alignItems: isUser ? "flex-start" : "flex-end",
           paddingBlock: 8,
@@ -782,8 +821,33 @@ export default function ChatPanel({
                 </Button>
               </div>
             </div>
+          ) : message.metadata?.attachments?.length ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {message.metadata.attachments.map((photo) => (
+                <a
+                  key={photo.url}
+                  href={photo.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label="사진 원본 열기"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- 1시간짜리 서명 주소라 next/image 최적화 대상이 아니다 */}
+                  <img
+                    src={photo.url}
+                    alt="고객 상담 사진"
+                    style={{
+                      display: "block",
+                      maxWidth: 240,
+                      maxHeight: 240,
+                      borderRadius: 8,
+                      objectFit: "cover",
+                    }}
+                  />
+                </a>
+              ))}
+            </div>
           ) : (
-            <p style={{ whiteSpace: "pre-wrap" }}>{message.content}</p>
+            <p style={{ whiteSpace: "pre-wrap", wordBreak: "keep-all", overflowWrap: "break-word" }}>{message.content}</p>
           )}
           {message.metadata?.confidence !== undefined && (
             <p style={{ display: "block", marginTop: 4 }}>
@@ -1202,7 +1266,34 @@ export default function ChatPanel({
               </Tooltip.Trigger>
               <Tooltip.Content>{"빠른 답변 템플릿"}</Tooltip.Content>
             </Tooltip>
-            <TextField aria-label={"메시지를 입력하세요..."}>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <span>
+                  <Button
+                    onClick={() => photoInputRef.current?.click()}
+                    aria-label="사진 보내기"
+                    variant={"secondary"}
+                    isDisabled={sending}
+                    isIconOnly
+                  >
+                    <PhotoIcon size={16} />
+                  </Button>
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Content>{"사진 보내기 (1장)"}</Tooltip.Content>
+            </Tooltip>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              data-testid="support-photo-input"
+              onChange={(e) => void handleSendPhoto(e.target.files?.[0])}
+            />
+            <TextField
+              aria-label={"메시지를 입력하세요..."}
+              className="flex-1 min-w-0"
+            >
               <TextArea
                 placeholder="메시지를 입력하세요..."
                 value={messageInput}

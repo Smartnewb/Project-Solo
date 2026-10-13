@@ -41,6 +41,9 @@
     @apply bg-white text-[#222222] font-pretendard antialiased;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* 한국어 기본 타이포그래피: 단어 중간 줄바꿈 금지, 긴 무공백 문자열만 폴백으로 줄바꿈 */
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   h1 {
@@ -452,7 +455,7 @@
     max-width: 100%;
     overflow-x: auto;
   }
-  .tabs > .tabs__list[data-orientation="horizontal"] > .tabs__tab {
+  .tabs .tabs__list[data-orientation="horizontal"] > .tabs__tab {
     width: auto;
     flex-shrink: 0;
     white-space: nowrap;

@@ -19,8 +19,10 @@ const STATUS_TABS: {
 ];
 // solo-nestjs-api src/everytime-promo/constants/reject-reasons.ts 와 동기화 유지 (별도 레포).
 const QUICK_REASONS = [
+    "다운로드 링크가 보이지 않음",
+    "홍보 게시판이 아닌 곳에 게시",
+    "제공된 글과 다른 내용",
     "스크린샷이 홍보 게시글이 아님",
-    "홍보 문구/이미지 누락",
     "비공개 또는 삭제된 게시글",
     "중복/도용 스크린샷",
     "해당 학교 에브리타임이 아님",
@@ -47,13 +49,20 @@ export default function EtaMissionReviewPage() {
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     const [rejectTarget, setRejectTarget] = useState<EtaSubmission | null>(null);
     const [rejectReason, setRejectReason] = useState("");
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
     const rejectProcessing = !!rejectTarget && processingId === rejectTarget.id;
+    const pendingIds = items.filter((s) => s.status === "pending").map((s) => s.id);
+    const selectedPendingIds = selectedIds.filter((id) => pendingIds.includes(id));
+    const allPendingSelected = pendingIds.length > 0 && selectedPendingIds.length === pendingIds.length;
+    const busy = !!processingId || !!bulkProgress;
     const load = useCallback(async () => {
         setLoading(true);
         try {
             const res = await AdminService.etaMission.getSubmissions(status, page + 1, rowsPerPage);
             setItems(res.items);
             setTotal(res.total);
+            setSelectedIds([]);
         }
         catch (error) {
             toast.error(getAdminErrorMessage(error, "목록을 불러오지 못했습니다."));
@@ -71,8 +80,45 @@ export default function EtaMissionReviewPage() {
         setStatus(value);
         setPage(0);
     };
+    const toggleSelected = (id: string) => {
+        setSelectedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+    };
+    const toggleAllPending = () => {
+        setSelectedIds(allPendingSelected ? [] : pendingIds);
+    };
+    const handleBulkApprove = async () => {
+        if (busy || selectedPendingIds.length === 0)
+            return;
+        const targets = selectedPendingIds;
+        const ok = await confirm({
+            title: "선택 승인",
+            message: `선택한 ${targets.length}건을 승인합니다.\n건마다 구슬이 지급되고 유저에게 푸시가 발송됩니다.`,
+            confirmText: `${targets.length}건 승인`,
+        });
+        if (!ok)
+            return;
+        let succeeded = 0;
+        let failed = 0;
+        setBulkProgress({ done: 0, total: targets.length });
+        for (const id of targets) {
+            try {
+                await AdminService.etaMission.approve(id);
+                succeeded += 1;
+            }
+            catch {
+                failed += 1;
+            }
+            setBulkProgress({ done: succeeded + failed, total: targets.length });
+        }
+        setBulkProgress(null);
+        if (failed === 0)
+            toast.success(`${succeeded}건 승인 완료`);
+        else
+            toast.error(`승인 ${succeeded}건, 실패 ${failed}건 — 실패한 건은 이미 처리됐을 수 있습니다. 목록을 확인해주세요.`);
+        await load();
+    };
     const handleApprove = async (submission: EtaSubmission) => {
-        if (processingId)
+        if (busy)
             return;
         const ok = await confirm({
             title: "인증 승인",
@@ -134,10 +180,26 @@ export default function EtaMissionReviewPage() {
           {STATUS_TABS.map((t) => (<Tabs.Tab key={t.value} id={t.value}>{t.label}<Tabs.Indicator></Tabs.Indicator></Tabs.Tab>))}
         </Tabs.List></Tabs>
 
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBlock: 12 }}>
+          <span style={{ color: "#6b7280" }}>
+            {bulkProgress
+                ? `승인 처리 중 ${bulkProgress.done}/${bulkProgress.total}`
+                : selectedPendingIds.length > 0
+                    ? `${selectedPendingIds.length}건 선택됨`
+                    : "대기 건을 선택하면 한 번에 승인할 수 있습니다."}
+          </span>
+          <Button variant="primary" isDisabled={busy || selectedPendingIds.length === 0} onPress={handleBulkApprove}>
+            {`선택 ${selectedPendingIds.length}건 승인`}
+          </Button>
+        </div>
+
         <div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left">
               <tr className="border-b">
+                <th scope="col" className="border-b px-4 py-3">
+                  <input type="checkbox" aria-label="대기 건 전체 선택" checked={allPendingSelected} disabled={busy || pendingIds.length === 0} onChange={toggleAllPending} />
+                </th>
                 <th scope="col" className="border-b px-4 py-3">스크린샷</th>
                 <th scope="col" className="border-b px-4 py-3">이름</th>
                 <th scope="col" className="border-b px-4 py-3">학교</th>
@@ -150,17 +212,20 @@ export default function EtaMissionReviewPage() {
             </thead>
             <tbody>
               {loading ? (<tr className="border-b">
-                  <td colSpan={8} style={{ paddingBlock: 48 }} className="border-b px-4 py-3">
+                  <td colSpan={9} style={{ paddingBlock: 48 }} className="border-b px-4 py-3">
                     <Spinner size="sm"></Spinner>
                   </td>
                 </tr>) : items.length === 0 ? (<tr className="border-b">
-                  <td colSpan={8} style={{ paddingBlock: 48, color: "#6b7280" }} className="border-b px-4 py-3">
+                  <td colSpan={9} style={{ paddingBlock: 48, color: "#6b7280" }} className="border-b px-4 py-3">
                     제출 내역이 없습니다.
                   </td>
                 </tr>) : (items.map((s) => (<tr key={s.id} className="border-b">
                     <td className="border-b px-4 py-3">
+                      {s.status === "pending" ? (<input type="checkbox" aria-label={`${s.name ?? "이름 없음"} 선택`} checked={selectedIds.includes(s.id)} disabled={busy} onChange={() => toggleSelected(s.id)} />) : null}
+                    </td>
+                    <td className="border-b px-4 py-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <Button variant="tertiary" isIconOnly className="h-14 w-14 overflow-hidden p-0" aria-label="이미지 확대" onPress={() => setLightboxUrl(s.screenshotUrl)}><img src={s.screenshotUrl} alt="에타 스크린샷" className="h-14 w-14 max-w-none rounded-md object-cover object-top" /></Button>
+                      <Button variant="tertiary" isIconOnly className="h-40 w-24 overflow-hidden bg-gray-50 p-0" aria-label="이미지 확대" onPress={() => setLightboxUrl(s.screenshotUrl)}><img src={s.screenshotUrl} alt="에타 스크린샷" className="h-40 w-24 max-w-none rounded-md object-contain" /></Button>
                     </td>
                     <td className="border-b px-4 py-3">{s.name ?? "-"}</td>
                     <td className="border-b px-4 py-3">{s.schoolName}</td>
@@ -178,10 +243,10 @@ export default function EtaMissionReviewPage() {
                     </td>
                     <td className="border-b px-4 py-3">
                       {s.status === "pending" ? (<div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                          <Button isDisabled={processingId === s.id} onPress={() => handleApprove(s)} variant="primary">
+                          <Button isDisabled={busy} onPress={() => handleApprove(s)} variant="primary">
                             승인
                           </Button>
-                          <Button isDisabled={processingId === s.id} onPress={() => openRejectModal(s)} variant="secondary">
+                          <Button isDisabled={busy} onPress={() => openRejectModal(s)} variant="secondary">
                             거절
                           </Button>
                         </div>) : (<p>
