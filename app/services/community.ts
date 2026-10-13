@@ -25,6 +25,9 @@ export interface Article {
 	createdAt: Date;
 	updatedAt: Date;
 	author?: Author;
+	/** 인기글(hot_articles, 미삭제)이면 해당 id. 목록 응답에서만 내려온다. */
+	hotId?: string;
+	isHot?: boolean;
 }
 
 export interface Comment {
@@ -160,6 +163,7 @@ export interface Category {
 
 const normalizeArticle = (a: any): Article => ({
 	...a,
+	isHot: Boolean(a.hotId),
 	content: a.contentPreview ?? a.content ?? '',
 	commentCount:
 		a.commentCount ?? a.comment_count ?? a.comments_count ?? a.commentsCount ??
@@ -240,6 +244,15 @@ const communityService = {
 		return adminPatch(`/admin/v2/community/posts/${id}/status`, {
 			action: isBlinded ? 'blind' : 'unblind',
 		});
+	},
+
+	promoteHotArticle: async (articleId: string): Promise<any> => {
+		return adminPost(`/admin/v2/community/posts/${articleId}/hot`, {});
+	},
+
+	/** 인기글에서 내린다. 이후 자동·수동 모두 다시 오르지 않는다. */
+	demoteHotArticle: async (articleId: string): Promise<any> => {
+		return adminDelete(`/admin/v2/community/posts/${articleId}/hot`);
 	},
 
 	deleteArticle: async (articleId: string): Promise<any> => {

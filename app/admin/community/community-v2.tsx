@@ -1,6 +1,6 @@
 'use client';
 import { Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, Select, ListBox, Checkbox } from '@heroui/react';
-import { FileText as ArticleIcon, MessageSquare as CommentIcon, Trash2 as DeleteIcon, Heart as FavoriteIcon, MessagesSquare as ForumIcon, Inbox as MoveToInboxIcon, User as PersonIcon, RefreshCw as RefreshIcon, Flag as ReportIcon, Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
+import { FileText as ArticleIcon, MessageSquare as CommentIcon, Trash2 as DeleteIcon, Flame as HotIcon, Heart as FavoriteIcon, MessagesSquare as ForumIcon, Inbox as MoveToInboxIcon, User as PersonIcon, RefreshCw as RefreshIcon, Flag as ReportIcon, Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller } from 'react-hook-form';
@@ -23,6 +23,7 @@ const EMPTY_USER_DETAIL: UserDetail = {
 // 게시글 목록 컴포넌트
 function ArticleList() {
     const toast = useToast();
+    const confirm = useConfirm();
     // 에러는 페이지 배너와 함께 토스트로도 알린다 (모달에 가려져 보이지 않기 때문).
     const fail = (message: string) => {
         setError(message);
@@ -149,6 +150,38 @@ function ArticleList() {
         }
         catch (error) {
             fail('게시글 블라인드 처리 중 오류가 발생했습니다.');
+        }
+        finally {
+            setActionLoading(false);
+        }
+    };
+    // 인기글 올리기/내리기
+    const handleToggleHot = async (article: any) => {
+        const title = article.title || '제목 없음';
+        const demote = Boolean(article.isHot);
+        const ok = await confirm({
+            title: demote ? '인기글 내리기' : '인기글로 올리기',
+            message: demote
+                ? `‘${title}’ 게시글을 인기글에서 내립니다.\n내린 게시글은 자동·수동 모두 다시 인기글로 오르지 않습니다.`
+                : `‘${title}’ 게시글을 앱 인기 탭에 올립니다.`,
+            confirmText: demote ? '내리기' : '올리기',
+            severity: demote ? 'error' : 'info',
+        });
+        if (!ok)
+            return;
+        try {
+            setActionLoading(true);
+            if (demote) {
+                await communityService.demoteHotArticle(article.id);
+            }
+            else {
+                await communityService.promoteHotArticle(article.id);
+            }
+            setSuccessMessage(demote ? '인기글에서 내렸습니다.' : '인기글로 올렸습니다.');
+            await fetchArticles();
+        }
+        catch (error: any) {
+            fail(error?.message || (demote ? '인기글 내리기 중 오류가 발생했습니다.' : '인기글 올리기 중 오류가 발생했습니다.'));
         }
         finally {
             setActionLoading(false);
@@ -403,6 +436,7 @@ function ArticleList() {
 									</td>
 									<td className="border-b px-4 py-3">
 										{article.isBlinded || (article as any).blindedAt ? (<Chip size="sm">{"블라인드"}</Chip>) : (<Chip size="sm">{"정상"}</Chip>)}
+										{article.isHot ? (<Chip size="sm" className="ml-1">{"인기"}</Chip>) : null}
 									</td>
 									<td className="whitespace-nowrap border-b px-4 py-3">{safeToLocaleDateString(article.createdAt)}</td>
 									<td className="whitespace-nowrap border-b px-4 py-3">
@@ -426,6 +460,11 @@ function ArticleList() {
 													<VisibilityOffIcon></VisibilityOffIcon>
 												</Button>
 											</span>)}
+										<span title={article.isHot ? "인기글 내리기" : "인기글로 올리기"}>
+											<Button onPress={() => handleToggleHot(article)} isDisabled={actionLoading} variant="tertiary" isIconOnly={true} aria-label={article.isHot ? "인기글 내리기" : "인기글로 올리기"}>
+												<HotIcon></HotIcon>
+											</Button>
+										</span>
 										<span title={"카테고리 이전"}>
 											<Button onPress={() => {
                 setCategoryTargetId(article.id);
