@@ -85,6 +85,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
 				id: "community-automation",
 				label: "커뮤니티 관리",
 				children: [
+					{ href: "/admin/community", label: "게시글 관리" },
 					{
 						href: "/admin/community-automation/target-posts",
 						label: "게시글/AI 활동",

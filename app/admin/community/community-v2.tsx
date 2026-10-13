@@ -1,6 +1,6 @@
 'use client';
 import { Button, Spinner, Chip, Modal, Tabs, TextField, Label, Input, Select, ListBox, Checkbox } from '@heroui/react';
-import { FileText as ArticleIcon, MessageSquare as CommentIcon, Trash2 as DeleteIcon, Flame as HotIcon, Heart as FavoriteIcon, MessagesSquare as ForumIcon, Inbox as MoveToInboxIcon, User as PersonIcon, RefreshCw as RefreshIcon, Flag as ReportIcon, Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
+import { FileText as ArticleIcon, MessageSquare as CommentIcon, Trash2 as DeleteIcon, Heart as FavoriteIcon, MessagesSquare as ForumIcon, Inbox as MoveToInboxIcon, User as PersonIcon, RefreshCw as RefreshIcon, Flag as ReportIcon, Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller } from 'react-hook-form';
@@ -12,6 +12,7 @@ import type { GhostCommentBody } from '@/app/services/community';
 import UserDetailModal, { type UserDetail } from '@/components/admin/appearance/UserDetailModal';
 import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 import { CommunityPostAppDetailPanel } from './components/CommunityPostAppDetailPanel';
+import { ArticleCard } from './components/ArticleCard';
 // 사용자 상세를 불러오는 동안 모달에 넘기는 빈 값 (loading/error 상태가 화면을 대신한다)
 const EMPTY_USER_DETAIL: UserDetail = {
     id: '',
@@ -30,6 +31,8 @@ function ArticleList() {
         toast.error(message);
     };
     const [articles, setArticles] = useState<any[]>([]);
+    // 카드 썸네일을 눌렀을 때 크게 보여줄 사진 URL 목록
+    const [previewImages, setPreviewImages] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(0);
@@ -370,123 +373,50 @@ function ArticleList() {
 					{error}
 				</aside>)}
 
-			{/* 게시글 목록 테이블 */}
-			<div className="overflow-x-auto">
-				<table className="w-full text-sm">
-					<thead className="bg-gray-50 text-left">
-						<tr className="border-b">
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">
-								<Checkbox isSelected={articles.length > 0 && selectedArticles.length === articles.length} isIndeterminate={selectedArticles.length > 0 && selectedArticles.length < articles.length} onChange={checked => handleSelectAll()}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>
-							</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">작성자</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">제목</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">내용</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">댓글</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">좋아요</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">신고</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">상태</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">작성일</th>
-							<th scope="col" className="whitespace-nowrap border-b px-4 py-3">액션</th>
-						</tr>
-					</thead>
-					<tbody>
-						{loading ? (<tr className="border-b">
-								<td colSpan={9} className="border-b px-4 py-3">
-									<Spinner size="sm" style={{ marginBlock: 16 }}></Spinner>
-								</td>
-							</tr>) : articles.length === 0 ? (<tr className="border-b">
-								<td colSpan={9} className="border-b px-4 py-3">
-									게시글이 없습니다.
-								</td>
-							</tr>) : (articles.map((article) => (<tr key={article.id} className="border-b">
-									<td className="border-b px-4 py-3">
-										<Checkbox isSelected={selectedArticles.includes(article.id)} onChange={checked => handleSelectArticle(article.id)}><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>
-									</td>
-									<td className="border-b px-4 py-3">
-										<Button variant="tertiary" onPress={() => {
-                const uid = article.author?.id ?? article.userId;
-                if (uid) {
+			{/* 게시글 카드 목록 */}
+			<div className="mb-3 flex items-center gap-3 px-1">
+				<Checkbox isSelected={articles.length > 0 && selectedArticles.length === articles.length} isIndeterminate={selectedArticles.length > 0 && selectedArticles.length < articles.length} onChange={() => handleSelectAll()} aria-label="현재 페이지 전체 선택"><Checkbox.Content><Checkbox.Control><Checkbox.Indicator></Checkbox.Indicator></Checkbox.Control></Checkbox.Content></Checkbox>
+				<span className="text-sm text-gray-600">
+					{selectedArticles.length > 0 ? `${selectedArticles.length}개 선택됨` : '현재 페이지 전체 선택'}
+				</span>
+			</div>
+			{loading ? (<div className="flex justify-center py-16"><Spinner size="md"></Spinner></div>) : articles.length === 0 ? (<div className="rounded-2xl border border-dashed border-gray-300 py-16 text-center text-gray-500">
+					조건에 맞는 게시글이 없습니다.
+				</div>) : (<div className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
+					{articles.map((article) => (<ArticleCard key={article.id} article={article} selected={selectedArticles.includes(article.id)} actionLoading={actionLoading} onSelect={() => handleSelectArticle(article.id)} onOpen={() => handleViewDetail(article.id)} onOpenAuthor={(uid) => {
                     setSelectedUserId(uid);
                     setUserModalOpen(true);
-                }
-            }} style={{ color: "var(--accent)", cursor: 'pointer', display: 'inline' }}>
-											{article.anonymous ?? '익명'}
-											{article.author?.name ? ` [${article.author.name}]` : ''}
-										</Button>
-										{(article.author?.id ?? article.userId) && (
-											<p className="text-xs text-gray-500">
-												ID: {article.author?.id ?? article.userId}
-											</p>
-										)}
-									</td>
-									<td className="border-b px-4 py-3">
-										<p title={article.title ?? undefined} className={`max-w-[200px] truncate ${article.isBlinded || (article as any).blindedAt ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-											{article.title ?? '제목 없음'}
-										</p>
-									</td>
-									<td className="border-b px-4 py-3">
-										<p title={article.content ?? undefined} className={`max-w-[200px] truncate ${article.isBlinded || (article as any).blindedAt ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-											{article.emoji} {article.content}
-										</p>
-									</td>
-									<td className="whitespace-nowrap border-b px-4 py-3">{article.commentCount}</td>
-									<td className="whitespace-nowrap border-b px-4 py-3">{article.likeCount ?? 0}</td>
-									<td className="border-b px-4 py-3">
-										{article.reportCount > 0 ? (<Chip size="sm">{article.reportCount}</Chip>) : ('0')}
-									</td>
-									<td className="border-b px-4 py-3">
-										{article.isBlinded || (article as any).blindedAt ? (<Chip size="sm">{"블라인드"}</Chip>) : (<Chip size="sm">{"정상"}</Chip>)}
-										{article.isHot ? (<Chip size="sm" className="ml-1">{"인기"}</Chip>) : null}
-									</td>
-									<td className="whitespace-nowrap border-b px-4 py-3">{safeToLocaleDateString(article.createdAt)}</td>
-									<td className="whitespace-nowrap border-b px-4 py-3">
-										<span title={"상세 보기"}>
-											<Button onPress={() => handleViewDetail(article.id)} variant="tertiary" isIconOnly={true} aria-label={"상세 보기"}>
-												<ArticleIcon></ArticleIcon>
-											</Button>
-										</span>
-										{article.isBlinded || (article as any).blindedAt ? (<span title={"블라인드 해제"}>
-												<Button onPress={() => {
+                }} onPreviewImages={setPreviewImages} onToggleHot={() => handleToggleHot(article)} onToggleBlind={() => {
                     setSelectedArticles([article.id]);
-                    handleOpenBlindDialog('unblind');
-                }} variant="tertiary" isIconOnly={true} aria-label={"블라인드 해제"}>
-													<VisibilityIcon></VisibilityIcon>
-												</Button>
-											</span>) : (<span title={"블라인드"}>
-												<Button onPress={() => {
-                    setSelectedArticles([article.id]);
-                    handleOpenBlindDialog('blind');
-                }} variant="tertiary" isIconOnly={true} aria-label={"블라인드"}>
-													<VisibilityOffIcon></VisibilityOffIcon>
-												</Button>
-											</span>)}
-										<span title={article.isHot ? "인기글 내리기" : "인기글로 올리기"}>
-											<Button onPress={() => handleToggleHot(article)} isDisabled={actionLoading} variant="tertiary" isIconOnly={true} aria-label={article.isHot ? "인기글 내리기" : "인기글로 올리기"}>
-												<HotIcon></HotIcon>
-											</Button>
-										</span>
-										<span title={"카테고리 이전"}>
-											<Button onPress={() => {
-                setCategoryTargetId(article.id);
-                setSelectedCategoryId('');
-                setOpenCategoryDialog(true);
-            }} variant="tertiary" isIconOnly={true} aria-label={"카테고리 이전"}>
-												<MoveToInboxIcon></MoveToInboxIcon>
-											</Button>
-										</span>
-										<span title={"게시글 삭제"}>
-											<Button onPress={() => {
-                setDeleteTargetId(article.id);
-                setOpenDeleteDialog(true);
-            }} variant="tertiary" isIconOnly={true} aria-label={"게시글 삭제"}>
-												<DeleteIcon></DeleteIcon>
-											</Button>
-										</span>
-									</td>
-								</tr>)))}
-					</tbody>
-				</table>
-			</div>
+                    handleOpenBlindDialog(article.isBlinded || article.blindedAt ? 'unblind' : 'blind');
+                }} onMoveCategory={() => {
+                    setCategoryTargetId(article.id);
+                    setSelectedCategoryId('');
+                    setOpenCategoryDialog(true);
+                }} onDelete={() => {
+                    setDeleteTargetId(article.id);
+                    setOpenDeleteDialog(true);
+                }}></ArticleCard>))}
+				</div>)}
+
+			{/* 사진 미리보기 */}
+			<Modal.Backdrop isOpen={previewImages.length > 0} onOpenChange={next => {
+            if (!next)
+                setPreviewImages([]);
+        }}><Modal.Container size="lg"><Modal.Dialog style={{ width: '100%', maxWidth: 900, minWidth: 0 }}>
+				<Modal.Heading>첨부 사진 ({previewImages.length})</Modal.Heading>
+				<Modal.Body>
+					<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+						{previewImages.map((url) => (<a key={url} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl bg-gray-100">
+								{/* eslint-disable-next-line @next/next/no-img-element */}
+								<img src={url} alt="" className="h-auto w-full object-contain" />
+							</a>))}
+					</div>
+				</Modal.Body>
+				<Modal.Footer>
+					<Button onPress={() => setPreviewImages([])} variant="tertiary">닫기</Button>
+				</Modal.Footer>
+			</Modal.Dialog></Modal.Container></Modal.Backdrop>
 
 			{/* 페이지네이션 */}
 			<div className="flex items-center justify-end gap-3 border-t p-4"><div><Select aria-label="페이지당 행 수" value={rowsPerPage} onChange={(key) => {
