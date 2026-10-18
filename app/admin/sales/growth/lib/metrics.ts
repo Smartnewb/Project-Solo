@@ -170,6 +170,8 @@ export interface Scorecard {
   lastMonthSamePeriodGross: number;
   mtdGrowth: number | null;
   forecastGross: number | null;
+  forecastByMonthAvgGross: number | null;
+  remainingDays: number;
   lastMonthGross: number;
   last7Gross: number;
   prev7Gross: number;
@@ -198,7 +200,9 @@ export function buildScorecard(days: DailyPoint[], today: string): Scorecard {
     mtdGross,
     lastMonthSamePeriodGross,
     mtdGrowth: completedDays > 0 ? growthRate(mtdGross, lastMonthSamePeriodGross) : null,
-    forecastGross: completedDays > 0 ? (mtdGross / completedDays) * daysInMonth(today) : null,
+    forecastGross: completedDays > 0 ? mtdGross + (last7Gross / 7) * (daysInMonth(today) - completedDays) : null,
+    forecastByMonthAvgGross: completedDays > 0 ? (mtdGross / completedDays) * daysInMonth(today) : null,
+    remainingDays: daysInMonth(today) - completedDays,
     lastMonthGross: sumGross(days, lastMonth, addDays(thisMonth, -1)),
     last7Gross,
     prev7Gross,

@@ -14,13 +14,13 @@ import {
   type DailyPoint,
 } from "./lib/metrics";
 
-export const HISTORY_MONTHS = 13;
+export const HISTORY_START = "2025-05-01";
 
 export function useGrowthRange() {
   const today = kstToday();
   return {
     today,
-    from: monthStart(addMonths(today, -(HISTORY_MONTHS - 1))),
+    from: HISTORY_START,
     to: today,
   };
 }
@@ -70,9 +70,9 @@ export function useLtvCohorts() {
 
 export function useMonthlySignups() {
   return useQuery({
-    queryKey: ["sales-growth", "signups", "monthly"],
+    queryKey: ["sales-growth", "signups", "monthly", HISTORY_START],
     queryFn: async () => {
-      const raw = await stats.getMonthlySignupTrend();
+      const raw = await stats.getMonthlySignupTrend(undefined, undefined, undefined, HISTORY_START);
       const rows: Array<{ month: string; count: number }> = Array.isArray(raw?.data) ? raw.data : [];
       return rows;
     },

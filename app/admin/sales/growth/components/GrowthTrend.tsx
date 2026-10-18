@@ -262,7 +262,7 @@ export function GrowthTrend() {
     ? `최근 ${DAILY_WINDOW_DAYS}일 · 막대는 하루 매출, 선은 7일 이동평균`
     : granularity === "weekly"
       ? "월요일 시작 주 · 막대는 주간 매출, 선은 전주 대비 성장률"
-      : "최근 13개월 · 막대는 월 매출, 선은 전월 대비 성장률";
+      : "2025년 5월부터 전체 · 막대는 월 매출, 선은 전월 대비 성장률";
 
   return (
     <Card>

@@ -48,9 +48,31 @@ describe('buildScorecard (Sep 1,000/day, Oct 1-16 2,000/day, today 10/17 5,000)'
     expect(card.mtdGross).toBe(16 * 2000);
     expect(card.lastMonthSamePeriodGross).toBe(16 * 1000);
     expect(card.mtdGrowth).toBeCloseTo(1, 10);
-    expect(card.forecastGross).toBeCloseTo(2000 * 31, 6);
+    expect(card.forecastGross).toBeCloseTo(16 * 2000 + 2000 * 15, 6);
+    expect(card.forecastByMonthAvgGross).toBeCloseTo(2000 * 31, 6);
+    expect(card.remainingDays).toBe(15);
     expect(card.lastMonthGross).toBe(30 * 1000);
     expect(card.todayGross).toBe(5000);
+  });
+
+  it('projects the rest of the month from the last 7 completed days', () => {
+    const rising = fillDaily(
+      Array.from({ length: 17 }, (_, i) => ({
+        date: `2026-10-${String(i + 1).padStart(2, '0')}`,
+        revenue: i < 10 ? 100 : 300,
+        pgRevenue: 0,
+        iapRevenue: 0,
+        count: 1,
+      })),
+      '2026-09-01',
+      '2026-10-18',
+    );
+    const card = buildScorecard(rising, '2026-10-18');
+
+    expect(card.mtdGross).toBe(10 * 100 + 7 * 300);
+    expect(card.remainingDays).toBe(14);
+    expect(card.forecastGross).toBeCloseTo(3100 + 300 * 14, 6);
+    expect(card.forecastByMonthAvgGross).toBeCloseTo((3100 / 17) * 31, 6);
   });
 
   it('uses two non-overlapping 7-day windows ending yesterday', () => {
@@ -68,6 +90,7 @@ describe('buildScorecard (Sep 1,000/day, Oct 1-16 2,000/day, today 10/17 5,000)'
     expect(card.mtdGross).toBe(0);
     expect(card.mtdGrowth).toBeNull();
     expect(card.forecastGross).toBeNull();
+    expect(card.forecastByMonthAvgGross).toBeNull();
     expect(card.lastMonthGross).toBe(30 * 1000);
     expect(card.todayGross).toBe(2000);
     expect(card.last7Gross).toBe(7 * 1000);

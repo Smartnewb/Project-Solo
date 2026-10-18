@@ -249,7 +249,7 @@ export function RevenueDrivers() {
   const signups = useMonthlySignups();
 
   const rows = useMemo(
-    () => buildDriverRows(daily.data ? bucketMonthly(daily.data, today) : [], metrics.data?.data, 12),
+    () => buildDriverRows(daily.data ? bucketMonthly(daily.data, today) : [], metrics.data?.data, Infinity),
     [daily.data, metrics.data, today],
   );
 
@@ -282,7 +282,7 @@ export function RevenueDrivers() {
             <div>
               <h3 className="text-base font-semibold text-gray-900">월별 분해: 매출 = 결제자 수 × 1인당 결제액</h3>
               <p className="mt-1 text-xs text-gray-500">
-                최근 12개월, KST 결제일 기준. 결제자 수(추정)는 월 매출 ÷ 1인당 결제액(ARPPU)으로 역산한 값이라
+                2025년 5월부터 전체, KST 결제일 기준. 결제자 수(추정)는 월 매출 ÷ 1인당 결제액(ARPPU)으로 역산한 값이라
                 실제 결제자 수와 조금 다를 수 있습니다.
               </p>
             </div>

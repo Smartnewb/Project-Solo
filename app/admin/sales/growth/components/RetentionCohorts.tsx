@@ -5,7 +5,7 @@ import { Alert, Card, Chip, Skeleton } from "@heroui/react";
 import { CalendarClock, Repeat, Users, type LucideIcon } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { CohortLtvItem, PurchaseCountDistributionItem } from "../../types";
-import { useLtvCohorts, useRepurchase } from "../hooks";
+import { HISTORY_START, useLtvCohorts, useRepurchase } from "../hooks";
 import { addDays, addMonths, exVat, formatKrwFull, kstToday } from "../lib/metrics";
 
 export const LTV_WINDOWS = [7, 30, 90] as const;
@@ -210,7 +210,15 @@ export function RetentionCohorts() {
   const repurchase = useRepurchase();
   const ltv = useLtvCohorts();
 
-  const cohortRows = useMemo(() => buildCohortRows(ltv.data?.cohortData, today), [ltv.data, today]);
+  const cohortRows = useMemo(
+    () =>
+      buildCohortRows(
+        ltv.data?.cohortData?.filter((c) => c.cohort >= HISTORY_START.slice(0, 7)),
+        today,
+        Infinity,
+      ),
+    [ltv.data, today],
+  );
   const r = repurchase.data;
 
   return (
@@ -281,7 +289,7 @@ export function RetentionCohorts() {
             <div>
               <h3 className="text-base font-semibold text-gray-900">가입 월별 코호트: 가입 후 7·30·90일 매출</h3>
               <p className="mt-1 text-xs text-gray-500">
-                최근 12개 가입 월. 각 칸은 그 달에 가입해 결제한 사람 1명이 가입 후 N일 안에 쓴 평균 금액입니다. 색이 진할수록
+                2025년 5월 이후 전체 가입 월. 각 칸은 그 달에 가입해 결제한 사람 1명이 가입 후 N일 안에 쓴 평균 금액입니다. 색이 진할수록
                 금액이 큽니다. 아직 N일이 지나지 않은 달은 &lsquo;집계 중&rsquo;으로 둡니다(오늘 {today} 기준).
               </p>
             </div>

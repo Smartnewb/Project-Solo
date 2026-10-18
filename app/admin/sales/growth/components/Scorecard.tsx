@@ -147,7 +147,9 @@ export function Scorecard() {
   const samePeriodExVat = exVat(card.lastMonthSamePeriodGross);
   const forecastExVat = card.forecastGross === null ? null : exVat(card.forecastGross);
   const forecastAchievement = forecastExVat === null ? null : forecastExVat / MONTHLY_TARGET_EX_VAT;
-  const dailyAverageExVat = card.completedDays > 0 ? mtdExVat / card.completedDays : null;
+  const last7AverageExVat = exVat(card.last7Gross) / 7;
+  const monthAvgForecastExVat =
+    card.forecastByMonthAvgGross === null ? null : exVat(card.forecastByMonthAvgGross);
   const last7ExVat = exVat(card.last7Gross);
   const prev7ExVat = exVat(card.prev7Gross);
   const lastMonthExVat = exVat(card.lastMonthGross);
@@ -202,10 +204,15 @@ export function Scorecard() {
             </ProgressBar.Track>
           </ProgressBar>
           <p className="text-xs text-text-muted">
-            {dailyAverageExVat === null
-              ? "완료된 날이 생기면 일평균 × 월 일수로 계산합니다."
-              : `완료 ${card.completedDays}일 일평균 ${formatKrw(dailyAverageExVat)} × ${totalDays}일`}
+            {monthAvgForecastExVat === null
+              ? "완료된 날이 생기면 이미 번 매출 + 최근 7일 일평균 × 남은 날로 계산합니다."
+              : `이미 번 ${formatKrw(mtdExVat)} + 최근 7일 일평균 ${formatKrw(last7AverageExVat)} × 남은 ${card.remainingDays}일`}
           </p>
+          {monthAvgForecastExVat !== null && (
+            <p className="text-xs text-text-light">
+              이번 달 평균({totalDays}일 환산) 기준이면 {formatKrw(monthAvgForecastExVat)}
+            </p>
+          )}
         </MetricCard>
       </div>
 
