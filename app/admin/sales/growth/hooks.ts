@@ -68,6 +68,68 @@ export function useLtvCohorts() {
   });
 }
 
+export const BEHAVIOR_WINDOW_DAYS = 90;
+
+export function useBehaviorRange() {
+  const today = kstToday();
+  return { today, startDate: addDays(today, -(BEHAVIOR_WINDOW_DAYS - 1)), endDate: today };
+}
+
+export function useFeatureFunnel() {
+  const range = useBehaviorRange();
+  return useQuery({
+    queryKey: ["sales-behavior", "feature-funnel", range.startDate, range.endDate],
+    queryFn: () => salesService.getFeatureFunnel({ startDate: range.startDate, endDate: range.endDate }),
+  });
+}
+
+export function useGemTrigger() {
+  const range = useBehaviorRange();
+  return useQuery({
+    queryKey: ["sales-behavior", "gem-trigger", range.startDate, range.endDate],
+    queryFn: () => salesService.getGemTrigger({ startDate: range.startDate, endDate: range.endDate }),
+  });
+}
+
+export function useFirstPurchase() {
+  return useQuery({
+    queryKey: ["sales-behavior", "first-purchase"],
+    queryFn: () => salesService.getFirstPurchase(),
+  });
+}
+
+export function useGemConsumption() {
+  const range = useBehaviorRange();
+  return useQuery({
+    queryKey: ["sales-behavior", "gem-consumption", range.startDate, range.endDate],
+    queryFn: () => salesService.getGemConsumption({ startDate: range.startDate, endDate: range.endDate }),
+  });
+}
+
+export function useGemEconomy() {
+  const range = useBehaviorRange();
+  return useQuery({
+    queryKey: ["sales-behavior", "gem-economy", range.startDate, range.endDate],
+    queryFn: () => salesService.getGemEconomy({ startDate: range.startDate, endDate: range.endDate }),
+  });
+}
+
+export function useWhaleUsers() {
+  return useQuery({
+    queryKey: ["sales-behavior", "whale-users"],
+    queryFn: () => salesService.getWhaleUsers(),
+  });
+}
+
+export function useProductSales(month: string) {
+  const from = monthStart(month);
+  const to = addDays(addMonths(month, 1), -1);
+  return useQuery({
+    queryKey: ["sales-behavior", "product-sales", from],
+    queryFn: () => salesService.getProductSales({ startDate: from, endDate: to }),
+  });
+}
+
 export function useMonthlySignups() {
   return useQuery({
     queryKey: ["sales-growth", "signups", "monthly", HISTORY_START],

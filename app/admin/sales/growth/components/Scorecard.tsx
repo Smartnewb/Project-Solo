@@ -23,7 +23,7 @@ import {
   formatPercent,
 } from "../lib/metrics";
 
-export const MONTHLY_TARGET_EX_VAT = 10_000_000;
+export const MONTHLY_TARGET_EX_VAT = 30_000_000;
 
 function monthLabel(date: string): string {
   return `${Number(date.slice(5, 7))}월`;
