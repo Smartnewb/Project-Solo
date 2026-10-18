@@ -16,8 +16,9 @@ import { PeriodSalesSummary } from "./components/PeriodSalesSummary";
 import { RevenueMetricsTab } from "./components/RevenueMetricsTab";
 import { ProductAnalysisTab } from "./components/ProductAnalysisTab";
 import { InsightsTab } from "./components/InsightsTab";
+import { GrowthDashboard } from "./growth/GrowthDashboard";
 
-type MainTab = "sales" | "metrics" | "products" | "insights";
+type MainTab = "growth" | "sales" | "metrics" | "products" | "insights";
 
 interface DateRange {
   startDate: Date | undefined;
@@ -27,7 +28,7 @@ interface DateRange {
 type SalesTrendTab = "monthly" | "daily";
 
 function SalesPageContent() {
-  const [mainTab, setMainTab] = useState<MainTab>("sales");
+  const [mainTab, setMainTab] = useState<MainTab>("growth");
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: undefined,
     endDate: undefined,
@@ -44,9 +45,9 @@ function SalesPageContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">매출 관리</h1>
+              <h1 className="text-3xl font-bold text-gray-900">매출 성장</h1>
               <p className="mt-2 text-sm text-gray-600">
-                매출 현황과 결제수단별 분석을 확인하세요
+                매출 추세·성장률·결제자·수수료를 한 화면에서 확인하세요
               </p>
             </div>
             <div className="flex items-center space-x-3">
@@ -57,7 +58,19 @@ function SalesPageContent() {
               </div>
             </div>
           </div>
-          <div className="mt-6 flex gap-2 border-b border-gray-200">
+          <div className="mt-6 flex gap-2 overflow-x-auto border-b border-gray-200">
+            <Button
+              onClick={() => setMainTab("growth")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                mainTab === "growth"
+                  ? "border-[#7A4AE2] text-[#7A4AE2]"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              variant={"secondary"}
+              size={"md"}
+            >
+              성장 대시보드
+            </Button>
             <Button
               onClick={() => setMainTab("sales")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
@@ -68,7 +81,7 @@ function SalesPageContent() {
               variant={"secondary"}
               size={"md"}
             >
-              매출 현황
+              상세 매출(이전)
             </Button>
             <Button
               onClick={() => setMainTab("metrics")}
@@ -111,7 +124,9 @@ function SalesPageContent() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {mainTab === "metrics" ? (
+        {mainTab === "growth" ? (
+          <GrowthDashboard />
+        ) : mainTab === "metrics" ? (
           <RevenueMetricsTab
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}
