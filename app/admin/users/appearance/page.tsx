@@ -2,7 +2,7 @@
 import { Alert, Separator, Spinner, Tabs } from "@heroui/react";
 
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { useAppearanceGradeStats } from "@/app/admin/hooks";
 import AppearanceGradeStatsCard from "@/components/admin/appearance/AppearanceGradeStatsCard";
@@ -12,11 +12,22 @@ import UnclassifiedUsersPanel from "@/components/admin/appearance/UnclassifiedUs
 import DuplicatePhoneUsersPanel from "@/components/admin/appearance/DuplicatePhoneUsersPanel";
 import VerifiedUsersPanel from "@/components/admin/appearance/VerifiedUsersPanel";
 import UniversityVerificationPendingPanel from "@/components/admin/appearance/UniversityVerificationPendingPanel";
+import UserDetailModal from "@/components/admin/appearance/UserDetailModal";
 import { appearanceGradeEventBus } from "./event-bus";
 
 function AppearanceGradePageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const initialTab = parseInt(searchParams?.get("tab") || "0", 10);
+  const linkedUserId = searchParams?.get("userId") || null;
+
+  const closeLinkedUser = () => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    params.delete("userId");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  };
 
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -143,6 +154,16 @@ function AppearanceGradePageContent() {
         {activeTab === 4 && <VerifiedUsersPanel />}
         {activeTab === 5 && <UniversityVerificationPendingPanel />}
       </div>
+      {linkedUserId && (
+        <UserDetailModal
+          userId={linkedUserId}
+          open
+          onClose={closeLinkedUser}
+          userDetail={{} as any}
+          loading={false}
+          error={null}
+        />
+      )}
     </div>
   );
 }
