@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { revenueV2 } from "@/app/services/admin/revenue-v2";
 import { stats } from "@/app/services/admin/dashboard";
 import { salesService } from "@/app/services/sales";
@@ -11,8 +11,13 @@ import {
   kstMidnightIso,
   kstToday,
   monthStart,
+  summarizeChannelDay,
+  type ChannelDay,
   type DailyPoint,
 } from "./lib/metrics";
+
+// 매출은 화면에 들어올 때마다, 다른 탭에서 돌아올 때마다 운영 장부를 다시 읽는다.
+const LIVE = { staleTime: 0, refetchOnMount: "always", refetchOnWindowFocus: true } as const;
 
 export const HISTORY_START = "2025-05-01";
 
@@ -33,6 +38,38 @@ export function useDailyRevenue() {
       const rows = await revenueV2.getDailyTrend(kstMidnightIso(from), kstMidnightIso(addDays(to, 1)));
       return fillDaily(rows ?? [], from, to);
     },
+    ...LIVE,
+  });
+}
+
+export const RECENT_DAYS = 14;
+
+// 최근 14일과 그 전 14일(비교·7일 이동평균·지난주 같은 요일용) + 오늘. 하루씩 결제수단별 합계를 읽는다.
+export function useRecentChannelDays() {
+  const today = kstToday();
+  const dates = Array.from({ length: RECENT_DAYS * 2 + 1 }, (_, i) => addDays(today, i - RECENT_DAYS * 2));
+  return useQueries({
+    queries: dates.map((date) => ({
+      queryKey: ["sales-growth", "channel-day", date],
+      queryFn: async (): Promise<ChannelDay> => {
+        const res = await revenueV2.getBreakdown(kstMidnightIso(date), kstMidnightIso(addDays(date, 1)));
+        return summarizeChannelDay(date, res?.byMethod ?? []);
+      },
+      ...LIVE,
+    })),
+    combine: (results) => {
+      const failed = results.find((r) => r.isError);
+      return {
+        today,
+        data: results.every((r) => r.data) ? results.map((r) => r.data as ChannelDay) : undefined,
+        isPending: results.some((r) => r.isPending),
+        isFetching: results.some((r) => r.isFetching),
+        isError: Boolean(failed),
+        error: failed?.error ?? null,
+        updatedAt: Math.min(...results.map((r) => r.dataUpdatedAt)),
+        refetch: () => results.forEach((r) => void r.refetch()),
+      };
+    },
   });
 }
 
@@ -42,6 +79,7 @@ export function useMethodBreakdown(month: string) {
   return useQuery({
     queryKey: ["sales-growth", "breakdown", from],
     queryFn: () => revenueV2.getBreakdown(kstMidnightIso(from), kstMidnightIso(to)),
+    ...LIVE,
   });
 }
 

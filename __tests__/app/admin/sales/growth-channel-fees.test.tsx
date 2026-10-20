@@ -38,7 +38,7 @@ const PREVIOUS = {
   byProduct: [],
 };
 
-const EXPECTED_FEE = Math.round(1_000_000 * 0.1364 + 500_000 * 0.15 + (300_000 + 100_000) * 0.032);
+const EXPECTED_FEE = Math.round(1_000_000 * 0.1364 + 500_000 * 0.15 + (300_000 + 100_000) * 0.0187);
 
 beforeEach(() => {
   mockBreakdown.mockReset();
@@ -57,30 +57,30 @@ it("고정 결제수단 내역으로 채널별 예상 수수료 합계를 계산
 
   const table = screen.getByRole("table");
   const total = within(table).getAllByRole("row").at(-1)!;
-  expect(EXPECTED_FEE).toBe(224_200);
+  expect(EXPECTED_FEE).toBe(218_880);
   expect(total).toHaveTextContent("합계");
   expect(total).toHaveTextContent("19건");
   expect(total).toHaveTextContent("1,900,000원");
-  expect(total).toHaveTextContent("−224,200원");
-  expect(total).toHaveTextContent("1,675,800원");
-  expect(total).toHaveTextContent("평균 11.80%");
+  expect(total).toHaveTextContent("−218,880원");
+  expect(total).toHaveTextContent("1,681,120원");
+  expect(total).toHaveTextContent("평균 11.52%");
 
   expect(within(table).getByText("애플")).toBeInTheDocument();
   expect(within(table).getByText("구글")).toBeInTheDocument();
   const pgRow = within(table).getByText("PG(카드 등)").closest("tr")!;
   expect(pgRow).toHaveTextContent("4건");
   expect(pgRow).toHaveTextContent("400,000원");
-  expect(pgRow).toHaveTextContent("−12,800원");
+  expect(pgRow).toHaveTextContent("−7,480원");
 
   const flow = screen.getByRole("list", { name: "돈 흐름" });
   expect(within(flow).getByText("예상 정산액").closest("li")).toHaveTextContent("168만원");
   expect(screen.getByRole("list", { name: "매출 상위 상품" })).toHaveTextContent("구슬 30개");
-  expect(screen.getByText(/애플 13.6%, 구글 15%, PG 3.2%/)).toBeInTheDocument();
+  expect(screen.getByText(/애플 13.6%, 구글 15%, PG 1.87%/)).toBeInTheDocument();
 });
 
 it("전월 대비 평균 수수료율 변화를 보여준다", () => {
   render(<ChannelFees />);
-  expect(screen.getByText("+8.60%p")).toBeInTheDocument();
+  expect(screen.getByText("+9.65%p")).toBeInTheDocument();
 });
 
 it("불러오기 실패 시 한국어 오류를 보여준다", () => {

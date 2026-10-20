@@ -24,7 +24,7 @@ export const MONTH_OPTIONS = 6;
 export const TOP_PRODUCTS = 5;
 
 export const FEE_NOTE =
-  "채널별 실측 수수료율(애플 13.6%, 구글 15%, PG 3.2%)을 곱한 추정치입니다. 부분 환불·정산 지연 건은 실제와 수천 원 차이가 날 수 있습니다.";
+  "채널별 수수료율(애플 13.6%, 구글 15%, PG 1.87%)을 곱한 추정치입니다. 부분 환불·정산 지연 건은 실제와 수천 원 차이가 날 수 있습니다.";
 
 export interface MonthOption {
   key: string;
@@ -456,8 +456,8 @@ export function ChannelFees() {
       </Card>
 
       <p className="text-xs text-gray-400">
-        수수료율 출처: 2026-09-01~10-17 실제 정산 내역(애플 {rateLabel(FEE_RATES.APPLE_IAP)}, 구글 {rateLabel(FEE_RATES.GOOGLE_PLAY)}, PG{" "}
-        {rateLabel(FEE_RATES.PG)}). 결제수단이 비어 있거나 알 수 없는 건은 PG로 계산합니다.
+        수수료율 출처: 애플 {rateLabel(FEE_RATES.APPLE_IAP)}·구글 {rateLabel(FEE_RATES.GOOGLE_PLAY)}는 2026-09-01~10-17 실제 정산 내역, PG{" "}
+        {rateLabel(FEE_RATES.PG)}는 웰컴페이먼츠 영세 구간 1.7% + 수수료 부가세. 결제수단이 비어 있거나 알 수 없는 건은 PG로 계산합니다.
       </p>
     </div>
   );

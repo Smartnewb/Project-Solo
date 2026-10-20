@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { useDailyRevenue, useGrowthRange } from "../hooks";
+import { DailyChannelTrend } from "./DailyChannelTrend";
 import {
   addDays,
   bucketMonthly,
@@ -27,7 +28,6 @@ import {
   formatKrwFull,
   formatPercent,
   growthRate,
-  movingAverage,
   type BucketPoint,
   type DailyPoint,
 } from "../lib/metrics";
@@ -40,7 +40,6 @@ const GRANULARITY_LABELS: Record<Granularity, string> = {
   monthly: "월별",
 };
 
-const DAILY_WINDOW_DAYS = 90;
 const CHART_HEIGHT = 320;
 
 const CHART_COLORS = {
@@ -61,31 +60,6 @@ interface TrendDatum {
   incomplete: boolean;
   days: number;
   count: number;
-}
-
-function dayLabel(date: string): string {
-  return `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
-}
-
-function dailyData(days: DailyPoint[], today: string): TrendDatum[] {
-  const from = addDays(today, -(DAILY_WINDOW_DAYS - 1));
-  const average = movingAverage(days, 7);
-  return days.flatMap((d, i) =>
-    d.date < from
-      ? []
-      : [
-          {
-            key: d.date,
-            label: dayLabel(d.date),
-            revenue: exVat(d.gross),
-            line: average[i] === null ? null : exVat(average[i] as number),
-            partial: d.date === today,
-            incomplete: d.date === today,
-            days: 1,
-            count: d.count,
-          },
-        ],
-  );
 }
 
 function bucketData(buckets: BucketPoint[], fullDays: (b: BucketPoint) => number): TrendDatum[] {
@@ -225,17 +199,16 @@ function GrowthTrendSkeleton() {
 export function GrowthTrend() {
   const { today } = useGrowthRange();
   const query = useDailyRevenue();
-  const [granularity, setGranularity] = useState<Granularity>("weekly");
+  const [granularity, setGranularity] = useState<Granularity>("daily");
 
   const days = query.data;
   const weeks = useMemo(() => (days ? bucketWeekly(days, today) : []), [days, today]);
   const months = useMemo(() => (days ? bucketMonthly(days, today) : []), [days, today]);
   const data = useMemo<TrendDatum[]>(() => {
-    if (!days) return [];
-    if (granularity === "daily") return dailyData(days, today);
+    if (!days || granularity === "daily") return [];
     if (granularity === "weekly") return bucketData(weeks, () => 7);
     return bucketData(months, (b) => daysInMonth(b.key));
-  }, [days, granularity, months, today, weeks]);
+  }, [days, granularity, months, weeks]);
   const weeklyCompound = useMemo(() => compoundWeeklyGrowth(weeks, 12), [weeks]);
   const fourWeek = useMemo(() => (days ? fourWeekComparison(days, today) : null), [days, today]);
 
@@ -257,9 +230,10 @@ export function GrowthTrend() {
   }
 
   const isDaily = granularity === "daily";
-  const lineName = isDaily ? "7일 이동평균" : granularity === "weekly" ? "전주 대비 성장률" : "전월 대비 성장률";
+  const lineName = granularity === "weekly" ? "전주 대비 성장률" : "전월 대비 성장률";
+  const title = isDaily ? "최근 14일 일별 매출(부가세·수수료 제외)" : "매출 추이(부가세 제외)";
   const description = isDaily
-    ? `최근 ${DAILY_WINDOW_DAYS}일 · 막대는 하루 매출, 선은 7일 이동평균`
+    ? "막대는 결제수단별 회사에 남는 돈, 실선은 7일 이동평균, 점선은 지난주 같은 요일"
     : granularity === "weekly"
       ? "월요일 시작 주 · 막대는 주간 매출, 선은 전주 대비 성장률"
       : "2025년 5월부터 전체 · 막대는 월 매출, 선은 전월 대비 성장률";
@@ -268,7 +242,7 @@ export function GrowthTrend() {
     <Card>
       <Card.Header className="flex-row flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <Card.Title className="mb-0 text-base font-semibold text-text">매출 추이(부가세 제외)</Card.Title>
+          <Card.Title className="mb-0 text-base font-semibold text-text">{title}</Card.Title>
           <Card.Description className="mb-0">{description}</Card.Description>
         </div>
         <ToggleButtonGroup
@@ -291,98 +265,100 @@ export function GrowthTrend() {
       </Card.Header>
 
       <Card.Content className="gap-4">
-        <div className="grid grid-cols-2 gap-4 rounded-2xl bg-surface-soft px-4 py-3">
-          <SummaryStat
-            label="최근 12주 평균 주간 성장률"
-            value={weeklyCompound}
-            hint="완료된 주만 · 복리 기준"
-          />
-          <SummaryStat
-            label="최근 4주 vs 그 전 4주"
-            value={fourWeek}
-            hint="어제까지 28일 · 그 전 28일 대비"
-          />
-        </div>
+        {isDaily ? (
+          <DailyChannelTrend />
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 rounded-2xl bg-surface-soft px-4 py-3">
+              <SummaryStat
+                label="최근 12주 평균 주간 성장률"
+                value={weeklyCompound}
+                hint="완료된 주만 · 복리 기준"
+              />
+              <SummaryStat
+                label="최근 4주 vs 그 전 4주"
+                value={fourWeek}
+                hint="어제까지 28일 · 그 전 28일 대비"
+              />
+            </div>
 
-        <div style={{ width: "100%", height: CHART_HEIGHT }}>
-          <ResponsiveContainer>
-            <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
-              <XAxis
-                dataKey="label"
-                interval="preserveStartEnd"
-                tick={{ fontSize: 11, fill: CHART_COLORS.axis }}
-                axisLine={{ stroke: CHART_COLORS.grid }}
-                tickLine={false}
-                minTickGap={16}
-              />
-              <YAxis
-                yAxisId="revenue"
-                tick={{ fontSize: 11, fill: CHART_COLORS.axis }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={manwon}
-                width={64}
-              />
-              <YAxis
-                yAxisId="line"
-                orientation="right"
-                hide={isDaily}
-                tick={{ fontSize: 11, fill: CHART_COLORS.axis }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={percentTick}
-                width={48}
-              />
-              <Tooltip
-                cursor={{ fill: "var(--color-surface-strong)" }}
-                content={<TrendTooltip granularity={granularity} />}
-              />
-              <Legend
-                verticalAlign="top"
-                align="right"
-                height={28}
-                iconSize={10}
-                wrapperStyle={{ fontSize: 12, color: "var(--color-text-light)" }}
-              />
-              {!isDaily && (
-                <ReferenceLine yAxisId="line" y={0} stroke={CHART_COLORS.zero} strokeDasharray="4 4" />
-              )}
-              <Bar
-                yAxisId="revenue"
-                dataKey="revenue"
-                name="매출(부가세 제외)"
-                fill={CHART_COLORS.bar}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={isDaily ? 10 : 36}
-                isAnimationActive={false}
-              >
-                {data.map((d) => (
-                  <Cell key={d.key} fill={d.incomplete ? CHART_COLORS.barPartial : CHART_COLORS.bar} />
-                ))}
-              </Bar>
-              <Line
-                yAxisId={isDaily ? "revenue" : "line"}
-                type="monotone"
-                dataKey="line"
-                name={lineName}
-                stroke={CHART_COLORS.line}
-                strokeWidth={2}
-                dot={isDaily ? false : { r: 3, strokeWidth: 0, fill: CHART_COLORS.line }}
-                activeDot={{ r: 4 }}
-                connectNulls={false}
-                isAnimationActive={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+            <div style={{ width: "100%", height: CHART_HEIGHT }}>
+              <ResponsiveContainer>
+                <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    interval="preserveStartEnd"
+                    tick={{ fontSize: 11, fill: CHART_COLORS.axis }}
+                    axisLine={{ stroke: CHART_COLORS.grid }}
+                    tickLine={false}
+                    minTickGap={16}
+                  />
+                  <YAxis
+                    yAxisId="revenue"
+                    tick={{ fontSize: 11, fill: CHART_COLORS.axis }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={manwon}
+                    width={64}
+                  />
+                  <YAxis
+                    yAxisId="line"
+                    orientation="right"
+                    tick={{ fontSize: 11, fill: CHART_COLORS.axis }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={percentTick}
+                    width={48}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "var(--color-surface-strong)" }}
+                    content={<TrendTooltip granularity={granularity} />}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    height={28}
+                    iconSize={10}
+                    wrapperStyle={{ fontSize: 12, color: "var(--color-text-light)" }}
+                  />
+                  <ReferenceLine yAxisId="line" y={0} stroke={CHART_COLORS.zero} strokeDasharray="4 4" />
+                  <Bar
+                    yAxisId="revenue"
+                    dataKey="revenue"
+                    name="매출(부가세 제외)"
+                    fill={CHART_COLORS.bar}
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={36}
+                    isAnimationActive={false}
+                  >
+                    {data.map((d) => (
+                      <Cell key={d.key} fill={d.incomplete ? CHART_COLORS.barPartial : CHART_COLORS.bar} />
+                    ))}
+                  </Bar>
+                  <Line
+                    yAxisId="line"
+                    type="monotone"
+                    dataKey="line"
+                    name={lineName}
+                    stroke={CHART_COLORS.line}
+                    strokeWidth={2}
+                    dot={{ r: 3, strokeWidth: 0, fill: CHART_COLORS.line }}
+                    activeDot={{ r: 4 }}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
 
-        <p className="text-xs text-text-muted">
-          연한 막대는 아직 끝나지 않았거나 일부 날짜만 포함된 기간입니다. 성장률은 완료된 기간끼리만 비교합니다.
-          {!isDaily && data.length > 0 && ` 마지막 완료 구간 매출 ${formatKrw(
-            [...data].reverse().find((d) => !d.incomplete)?.revenue ?? 0,
-          )}.`}
-        </p>
+            <p className="text-xs text-text-muted">
+              연한 막대는 아직 끝나지 않았거나 일부 날짜만 포함된 기간입니다. 성장률은 완료된 기간끼리만 비교합니다.
+              {data.length > 0 &&
+                ` 마지막 완료 구간 매출 ${formatKrw([...data].reverse().find((d) => !d.incomplete)?.revenue ?? 0)}.`}
+            </p>
+          </>
+        )}
       </Card.Content>
     </Card>
   );

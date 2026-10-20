@@ -1,11 +1,12 @@
 export const VAT_RATE = 0.1;
 
-// 부가세 포함 결제액 대비 추정 수수료율. 출처: central payments.db effective_transactions
-// 2026-09-01~2026-10-17 실측(애플 13.64%, 구글 14.66~15%, 웰컴페이먼츠 3.2%). 확정 정산액이 아니다.
+// 부가세 포함 결제액 대비 추정 수수료율. 애플·구글: central payments.db effective_transactions
+// 2026-09-01~2026-10-17 실측(애플 13.64%, 구글 14.66~15%). 웰컴페이먼츠(PG): 영세 구간 1.7% + 수수료 부가세
+// = 결제액의 1.87%(2026-10-20 관리자 화면 확인). 확정 정산액이 아니다.
 export const FEE_RATES = {
   APPLE_IAP: 0.1364,
   GOOGLE_PLAY: 0.15,
-  PG: 0.032,
+  PG: 0.0187,
 } as const;
 
 export type FeeChannel = keyof typeof FEE_RATES;
@@ -226,6 +227,35 @@ export function feeChannelOf(method: string): FeeChannel {
   if (m === "APPLE_IAP" || m.includes("APPLE")) return "APPLE_IAP";
   if (m === "GOOGLE_PLAY" || m.includes("GOOGLE")) return "GOOGLE_PLAY";
   return "PG";
+}
+
+// 회사에 실제로 남는 돈의 추정치: 결제액에서 부가세(결제액의 1/11)와 채널 수수료를 뺀 값.
+export function netOfVatAndFee(gross: number, channel: FeeChannel): number {
+  return exVat(gross) - gross * FEE_RATES[channel];
+}
+
+export interface ChannelDay {
+  date: string;
+  count: number;
+  gross: number;
+  net: number;
+  netByChannel: Record<FeeChannel, number>;
+}
+
+export function summarizeChannelDay(
+  date: string,
+  byMethod: Array<{ method: string; amount: number; count: number }>,
+): ChannelDay {
+  const netByChannel: Record<FeeChannel, number> = { APPLE_IAP: 0, GOOGLE_PLAY: 0, PG: 0 };
+  let gross = 0;
+  let count = 0;
+  for (const row of byMethod) {
+    netByChannel[feeChannelOf(row.method)] += netOfVatAndFee(row.amount, feeChannelOf(row.method));
+    gross += row.amount;
+    count += row.count;
+  }
+  const net = netByChannel.APPLE_IAP + netByChannel.GOOGLE_PLAY + netByChannel.PG;
+  return { date, count, gross, net, netByChannel };
 }
 
 export interface FeeEstimate {
