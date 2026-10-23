@@ -54,6 +54,7 @@ import EmailNotificationModal from "./modals/EmailNotificationModal";
 import SmsNotificationModal from "./modals/SmsNotificationModal";
 import UniversityTransferModal from "./modals/UniversityTransferModal";
 import BirthdayEditModal from "./modals/BirthdayEditModal";
+import GenderEditModal from "./modals/GenderEditModal";
 import AccountStatusModal from "./modals/AccountStatusModal";
 import { ReferralPostSignupSection } from "./referral/ReferralPostSignupSection";
 import { BlindAvatarSources } from "@/app/admin/users/blind-avatar-sources";
@@ -259,6 +260,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [universityTransferModalOpen, setUniversityTransferModalOpen] =
     useState(false);
   const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
+  const [genderModalOpen, setGenderModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] =
     useState(false);
   const [smsNotificationModalOpen, setSmsNotificationModalOpen] =
@@ -1674,6 +1676,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         >
                           나이 변경
                         </Button>
+                        <Button
+                          onClick={() => setGenderModalOpen(true)}
+                          variant={"secondary"}
+                          isDisabled={actionLoading}
+                          size={"sm"}
+                          className="rounded-xl"
+                        >
+                          성별 정정
+                        </Button>
                         {userDetail.signupRoute && (
                           <Chip
                             size={"sm"}
@@ -2690,6 +2701,19 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               setUserDetail((prev) =>
                 prev ? { ...prev, birthday, age } : prev,
               );
+              if (onRefresh) onRefresh();
+            }}
+          />
+          <GenderEditModal
+            open={genderModalOpen}
+            onClose={() => setGenderModalOpen(false)}
+            userId={userId || ""}
+            userName={userDetail?.name}
+            onSuccess={({ gender, rejectedMatches }) => {
+              setActionSuccess(
+                `성별을 ${GENDER_LABELS[gender]}(으)로 정정했습니다. 대기 카드 ${rejectedMatches}장을 내렸습니다.`,
+              );
+              setUserDetail((prev) => (prev ? { ...prev, gender } : prev));
               if (onRefresh) onRefresh();
             }}
           />

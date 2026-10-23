@@ -261,6 +261,27 @@ export function useUpdateUserBirthday() {
   });
 }
 
+export function useGenderCorrectionPreview(userId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...usersKeys.appearance(), 'gender-preview', userId],
+    queryFn: () => AdminService.userAppearance.getGenderCorrectionPreview(userId),
+    enabled: enabled && !!userId,
+    staleTime: 0,
+  });
+}
+
+export function useCorrectUserGender() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { userId: string; gender: 'MALE' | 'FEMALE' }) =>
+      AdminService.userAppearance.correctUserGender(params.userId, params.gender),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [...usersKeys.appearance(), 'details', vars.userId] });
+      qc.invalidateQueries({ queryKey: usersKeys.appearance() });
+    },
+  });
+}
+
 export function useUpdateAccountStatus() {
   const qc = useQueryClient();
   return useMutation({
