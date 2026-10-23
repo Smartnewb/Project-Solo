@@ -107,7 +107,10 @@ async function resolveTargetPath(context: AdminProxyRouteContext): Promise<strin
 	if (!Array.isArray(params?.path) || params.path.length === 0) {
 		return null;
 	}
-	return params.path.join('/');
+	// Next 가 세그먼트를 디코딩해 주므로 URL 을 자르는 '#', '?' 만 다시 인코딩한다. 안 그러면 pk 의
+	// '#'(REVIEW#APP_STORE#...)이 new URL() 에서 fragment 로 잘려 백엔드가 /app-reviews/REVIEW 로 받는다.
+	// '%' 까지 인코딩하면 아래 %2e%2e 순회 방어가 달라지므로 건드리지 않는다.
+	return params.path.map((s) => s.replace(/[#?]/g, encodeURIComponent)).join('/');
 }
 
 async function doRefresh(meta: AdminSessionMeta, refreshToken: string): Promise<string | null> {
