@@ -6,19 +6,42 @@ export interface FeatureFlag {
 	description: string;
 	enabled: boolean;
 	allowedRoles: string[];
+	allowedUserIds: string[];
+	allowTestUsers: boolean;
+	rolloutPercentage: number;
 	country: string | null;
 	createdAt: string;
 	updatedAt: string;
 }
 
-type FeatureFlagResponse = Omit<FeatureFlag, 'allowedRoles'> & {
+export interface FeatureFlagChange {
+	id: string;
+	flagName: string;
+	action: string;
+	diff: { before?: Record<string, unknown>; after?: Record<string, unknown> } | null;
+	adminUserId: string;
+	adminName: string | null;
+	createdAt: string;
+}
+
+type FeatureFlagResponse = Omit<
+	FeatureFlag,
+	'allowedRoles' | 'allowedUserIds' | 'allowTestUsers' | 'rolloutPercentage'
+> & {
 	allowedRoles?: string[] | null;
+	allowedUserIds?: string[] | null;
+	allowTestUsers?: boolean | null;
+	rolloutPercentage?: number | null;
 };
 
 function normalizeFeatureFlag(flag: FeatureFlagResponse): FeatureFlag {
 	return {
 		...flag,
+		description: flag.description ?? '',
 		allowedRoles: Array.isArray(flag.allowedRoles) ? flag.allowedRoles : [],
+		allowedUserIds: Array.isArray(flag.allowedUserIds) ? flag.allowedUserIds : [],
+		allowTestUsers: flag.allowTestUsers === true,
+		rolloutPercentage: typeof flag.rolloutPercentage === 'number' ? flag.rolloutPercentage : 0,
 	};
 }
 
@@ -26,6 +49,14 @@ export const featureFlags = {
 	getAll: async (): Promise<FeatureFlag[]> => {
 		const result = await adminGet<{ data: FeatureFlagResponse[] | null }>('/admin/v2/feature-flags');
 		return Array.isArray(result.data) ? result.data.map(normalizeFeatureFlag) : [];
+	},
+
+	getChanges: async (limit = 50): Promise<FeatureFlagChange[]> => {
+		const result = await adminGet<{ data: FeatureFlagChange[] | null }>(
+			'/admin/v2/feature-flags/changes',
+			{ limit },
+		);
+		return Array.isArray(result.data) ? result.data : [];
 	},
 
 	toggle: async (name: string, enabled: boolean): Promise<FeatureFlag> => {

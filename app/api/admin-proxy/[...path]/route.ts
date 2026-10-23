@@ -9,6 +9,10 @@ import {
 	setSessionMeta,
 	type AdminSessionMeta,
 } from '@/shared/auth';
+import {
+	ADMIN_RETRY_HEADER,
+	ADMIN_SESSION_EXPIRED_CODE,
+} from '@/shared/auth/admin-auth-contract';
 import { adminLog } from '@/shared/lib/admin-logger';
 import { isSameOrigin } from '@/shared/lib/csrf';
 
@@ -16,6 +20,8 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/ap
 const BACKEND_BASE_PATH = new URL(BACKEND_URL).pathname.replace(/\/$/, '');
 
 const PROACTIVE_REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
+// 쿠키 만료(30일)가 로그인 시점에 고정되지 않도록, 이보다 오래된 세션은 갱신해 쿠키를 다시 심는다.
+const SESSION_SLIDE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const ALLOWED_PATH_PREFIXES = [
@@ -113,7 +119,11 @@ async function resolveTargetPath(context: AdminProxyRouteContext): Promise<strin
 	return params.path.map((s) => s.replace(/[#?]/g, encodeURIComponent)).join('/');
 }
 
-async function doRefresh(meta: AdminSessionMeta, refreshToken: string): Promise<string | null> {
+async function doRefresh(
+	meta: AdminSessionMeta,
+	refreshToken: string,
+	clearOnFailure: boolean,
+): Promise<string | null> {
 	try {
 		const res = await fetch(`${BACKEND_URL}/auth/refresh`, {
 			method: 'POST',
@@ -125,7 +135,7 @@ async function doRefresh(meta: AdminSessionMeta, refreshToken: string): Promise<
 		});
 
 		if (!res.ok) {
-			await clearAdminCookies();
+			if (clearOnFailure) await clearAdminCookies();
 			return null;
 		}
 
@@ -147,7 +157,10 @@ async function doRefresh(meta: AdminSessionMeta, refreshToken: string): Promise<
 	}
 }
 
-async function refreshAccessToken(meta: AdminSessionMeta | null): Promise<string | null> {
+async function refreshAccessToken(
+	meta: AdminSessionMeta | null,
+	clearOnFailure: boolean,
+): Promise<string | null> {
 	const refreshToken = await getAdminRefreshToken();
 	if (!refreshToken || !meta) {
 		return null;
@@ -159,7 +172,7 @@ async function refreshAccessToken(meta: AdminSessionMeta | null): Promise<string
 		return existing;
 	}
 
-	const pending = doRefresh(meta, refreshToken).finally(() => {
+	const pending = doRefresh(meta, refreshToken, clearOnFailure).finally(() => {
 		inFlightRefreshes.delete(dedupKey);
 	});
 	inFlightRefreshes.set(dedupKey, pending);
@@ -218,17 +231,27 @@ async function proxyRequest(request: NextRequest, context: AdminProxyRouteContex
 		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 	}
 
+	// 백엔드는 refresh 토큰을 계정당 하나만 두고 갱신마다 바꾼다. 동시 요청 중 하나만 갱신에 성공하므로
+	// 첫 실패에서 쿠키를 지우면 성공한 쪽의 새 쿠키까지 지워진다. 클라이언트 재시도에서만 지운다.
+	const clearOnFailure = request.headers.get(ADMIN_RETRY_HEADER) === '1';
+	const sessionExpired = () =>
+		NextResponse.json(
+			{ error: 'Not authenticated', code: ADMIN_SESSION_EXPIRED_CODE },
+			{ status: 401 },
+		);
+
 	if (!token && targetPath !== 'auth/refresh') {
-		token = await refreshAccessToken(meta);
+		token = await refreshAccessToken(meta, clearOnFailure);
 	}
 
 	if (!token) {
-		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+		return sessionExpired();
 	}
 
 	// Proactive refresh: if token expires within 5 minutes, refresh before making the request
-	if (targetPath !== 'auth/refresh' && isTokenExpiringSoon(token)) {
-		const newToken = await refreshAccessToken(meta);
+	const sessionStale = Date.now() - (meta.issuedAt ?? 0) > SESSION_SLIDE_AFTER_MS;
+	if (targetPath !== 'auth/refresh' && (isTokenExpiringSoon(token) || sessionStale)) {
+		const newToken = await refreshAccessToken(meta, clearOnFailure);
 		if (newToken) {
 			token = newToken;
 		}
@@ -269,18 +292,19 @@ async function proxyRequest(request: NextRequest, context: AdminProxyRouteContex
 	);
 
 	if (backendRes.status === 401 && targetPath !== 'auth/refresh') {
-		const newToken = await refreshAccessToken(meta);
-		if (newToken) {
-			backendRes = await callBackend(
-				url.toString(),
-				request.method,
-				body,
-				newToken,
-				meta,
-				contentType,
-				extraHeaders,
-			);
+		const newToken = await refreshAccessToken(meta, clearOnFailure);
+		if (!newToken) {
+			return sessionExpired();
 		}
+		backendRes = await callBackend(
+			url.toString(),
+			request.method,
+			body,
+			newToken,
+			meta,
+			contentType,
+			extraHeaders,
+		);
 	}
 
 	const responseHeaders = new Headers();
