@@ -51,11 +51,12 @@ const FILTERS: { key: FilterKey; label: string; test: (f: FeatureFlag) => boolea
 	{
 		key: "week",
 		label: "최근 7일 변경",
-		test: (f) => Date.now() - new Date(f.updatedAt).getTime() <= WEEK_MS,
+		test: (f) => !!f.updatedAt && Date.now() - new Date(f.updatedAt).getTime() <= WEEK_MS,
 	},
 ];
 
-function formatRelativeTime(dateStr: string): string {
+function formatRelativeTime(dateStr: string | null): string {
+	if (!dateStr) return "기록 없음";
 	const diff = Date.now() - new Date(dateStr).getTime();
 	const minutes = Math.floor(diff / 60000);
 	if (minutes < 1) return "방금 전";
@@ -346,7 +347,7 @@ export default function FeatureFlagsV2() {
 				</div>
 				{visible.length === 0
 					? noMatch()
-					: [...visible].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(renderRow)}
+					: [...visible].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")).map(renderRow)}
 			</>
 		);
 	};

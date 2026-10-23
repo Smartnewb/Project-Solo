@@ -10,8 +10,8 @@ export interface FeatureFlag {
 	allowTestUsers: boolean;
 	rolloutPercentage: number;
 	country: string | null;
-	createdAt: string;
-	updatedAt: string;
+	createdAt: string | null;
+	updatedAt: string | null;
 }
 
 export interface FeatureFlagChange {

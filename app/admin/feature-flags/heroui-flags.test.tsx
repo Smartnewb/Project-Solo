@@ -116,6 +116,19 @@ test("상세 패널에서 설명과 역할을 저장한다", async () => {
 	);
 });
 
+test("수정일이 없는 플래그가 있어도 화면이 그려지고 최근 변경 탭에서 기록 없음으로 보인다", async () => {
+	// given
+	const user = userEvent.setup();
+	renderPage([base, { ...base, id: "2", name: "no_date", updatedAt: null, createdAt: null }]);
+	await screen.findByRole("switch", { name: "html_notice 활성화" });
+
+	// when
+	await user.click(screen.getByRole("tab", { name: "최근 변경" }));
+
+	// then
+	expect((await screen.findAllByText("기록 없음")).length).toBeGreaterThan(0);
+});
+
 test("토글이 실패하면 스위치를 되돌리고 오류를 보여 준다", async () => {
 	// given
 	const user = userEvent.setup();
