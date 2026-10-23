@@ -497,21 +497,34 @@ export default function FeatureFlagsV2() {
 				empty("등록된 플래그가 없습니다")
 			) : (
 				<>
-					<div className="mb-4 grid grid-cols-5 gap-2">
-						{FILTERS.map(({ key, label, test }) => (
-							<Button
-								key={key}
-								variant="secondary"
-								aria-pressed={filter === key}
-								onPress={() => setFilter(key)}
-								className={`flex h-auto flex-col items-start rounded-xl px-3 py-2 text-left ${filter === key ? "ring-2 ring-neutral-900" : ""}`}
-							>
-								<span className="text-xs text-neutral-500">{label}</span>
-								<span className={`text-xl font-bold ${key === "leak" ? "text-red-700" : ""}`}>
-									{flags.filter(test).length}
-								</span>
-							</Button>
-						))}
+					<div className="mb-5 grid grid-cols-5 gap-3">
+						{FILTERS.map(({ key, label, test }) => {
+							const count = flags.filter(test).length;
+							const alert = key === "leak" && count > 0;
+							const active = filter === key;
+							return (
+								<button
+									key={key}
+									type="button"
+									aria-pressed={active}
+									onClick={() => setFilter(key)}
+									className={`flex w-full flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors ${
+										active
+											? "border-neutral-900 bg-neutral-900 text-white"
+											: alert
+												? "border-red-200 bg-red-50 hover:border-red-300"
+												: "border-neutral-200 bg-white hover:border-neutral-400"
+									}`}
+								>
+									<span className={`text-xs ${active ? "text-neutral-300" : alert ? "text-red-700" : "text-neutral-500"}`}>
+										{label}
+									</span>
+									<span className={`text-2xl font-bold tabular-nums ${!active && alert ? "text-red-700" : ""}`}>
+										{count}
+									</span>
+								</button>
+							);
+						})}
 					</div>
 
 					<Tabs selectedKey={tab} onSelectionChange={(key) => setTab(key as TabKey)}>
