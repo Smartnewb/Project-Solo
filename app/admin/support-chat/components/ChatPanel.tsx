@@ -684,10 +684,7 @@ export default function ChatPanel({
   const renderMessage = (message: SupportMessage) => {
     const config = SENDER_CONFIG[message.senderType];
     const isUser = message.senderType === "user";
-    const canMutateMessage = canMutateSupportMessage(
-      message,
-      adminSession?.user.id,
-    );
+    const canMutateMessage = canMutateSupportMessage(message);
     const isEditing = editingMessageId === message.id;
 
     return (

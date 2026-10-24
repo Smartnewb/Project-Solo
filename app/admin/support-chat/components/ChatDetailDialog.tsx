@@ -47,7 +47,6 @@ import {
   PHASE_LABELS,
   SOURCE_LABELS,
 } from "@/app/types/support-chat";
-import { useAdminSession } from "@/shared/contexts/admin-session-context";
 import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { useToast } from "@/shared/ui/admin/toast";
 
@@ -79,7 +78,6 @@ export default function ChatDetailDialog({
   onClose,
   onSessionUpdated,
 }: ChatDetailDialogProps) {
-  const { session: adminSession } = useAdminSession();
   const { markRead } = useReadState();
   const confirm = useConfirm();
   const toast = useToast();
@@ -407,10 +405,7 @@ export default function ChatDetailDialog({
   const renderMessage = (message: SupportMessage) => {
     const config = SENDER_CONFIG[message.senderType];
     const isUser = message.senderType === "user";
-    const canMutateMessage = canMutateSupportMessage(
-      message,
-      adminSession?.user.id,
-    );
+    const canMutateMessage = canMutateSupportMessage(message);
     const isEditing = editingMessageId === message.id;
 
     return (
