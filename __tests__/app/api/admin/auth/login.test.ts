@@ -282,4 +282,50 @@ describe('POST /api/admin/auth/login', () => {
       expect(body.error).toBe('Failed to fetch admin identity');
     });
   });
+
+  describe('admin one-time code', () => {
+    it('forwards the one-time code to the backend login', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 401, json: () => Promise.resolve({}) });
+
+      const req = createRequest({ email: 'admin@test.com', password: 'pass', otpCode: '123456' });
+      await POST(req);
+
+      const [, init] = mockFetch.mock.calls[0];
+      expect(JSON.parse(init.body)).toMatchObject({ otpCode: '123456' });
+    });
+
+    it.each([
+      ['AUTH.ADMIN_OTP_REQUIRED', '1Password의 관리자 인증 번호 6자리를 입력해 주세요.'],
+      ['AUTH.ADMIN_OTP_INVALID', '인증 번호가 맞지 않습니다. 새 번호로 다시 시도해 주세요.'],
+      ['AUTH.ADMIN_OTP_LOCKED', '인증 번호를 여러 번 틀려 15분 동안 로그인할 수 없습니다.'],
+    ])('returns 401 with a Korean guide for %s', async (code, message) => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ statusCode: 401, code, message: 'backend text' }),
+      });
+
+      const req = createRequest({ email: 'admin@test.com', password: 'pass' });
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(401);
+      expect(body).toEqual({ error: message, code });
+    });
+
+    it('keeps the generic credentials error for other backend codes', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ statusCode: 401, code: 'AUTH.SOMETHING_ELSE' }),
+      });
+
+      const req = createRequest({ email: 'admin@test.com', password: 'wrong' });
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(401);
+      expect(body).toEqual({ error: 'Invalid credentials' });
+    });
+  });
 });

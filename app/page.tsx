@@ -16,6 +16,7 @@ function AdminLoginForm() {
   const redirectPath = getSafeRedirectPath(searchParams.get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,10 +31,11 @@ function AdminLoginForm() {
       const res = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: email.trim(), password, ...(otpCode ? { otpCode } : {}) }),
       });
 
       if (!res.ok) {
+        if (otpCode) setOtpCode('');
         const body = await res.json().catch(() => null);
         throw new Error(body?.error || '로그인에 실패했습니다.');
       }
@@ -89,6 +91,26 @@ function AdminLoginForm() {
                 placeholder="비밀번호를 입력하세요"
                 required
               />
+            </div>
+
+            <div>
+              <label htmlFor="admin-otp" className="mb-1 block text-base text-[#3f3f3f]">
+                인증 번호
+              </label>
+              <input
+                id="admin-otp"
+                name="otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="min-h-14 w-full rounded-lg border border-[#dddddd] px-4 py-3 text-[#222222] placeholder:text-[#6a6a6a] focus:border-[#222222] focus:outline-none"
+                placeholder="1Password의 6자리 번호"
+              />
+              <p className="mt-1 text-sm text-[#6a6a6a]">인증 번호를 등록한 관리자만 입력합니다.</p>
             </div>
 
             {error && <div className="text-sm text-[#c13515]">{error}</div>}

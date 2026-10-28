@@ -17,6 +17,24 @@ import {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
+const ADMIN_OTP_MESSAGES: Record<string, string> = {
+  'AUTH.ADMIN_OTP_REQUIRED': '1Password의 관리자 인증 번호 6자리를 입력해 주세요.',
+  'AUTH.ADMIN_OTP_INVALID': '인증 번호가 맞지 않습니다. 새 번호로 다시 시도해 주세요.',
+  'AUTH.ADMIN_OTP_LOCKED': '인증 번호를 여러 번 틀려 15분 동안 로그인할 수 없습니다.',
+  'AUTH.ADMIN_OTP_UNAVAILABLE': '지금은 관리자 인증 번호를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+};
+
+async function readAdminOtpError(res: Response): Promise<{ code: string; message: string } | null> {
+  try {
+    const body = (await res.json()) as { code?: unknown } | null;
+    const code = typeof body?.code === 'string' ? body.code : '';
+    const message = ADMIN_OTP_MESSAGES[code];
+    return message ? { code, message } : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
@@ -53,6 +71,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!backendRes.ok) {
+      const otpError = await readAdminOtpError(backendRes);
+      if (otpError) {
+        return NextResponse.json({ error: otpError.message, code: otpError.code }, { status: 401 });
+      }
       const status = backendRes.status === 401 ? 401 : 400;
       return NextResponse.json({ error: 'Invalid credentials' }, { status });
     }
