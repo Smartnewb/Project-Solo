@@ -298,6 +298,7 @@ describe('POST /api/admin/auth/login', () => {
       ['AUTH.ADMIN_OTP_REQUIRED', '1Password의 관리자 인증 번호 6자리를 입력해 주세요.'],
       ['AUTH.ADMIN_OTP_INVALID', '인증 번호가 맞지 않습니다. 새 번호로 다시 시도해 주세요.'],
       ['AUTH.ADMIN_OTP_LOCKED', '인증 번호를 여러 번 틀려 15분 동안 로그인할 수 없습니다.'],
+      ['AUTH.ADMIN_OTP_NOT_ENROLLED', '인증 번호가 등록되지 않은 관리자 계정입니다. 운영자에게 등록을 요청해 주세요.'],
     ])('returns 401 with a Korean guide for %s', async (code, message) => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
