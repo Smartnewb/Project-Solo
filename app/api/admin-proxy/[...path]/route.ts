@@ -18,6 +18,9 @@ import { isSameOrigin } from '@/shared/lib/csrf';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 const BACKEND_BASE_PATH = new URL(BACKEND_URL).pathname.replace(/\/$/, '');
+// 의심 IP 대시보드는 API 가 아니라 waf-guard 어드민 Lambda(함수 URL)로 보낸다. Lambda 가 같은 관리자 토큰을 API 에 확인받는다.
+const WAF_GUARD_PREFIX = 'waf-guard/';
+const WAF_GUARD_ADMIN_URL = process.env.WAF_GUARD_ADMIN_URL;
 
 const PROACTIVE_REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
 // 쿠키 만료(30일)가 로그인 시점에 고정되지 않도록, 이보다 오래된 세션은 갱신해 쿠키를 다시 심는다.
@@ -46,6 +49,7 @@ const ALLOWED_PATH_PREFIXES = [
 	'v1/gem/',
 	'utm/',
 	'go/',
+	WAF_GUARD_PREFIX,
 ];
 
 function isPathAllowed(targetPath: string): boolean {
@@ -257,13 +261,19 @@ async function proxyRequest(request: NextRequest, context: AdminProxyRouteContex
 		}
 	}
 
-	const url = new URL(`${BACKEND_URL}/${targetPath}`);
+	const toWafGuard = targetPath.startsWith(WAF_GUARD_PREFIX);
+	if (toWafGuard && !WAF_GUARD_ADMIN_URL) {
+		return NextResponse.json({ error: 'WAF_GUARD_ADMIN_URL is not set' }, { status: 503 });
+	}
+	const url = toWafGuard
+		? new URL(targetPath.slice(WAF_GUARD_PREFIX.length), WAF_GUARD_ADMIN_URL)
+		: new URL(`${BACKEND_URL}/${targetPath}`);
 
 	// 1-4: Defense-in-depth. `new URL()` decodes %2e%2e -> ".." and collapses
 	// it, so a path that cleared the allowlist pre-check can still resolve
 	// outside the backend base path (e.g. admin/%2e%2e/%2e%2e/secret -> /secret).
 	// Verify the normalized pathname stays in-bounds before forwarding.
-	if (!isBackendPathWithinBoundary(url)) {
+	if (toWafGuard ? !url.pathname.startsWith('/ips') : !isBackendPathWithinBoundary(url)) {
 		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 	}
 
