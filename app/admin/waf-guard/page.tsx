@@ -13,6 +13,8 @@ import { WafOverviewPanel } from "./waf-overview";
 
 // 한국·일본 통신사 IP 는 여러 유저가 함께 쓴다(CGNAT). ALB 로그만 본 IP 는 국가를 모른다.
 const SHARED_IP_COUNTRIES = new Set(["KR", "JP"]);
+// 서버가 1분마다 집계한다. 탭이 보일 때만 다시 받는다
+const POLL_MS = 30_000;
 
 function formatKst(ms: number): string {
 	return new Intl.DateTimeFormat("sv-SE", {
@@ -32,6 +34,7 @@ function breakdown(row: SuspiciousIp): string {
 		row.notFound && `없는 경로 ${row.notFound}곳`,
 		row.sms && `문자 요청 ${row.sms}`,
 		row.wafCounted && `WAF 기록 ${row.wafCounted}`,
+		row.wafRecent && `최근 1시간 WAF ${row.wafRecent}`,
 	]
 		.filter(Boolean)
 		.join(" · ");
@@ -54,10 +57,9 @@ export default function WafGuardPage() {
 		setLoading(true);
 		setError(null);
 		try {
-			// 요약은 1초 안팎, 의심 IP 는 10초 가까이 걸린다. 요약을 먼저 보여 준다
-			const ips = wafGuard.getIps();
-			setOverview(await wafOverview());
-			setData(await ips);
+			const [ips, ov] = await Promise.all([wafGuard.getIps(), wafOverview()]);
+			setData(ips);
+			setOverview(ov);
 		} catch (e) {
 			setError(getAdminErrorMessage(e, "웹방화벽 현황을 불러오지 못했습니다."));
 		} finally {
@@ -67,6 +69,17 @@ export default function WafGuardPage() {
 
 	useEffect(() => {
 		load();
+		const timer = setInterval(() => {
+			if (document.visibilityState === "visible") load();
+		}, POLL_MS);
+		const onVisible = () => {
+			if (document.visibilityState === "visible") load();
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		return () => {
+			clearInterval(timer);
+			document.removeEventListener("visibilitychange", onVisible);
+		};
 	}, [load]);
 
 	const act = async (row: SuspiciousIp, action: "block" | "unblock") => {
@@ -111,10 +124,12 @@ export default function WafGuardPage() {
 						style={{ marginTop: 4, marginBottom: 24 }}
 						className={"text-sm text-neutral-700"}
 					>
-						WAF 는 최근 24시간, 인증 실패·없는 경로는 최근 1시간 기준입니다.
+						WAF 는 최근 24시간(15분마다 집계), 인증 실패·없는 경로·최근 1시간
+						WAF 는 1분마다 집계하고, 화면은 30초마다 새로 받습니다.
 						차단하면 Slack #sometime-incidents 에도 남고, 해제할 때까지
 						유지됩니다.
-						{data && ` · ${formatKst(data.generatedAt)} 기준`}
+						{data &&
+							` · ${formatKst(data.generatedAt)} 집계 (24시간 WAF ${formatKst(data.wafAt)})`}
 					</p>
 				</div>
 				<Button

@@ -9,6 +9,8 @@ export interface SuspiciousIp {
   failures: number;
   wafBlocked: number;
   wafCounted: number;
+  /** 최근 1시간 WAF 기록·차단 (매분 갱신) */
+  wafRecent: number;
   rules: string[];
   authFail: number;
   notFound: number;
@@ -23,8 +25,11 @@ export interface SuspiciousIp {
 }
 
 export interface SuspiciousIpDashboard {
+  /** 1분 집계 시각 */
   generatedAt: number;
-  windows: { waf: string; alb: string };
+  /** 24시간 WAF 집계 시각 (15분마다) */
+  wafAt: number;
+  windows: { waf: string; wafRecent: string; alb: string };
   rows: SuspiciousIp[];
 }
 
