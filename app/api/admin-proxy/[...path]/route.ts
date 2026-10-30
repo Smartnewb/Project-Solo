@@ -15,6 +15,7 @@ import {
 } from '@/shared/auth/admin-auth-contract';
 import { adminLog } from '@/shared/lib/admin-logger';
 import { isSameOrigin } from '@/shared/lib/csrf';
+import { adminGatewayHeader } from '@/shared/lib/admin-gateway';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 const BACKEND_BASE_PATH = new URL(BACKEND_URL).pathname.replace(/\/$/, '');
@@ -202,6 +203,7 @@ async function callBackend(
 ): Promise<Response> {
 	const headers: Record<string, string> = {
 		Authorization: `Bearer ${token}`,
+		...adminGatewayHeader(),
 	};
 	if (contentType) headers['Content-Type'] = contentType;
 	if (meta?.selectedCountry) headers['x-country'] = meta.selectedCountry;

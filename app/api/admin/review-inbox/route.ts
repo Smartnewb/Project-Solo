@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSessionMeta, requireAdminRequest } from '@/shared/auth';
 import type { ReviewInboxEvidence, ReviewInboxItem, ReviewInboxResponse } from '@/app/admin/review-inbox/types';
+import { adminGatewayHeader } from '@/shared/lib/admin-gateway';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 const ACTIVE_BUCKET_LIMIT = 5;
@@ -125,6 +126,7 @@ async function fetchBackendJson<T>(
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
+    ...adminGatewayHeader(),
   };
 
   if (sessionMeta?.selectedCountry) {
