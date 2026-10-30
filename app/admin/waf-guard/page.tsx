@@ -40,6 +40,12 @@ function breakdown(row: SuspiciousIp): string {
 		.join(" · ");
 }
 
+const USERS_LABEL: Record<NonNullable<SuspiciousIp["users"]>, string> = {
+	app: "앱 사용자",
+	web: "웹 사용자",
+	shared: "여러 사용자 경유 서버",
+};
+
 const STATUS_LABEL: Record<NonNullable<SuspiciousIp["status"]>, string> = {
 	blocked: "차단 중",
 	released: "해제됨",
@@ -193,8 +199,7 @@ export default function WafGuardPage() {
 										<div className={"text-xs text-neutral-600"}>
 											{row.country ?? "국가 미상"}
 											{row.status && ` · ${STATUS_LABEL[row.status]}`}
-											{row.users &&
-												(row.users === "app" ? " · 앱 사용자" : " · 여러 사용자 경유 서버")}
+											{row.users && ` · ${USERS_LABEL[row.users]}`}
 											{row.status === "blocked" &&
 												row.blockedAt &&
 												` (${formatKst(row.blockedAt)}${row.decidedBy ? `, ${row.decidedBy}` : ""})`}
