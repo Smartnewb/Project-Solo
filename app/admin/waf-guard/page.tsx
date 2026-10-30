@@ -193,7 +193,8 @@ export default function WafGuardPage() {
 										<div className={"text-xs text-neutral-600"}>
 											{row.country ?? "국가 미상"}
 											{row.status && ` · ${STATUS_LABEL[row.status]}`}
-											{row.appUser && " · 앱 사용자"}
+											{row.users &&
+												(row.users === "app" ? " · 앱 사용자" : " · 여러 사용자 경유 서버")}
 											{row.status === "blocked" &&
 												row.blockedAt &&
 												` (${formatKst(row.blockedAt)}${row.decidedBy ? `, ${row.decidedBy}` : ""})`}

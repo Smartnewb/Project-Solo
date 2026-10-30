@@ -15,8 +15,8 @@ export interface SuspiciousIp {
   authFail: number;
   notFound: number;
   sms: number;
-  /** 최근 1시간 앱(iOS·Android)에서 정상 응답을 받은 IP. 막으면 실제 사용자가 막힌다 */
-  appUser: boolean;
+  /** 실제 사용자 IP. app: 최근 1시간 앱에서 정상 응답, shared: 여러 사용자가 거쳐 오는 서버. 막으면 사용자가 막힌다 */
+  users: 'app' | 'shared' | null;
   status: SuspiciousIpStatus;
   reason: string | null;
   detail: string | null;
