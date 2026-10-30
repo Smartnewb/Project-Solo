@@ -70,9 +70,14 @@ function AdminLoginForm() {
         <div className="space-y-6 rounded-[14px] border border-[#dddddd] bg-white p-8 shadow-card">
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="mb-1 block text-base text-[#3f3f3f]">이메일</label>
+              <label htmlFor="admin-email" className="mb-1 block text-base text-[#3f3f3f]">
+                이메일
+              </label>
               <input
+                id="admin-email"
+                name="email"
                 type="email"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="min-h-14 w-full rounded-lg border border-[#dddddd] px-4 py-3 text-[#222222] placeholder:text-[#6a6a6a] focus:border-[#222222] focus:outline-none"
@@ -82,9 +87,14 @@ function AdminLoginForm() {
             </div>
 
             <div>
-              <label className="mb-1 block text-base text-[#3f3f3f]">비밀번호</label>
+              <label htmlFor="admin-password" className="mb-1 block text-base text-[#3f3f3f]">
+                비밀번호
+              </label>
               <input
+                id="admin-password"
+                name="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="min-h-14 w-full rounded-lg border border-[#dddddd] px-4 py-3 text-[#222222] placeholder:text-[#6a6a6a] focus:border-[#222222] focus:outline-none"

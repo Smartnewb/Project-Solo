@@ -23,6 +23,9 @@ const WAF_GUARD_PREFIX = 'waf-guard/';
 const WAF_GUARD_ADMIN_URL = process.env.WAF_GUARD_ADMIN_URL;
 
 const PROACTIVE_REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
+// 번호 로그인 관리자 세션은 갱신할 때마다 12시간씩 늘어난다(API auth.service adminOtpSessionWindow).
+// 쓰는 동안 한 시간에 한 번 갱신해 두면 12시간을 쉬기 전에는 끊기지 않는다.
+const ADMIN_SESSION_SLIDE_AFTER_MS = 60 * 60 * 1000;
 // 쿠키 만료(30일)가 로그인 시점에 고정되지 않도록, 이보다 오래된 세션은 갱신해 쿠키를 다시 심는다.
 const SESSION_SLIDE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -82,7 +85,7 @@ function isBackendPathWithinBoundary(url: URL): boolean {
 	return remaining.length > 0 && isPathAllowed(remaining);
 }
 
-function decodeJwtPayload(token: string): { exp?: number } | null {
+function decodeJwtPayload(token: string): { exp?: number; iat?: number; adminOtp?: boolean } | null {
 	try {
 		const parts = token.split('.');
 		if (parts.length !== 3) return null;
@@ -96,10 +99,15 @@ function decodeJwtPayload(token: string): { exp?: number } | null {
 	}
 }
 
-function isTokenExpiringSoon(token: string): boolean {
+function shouldRefreshToken(token: string): boolean {
 	const payload = decodeJwtPayload(token);
 	if (!payload?.exp) return true;
-	return payload.exp * 1000 - Date.now() < PROACTIVE_REFRESH_THRESHOLD_MS;
+	if (payload.exp * 1000 - Date.now() < PROACTIVE_REFRESH_THRESHOLD_MS) return true;
+	return (
+		payload.adminOtp === true &&
+		typeof payload.iat === 'number' &&
+		Date.now() - payload.iat * 1000 > ADMIN_SESSION_SLIDE_AFTER_MS
+	);
 }
 
 const inFlightRefreshes = new Map<string, Promise<string | null>>();
@@ -254,7 +262,7 @@ async function proxyRequest(request: NextRequest, context: AdminProxyRouteContex
 
 	// Proactive refresh: if token expires within 5 minutes, refresh before making the request
 	const sessionStale = Date.now() - (meta.issuedAt ?? 0) > SESSION_SLIDE_AFTER_MS;
-	if (targetPath !== 'auth/refresh' && (isTokenExpiringSoon(token) || sessionStale)) {
+	if (targetPath !== 'auth/refresh' && (shouldRefreshToken(token) || sessionStale)) {
 		const newToken = await refreshAccessToken(meta, clearOnFailure);
 		if (newToken) {
 			token = newToken;
