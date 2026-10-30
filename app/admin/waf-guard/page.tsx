@@ -54,9 +54,10 @@ export default function WafGuardPage() {
 		setLoading(true);
 		setError(null);
 		try {
-			const [ips, ov] = await Promise.all([wafGuard.getIps(), wafOverview()]);
-			setData(ips);
-			setOverview(ov);
+			// 요약은 1초 안팎, 의심 IP 는 10초 가까이 걸린다. 요약을 먼저 보여 준다
+			const ips = wafGuard.getIps();
+			setOverview(await wafOverview());
+			setData(await ips);
 		} catch (e) {
 			setError(getAdminErrorMessage(e, "웹방화벽 현황을 불러오지 못했습니다."));
 		} finally {

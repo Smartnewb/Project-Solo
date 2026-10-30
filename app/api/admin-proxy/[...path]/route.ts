@@ -360,6 +360,9 @@ async function proxyRequest(request: NextRequest, context: AdminProxyRouteContex
 	});
 }
 
+// 웹방화벽 의심 IP 조회는 Logs Insights 를 기다려 10초를 넘긴다(2026-10-30 첫 호출 9.3초)
+export const maxDuration = 60;
+
 export const GET = proxyRequest;
 export const POST = proxyRequest;
 export const PUT = proxyRequest;
