@@ -208,8 +208,9 @@ describe('ProfileImageAuditPage', () => {
     });
     render(<ProfileImageAuditPage />);
     await screen.findByRole('heading', { name: '프로필 이미지 전수검사' });
-    await selectHeroValue('검수 상태', 'rejected');
+    await user.click(screen.getByRole('button', { name: '거절됨' }));
     await user.click(await screen.findByRole('checkbox', { name: 'profile-image-1 선택' }));
+    expect(screen.getByRole('button', { name: '사진 변경 요청' })).toBeDisabled();
 
     await user.click(screen.getByRole('button', { name: '정상 처리' }));
     await user.click(await screen.findByRole('button', { name: '처리' }));
@@ -330,19 +331,60 @@ describe('ProfileImageAuditPage', () => {
     ));
   });
 
-  it.each(['김테스트', '서울대'])('searches reviewed photos by name or school: %s', async (search) => {
+  it.each(['김테스트', '서울대'])('searches by name or school without changing the audit status: %s', async (search) => {
     const user = userEvent.setup();
     render(<ProfileImageAuditPage />);
     expect((await screen.findAllByText('김테스트')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('회원 ID: user-1').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: '2차 검토 대기' }));
     await user.type(screen.getByRole('textbox', { name: '이름 · 학교 · 회원 ID 검색' }), `  ${search}  {Enter}`);
     await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 1, search, auditStatus: undefined, includeAlreadyAudited: true }),
+      expect.objectContaining({ page: 1, search, auditStatus: 'needs_second_review', includeAlreadyAudited: false }),
     ));
     await user.click(screen.getByRole('button', { name: '검색 지우기' }));
     await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 1, search: undefined }),
+      expect.objectContaining({ page: 1, search: undefined, auditStatus: 'needs_second_review' }),
     ));
+    expect(screen.getByRole('button', { name: '2차 검토 대기' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('offers to search every status when the current status has no match', async () => {
+    const user = userEvent.setup();
+    render(<ProfileImageAuditPage />);
+    await screen.findAllByText('김테스트');
+    mockedAudit.list.mockResolvedValue({ ...profileImageAuditListFixture, data: [], meta: { page: 1, limit: 18, total: 0, totalPages: 1 } });
+    await user.type(screen.getByRole('textbox', { name: '이름 · 학교 · 회원 ID 검색' }), '없는사람{Enter}');
+    await user.click(await screen.findByRole('button', { name: '전체 상태에서 찾기' }));
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: '없는사람', auditStatus: undefined, includeAlreadyAudited: true }),
+    ));
+  });
+
+  it('dims rejected photos in the all view and leaves them out of select-all', async () => {
+    const user = userEvent.setup();
+    mockedAudit.list.mockResolvedValue({
+      ...profileImageAuditListFixture,
+      data: [
+        { ...profileImageAuditItemFixture, auditStatus: 'ok' },
+        { ...profileImageAuditItemFixture, profileImageId: 'profile-image-2', imageId: 'image-2', slotIndex: 1, isMain: false,
+          reviewStatus: 'rejected', auditStatus: 'rejected', auditDecisionReason: '화질 문제로 사진 변경이 필요합니다.' },
+      ],
+    });
+    render(<ProfileImageAuditPage />);
+    await user.click(await screen.findByRole('button', { name: '전체' }));
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ auditStatus: undefined, includeAlreadyAudited: true }),
+    ));
+    const overlays = await screen.findAllByTestId('audit-rejected-overlay');
+    expect(overlays).toHaveLength(1);
+    expect(within(overlays[0]).getByText('화질 문제로 사진 변경이 필요합니다.')).toBeInTheDocument();
+    expect(screen.getByAltText('profile-image-2 프로필 이미지')).toBeInTheDocument();
+    expect(screen.getByTestId('audit-status-badge')).toHaveTextContent('정상');
+
+    await user.click(screen.getByRole('button', { name: '전체선택' }));
+    expect(screen.getByRole('checkbox', { name: 'profile-image-1 선택' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'profile-image-2 선택' })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: '사진 변경 요청' })).toBeEnabled();
   });
 
   it('surfaces per-image reject failures instead of reporting success', async () => {
@@ -372,7 +414,7 @@ describe('ProfileImageAuditPage', () => {
     expect(
       await screen.findByText('처리 실패 1장: 대표 사진은 대체 대표 사진 지정이 필요합니다.'),
     ).toBeInTheDocument();
-    expect(screen.queryByText('선택한 1장을 처리했습니다.')).not.toBeInTheDocument();
+    expect(screen.queryByText(/사진 변경을 요청하고/)).not.toBeInTheDocument();
   });
 
   it('surfaces bulk reject failures when the API omits per-image results', async () => {
@@ -407,7 +449,7 @@ describe('ProfileImageAuditPage', () => {
     await user.click(screen.getByRole('button', { name: '사진 변경 요청' }));
     await user.click(await screen.findByRole('button', { name: '처리' }));
 
-    expect(await screen.findByText('선택한 1장을 처리했습니다.')).toBeInTheDocument();
+    expect(await screen.findByText(/1장에 사진 변경을 요청하고 '거절됨'으로 옮겼습니다/)).toBeInTheDocument();
     expect(screen.queryByText('Cannot read properties of undefined')).not.toBeInTheDocument();
   });
 });

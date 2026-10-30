@@ -1,6 +1,6 @@
 'use client';
 import { Button, Input, TextField, Label, Select, ListBox, Checkbox } from '@heroui/react';
-import { AUDIT_STATUS_OPTIONS, PROFILE_RANK_OPTIONS, VALIDATION_OPTIONS, } from '../constants';
+import { ALL_STATUS_DESCRIPTION, AUDIT_STATUS_OPTIONS, PROFILE_RANK_OPTIONS, VALIDATION_OPTIONS, } from '../constants';
 import { useEffect, useState } from 'react';
 import type { AuditFilters } from '../types';
 const RANK_FILTER_OPTIONS = PROFILE_RANK_OPTIONS;
@@ -11,21 +11,22 @@ type Props = {
 export function AuditFiltersBar({ filters, onChange }: Props) {
     const [searchInput, setSearchInput] = useState(filters.search ?? '');
     useEffect(() => setSearchInput(filters.search ?? ''), [filters.search]);
-    const submitSearch = () => onChange({ ...filters, search: searchInput.trim() || undefined, auditStatus: undefined, includeAlreadyAudited: true });
+    // 검색은 검수 상태를 건드리지 않는다. 예전에는 검색하면 상태가 '전체'로 바뀌고,
+    // 검색을 지워도 '전체'에 머물러 미검수 작업이 어긋났다.
+    const submitSearch = () => onChange({ ...filters, search: searchInput.trim() || undefined });
     const update = (patch: Partial<AuditFilters>) => onChange({ ...filters, ...patch });
-    const findAuditStatus = (value: string) => AUDIT_STATUS_OPTIONS.find((option) => option.value === value)?.value;
+    const selectStatus = (auditStatus: AuditFilters['auditStatus']) => update({ auditStatus, includeAlreadyAudited: auditStatus === undefined });
+    const statusDescription = AUDIT_STATUS_OPTIONS.find((option) => option.value === filters.auditStatus)?.description ?? ALL_STATUS_DESCRIPTION;
     const findValidationDecision = (value: string) => VALIDATION_OPTIONS.find((option) => option.value === value)?.value;
-    return (<div className="space-y-3"><form className="flex flex-wrap gap-2" onSubmit={event => { event.preventDefault(); submitSearch(); }}><TextField><Label>이름 · 학교 · 회원 ID 검색</Label><Input placeholder="이름 또는 학교 이름을 입력하세요" value={searchInput} maxLength={100} onChange={event => setSearchInput(event.target.value)} /></TextField><Button type="submit" variant="primary">검색</Button>{filters.search && <Button variant="secondary" onPress={() => { setSearchInput(''); update({ search: undefined }); }}>검색 지우기</Button>}</form><div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-      <div style={{ minWidth: 140 }}>
-        <Select value={filters.auditStatus ?? ''} aria-label={"검수 상태"} onChange={(key) => {
-            const value = String(key ?? "");
-            update({ auditStatus: findAuditStatus(value), includeAlreadyAudited: value === '' });
-        }} className="min-w-[120px]"><Label>검수 상태</Label><Select.Trigger><Select.Value></Select.Value><Select.Indicator></Select.Indicator></Select.Trigger><Select.Popover><ListBox>
-          <ListBox.Item id="" textValue="전체">전체</ListBox.Item>{AUDIT_STATUS_OPTIONS.map((option) => (<ListBox.Item key={option.value} id={option.value} textValue={String(option.label)}>
-              {option.label}
-            </ListBox.Item>))}
-        </ListBox></Select.Popover></Select>
+    return (<div className="space-y-3"><form className="flex flex-wrap gap-2" onSubmit={event => { event.preventDefault(); submitSearch(); }}><TextField><Label>이름 · 학교 · 회원 ID 검색</Label><Input placeholder="이름 또는 학교 이름을 입력하세요" value={searchInput} maxLength={100} onChange={event => setSearchInput(event.target.value)} /></TextField><Button type="submit" variant="primary">검색</Button>{filters.search && <Button variant="secondary" onPress={() => { setSearchInput(''); update({ search: undefined }); }}>검색 지우기</Button>}</form>
+      <div role="group" aria-label="검수 상태" className="flex flex-wrap items-center gap-2">
+        {AUDIT_STATUS_OPTIONS.map((option) => (<Button key={option.value} size="sm" variant={filters.auditStatus === option.value ? 'primary' : 'secondary'} aria-pressed={filters.auditStatus === option.value} onPress={() => selectStatus(option.value)}>
+            {option.label}
+          </Button>))}
+        <Button size="sm" variant={filters.auditStatus === undefined ? 'primary' : 'secondary'} aria-pressed={filters.auditStatus === undefined} onPress={() => selectStatus(undefined)}>전체</Button>
       </div>
+      <p className="text-sm text-gray-600">{statusDescription}</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       <div style={{ minWidth: 140 }}>
         <Select value={filters.population ?? 'regular_photo'} aria-label="볼 회원" onChange={(key) => {
             const population = String(key ?? '') === 'character_original' ? 'character_original' : 'regular_photo';

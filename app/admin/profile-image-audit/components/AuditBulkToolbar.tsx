@@ -18,8 +18,10 @@ export function AuditBulkToolbar({ group, visibleCount, busy, onSelectVisible, o
     const hasProfilePhoto = group.selectedItems.some((item) => item.kind !== 'blind_asset');
     const characterOnly = hasCharacterCard && !hasProfilePhoto;
     const mixedSelection = hasCharacterCard && hasProfilePhoto;
-    const characterActionLocked = disabled || hasCharacterCard;
-    const rejectDisabled = disabled || mixedSelection;
+    // 거절된 사진은 서버가 '정상 처리(되돌리기)'만 받는다. 다른 버튼은 눌러도 '이미 처리됨'으로 실패한다.
+    const hasRejected = group.selectedItems.some((item) => item.auditStatus === 'rejected');
+    const characterActionLocked = disabled || hasCharacterCard || hasRejected;
+    const rejectDisabled = disabled || mixedSelection || hasRejected;
     return (<div style={{ border: '1px solid #dbe3ef', borderRadius: 2, padding: 12, backgroundColor: '#f8fafc' }}>
       <p>
         선택 {group.selectedIds.length.toLocaleString()}장
@@ -46,6 +48,7 @@ export function AuditBulkToolbar({ group, visibleCount, busy, onSelectVisible, o
         </Button>
       </div>
       {mixedSelection && <p className="text-xs text-gray-500">프로필 사진과 캐릭터 카드를 함께 고르면 변경 요청을 할 수 없습니다. 2차 검토와 즉시 삭제는 할 수 없습니다.</p>}
+      {hasRejected && <p className="text-xs text-gray-500">거절된 사진이 선택되어 있습니다. 거절된 사진은 &apos;정상 처리&apos;로 되돌리기만 할 수 있습니다.</p>}
       {characterOnly && <p className="text-xs text-gray-500">이 선택은 고른 캐릭터만 내립니다. 프로필 사진은 반려되지 않습니다. 2차 검토와 즉시 삭제는 할 수 없습니다.</p>}
     </div>);
 }
