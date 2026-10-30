@@ -5,8 +5,11 @@ import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
 import {
 	type SuspiciousIp,
 	type SuspiciousIpDashboard,
+	type WafOverview,
 	wafGuard,
+	wafOverview,
 } from "@/app/services/admin/waf-guard";
+import { WafOverviewPanel } from "./waf-overview";
 
 // 한국·일본 통신사 IP 는 여러 유저가 함께 쓴다(CGNAT). ALB 로그만 본 IP 는 국가를 모른다.
 const SHARED_IP_COUNTRIES = new Set(["KR", "JP"]);
@@ -42,6 +45,7 @@ const STATUS_LABEL: Record<NonNullable<SuspiciousIp["status"]>, string> = {
 
 export default function WafGuardPage() {
 	const [data, setData] = useState<SuspiciousIpDashboard | null>(null);
+	const [overview, setOverview] = useState<WafOverview | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [busyIp, setBusyIp] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -50,9 +54,11 @@ export default function WafGuardPage() {
 		setLoading(true);
 		setError(null);
 		try {
-			setData(await wafGuard.getIps());
+			const [ips, ov] = await Promise.all([wafGuard.getIps(), wafOverview()]);
+			setData(ips);
+			setOverview(ov);
 		} catch (e) {
-			setError(getAdminErrorMessage(e, "의심 IP 목록을 불러오지 못했습니다."));
+			setError(getAdminErrorMessage(e, "웹방화벽 현황을 불러오지 못했습니다."));
 		} finally {
 			setLoading(false);
 		}
@@ -98,7 +104,7 @@ export default function WafGuardPage() {
 			>
 				<div>
 					<h2 className={"text-lg font-semibold text-neutral-900"}>
-						의심 IP 차단
+						웹방화벽
 					</h2>
 					<p
 						style={{ marginTop: 4, marginBottom: 24 }}
@@ -124,6 +130,8 @@ export default function WafGuardPage() {
 					<Alert.Content>{error}</Alert.Content>
 				</Alert>
 			)}
+			{overview && <WafOverviewPanel data={overview} />}
+			<h3 className={"text-sm font-semibold text-neutral-900"}>공격 의심 IP</h3>
 			<div className={"overflow-x-auto"}>
 				<table
 					className={

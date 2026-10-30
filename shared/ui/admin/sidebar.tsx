@@ -229,7 +229,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
 		items: [
 			{ href: "/admin/version-management", label: "버전 관리" },
 			{ href: "/admin/access-logs", label: "개인정보 접속기록" },
-			{ href: "/admin/waf-guard", label: "의심 IP 차단" },
+			{ href: "/admin/waf-guard", label: "웹방화벽" },
 			{ href: "/admin/feature-flags", label: "Feature Flags" },
 			{ href: "/admin/lab", label: "실험실" },
 			{ href: "/admin/app-preview", label: "앱 UI 시연" },

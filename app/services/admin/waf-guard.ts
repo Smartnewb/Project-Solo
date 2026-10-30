@@ -39,3 +39,15 @@ export const wafGuard = {
       `/waf-guard/ips/${encodeURIComponent(ip)}/unblock`,
     ),
 };
+
+export interface WafOverview {
+  generatedAt: number;
+  /** auto-block 규칙이 Block 이면 true. Count(기록 모드)면 즉시차단해도 실제로 막지 않는다 */
+  autoBlockEnforced: boolean;
+  blockedIps: number;
+  /** 최근 24시간 규칙별 기록(Count)·차단(Block) 요청 수 */
+  rules: { rule: string; counted: number; blocked: number }[];
+  hourly: { at: number; allowed: number; counted: number; blocked: number }[];
+}
+
+export const wafOverview = () => adminGet<WafOverview>('/waf-guard/ips/overview');
