@@ -96,6 +96,18 @@ interface UserPreferences {
   partner?: Preference[];
 }
 
+// 생활 단계 표시 이름 (서버 회원 상세의 lifeStage)
+const LIFE_STAGE_LABELS: Record<string, string> = {
+  UNDERGRAD: "대학생",
+  GRAD_STUDENT: "대학원생",
+  GRADUATE: "졸업생",
+  WORKER: "직장인",
+  INTERN: "인턴",
+};
+
+const getLifeStageLabel = (lifeStage?: string | null) =>
+  (lifeStage && LIFE_STAGE_LABELS[lifeStage]) || "미입력";
+
 // 유저 상세 정보 타입
 export interface UserDetail {
   id: string;
@@ -135,6 +147,7 @@ export interface UserDetail {
   approvalStatus?: "PENDING" | "APPROVED" | "REJECTED"; // 승인 상태
   preferences?: UserPreferences;
   signupRoute?: "PASS" | "KAKAO" | "APPLE"; // 회원가입 루트
+  lifeStage?: string | null; // 가입 때 고른 생활 단계 (UNDERGRAD 등)
   // 추가 필드
   [key: string]: any;
 }
@@ -1726,6 +1739,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           </HeroActionButton>
                         )}
                       </div>
+                    </div>
+                    {/* 생활 단계 */}
+                    <div
+                      style={{ marginBottom: 8 }}
+                      className={"text-sm text-neutral-700"}
+                    >
+                      생활 단계: {getLifeStageLabel(userDetail.lifeStage)}
                     </div>
                     {/* 대학 정보 */}
                     {(currentUniversityName || currentDepartmentName) && (

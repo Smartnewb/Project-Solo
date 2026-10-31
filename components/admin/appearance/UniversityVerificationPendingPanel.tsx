@@ -40,7 +40,49 @@ interface UniversityVerificationUser {
   studentNumber: string;
   certificateImageUrl: string;
   createdAt: string;
+  // 서류 종류: 'university'(대학) | 'workplace'(직장). 옛 응답에는 없을 수 있다.
+  type?: string;
+  documentType?: string | null;
+  kind?: string | null;
 }
+
+// 서류 이름 (서버 documentType)
+const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  SCHOOL_EMAIL: "학교 이메일",
+  STUDENT_ID: "학생증",
+  ENROLLMENT: "재학증명서",
+  GRAD_STUDENT_ID: "대학원 학생증",
+  GRAD_ENROLLMENT: "대학원 재학증명서",
+  GRADUATION_CERTIFICATE: "졸업증명서",
+  EMPLOYEE_ID: "사원증",
+  EMPLOYMENT_CERTIFICATE: "재직증명서",
+  INTERN_CONFIRMATION: "인턴 확인서",
+};
+
+// 승인·반려 요청에 넘길 서류 종류: 'workplace'만 직장, 나머지는 대학
+const getVerificationType = (
+  user: UniversityVerificationUser,
+): "university" | "workplace" =>
+  user.type === "workplace" ? "workplace" : "university";
+
+// 목록 행과 확인 창에 보여줄 '대학/직장 · 서류 이름(· 승격)'
+const getDocumentSummary = (user: UniversityVerificationUser) => {
+  const typeLabel = getVerificationType(user) === "workplace" ? "직장" : "대학";
+  const documentLabel =
+    (user.documentType && DOCUMENT_TYPE_LABELS[user.documentType]) || "학생증";
+  const parts = [typeLabel, documentLabel];
+  // 서버 kind: NEW(신규) | UPGRADE(승격)
+  if (user.kind === "UPGRADE") parts.push("승격");
+  return parts.join(" · ");
+};
+
+// 확인 창 제목·본문의 인증 이름: 직장 서류면 '직장', 아니면 기존대로 '학생증'
+const getConfirmSubject = (user: UniversityVerificationUser | null) =>
+  user && getVerificationType(user) === "workplace" ? "직장" : "학생증";
+
+// 같은 회원이 대학·직장 서류를 함께 올릴 수 있어 id+type으로 행을 구분한다.
+const getRowKey = (user: UniversityVerificationUser) =>
+  `${user.id}:${getVerificationType(user)}`;
 
 interface UniversityVerificationResponse {
   users: UniversityVerificationUser[];
@@ -241,17 +283,18 @@ export default function UniversityVerificationPendingPanel() {
       if (confirmDialog.action === "approve") {
         await AdminService.userAppearance.approveUniversityVerification(
           confirmDialog.user.id,
+          getVerificationType(confirmDialog.user),
         );
       } else {
         await AdminService.userAppearance.rejectUniversityVerification(
           confirmDialog.user.id,
+          getVerificationType(confirmDialog.user),
         );
       }
 
-      // 목록에서 해당 사용자 제거
-      setUsers((prev) =>
-        prev.filter((user) => user.id !== confirmDialog.user!.id),
-      );
+      // 목록에서 처리한 행(id+type)만 제거
+      const handledKey = getRowKey(confirmDialog.user);
+      setUsers((prev) => prev.filter((user) => getRowKey(user) !== handledKey));
       setTotalItems((prev) => prev - 1);
 
       handleCloseConfirmDialog();
@@ -359,7 +402,7 @@ export default function UniversityVerificationPendingPanel() {
             </div>
           ) : (
             users.map((user) => (
-              <Card key={user.id}>
+              <Card key={getRowKey(user)}>
                 <Card.Content>
                   <div
                     style={{
@@ -422,6 +465,9 @@ export default function UniversityVerificationPendingPanel() {
                     </div>
                     <div className={"text-sm text-neutral-700"}>
                       학번: {user.studentNumber}
+                    </div>
+                    <div className={"text-sm text-neutral-700"}>
+                      서류: {getDocumentSummary(user)}
                     </div>
                     <div className={"text-sm text-neutral-700"}>
                       신청일: {formatDate(user.createdAt)}
@@ -492,6 +538,7 @@ export default function UniversityVerificationPendingPanel() {
                 <th>학과</th>
                 <th>학년</th>
                 <th>학번</th>
+                <th>서류</th>
                 <th>신청일</th>
                 <th>보기</th>
                 <th>작업</th>
@@ -501,7 +548,7 @@ export default function UniversityVerificationPendingPanel() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={11}
+                    colSpan={12}
                     style={{ paddingTop: 12, paddingBottom: 12 }}
                   >
                     <Spinner aria-label="불러오는 중" size="sm" />
@@ -510,7 +557,7 @@ export default function UniversityVerificationPendingPanel() {
               ) : users.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={11}
+                    colSpan={12}
                     style={{ paddingTop: 12, paddingBottom: 12 }}
                   >
                     <div className={"text-sm text-neutral-700"}>
@@ -520,7 +567,7 @@ export default function UniversityVerificationPendingPanel() {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={getRowKey(user)}>
                     <td>
                       <HeroActionButton
                         variant="ghost"
@@ -559,6 +606,7 @@ export default function UniversityVerificationPendingPanel() {
                     <td>{user.departmentName}</td>
                     <td>{user.grade}학년</td>
                     <td>{user.studentNumber}</td>
+                    <td>{getDocumentSummary(user)}</td>
                     <td>{formatDate(user.createdAt)}</td>
                     <td>
                       <Button
@@ -674,19 +722,22 @@ export default function UniversityVerificationPendingPanel() {
           <Modal.Dialog>
             <Modal.Header>
               <Modal.Heading>
-                {confirmDialog.action === "approve"
-                  ? "학생증 인증 승인"
-                  : "학생증 인증 거절"}
+                {getConfirmSubject(confirmDialog.user)} 인증{" "}
+                {confirmDialog.action === "approve" ? "승인" : "거절"}
               </Modal.Heading>
             </Modal.Header>
             <Modal.Body>
               <div className={"text-sm text-neutral-700"}>
-                {confirmDialog.user?.name}님의 학생증 인증을{" "}
+                {confirmDialog.user?.name}님의{" "}
+                {getConfirmSubject(confirmDialog.user)} 인증을{" "}
                 {confirmDialog.action === "approve" ? "승인" : "거절"}
                 하시겠습니까?
               </div>
               {confirmDialog.user && (
                 <div style={{ marginTop: 8 }}>
+                  <div className={"text-sm text-neutral-700"}>
+                    서류: {getDocumentSummary(confirmDialog.user)}
+                  </div>
                   <div className={"text-sm text-neutral-700"}>
                     대학교: {confirmDialog.user.universityName}
                   </div>
