@@ -54,6 +54,7 @@ import EmailNotificationModal from "./modals/EmailNotificationModal";
 import SmsNotificationModal from "./modals/SmsNotificationModal";
 import UniversityTransferModal from "./modals/UniversityTransferModal";
 import BirthdayEditModal from "./modals/BirthdayEditModal";
+import LifeStageEditModal from "./modals/LifeStageEditModal";
 import GenderEditModal from "./modals/GenderEditModal";
 import AccountStatusModal from "./modals/AccountStatusModal";
 import { ReferralPostSignupSection } from "./referral/ReferralPostSignupSection";
@@ -276,6 +277,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [universityTransferModalOpen, setUniversityTransferModalOpen] =
     useState(false);
   const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
+  const [lifeStageModalOpen, setLifeStageModalOpen] = useState(false);
   const [genderModalOpen, setGenderModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] =
     useState(false);
@@ -1746,6 +1748,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       className={"text-sm text-neutral-700"}
                     >
                       생활 단계: {getLifeStageLabel(userDetail.lifeStage)}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-xl"
+                        style={{ marginLeft: 8 }}
+                        onClick={() => setLifeStageModalOpen(true)}
+                      >
+                        변경
+                      </Button>
                     </div>
                     {/* 대학 정보 */}
                     {(currentUniversityName || currentDepartmentName) && (
@@ -2733,6 +2744,20 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               setUserDetail((prev) =>
                 prev ? { ...prev, birthday, age } : prev,
               );
+              if (onRefresh) onRefresh();
+            }}
+          />
+          <LifeStageEditModal
+            open={lifeStageModalOpen}
+            onClose={() => setLifeStageModalOpen(false)}
+            userId={userId || ""}
+            userName={userDetail?.name}
+            currentLifeStage={userDetail?.lifeStage}
+            onSuccess={({ lifeStage }) => {
+              setActionSuccess(
+                `생활 단계가 ${getLifeStageLabel(lifeStage)}(으)로 변경되었습니다.`,
+              );
+              setUserDetail((prev) => (prev ? { ...prev, lifeStage } : prev));
               if (onRefresh) onRefresh();
             }}
           />

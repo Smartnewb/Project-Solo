@@ -261,6 +261,18 @@ export function useUpdateUserBirthday() {
   });
 }
 
+export function useUpdateUserLifeStage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { userId: string; lifeStage: string; reason: string }) =>
+      AdminService.userAppearance.updateUserLifeStage(params.userId, params.lifeStage, params.reason),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [...usersKeys.appearance(), 'details', vars.userId] });
+      qc.invalidateQueries({ queryKey: usersKeys.appearance() });
+    },
+  });
+}
+
 export function useGenderCorrectionPreview(userId: string, enabled: boolean) {
   return useQuery({
     queryKey: [...usersKeys.appearance(), 'gender-preview', userId],

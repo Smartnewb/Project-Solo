@@ -44,6 +44,8 @@ interface UniversityVerificationUser {
   type?: string;
   documentType?: string | null;
   kind?: string | null;
+  // 승인하면 직장인 요금이 내려가는 신청이면 DOWN (서버 priceTierChange)
+  priceTierChange?: "DOWN" | "UP" | "NONE" | null;
 }
 
 // 서류 이름 (서버 documentType)
@@ -73,6 +75,7 @@ const getDocumentSummary = (user: UniversityVerificationUser) => {
   const parts = [typeLabel, documentLabel];
   // 서버 kind: NEW(신규) | UPGRADE(승격)
   if (user.kind === "UPGRADE") parts.push("승격");
+  if (user.priceTierChange === "DOWN") parts.push("요금이 내려가는 변경");
   return parts.join(" · ");
 };
 

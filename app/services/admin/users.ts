@@ -424,6 +424,18 @@ export const userAppearance = {
 		return result.data;
 	},
 
+	updateUserLifeStage: async (userId: string, lifeStage: string, reason: string) => {
+		const result = await adminPatch<{
+			data: {
+				userId: string;
+				previousLifeStage: string | null;
+				lifeStage: string;
+				changedAt: string;
+			};
+		}>(`/admin/v2/users/${userId}/life-stage`, { lifeStage, reason });
+		return result.data;
+	},
+
 	updateUserBirthday: async (userId: string, birthday: string) => {
 		const result = await adminPatch<{
 			data: { userId: string; birthday: string; age: number; message: string };
