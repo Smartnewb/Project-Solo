@@ -1,3 +1,5 @@
+jest.mock('@/app/services/admin/users', () => ({ userAppearance: { getUserDetails: jest.fn() } }));
+import { userAppearance } from '@/app/services/admin/users';
 jest.mock('@/shared/lib/http/admin-fetch', () => ({
 	adminGet: jest.fn(),
 	adminPost: jest.fn(),
@@ -13,7 +15,7 @@ describe('meeting admin service', () => {
 	beforeEach(() => jest.clearAllMocks());
 
 	it('reads the room list, room detail and refund failures from admin/meeting', async () => {
-		mockedGet.mockResolvedValue([]);
+		mockedGet.mockResolvedValue({ members: [] });
 
 		await meeting.listRooms();
 		await meeting.getRoom('room-1');
@@ -24,6 +26,22 @@ describe('meeting admin service', () => {
 			['/admin/meeting/rooms/room-1'],
 			['/admin/meeting/refund-failures'],
 		]);
+	});
+
+	it('enriches participants once per user and preserves the room when a profile fails', async () => {
+		mockedGet.mockResolvedValue({ members: [
+			{ memberId: 'm1', userId: 'u1', name: null },
+			{ memberId: 'm2', userId: 'u1', name: null },
+			{ memberId: 'm3', userId: 'u2', name: '기존 이름' },
+		] });
+		(userAppearance.getUserDetails as jest.Mock).mockImplementation(async (id: string) => {
+			if (id === 'u2') throw new Error('unavailable');
+			return { name: '참가자', appearanceGrade: 'A', age: 24, universityDetails: { name: '테스트대학교' }, profileImageUrl: '/photo.jpg' };
+		});
+		const detail = await meeting.getRoom('room-1');
+		expect(userAppearance.getUserDetails).toHaveBeenCalledTimes(2);
+		expect(detail.members[0]).toMatchObject({ name: '참가자', appearanceGrade: 'A', age: 24, universityName: '테스트대학교', profileImageUrl: '/photo.jpg' });
+		expect(detail.members[2]).toMatchObject({ name: '기존 이름', profileUnavailable: true });
 	});
 
 	it('passes participant search, status and page cursor to the API', async () => {

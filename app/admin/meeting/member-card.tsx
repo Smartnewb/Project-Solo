@@ -1,4 +1,7 @@
 "use client";
+import dynamic from "next/dynamic";
+import type { UserDetail } from "@/components/admin/appearance/UserDetailModal";
+import { useState } from "react";
 import { Button, Chip } from "@heroui/react";
 import type {
 	MeetingRoomCheckin,
@@ -10,12 +13,15 @@ import {
 	CHECKIN_OPEN_STATUSES,
 	FORFEITABLE_DEPOSIT_STATUSES,
 	checkinSourceLabel,
-	depositStatusColor,
 	depositStatusLabel,
 	formatKrw,
 	formatKst,
 	genderLabel,
 } from "./lib/format";
+const UserDetailModal = dynamic(() => import("@/components/admin/appearance/UserDetailModal"), { ssr: false });
+// 빈 id로 열면 기존 회원 상세 화면이 선택한 userId의 전체 프로필을 조회한다.
+const EMPTY_PROFILE: UserDetail = { id: "", name: "", age: 0, gender: "MALE", profileImages: [] };
+
 export type MemberAction =
 	| "checkin"
 	| "force-majeure"
@@ -82,6 +88,8 @@ export function MemberCard({
 	onAction,
 }: MemberCardProps) {
 	const { member, deposit, checkin } = view;
+	const [profileOpen, setProfileOpen] = useState(false);
+	const [failedImage, setFailedImage] = useState<string | null>(null);
 	const left = Boolean(member.leftAt);
 	const roomLive = CHECKIN_OPEN_STATUSES.has(roomStatus);
 	// 버튼 노출은 화면 편의일 뿐이고 최종 판정은 서버가 한다.
@@ -115,10 +123,10 @@ export function MemberCard({
 		canRetryRefund ||
 		canCorrectRefund;
 	const accent = left
-		? "text.disabled"
+		? "#a3a3a3"
 		: member.contactRestricted
-			? "error.main"
-			: "success.main";
+			? "#ef4444"
+			: "#22c55e";
 	return (
 		<section
 			style={{
@@ -137,12 +145,26 @@ export function MemberCard({
 					flexWrap: "wrap",
 				}}
 			>
-				<p className={"text-sm text-neutral-700"}>
-					{memberDisplayName(member)}
-				</p>
-				<Chip size={"sm"} variant={"soft"}>
-					<Chip.Label>{genderLabel(member.gender)}</Chip.Label>
-				</Chip>
+				{member.profileImageUrl && failedImage !== member.profileImageUrl ? (
+					<a href={member.profileImageUrl} target="_blank" rel="noreferrer" aria-label={`${memberDisplayName(member)} 사진 크게 보기`}>
+						{/* eslint-disable-next-line @next/next/no-img-element */}
+						<img src={member.profileImageUrl} alt={`${memberDisplayName(member)} 프로필`} width={44} height={44}
+							style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 8 }} onError={() => setFailedImage(member.profileImageUrl ?? null)} />
+					</a>
+				) : <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-xs text-neutral-500">사진 없음</div>}
+				<div style={{ flex: "1 1 140px", minWidth: 0 }}>
+					<p className="text-base font-semibold text-neutral-900">{memberDisplayName(member)}</p>
+					<p className="text-sm text-neutral-700">{genderLabel(member.gender)} · {member.appearanceGrade && member.appearanceGrade !== "UNKNOWN" ? `${member.appearanceGrade}등급` : member.profileUnavailable ? "등급 조회 실패" : "미분류"}</p>
+					<p className="text-sm text-neutral-700">{member.universityName || "학교 정보 없음"}</p>
+					{member.profileUnavailable && <p role="status" className="text-xs text-amber-700">프로필을 불러오지 못했어요. 상세를 다시 열어 주세요.</p>}
+				</div>
+
+				<Button size="sm" variant="secondary" onPress={() => setProfileOpen(true)}>프로필 상세보기</Button>
+			</div>
+
+			<details className="mt-3">
+				<summary className="cursor-pointer text-sm text-neutral-600">미팅 운영 정보 · 보증금·체크인</summary>
+				<div className="mt-2 flex flex-wrap gap-2">
 				{member.contactRestricted && (
 					<Chip size={"sm"} variant={"soft"}>
 						<Chip.Label>{"연락처 제한"}</Chip.Label>
@@ -157,18 +179,7 @@ export function MemberCard({
 						<Chip.Label>{"참여 중"}</Chip.Label>
 					</Chip>
 				)}
-			</div>
-			<span
-				style={{
-					display: "block",
-					marginTop: 4,
-					fontFamily: "monospace",
-					wordBreak: "break-all",
-				}}
-				className={"text-sm text-neutral-700"}
-			>
-				유저 {member.userId}· 멤버 {member.memberId}
-			</span>
+				</div>
 			<div style={{ display: "grid", gap: 6, marginTop: 12 }}>
 				<InfoRow label="보증금">
 					{deposit ? (
@@ -283,6 +294,8 @@ export function MemberCard({
 					먼저 제한을 해제하세요.
 				</span>
 			)}
+			</details>
+			{profileOpen && <UserDetailModal spacious open userId={member.userId} userDetail={EMPTY_PROFILE} loading error={null} onClose={() => setProfileOpen(false)} />}
 		</section>
 	);
 }

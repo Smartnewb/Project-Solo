@@ -1,3 +1,4 @@
+import { userAppearance } from './users';
 import { adminGet, adminPost } from '@/shared/lib/http/admin-fetch';
 
 /**
@@ -82,6 +83,11 @@ export interface MeetingRoomMember {
 	userId: string;
 	/** users.name (탈퇴 등으로 없으면 null). */
 	name: string | null;
+	age?: number | null;
+	appearanceGrade?: string | null;
+	universityName?: string | null;
+	profileImageUrl?: string | null;
+	profileUnavailable?: boolean;
 	gender: MeetingGender;
 	teamId: string;
 	side: MeetingTeamSide;
@@ -184,7 +190,34 @@ export const meeting = {
 	listRooms: (params: { query?: string; status?: MeetingRoomStatus; cursor?: string } = {}): Promise<{ rooms: MeetingRoomRow[]; nextCursor: string | null }> =>
 		adminGet<{ rooms: MeetingRoomRow[]; nextCursor: string | null }>(`${BASE}/rooms`, params),
 
-	getRoom: (roomId: string): Promise<MeetingRoomDetail> => adminGet<MeetingRoomDetail>(roomPath(roomId)),
+	getRoom: async (roomId: string): Promise<MeetingRoomDetail> => {
+		const detail = await adminGet<MeetingRoomDetail>(roomPath(roomId));
+		// 같은 사람이 여러 멤버 이력에 있어도 프로필은 한 번만 조회한다.
+		const profiles = new Map(await Promise.all(
+			[...new Set(detail.members.map(member => member.userId))].map(async userId => {
+				try {
+					return [userId, await userAppearance.getUserDetails(userId)] as const;
+				} catch {
+					return [userId, null] as const;
+				}
+			}),
+		));
+		return { ...detail, members: detail.members.map(member => {
+			const profile = profiles.get(member.userId);
+			if (!profile) return { ...member, profileUnavailable: true };
+			const university = profile.universityDetails?.name ?? profile.universityName
+				?? (typeof profile.university === 'string' ? profile.university : profile.university?.name);
+			return {
+				...member,
+				name: profile.name || member.name,
+				appearanceGrade: profile.appearanceGrade ?? profile.appearanceRank ?? null,
+				age: typeof profile.age === 'number' && Number.isFinite(profile.age) ? profile.age : null,
+				universityName: university || null,
+				profileImageUrl: profile.profileImageUrl || null,
+				profileUnavailable: false,
+			};
+		}) };
+	},
 
 	/** 수동 체크인만 memberId 가 아니라 userId 를 받는다(기존 엔드포인트). */
 	manualCheckin: (roomId: string, userId: string): Promise<MeetingRoomCheckin> =>

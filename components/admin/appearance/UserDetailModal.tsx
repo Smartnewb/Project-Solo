@@ -135,6 +135,7 @@ export interface UserDetail {
 }
 
 interface UserDetailModalProps {
+  spacious?: boolean;
   open: boolean;
   onClose: () => void;
   userId: string | null;
@@ -156,6 +157,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   error: initialError,
   onRefresh,
   showApprovalActions = false,
+  spacious = false,
   onApproval,
   onRejection,
 }) => {
@@ -1019,7 +1021,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       }}
       isDismissable={onClose !== undefined}
     >
-      <Modal.Container size="md" scroll="inside" className="w-full">
+      <Modal.Container size="md" scroll="inside" className={spacious ? "w-[min(72rem,calc(100vw-32px))]! max-w-none!" : "w-full"}>
         <Modal.Dialog style={{ width: "100%", maxWidth: "72rem", minWidth: 0 }}>
           <Modal.Header
             className="relative flex-row flex-wrap gap-3 pr-12"

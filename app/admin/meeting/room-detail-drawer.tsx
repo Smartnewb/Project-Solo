@@ -31,7 +31,6 @@ import {
 	formatKst,
 	genderLabel,
 	roomRegionLabel,
-	roomStatusColor,
 	roomStatusLabel,
 	sideLabel,
 } from "./lib/format";
@@ -441,7 +440,7 @@ export function RoomDetailDrawer({
 											value={canceledReasonLabel(room.canceledReason)}
 										/>
 									)}
-									<Field label="호스트 유저 ID" value={room.hostUserId} />
+									<Field label="호스트" value={memberNameByUserId.get(room.hostUserId) ?? "이름 없음"} />
 								</div>
 								<div>
 									<p
@@ -536,12 +535,7 @@ export function RoomDetailDrawer({
 																{memberNameByUserId.get(log.userId) ??
 																	"이름 없음"}
 															</p>
-															<span
-																style={{ fontFamily: "monospace" }}
-																className={"text-sm text-neutral-700"}
-															>
-																{log.userId}
-															</span>
+
 														</td>
 														<td>
 															<Chip size={"sm"} variant={"soft"}>
