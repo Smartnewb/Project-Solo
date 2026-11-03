@@ -1,24 +1,15 @@
 import { canMutateSupportMessage } from '@/app/admin/support-chat/lib/can-mutate-message';
 
 describe('canMutateSupportMessage', () => {
-	it('allows bot replies for any admin', () => {
-		expect(
-			canMutateSupportMessage({ senderType: 'bot', senderId: undefined }, 'admin-1'),
-		).toBe(true);
+	it('allows bot replies', () => {
+		expect(canMutateSupportMessage({ senderType: 'bot' })).toBe(true);
 	});
 
-	it('allows only the author for admin replies', () => {
-		expect(
-			canMutateSupportMessage({ senderType: 'admin', senderId: 'admin-1' }, 'admin-1'),
-		).toBe(true);
-		expect(
-			canMutateSupportMessage({ senderType: 'admin', senderId: 'admin-2' }, 'admin-1'),
-		).toBe(false);
+	it('allows admin replies regardless of author, including Slack replies without an author', () => {
+		expect(canMutateSupportMessage({ senderType: 'admin' })).toBe(true);
 	});
 
 	it('rejects user messages', () => {
-		expect(
-			canMutateSupportMessage({ senderType: 'user', senderId: 'user-1' }, 'admin-1'),
-		).toBe(false);
+		expect(canMutateSupportMessage({ senderType: 'user' })).toBe(false);
 	});
 });

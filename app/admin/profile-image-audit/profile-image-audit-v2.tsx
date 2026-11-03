@@ -1,7 +1,8 @@
 'use client';
 import { Button, Input } from '@heroui/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Images, RefreshCw } from 'lucide-react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Copy, Images, RefreshCw } from 'lucide-react';
 import { profileImageAudit, userReview } from '@/app/services/admin';
 import type { ProfileImageAuditBulkActionResponse, ProfileImageAuditItem, ProfileImageAuditProfileRank, } from '@/app/services/admin';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
@@ -10,16 +11,42 @@ import { DEFAULT_FILTERS, DELETE_REASON, PAGE_SIZE, SIMPLE_REJECT_REASON, } from
 import { AuditBulkToolbar } from './components/AuditBulkToolbar';
 import { AuditFiltersBar } from './components/AuditFiltersBar';
 import { ConfirmAuditActionDialog } from './components/ConfirmAuditActionDialog';
+import { DuplicatePhotoReviewMode } from './components/DuplicatePhotoReviewMode';
 import { ProfileImageAuditGrid } from './components/ProfileImageAuditGrid';
-import { filterVisibleAuditItems, formatProfileRank, getBulkActionCounts, getSelectedAuditGroup, summarizeBulkActionFailure } from './profile-image-audit-utils';
+import { auditFiltersFromQuery, auditFiltersToQuery, filterVisibleAuditItems, formatProfileRank, getBulkActionCounts, getSelectedAuditGroup, isAuditRejected, summarizeBulkActionFailure } from './profile-image-audit-utils';
 import type { AuditAction, AuditFilters } from './types';
+
+/** 처리 후 사진이 어느 상태로 갔는지 알려 준다. */
+function describeActionResult(action: AuditAction, count: number, restoredRejected: boolean): string {
+    const n = `${count.toLocaleString()}장`;
+    if (action === 'mark-ok') {
+        return restoredRejected
+            ? `${n}을 되돌려 정상 처리했습니다. 다시 승인 사진으로 노출됩니다.`
+            : `${n}을 정상 처리했습니다. '정상 처리'에서 다시 볼 수 있습니다.`;
+    }
+    if (action === 'second-review') return `${n}을 '2차 검토'로 보냈습니다.`;
+    if (action === 'reject') {
+        return `${n}에 사진 변경을 요청하고 '거절됨'으로 옮겼습니다. 회원이 새 사진을 올리면 사진 심사를 거쳐 '2차 검토'로 돌아옵니다.`;
+    }
+    return `${n}을 삭제했습니다.`;
+}
+
 export default function ProfileImageAuditV2() {
+    return (<Suspense fallback={null}>
+      <ProfileImageAuditContent></ProfileImageAuditContent>
+    </Suspense>);
+}
+
+function ProfileImageAuditContent() {
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const [initial] = useState(() => auditFiltersFromQuery(searchParams, DEFAULT_FILTERS));
     const latestLoad = useRef(0);
     const [items, setItems] = useState<readonly ProfileImageAuditItem[]>([]);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
-    const [page, setPage] = useState(1);
-    const [filters, setFilters] = useState<AuditFilters>(DEFAULT_FILTERS);
+    const [page, setPage] = useState(initial.page);
+    const [filters, setFilters] = useState<AuditFilters>(initial.filters);
     const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
     const [pendingAction, setPendingAction] = useState<AuditAction | null>(null);
     const [blacklistTarget, setBlacklistTarget] = useState<ProfileImageAuditItem | null>(null);
@@ -28,6 +55,7 @@ export default function ProfileImageAuditV2() {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const [duplicateMode, setDuplicateMode] = useState(false);
     const selectedGroup = useMemo(() => getSelectedAuditGroup(items, selectedIds), [items, selectedIds]);
     const removesLastApprovedImage = selectedGroup.selectedItems.some(item => selectedGroup.selectedItems.filter(selected => selected.profileId === item.profileId).length >= item.approvedImageCount);
     const load = async () => {
@@ -56,8 +84,15 @@ export default function ProfileImageAuditV2() {
         }
     };
     useEffect(() => {
-        load();
-    }, [page, filters]);
+        if (!duplicateMode) load();
+    }, [page, filters, duplicateMode]);
+    useEffect(() => {
+        if (!pathname) return;
+        const query = auditFiltersToQuery(filters, page);
+        if (query === (searchParams?.toString() ?? '')) return;
+        // 주소만 바꾼다. Next.js 15 는 이 호출을 useSearchParams 에 반영하고 화면을 다시 불러오지 않는다.
+        window.history.replaceState(window.history.state, '', query ? `${pathname}?${query}` : pathname);
+    }, [filters, page, pathname, searchParams]);
     const handleFilterChange = (nextFilters: AuditFilters) => {
         setFilters(nextFilters);
         setPage(1);
@@ -76,8 +111,12 @@ export default function ProfileImageAuditV2() {
             return next;
         });
     };
+    // '거절됨'이 아닌 화면에서 전체선택은 거절된 사진을 빼고 고른다. 섞여 고르면 되돌리기 말고는 할 수 있는 일이 없다.
     const selectVisibleItems = () => {
-        setSelectedIds(new Set(items.filter(item => item.selectable !== false).map((item) => item.profileImageId)));
+        const includeRejected = filters.auditStatus === 'rejected';
+        setSelectedIds(new Set(items
+            .filter(item => item.selectable !== false && (includeRejected || !isAuditRejected(item)))
+            .map((item) => item.profileImageId)));
     };
     const handleRankChange = async (item: ProfileImageAuditItem, rank: ProfileImageAuditProfileRank) => {
         if ((item.profileRank ?? 'UNKNOWN') === rank || rankUpdatingUserId !== null)
@@ -115,9 +154,12 @@ export default function ProfileImageAuditV2() {
                 response = await profileImageAudit.bulkFlagSecondReview({ profileImageIds: selectedGroup.selectedIds });
             }
             else if (pendingAction === 'reject') {
+                const characterOnly = selectedGroup.selectedItems.length > 0
+                    && selectedGroup.selectedItems.every((item) => item.kind === 'blind_asset');
                 response = await profileImageAudit.bulkReject({
                     profileImageIds: selectedGroup.selectedIds,
                     reason: rejectReason?.trim() || SIMPLE_REJECT_REASON,
+                    ...(characterOnly ? { confirmationPhrase: '캐릭터만 내리기' } : {}),
                 });
             }
             else {
@@ -137,7 +179,8 @@ export default function ProfileImageAuditV2() {
                 }
             }
             if (counts.succeeded > 0) {
-                setNotice(`선택한 ${counts.succeeded.toLocaleString()}장을 처리했습니다.`);
+                const restoredRejected = selectedGroup.selectedItems.some(isAuditRejected);
+                setNotice(describeActionResult(pendingAction, counts.succeeded, restoredRejected));
             }
             setPendingAction(null);
             await load();
@@ -176,20 +219,31 @@ export default function ProfileImageAuditV2() {
             {' '}· 총 {total.toLocaleString()}장
           </p>
         </div>
-        <Button onPress={load} isDisabled={loading || busy} variant="secondary">{<RefreshCw></RefreshCw>}
-          새로고침
-        </Button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <Button onPress={() => setDuplicateMode((current) => !current)} variant={duplicateMode ? 'primary' : 'secondary'} aria-pressed={duplicateMode}>{<Copy></Copy>}
+            {duplicateMode ? '중복검사 끝내기' : '중복검사'}
+          </Button>
+          {!duplicateMode && (<Button onPress={load} isDisabled={loading || busy} variant="secondary">{<RefreshCw></RefreshCw>}
+            새로고침
+          </Button>)}
+        </div>
       </div>
 
       <div>
         <AuditFiltersBar filters={filters} onChange={handleFilterChange}></AuditFiltersBar>
+        {duplicateMode ? <DuplicatePhotoReviewMode filters={filters}></DuplicatePhotoReviewMode> : (<>
         <AuditBulkToolbar group={selectedGroup} visibleCount={items.length} busy={busy} onSelectVisible={selectVisibleItems} onAction={setPendingAction} onBlacklist={openBlacklist}></AuditBulkToolbar>
         {notice && <aside role="alert" className="rounded-lg border p-3">{notice}</aside>}
         {error && <aside role="alert" className="rounded-lg border p-3">{error}</aside>}
+        {!loading && !error && items.length === 0 && filters.search && filters.auditStatus !== undefined && (<aside className="rounded-lg border p-3">
+            이 상태에는 &apos;{filters.search}&apos; 검색 결과가 없습니다.{' '}
+            <Button size="sm" variant="secondary" onPress={() => handleFilterChange({ ...filters, auditStatus: undefined, includeAlreadyAudited: true })}>전체 상태에서 찾기</Button>
+          </aside>)}
         <ProfileImageAuditGrid items={items} selectedIds={selectedIds} loading={loading} onToggle={toggleSelection} onRankChange={handleRankChange} rankUpdatingUserId={rankUpdatingUserId}></ProfileImageAuditGrid>
         {totalPages > 1 && (<div style={{ display: "flex", paddingTop: 8 }}>
             <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3"><Button variant="secondary" isDisabled={page <= 1} onPress={() => ((_, value) => setPage(value))({} as never, page - 1)}>이전</Button><Input type="number" aria-label="페이지 번호" min={1} max={totalPages} value={page} onChange={event => setPage(Number(event.target.value))} className="w-16 rounded border p-2"></Input><span>/ {totalPages}</span><Button variant="secondary" isDisabled={page >= totalPages} onPress={() => ((_, value) => setPage(value))({} as never, page + 1)}>다음</Button></nav>
           </div>)}
+        </>)}
       </div>
 
       <ConfirmAuditActionDialog action={pendingAction} selectedCount={selectedGroup.selectedIds.length} busy={busy} removesLastApprovedImage={removesLastApprovedImage} onClose={() => setPendingAction(null)} onConfirm={runAction}></ConfirmAuditActionDialog>

@@ -107,6 +107,10 @@ export type ProfileImageAuditItem = {
   readonly auditReviewedAt: string | null;
   readonly auditReviewedBy: string | null;
   readonly auditDecisionReason: string | null;
+  /** 운영진이 큐레이팅해 넣은 사진(reviewed_by = system:admin-curation). 서버가 아직 안 보내면 없음. */
+  readonly isCurated?: boolean;
+  /** 큐레이팅으로 바뀌기 전 원래 사진. 교체 때 목록에서 빠지므로 큐레이팅 사진 카드에 붙여 보낸다. 서버가 아직 안 보내면 없음. */
+  readonly curationOriginalImageUrl?: string | null;
   readonly isBlacklisted: boolean;
   readonly suspendedAt: string | null;
   readonly approvedImageCount: number;

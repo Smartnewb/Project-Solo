@@ -1,4 +1,11 @@
-import { adminDelete, adminGet, adminPatch, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
+import {
+  adminDelete,
+  adminGet,
+  adminPatch,
+  adminPost,
+  adminRequest,
+  adminUpload,
+} from '@/shared/lib/http/admin-fetch';
 import type {
   AdminSessionsParams,
   AdminSessionsResponse,
@@ -89,6 +96,18 @@ class SupportChatService {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  /** 사진 1장을 상담원 메시지로 보낸다. 서버가 비공개로 저장하고 고객에게 열람 주소로 보낸다. */
+  async sendPhoto(sessionId: string, file: File): Promise<SendMessageResponse> {
+    const formData = new FormData();
+    formData.append('image', file);
+    const result = await adminUpload<SendMessageResponse>(
+      `${this.basePath}/sessions/${sessionId}/photos`,
+      formData,
+    );
+    if (!result.success) throw new Error('사진 전송에 실패했습니다.');
+    return result;
   }
 
   async updateMessage(

@@ -237,6 +237,25 @@ describe('admin-proxy route handlers', () => {
       );
     });
 
+    it("keeps '#' in a decoded path segment instead of cutting it off as a URL fragment", async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({}));
+
+      const pk = 'REVIEW#APP_STORE#00000192-19a2';
+      const req = createRequest('admin/v2/app-reviews/x/featured', {
+        method: 'PATCH',
+        headers: { Origin: 'http://localhost:3000' },
+      });
+      await PATCH(req, makeParams(['admin', 'v2', 'app-reviews', pk, 'featured']));
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/v2/app-reviews/REVIEW%23APP_STORE%2300000192-19a2/featured'),
+        expect.anything(),
+      );
+    });
+
     it('forwards query string parameters to backend', async () => {
       (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
       (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);

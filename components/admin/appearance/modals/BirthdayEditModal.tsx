@@ -15,7 +15,7 @@ import { calculateAge } from "@/app/utils/formatters";
 import { useUpdateUserBirthday } from "@/app/admin/hooks/use-users";
 
 const MIN_AGE = 18;
-const MAX_AGE = 27;
+const MAX_AGE = 29;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 interface BirthdayEditModalProps {

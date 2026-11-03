@@ -47,7 +47,6 @@ import {
   PHASE_LABELS,
   SOURCE_LABELS,
 } from "@/app/types/support-chat";
-import { useAdminSession } from "@/shared/contexts/admin-session-context";
 import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { useToast } from "@/shared/ui/admin/toast";
 
@@ -79,7 +78,6 @@ export default function ChatDetailDialog({
   onClose,
   onSessionUpdated,
 }: ChatDetailDialogProps) {
-  const { session: adminSession } = useAdminSession();
   const { markRead } = useReadState();
   const confirm = useConfirm();
   const toast = useToast();
@@ -407,16 +405,14 @@ export default function ChatDetailDialog({
   const renderMessage = (message: SupportMessage) => {
     const config = SENDER_CONFIG[message.senderType];
     const isUser = message.senderType === "user";
-    const canMutateMessage = canMutateSupportMessage(
-      message,
-      adminSession?.user.id,
-    );
+    const canMutateMessage = canMutateSupportMessage(message);
     const isEditing = editingMessageId === message.id;
 
     return (
       <li
         key={message.id}
         style={{
+          display: "flex",
           flexDirection: "column",
           alignItems: isUser ? "flex-start" : "flex-end",
           paddingBlock: 8,
@@ -544,7 +540,7 @@ export default function ChatDetailDialog({
               </div>
             </div>
           ) : (
-            <p style={{ whiteSpace: "pre-wrap" }}>{message.content}</p>
+            <p style={{ whiteSpace: "pre-wrap", wordBreak: "keep-all", overflowWrap: "break-word" }}>{message.content}</p>
           )}
           {message.metadata?.confidence !== undefined && (
             <p style={{ display: "block", marginTop: 4 }}>
@@ -774,8 +770,18 @@ export default function ChatDetailDialog({
                   {canSendMessage && (
                     <>
                       <hr />
-                      <div style={{ padding: 16, display: "flex", gap: 8 }}>
-                        <TextField aria-label={"메시지를 입력하세요..."}>
+                      <div
+                        style={{
+                          padding: 16,
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "flex-end",
+                        }}
+                      >
+                        <TextField
+                          aria-label={"메시지를 입력하세요..."}
+                          className="flex-1 min-w-0"
+                        >
                           <TextArea
                             placeholder="메시지를 입력하세요..."
                             value={messageInput}

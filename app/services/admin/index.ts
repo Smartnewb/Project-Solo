@@ -220,7 +220,7 @@ export type {
 } from './blacklist';
 export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
-export type { FeatureFlag } from './feature-flags';
+export type { FeatureFlag, FeatureFlagChange } from './feature-flags';
 export { meeting } from './meeting';
 export type {
 	MeetingRoomRow,

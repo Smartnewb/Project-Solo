@@ -1,4 +1,8 @@
 // shared/lib/http/admin-fetch.ts
+import {
+  ADMIN_RETRY_HEADER,
+  ADMIN_SESSION_EXPIRED_CODE,
+} from '@/shared/auth/admin-auth-contract';
 
 const PROXY_BASE = '/api/admin-proxy';
 
@@ -37,6 +41,33 @@ export function getAdminErrorMessage(error: unknown, fallback = '요청 실패')
 /** 낙관적 락 충돌(409). 에러 메시지 문구가 아니라 상태 코드로 판정한다. */
 export function isAdminConflictError(error: unknown): boolean {
   return error instanceof AdminApiError && error.status === 409;
+}
+
+const SESSION_RETRY_DELAY_MS = 400;
+
+async function isSessionExpired(res: Response): Promise<boolean> {
+  if (res.status !== 401) return false;
+  const body = await res.clone().json().catch(() => null);
+  return (body as { code?: string } | null)?.code === ADMIN_SESSION_EXPIRED_CODE;
+}
+
+// 동시에 나간 다른 요청이 토큰을 먼저 갱신했을 수 있어 한 번만 다시 보낸다(그 사이 브라우저에 새 쿠키가 들어온다).
+// 재시도도 만료면 프록시가 쿠키를 지웠으므로 로그인으로 보낸다.
+async function fetchWithSessionRetry(url: string, init: RequestInit): Promise<Response> {
+  const res = await fetch(url, init);
+  if (!(await isSessionExpired(res))) return res;
+
+  await new Promise((resolve) => setTimeout(resolve, SESSION_RETRY_DELAY_MS));
+  const headers = new Headers(init.headers);
+  headers.set(ADMIN_RETRY_HEADER, '1');
+  const retried = await fetch(url, { ...init, headers });
+  if ((await isSessionExpired(retried)) && typeof window !== 'undefined') {
+    /* eslint-disable no-restricted-properties -- 쿠키를 지운 뒤라 라우터 이동이 아니라 전체 이동으로 middleware 를 다시 거쳐야 한다. */
+    const next = `${window.location.pathname}${window.location.search}`;
+    window.location.assign(`/?next=${encodeURIComponent(next)}`);
+    /* eslint-enable no-restricted-properties */
+  }
+  return retried;
 }
 
 async function parseJsonBody<T>(res: Response): Promise<T> {
@@ -94,7 +125,7 @@ async function request<T>(
     : {};
   const headers = { ...baseHeaders, ...(options?.headers ?? {}) };
 
-  const res = await fetch(url, {
+  const res = await fetchWithSessionRetry(url, {
     method,
     headers: Object.keys(headers).length ? headers : undefined,
     body: options?.body ? JSON.stringify(options.body) : undefined,
@@ -118,7 +149,7 @@ export async function adminRequest<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(buildAdminProxyUrl(path), init);
+  const res = await fetchWithSessionRetry(buildAdminProxyUrl(path), init);
 
   if (!res.ok) {
     const body = await parseJsonBody<unknown>(res).catch(() => null);

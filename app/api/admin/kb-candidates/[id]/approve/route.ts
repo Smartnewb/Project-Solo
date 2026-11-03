@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminRequest } from '@/shared/auth';
 import { isSameOrigin } from '@/shared/lib/csrf';
+import { adminGatewayHeader } from '@/shared/lib/admin-gateway';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 const ID_PATTERN = /^[\w-]+$/;
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 	const headers: Record<string, string> = {
 		Authorization: `Bearer ${token}`,
 		'Content-Type': 'application/json',
+		...adminGatewayHeader(),
 	};
 
 	if (sessionMeta?.selectedCountry) {

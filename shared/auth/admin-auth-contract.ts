@@ -2,6 +2,8 @@
 export type AdminCountry = 'kr' | 'jp';
 export const ADMIN_REFRESH_STORAGE_KEY = 'admin_refresh_token';
 export const ADMIN_COUNTRY_STORAGE_KEY = 'admin_selected_country';
+export const ADMIN_SESSION_EXPIRED_CODE = 'ADMIN_SESSION_EXPIRED';
+export const ADMIN_RETRY_HEADER = 'x-admin-session-retry';
 
 export function normalizeAdminCountry(country?: string | null): AdminCountry {
   return country === 'jp' ? 'jp' : 'kr';

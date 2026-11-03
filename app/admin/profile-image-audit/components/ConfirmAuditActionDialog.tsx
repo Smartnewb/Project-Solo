@@ -55,7 +55,7 @@ export function ConfirmAuditActionDialog({ action, selectedCount, busy, removesL
                 setRejectReason(event.target.value);
             }} {...{ maxLength: 255 }}></TextArea><Description>{`${normalizedRejectReason.length}/255`}</Description></TextField>
             <aside role="alert" className="rounded-lg border p-3">
-              선택한 사진의 승인을 취소하고 앱 푸시로 변경을 요청합니다. 문자(SMS)는 발송하지 않습니다.
+              선택한 사진의 승인을 취소하고 앱 푸시로 변경을 요청합니다. 푸시를 받을 수 없는 회원(알림 꺼짐·앱 삭제)에게는 문자로 알립니다.
             </aside>
           </div>)}
         {(action === 'delete' || action === 'reject') && removesLastApprovedImage && <aside role="alert" className="rounded-lg border p-3">승인된 사진이 모두 없어지는 회원이 있습니다. 처리하면 사진 재업로드가 필요합니다.</aside>}

@@ -19,6 +19,7 @@ import {
   formatDateTimeWithoutTimezoneConversion,
 } from "@/app/utils/formatters";
 import { GhostUserExposureSheet } from "@/app/admin/ai-profiles/ghosts/ghost-user-exposure-sheet";
+import { BlindAvatarSources } from "./blind-avatar-sources";
 
 type ProfileImage = {
   id: string;
@@ -1079,6 +1080,8 @@ handleUserSelect(user, "sanction")
                         </div>
                       )}
                   </div>
+
+                  <BlindAvatarSources key={`${country}:${selectedUser.userId}`} userId={selectedUser.userId} />
 
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold mb-4">기본 정보</h3>

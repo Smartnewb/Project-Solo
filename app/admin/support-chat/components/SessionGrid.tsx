@@ -10,7 +10,7 @@ import {
   Tabs,
 } from "@heroui/react";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   SupportDomain,
@@ -78,6 +78,14 @@ function SessionCard({
   checked: boolean;
   onToggle?: () => void;
 }) {
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const [showTopFade, setShowTopFade] = useState(false);
+
+  useEffect(() => {
+    const el = messageListRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
   return (
     <div
       className="relative"
@@ -157,6 +165,8 @@ function SessionCard({
             </div>
           </div>
           <div
+            ref={messageListRef}
+            onScroll={(e) => setShowTopFade(e.currentTarget.scrollTop > 4)}
             style={{
               flex: 1,
               overflowY: "auto",
@@ -164,6 +174,12 @@ function SessionCard({
               display: "flex",
               flexDirection: "column",
               gap: 6,
+              maskImage: showTopFade
+                ? "linear-gradient(to bottom, transparent, black 36px)"
+                : undefined,
+              WebkitMaskImage: showTopFade
+                ? "linear-gradient(to bottom, transparent, black 36px)"
+                : undefined,
             }}
           >
             {error && (
@@ -206,7 +222,8 @@ function SessionCard({
                       borderRadius: 1.5,
                       backgroundColor: style.bg,
                       whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
+                      wordBreak: "keep-all",
+                      overflowWrap: "break-word",
                     }}
                   >
                     <p>{message.content}</p>

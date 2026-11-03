@@ -54,8 +54,11 @@ import EmailNotificationModal from "./modals/EmailNotificationModal";
 import SmsNotificationModal from "./modals/SmsNotificationModal";
 import UniversityTransferModal from "./modals/UniversityTransferModal";
 import BirthdayEditModal from "./modals/BirthdayEditModal";
+import GenderEditModal from "./modals/GenderEditModal";
 import AccountStatusModal from "./modals/AccountStatusModal";
 import { ReferralPostSignupSection } from "./referral/ReferralPostSignupSection";
+import { getPrivateMatchingLabel } from "./private-matching-label";
+import { BlindAvatarSources } from "@/app/admin/users/blind-avatar-sources";
 import { sanitizeUrl } from "@/shared/lib/safe-url";
 import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { useToast } from "@/shared/ui/admin/toast";
@@ -127,6 +130,8 @@ export interface UserDetail {
   accountStatus?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   suspendedAt?: string | null;
   suspendedUntil?: string | null;
+  privateMatchingUntil?: string | null;
+  privateMatchingEnabledAt?: string | null;
   approvalStatus?: "PENDING" | "APPROVED" | "REJECTED"; // 승인 상태
   preferences?: UserPreferences;
   signupRoute?: "PASS" | "KAKAO" | "APPLE"; // 회원가입 루트
@@ -260,6 +265,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [universityTransferModalOpen, setUniversityTransferModalOpen] =
     useState(false);
   const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
+  const [genderModalOpen, setGenderModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] =
     useState(false);
   const [smsNotificationModalOpen, setSmsNotificationModalOpen] =
@@ -457,6 +463,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   const isAccountSuspended =
     userDetail?.accountStatus === "SUSPENDED" || !!userDetail?.suspendedAt;
+  const privateMatchingLabel = getPrivateMatchingLabel(
+    userDetail?.privateMatchingUntil,
+    userDetail?.privateMatchingEnabledAt,
+  );
 
   const handleOpenAccountStatusModal = () => {
     handleCloseMenu();
@@ -1472,6 +1482,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       return null;
                     }
                   })()}
+                  {userId && (
+                    <div className={"mt-4"}>
+                      <BlindAvatarSources key={userId} userId={userId} />
+                    </div>
+                  )}
                 </div>
                 {/* 사용자 정보 섹션 */}
                 <div className={"min-w-0"}>
@@ -1670,6 +1685,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         >
                           나이 변경
                         </Button>
+                        <Button
+                          onClick={() => setGenderModalOpen(true)}
+                          variant={"secondary"}
+                          isDisabled={actionLoading}
+                          size={"sm"}
+                          className="rounded-xl"
+                        >
+                          성별 정정
+                        </Button>
                         {userDetail.signupRoute && (
                           <Chip
                             size={"sm"}
@@ -1679,6 +1703,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         {userDetail.accountStatus === "INACTIVE" && (
                           <Chip size={"sm"} variant={"soft"}>
                             {"비활성화"}
+                          </Chip>
+                        )}
+                        {privateMatchingLabel && (
+                          <Chip size={"sm"} variant={"soft"}>
+                            {privateMatchingLabel}
                           </Chip>
                         )}
                         {isAccountSuspended && (
@@ -2686,6 +2715,19 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               setUserDetail((prev) =>
                 prev ? { ...prev, birthday, age } : prev,
               );
+              if (onRefresh) onRefresh();
+            }}
+          />
+          <GenderEditModal
+            open={genderModalOpen}
+            onClose={() => setGenderModalOpen(false)}
+            userId={userId || ""}
+            userName={userDetail?.name}
+            onSuccess={({ gender, rejectedMatches }) => {
+              setActionSuccess(
+                `성별을 ${GENDER_LABELS[gender]}(으)로 정정했습니다. 대기 카드 ${rejectedMatches}장을 내렸습니다.`,
+              );
+              setUserDetail((prev) => (prev ? { ...prev, gender } : prev));
               if (onRefresh) onRefresh();
             }}
           />

@@ -10,7 +10,7 @@ import FestivalMateAdminClient from './festival-mate-admin-client';
 jest.mock('@/shared/contexts/admin-session-context', () => ({ useAdminSession: jest.fn() }));
 jest.mock('@/app/services/admin/festival-mate', () => ({
   ...jest.requireActual('@/app/services/admin/festival-mate'),
-  festivalMate: { getEvents: jest.fn(), getParticipants: jest.fn(), getProfile: jest.fn(), updateEvent: jest.fn() },
+  festivalMate: { getEvents: jest.fn(), getParticipants: jest.fn(), getProfile: jest.fn(), updateEvent: jest.fn(), withdraw: jest.fn() },
 }));
 jest.mock('@/app/services/admin/users', () => ({ userAppearance: { getUserDetails: jest.fn() } }));
 // Keep the actual HeroUI controls; isolate only the existing heavy member editor.
@@ -194,4 +194,34 @@ it('keeps the selected festival visible when renaming its currently filtered hos
   expect(screen.getByText('개최 학교·장소: 새 개최 학교 A')).toBeVisible();
   expect(screen.getByText('회원 one')).toBeVisible();
   expect(screen.queryByText('조건에 맞는 축제 없음')).not.toBeInTheDocument();
+});
+
+it('asks for confirmation before withdrawing and reports the auto-rejected proposals', async () => {
+  service.withdraw.mockResolvedValue({ rejectedReceived: 2, cancelledSent: 1 });
+  mount();
+  fireEvent.click(await screen.findByRole('button', { name: '회원 one 신청 철회' }));
+  const dialog = await screen.findByRole('alertdialog', { name: '신청 철회 확인' });
+  expect(service.withdraw).not.toHaveBeenCalled();
+  expect(dialog).toHaveTextContent('받은 대기 제안은 모두 자동으로 거절됩니다');
+  fireEvent.click(within(dialog).getByRole('button', { name: '철회하기' }));
+  await waitFor(() => expect(service.withdraw).toHaveBeenCalledWith('event-a', 'one'));
+  expect(await screen.findByText(/받은 대기 제안 2건 자동 거절, 보낸 대기 제안 1건 취소/)).toBeVisible();
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+});
+
+it('keeps the confirmation open and shows the server error when withdrawal fails', async () => {
+  service.withdraw.mockRejectedValue(new Error('축제 메이트 신청 내역이 없어요'));
+  mount();
+  fireEvent.click(await screen.findByRole('button', { name: '회원 one 신청 철회' }));
+  fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: '철회하기' }));
+  expect(await screen.findByText(/철회 실패: .*축제 메이트 신청 내역이 없어요/)).toBeVisible();
+  expect(screen.getByRole('alertdialog')).toBeVisible();
+});
+
+it('does not offer withdrawal for a participant without a mate registration', async () => {
+  service.getParticipants.mockResolvedValue([{ userId: 'one', joinedAt: '2026-10-04T00:30:00Z', mateRegistered: false }]);
+  mount();
+  const row = (await screen.findByText('one')).closest('tr')!;
+  expect(within(row).getByText('메이트 신청 없음')).toBeVisible();
+  expect(within(row).queryByRole('button', { name: /신청 철회/ })).not.toBeInTheDocument();
 });

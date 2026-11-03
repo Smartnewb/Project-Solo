@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminRequest } from '@/shared/auth';
+import { adminGatewayHeader } from '@/shared/lib/admin-gateway';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
 
 	const headers: Record<string, string> = {
 		Authorization: `Bearer ${token}`,
+		...adminGatewayHeader(),
 	};
 
 	if (sessionMeta?.selectedCountry) {

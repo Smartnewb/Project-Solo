@@ -103,6 +103,82 @@ export function getSelectedAuditGroup(
   };
 }
 
+/** 전수검사에서 변경 요청(거절)한 사진. 최초 심사 반려가 아니라 감사 결과로 판단한다. */
+export function isAuditRejected(item: ProfileImageAuditItem): boolean {
+  return item.auditStatus === 'rejected';
+}
+
+const STATUS_ALL = 'all';
+
+/**
+ * 주소창에 필터를 남겨 새로고침·뒤로가기 뒤에도 같은 화면으로 돌아오게 한다.
+ * 기본값과 같은 항목은 적지 않는다. 검수 상태 '전체'는 기본값(미검수)과 구분하려고 status=all로 남긴다.
+ */
+export function auditFiltersToQuery(filters: AuditFilters, page: number): string {
+  const params = new URLSearchParams();
+  const population = filters.population ?? 'regular_photo';
+  if (population !== 'regular_photo') params.set('population', population);
+  const defaultStatus = population === 'regular_photo' ? 'unreviewed' : undefined;
+  if (filters.auditStatus !== defaultStatus) params.set('status', filters.auditStatus ?? STATUS_ALL);
+  if (filters.search) params.set('search', filters.search);
+  if (filters.gender) params.set('gender', filters.gender);
+  if (filters.profileRank) params.set('rank', filters.profileRank);
+  if (filters.validationDecision) params.set('validation', filters.validationDecision);
+  if (filters.isMain === true) params.set('main', '1');
+  if (filters.hasReport === true) params.set('report', '1');
+  if (page > 1) params.set('page', String(page));
+  return params.toString();
+}
+
+export function auditFiltersFromQuery(
+  params: { get(name: string): string | null } | null,
+  defaults: AuditFilters,
+): { readonly filters: AuditFilters; readonly page: number } {
+  if (!params) return { filters: defaults, page: 1 };
+  const population = params.get('population') === 'character_original' ? 'character_original' : 'regular_photo';
+  const statusParam = params.get('status');
+  const auditStatus = statusParam === null
+    ? (population === 'regular_photo' ? 'unreviewed' : undefined)
+    : statusParam === STATUS_ALL
+      ? undefined
+      : parseAuditStatus(statusParam);
+  const rank = parseProfileRank(params.get('rank') ?? '');
+  const validation = parseValidationDecision(params.get('validation') ?? '');
+  const gender = params.get('gender');
+  const page = Number(params.get('page'));
+  return {
+    filters: {
+      ...defaults,
+      population,
+      auditStatus,
+      includeAlreadyAudited: auditStatus === undefined,
+      search: params.get('search')?.trim() || undefined,
+      gender: gender === 'FEMALE' || gender === 'MALE' ? gender : undefined,
+      profileRank: rank ?? undefined,
+      validationDecision: validation,
+      isMain: params.get('main') === '1' ? true : undefined,
+      hasReport: params.get('report') === '1' ? true : undefined,
+    },
+    page: Number.isInteger(page) && page > 1 ? page : 1,
+  };
+}
+
+function parseAuditStatus(value: string): ProfileImageAuditStatus | undefined {
+  switch (value) {
+    case 'unreviewed':
+    case 'needs_second_review':
+    case 'ok':
+    case 'rejected':
+      return value;
+    default:
+      return 'unreviewed';
+  }
+}
+
+function parseValidationDecision(value: string): ProfileImageAuditValidationDecision | undefined {
+  return value === 'approved' || value === 'manual_review' || value === 'rejected' ? value : undefined;
+}
+
 export function filterVisibleAuditItems(
   items: readonly ProfileImageAuditItem[],
   filters: AuditFilters,

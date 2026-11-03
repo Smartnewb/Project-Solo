@@ -16,7 +16,14 @@ export type SupportMessageSource =
   | 'admin'
   | 'faq_match';
 
+/** 서버가 조회 때마다 새로 만든 1시간 열람 주소. */
+export interface SupportMessageAttachment {
+  type: 'image';
+  url: string;
+}
+
 export interface SupportMessageMetadata {
+  attachments?: SupportMessageAttachment[];
   sources?: {
     question: string;
     answer: string;

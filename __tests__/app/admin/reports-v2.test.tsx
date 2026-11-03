@@ -116,6 +116,7 @@ describe('ReportsV2 deep link', () => {
       createdAt: '2026-04-15T09:00:00.000Z',
       updatedAt: null,
     });
+    (AdminService.reports.getUserProfileImages as jest.Mock).mockResolvedValue(['https://img.test/p1.png']);
     mockedGetProfileReportHistory.mockResolvedValue([
       {
         id: 'history-1',
@@ -146,8 +147,46 @@ describe('ReportsV2 deep link', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(await screen.findByText('profile-pending-1')).toBeInTheDocument();
     expect(screen.getByText('허위 프로필')).toBeInTheDocument();
-    expect(screen.getByText('운영자A')).toBeInTheDocument();
+    expect(screen.getByText(/운영자A/)).toBeInTheDocument();
     expect(screen.getByText('허위 프로필 확인')).toBeInTheDocument();
+    expect(screen.getByText('피신고자 사진 정보')).toBeInTheDocument();
+    expect(screen.getByText(/PHOTO/)).toBeInTheDocument();
+    expect(screen.getByText(/BLIND/)).toBeInTheDocument();
+    expect(screen.getByTestId('blind-avatar-sources')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(AdminService.reports.getUserProfileImages).toHaveBeenCalledWith('u-1');
+    });
+  });
+
+  it('renders list rows as cards with both parties and the reason', async () => {
+    (useSearchParams as jest.Mock).mockReturnValue({ get: () => null });
+    mockedAdminService.getProfileReports.mockResolvedValue({
+      items: [
+        {
+          id: 'abcdef12-0000',
+          reporter: { id: 'r-1', name: '신고자A', email: '', phoneNumber: '', age: 20, gender: 'MALE', profileImageUrl: '' },
+          reported: { id: 'u-1', name: '피신고자A', email: '', phoneNumber: '', age: 21, gender: 'FEMALE', profileImageUrl: '' },
+          reason: '신분사칭',
+          description: null,
+          evidenceImages: ['https://img.test/e.png'],
+          status: 'pending',
+          severity: 'urgent',
+          reportCount: 3,
+          createdAt: '2026-04-15T09:00:00.000Z',
+          updatedAt: null,
+        },
+      ],
+      meta: { total: 1 },
+    } as never);
+
+    render(<ReportsV2 />);
+
+    expect(await screen.findByText('신분사칭')).toBeInTheDocument();
+    expect(screen.getByText('신고자A')).toBeInTheDocument();
+    expect(screen.getByText('피신고자A')).toBeInTheDocument();
+    expect(screen.getByText('긴급')).toBeInTheDocument();
+    expect(screen.getByText('누적 3건')).toBeInTheDocument();
+    expect(screen.getByText('증거 1장')).toBeInTheDocument();
   });
 
   it('does not render the raw dismissed backend status string in the detail dialog', async () => {

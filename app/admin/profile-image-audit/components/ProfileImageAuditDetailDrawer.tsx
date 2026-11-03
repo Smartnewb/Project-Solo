@@ -3,6 +3,7 @@ import { Button, Chip, Drawer } from '@heroui/react';
 import { ExternalLink, X } from 'lucide-react';
 import type { ProfileImageAuditItem } from '@/app/services/admin';
 import { BlindPhotoComparison } from './BlindPhotoComparison';
+import { BlindAvatarSources } from '@/app/admin/users/blind-avatar-sources';
 import { formatAuditStatus, formatValidationDecision, formatValidationSummary, sortAuditSiblingImages, } from '../profile-image-audit-utils';
 type Props = {
     readonly item: ProfileImageAuditItem;
@@ -55,6 +56,7 @@ export function ProfileImageAuditDetailDrawer({ item, open, onClose }: Props) {
         </div>
 
         {item.presentationMode === 'BLIND' && <div className="mb-4"><BlindPhotoComparison item={item} /></div>}
+        {item.presentationMode === 'BLIND' && <div className="mb-4"><BlindAvatarSources key={item.userId} userId={item.userId} /></div>}
         <div>
           {(reportCount > 0 || hasSuspension) && (<div style={{ border: '1px solid #fecaca', backgroundColor: '#fef2f2', borderRadius: 1, padding: 12 }}>
               {reportCount > 0 && <p>신고 {reportCount}회</p>}

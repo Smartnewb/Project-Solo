@@ -99,9 +99,10 @@ export const stats = {
 			throw error;
 		}
 	},
-	getMonthlySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
+	getMonthlySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean, from?: string) => {
 		try {
 			const params: Record<string, any> = { period: 'monthly' };
+			if (from) params.from = from;
 			if (region) params.region = region;
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 			if (useCluster !== undefined) params.useCluster = useCluster;

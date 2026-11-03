@@ -85,6 +85,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
 				id: "community-automation",
 				label: "커뮤니티 관리",
 				children: [
+					{ href: "/admin/community", label: "게시글 관리" },
 					{
 						href: "/admin/community-automation/target-posts",
 						label: "게시글/AI 활동",
@@ -228,6 +229,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
 		items: [
 			{ href: "/admin/version-management", label: "버전 관리" },
 			{ href: "/admin/access-logs", label: "개인정보 접속기록" },
+			{ href: "/admin/waf-guard", label: "웹방화벽" },
 			{ href: "/admin/feature-flags", label: "Feature Flags" },
 			{ href: "/admin/lab", label: "실험실" },
 			{ href: "/admin/app-preview", label: "앱 UI 시연" },

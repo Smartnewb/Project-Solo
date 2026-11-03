@@ -405,6 +405,25 @@ export const userAppearance = {
 		return result.data;
 	},
 
+	getGenderCorrectionPreview: async (userId: string) => {
+		const result = await adminGet<{
+			data: {
+				gender: 'MALE' | 'FEMALE';
+				pendingMatches: number;
+				openMatches: number;
+				inChatMatches: number;
+			};
+		}>(`/admin/v2/users/${userId}/gender`);
+		return result.data;
+	},
+
+	correctUserGender: async (userId: string, gender: 'MALE' | 'FEMALE') => {
+		const result = await adminPatch<{
+			data: { userId: string; before: string; after: string; rejectedMatches: number };
+		}>(`/admin/v2/users/${userId}/gender`, { gender });
+		return result.data;
+	},
+
 	updateUserBirthday: async (userId: string, birthday: string) => {
 		const result = await adminPatch<{
 			data: { userId: string; birthday: string; age: number; message: string };

@@ -224,7 +224,7 @@ it('saves HTML through the card-news API without legacy body and keeps the saved
   const payload = mockCreate.mock.calls[0][0];
   expect(payload).toMatchObject({categoryCode:'announcement',layoutMode:'longform',hasReward:false,noticeHtmlInput:{html:'<p>notice</p>',css:'',previewDigest:'digest',expectedRevision:0}});
   expect(payload).not.toHaveProperty('body');
-  expect(payload).not.toHaveProperty('backgroundImage');
+  expect(payload.backgroundImage).toEqual({type:'PRESET',presetId:'p1'});
   expect(payload).not.toHaveProperty('sections');
   await waitFor(() => expect(screen.getByRole('button',{name:'저장',exact:true})).not.toBeDisabled());
   expect(screen.getByLabelText('HTML 공지 · JP 자동 번역')).toBeDisabled();
@@ -232,6 +232,7 @@ it('saves HTML through the card-news API without legacy body and keeps the saved
   await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
   expect(mockCreate).toHaveBeenCalledTimes(1);
   expect(mockUpdate.mock.calls[0][1].noticeHtmlInput.expectedRevision).toBe(1);
+  expect(mockUpdate.mock.calls[0][1].backgroundImage).toEqual({type:'PRESET',presetId:'p1'});
   expect(mockPush).not.toHaveBeenCalled();
 });
 
@@ -257,5 +258,5 @@ it('preserves metadata edited while an HTML save is awaiting its response', asyn
   } }));
   expect(mockCreate.mock.calls[0][0].title).toBe('Submitted title');
   expect(screen.getByLabelText(/^제목/)).toHaveValue('New unsaved title');
-  expect(screen.getByRole('button', { name: '저장', exact: true })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '저장', exact: true })).not.toBeDisabled();
 });
