@@ -72,10 +72,11 @@ const GENDER_LABELS = {
 };
 
 // 회원가입 루트 레이블
-const SIGNUP_ROUTE_LABELS = {
+const SIGNUP_ROUTE_LABELS: Record<string, string> = {
   PASS: "PASS",
   KAKAO: "카카오",
   APPLE: "애플",
+  LINE: "라인",
 };
 
 // 선호도 옵션 타입
@@ -134,7 +135,7 @@ export interface UserDetail {
   privateMatchingEnabledAt?: string | null;
   approvalStatus?: "PENDING" | "APPROVED" | "REJECTED"; // 승인 상태
   preferences?: UserPreferences;
-  signupRoute?: "PASS" | "KAKAO" | "APPLE"; // 회원가입 루트
+  signupRoute?: "PASS" | "KAKAO" | "APPLE" | "LINE"; // 회원가입 루트
   // 추가 필드
   [key: string]: any;
 }

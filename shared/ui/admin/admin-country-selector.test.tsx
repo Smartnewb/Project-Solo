@@ -3,6 +3,11 @@ import "@testing-library/jest-dom";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AdminCountrySelectorModal } from "./admin-country-selector";
+import {
+	ADMIN_COUNTRY_STORAGE_KEY,
+	CountryProvider,
+	useCountry,
+} from "@/contexts/CountryContext";
 const mockChangeCountry = jest.fn();
 jest.mock("@/shared/contexts/admin-session-context", () => ({
 	useAdminSession: () => ({
@@ -41,4 +46,20 @@ test("selecting the current country closes without a request", async () => {
 	await user.click(screen.getByRole("button", { name: /KR 대한민국/ }));
 	expect(close).toHaveBeenCalledTimes(1);
 	expect(mockChangeCountry).not.toHaveBeenCalled();
+});
+
+function CountryProbe() {
+	const { country } = useCountry();
+	return <span data-testid="probe-country">{country}</span>;
+}
+
+test("CountryProvider syncs initialCountry to state and localStorage", () => {
+	localStorage.setItem(ADMIN_COUNTRY_STORAGE_KEY, "kr");
+	render(
+		<CountryProvider initialCountry="jp">
+			<CountryProbe />
+		</CountryProvider>,
+	);
+	expect(screen.getByTestId("probe-country")).toHaveTextContent("jp");
+	expect(localStorage.getItem(ADMIN_COUNTRY_STORAGE_KEY)).toBe("jp");
 });

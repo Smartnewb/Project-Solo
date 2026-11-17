@@ -163,8 +163,9 @@ export async function adminRequest<T>(
 export function adminGet<T>(
   path: string,
   params?: AdminQueryParams,
+  options?: { headers?: Record<string, string> },
 ): Promise<T> {
-  return request<T>('GET', path, { params });
+  return request<T>('GET', path, { params, headers: options?.headers });
 }
 
 export function adminPost<T>(

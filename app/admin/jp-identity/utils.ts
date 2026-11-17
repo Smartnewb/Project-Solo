@@ -20,7 +20,9 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 	DRIVERS_LICENSE: "운전면허증",
 	HEALTH_INSURANCE: "건강보험증",
 	MY_NUMBER: "마이넘버카드",
+	MY_NUMBER_CARD: "마이넘버카드",
 	PASSPORT: "여권",
+	ELIGIBILITY_CERTIFICATE: "자격확인서",
 };
 
 const STATUS_CHIPS: Record<JpIdentityStatus, StatusChip> = {

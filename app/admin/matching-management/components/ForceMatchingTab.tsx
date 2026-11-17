@@ -16,6 +16,7 @@ interface AdminUserListItem {
     createdAt: Date;
     lastLoginAt?: Date;
     isFaker: boolean;
+    country?: 'KR' | 'JP';
 }
 interface CreateForceChatRoomResponse {
     success: boolean;
@@ -39,10 +40,12 @@ interface CreateForceChatRoomResponse {
 }
 interface UserSearchSectionProps {
     gender: 'male' | 'female';
+    selectedCountry: 'KR' | 'JP';
+    onChangeCountry: (country: 'KR' | 'JP') => void;
     selectedUser: AdminUserListItem | null;
     onSelectUser: (user: AdminUserListItem | null) => void;
 }
-function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSectionProps) {
+function UserSearchSection({ gender, selectedCountry, onChangeCountry, selectedUser, onSelectUser }: UserSearchSectionProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<AdminUserListItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +53,12 @@ function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSec
     const genderLabel = gender === 'male' ? '남성' : '여성';
     const headerBgColor = gender === 'male' ? '#3b82f6' : '#ec4899';
     const cardBgColor = gender === 'male' ? '#eff6ff' : '#fdf2f8';
+    const handleCountrySwitch = (country: 'KR' | 'JP') => {
+        if (country === selectedCountry) return;
+        onChangeCountry(country);
+        setSearchResults([]);
+        setHasSearched(false);
+    };
     const handleSearch = useCallback(async () => {
         if (!searchTerm.trim())
             return;
@@ -59,10 +68,12 @@ function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSec
             const response = await AdminService.forceMatching.searchUsers({
                 search: searchTerm.trim(),
                 gender,
+                country: selectedCountry,
                 page: 1,
                 limit: 10,
             });
-            setSearchResults(Array.isArray(response) ? response : (response?.data ?? response?.users ?? []));
+            const items = Array.isArray(response) ? response : (response?.data ?? response?.users ?? []);
+            setSearchResults(items.map((item: AdminUserListItem) => ({ ...item, country: item.country ?? selectedCountry })));
         }
         catch (error) {
             setSearchResults([]);
@@ -70,21 +81,42 @@ function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSec
         finally {
             setIsLoading(false);
         }
-    }, [searchTerm, gender]);
+    }, [searchTerm, gender, selectedCountry]);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSearch();
         }
     };
     const handleSelectUser = (user: AdminUserListItem) => {
-        onSelectUser(user);
+        onSelectUser({ ...user, country: user.country ?? selectedCountry });
         setSearchResults([]);
         setSearchTerm('');
         setHasSearched(false);
     };
     return (<section style={{ overflow: 'hidden' }} className="rounded-xl border bg-white p-4">
-			<div style={{ backgroundColor: headerBgColor, color: 'white', paddingInline: 16, paddingBlock: 12 }}>
+			<div style={{ backgroundColor: headerBgColor, color: 'white', paddingInline: 16, paddingBlock: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 				<p>{genderLabel} 유저 검색</p>
+				<div style={{ display: 'flex', gap: 6 }}>
+					{(['KR', 'JP'] as const).map((code) => (
+						<button
+							key={code}
+							type="button"
+							onClick={() => handleCountrySwitch(code)}
+							style={{
+								paddingInline: 10,
+								paddingBlock: 4,
+								borderRadius: 6,
+								fontSize: '0.75rem',
+								fontWeight: 600,
+								backgroundColor: selectedCountry === code ? 'white' : 'rgba(255,255,255,0.2)',
+								color: selectedCountry === code ? headerBgColor : 'white',
+								cursor: 'pointer',
+							}}
+						>
+							{code === 'KR' ? '🇰🇷 한국' : '🇯🇵 일본'}
+						</button>
+					))}
+				</div>
 			</div>
 
 			<div style={{ padding: 16 }}>
@@ -154,6 +186,8 @@ function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSec
 		</section>);
 }
 export default function ForceMatchingTab() {
+    const [maleCountry, setMaleCountry] = useState<'KR' | 'JP'>('KR');
+    const [femaleCountry, setFemaleCountry] = useState<'KR' | 'JP'>('KR');
     const [maleUser, setMaleUser] = useState<AdminUserListItem | null>(null);
     const [femaleUser, setFemaleUser] = useState<AdminUserListItem | null>(null);
     const [reason, setReason] = useState('');
@@ -181,6 +215,8 @@ export default function ForceMatchingTab() {
             const response = await AdminService.forceMatching.createForceChatRoom({
                 userIdA: maleUser!.userId,
                 userIdB: femaleUser!.userId,
+                countryA: maleUser!.country ?? maleCountry,
+                countryB: femaleUser!.country ?? femaleCountry,
                 reason: reason.trim() || undefined,
             });
             setResult(response);
@@ -202,13 +238,13 @@ export default function ForceMatchingTab() {
     const validation = canCreateMatch();
     return (<div>
 			<p style={{ marginBottom: 24 }}>
-				관리자가 두 명의 유저를 선택하여 강제로 채팅방을 생성합니다.
+				관리자가 두 명의 유저를 선택하여 강제로 채팅방을 생성합니다. 한일(KR↔JP) 교차 강제 매칭도 지원합니다.
 			</p>
 
 			{/* 유저 검색 섹션 */}
 			<div style={{ display: 'grid', gap: 24, marginBottom: 24 }}>
-				<UserSearchSection gender="male" selectedUser={maleUser} onSelectUser={setMaleUser}></UserSearchSection>
-				<UserSearchSection gender="female" selectedUser={femaleUser} onSelectUser={setFemaleUser}></UserSearchSection>
+				<UserSearchSection gender="male" selectedCountry={maleCountry} onChangeCountry={setMaleCountry} selectedUser={maleUser} onSelectUser={setMaleUser}></UserSearchSection>
+				<UserSearchSection gender="female" selectedCountry={femaleCountry} onChangeCountry={setFemaleCountry} selectedUser={femaleUser} onSelectUser={setFemaleUser}></UserSearchSection>
 			</div>
 
 			{/* 매칭 정보 및 생성 버튼 */}

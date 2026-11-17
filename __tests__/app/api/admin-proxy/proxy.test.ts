@@ -585,5 +585,23 @@ describe('admin-proxy route handlers', () => {
 
       expect(res.status).toBe(200);
     });
+
+    it('forwards explicit x-country header override (kr/jp) ahead of session selectedCountry', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue({ ...validMeta, selectedCountry: 'kr' });
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('admin/v2/users', { headers: { 'x-country': 'JP' } });
+      const res = await GET(req, makeParams(['admin', 'v2', 'users']));
+
+      expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/v2/users'),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'x-country': 'jp' }),
+        }),
+      );
+    });
   });
 });

@@ -69,6 +69,12 @@ describe('액션 라벨', () => {
 		const labels = Object.values(GEM_FEATURE_LABELS);
 		expect(new Set(labels).size).toBe(labels.length);
 	});
+
+	it('글로벌 매칭 핵심 과금 키에 한글 라벨이 매핑돼 있다', () => {
+		expect(featureLabel('GLOBAL_MATCHING_CHAT_START')).toBe('해외 유저와 채팅 시작하기');
+		expect(featureLabel('GLOBAL_MATCHING_LETTER_LIKE')).toBe('해외 유저에게 편지 보내기');
+		expect(featureLabel('GLOBAL_MATCHING_LIKE_DAILY_FREE')).toBe('해외 유저 하루 무료 좋아요');
+	});
 });
 
 describe('neededConfirm', () => {

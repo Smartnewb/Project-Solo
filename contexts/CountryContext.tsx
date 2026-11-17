@@ -11,7 +11,8 @@ interface CountryContextType {
   countryFlag: string;
 }
 
-const STORAGE_KEY = 'admin_selected_country';
+export const ADMIN_COUNTRY_STORAGE_KEY = 'admin_selected_country';
+const STORAGE_KEY = ADMIN_COUNTRY_STORAGE_KEY;
 const DEFAULT_COUNTRY: Country = 'kr';
 
 const COUNTRY_CONFIG: Record<Country, { label: string; flag: string }> = {
@@ -21,15 +22,26 @@ const COUNTRY_CONFIG: Record<Country, { label: string; flag: string }> = {
 
 const CountryContext = createContext<CountryContextType | null>(null);
 
-export function CountryProvider({ children }: { children: ReactNode }) {
-  const [country, setCountryState] = useState<Country>(DEFAULT_COUNTRY);
+export function CountryProvider({
+  children,
+  initialCountry,
+}: {
+  children: ReactNode;
+  initialCountry?: Country;
+}) {
+  const [country, setCountryState] = useState<Country>(initialCountry ?? DEFAULT_COUNTRY);
 
   useEffect(() => {
+    if (initialCountry === 'kr' || initialCountry === 'jp') {
+      setCountryState(initialCountry);
+      localStorage.setItem(STORAGE_KEY, initialCountry);
+      return;
+    }
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'kr' || saved === 'jp') {
       setCountryState(saved);
     }
-  }, []);
+  }, [initialCountry]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {

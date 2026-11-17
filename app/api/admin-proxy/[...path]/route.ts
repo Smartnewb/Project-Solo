@@ -293,8 +293,12 @@ async function proxyRequest(request: NextRequest, context: AdminProxyRouteContex
 
 	const contentType = request.headers.get('content-type');
 	const idempotencyKey = request.headers.get('idempotency-key');
+	const overrideCountry = request.headers.get('x-country')?.trim().toLowerCase();
 	const extraHeaders: Record<string, string> = {};
 	if (idempotencyKey) extraHeaders['idempotency-key'] = idempotencyKey;
+	if (overrideCountry === 'kr' || overrideCountry === 'jp') {
+		extraHeaders['x-country'] = overrideCountry;
+	}
 
 	let body: BodyInit | null = null;
 	if (request.method !== 'GET' && request.method !== 'HEAD') {

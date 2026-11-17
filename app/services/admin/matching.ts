@@ -213,10 +213,11 @@ export const matching = {
 
 // 강제 매칭 API
 export const forceMatching = {
-	// 유저 검색 (기존 /admin/users API 활용)
+	// 유저 검색 (기존 /admin/users API 활용; 한일 크로스보더 검색 시 요청 헤더로 국가 오버라이드)
 	searchUsers: async (params: {
 		search?: string;
 		gender?: 'male' | 'female';
+		country?: 'KR' | 'JP';
 		status?: string;
 		page?: number;
 		limit?: number;
@@ -232,12 +233,19 @@ export const forceMatching = {
 		if (params.search) queryParams.search = params.search;
 		if (genderParam) queryParams.gender = genderParam;
 
-		const res = await adminGet<{ data: any }>('/admin/v2/users', queryParams);
+		const headers = params.country ? { 'X-Country': params.country.toLowerCase() } : undefined;
+		const res = await adminGet<{ data: any }>('/admin/v2/users', queryParams, { headers });
 		return res.data;
 	},
 
-	// 강제 채팅방 생성
-	createForceChatRoom: async (data: { userIdA: string; userIdB: string; reason?: string }) => {
+	// 강제 채팅방 생성 (한일 크로스보더 매칭 시 countryA/countryB 전달)
+	createForceChatRoom: async (data: {
+		userIdA: string;
+		userIdB: string;
+		countryA?: 'KR' | 'JP';
+		countryB?: 'KR' | 'JP';
+		reason?: string;
+	}) => {
 		const result = await adminPost<{ data: any }>('/admin/v2/matching/force', data);
 		return result.data;
 	},

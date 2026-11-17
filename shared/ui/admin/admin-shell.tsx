@@ -15,7 +15,7 @@ import {
 	getStoredAdminRefreshToken,
 	setStoredAdminRefreshToken,
 } from "@/shared/auth/admin-auth-contract";
-import { CountryProvider } from "@/contexts/CountryContext";
+import { ADMIN_COUNTRY_STORAGE_KEY, CountryProvider } from "@/contexts/CountryContext";
 import { AdminErrorBoundary } from "./admin-error-boundary";
 import { ToastProvider, ToastContainer } from "@/shared/ui/admin/toast";
 import {
@@ -25,6 +25,18 @@ import {
 import { CommandSearch } from "./command-search";
 import { Button, Drawer, Spinner } from "@heroui/react";
 import { Menu, Globe, LogOut } from "lucide-react";
+
+function normalizeCountry(value?: string | null): "kr" | "jp" {
+	return value?.toLowerCase() === "jp" ? "jp" : "kr";
+}
+
+function syncStoredCountry(value?: string | null): void {
+	try {
+		localStorage.setItem(ADMIN_COUNTRY_STORAGE_KEY, normalizeCountry(value));
+	} catch {
+		// Ignore storage access errors (SSR / restricted privacy mode).
+	}
+}
 
 export function AdminShell({ children }: { children: ReactNode }) {
 	const router = useRouter();
@@ -41,6 +53,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 				const res = await fetch("/api/admin/session");
 				if (res.ok) {
 					const data = await res.json();
+					syncStoredCountry(data?.selectedCountry);
 					setSession(data);
 				} else if (res.status === 401 || res.status === 403) {
 					setError("Authentication required");
@@ -67,6 +80,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 			body: JSON.stringify({ country }),
 		});
 		if (res.ok) {
+			syncStoredCountry(country);
 			setSession((prev) =>
 				prev ? { ...prev, selectedCountry: country } : null,
 			);
@@ -161,7 +175,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 		<AdminSessionContext.Provider
 			value={{ session, isLoading, error, changeCountry, logout }}
 		>
-			<CountryProvider>
+			<CountryProvider initialCountry={normalizeCountry(session.selectedCountry)}>
 				<AdminQueryProvider>
 					<div className="admin-heroui-screen flex min-h-screen bg-white text-foreground">
 						<aside

@@ -17,7 +17,9 @@ describe('jp identity display helpers', () => {
 			expect(formatJpDocumentType('DRIVERS_LICENSE')).toBe('운전면허증');
 			expect(formatJpDocumentType('HEALTH_INSURANCE')).toBe('건강보험증');
 			expect(formatJpDocumentType('MY_NUMBER')).toBe('마이넘버카드');
+			expect(formatJpDocumentType('MY_NUMBER_CARD')).toBe('마이넘버카드');
 			expect(formatJpDocumentType('PASSPORT')).toBe('여권');
+			expect(formatJpDocumentType('ELIGIBILITY_CERTIFICATE')).toBe('자격확인서');
 		});
 
 		it('falls back to the raw value for unknown types and a dash for empty', () => {
