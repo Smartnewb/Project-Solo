@@ -1,6 +1,6 @@
 "use client";
 import { Button, Chip } from "@heroui/react";
-import { Eye as ViewIcon, Images as ImagesIcon, MessageCircle as ChatIcon, ArrowRight as ArrowIcon } from "lucide-react";
+import { Eye as ViewIcon, Images as ImagesIcon, MessageCircle as ChatIcon, ArrowRight as ArrowIcon, ExternalLink } from "lucide-react";
 import { ReportAvatar } from "./report-avatar";
 
 export interface ReportParty {
@@ -9,6 +9,8 @@ export interface ReportParty {
     age: number | null;
     gender: "MALE" | "FEMALE" | null;
     profileImageUrl: string;
+    country?: "kr" | "jp" | null;
+    universityName?: string | null;
 }
 
 /** 카드가 쓰는 필드만. 목록/상세 Report 모두 구조적으로 만족한다. */
@@ -18,6 +20,7 @@ export interface ReportCardData {
     reported: ReportParty;
     reason: string;
     description: string | null;
+    translatedDescription?: string | null;
     evidenceImages: string[];
     severity?: "urgent" | "normal" | null;
     slackDelivered?: boolean;
@@ -25,6 +28,7 @@ export interface ReportCardData {
     status: "pending" | "reviewing" | "resolved" | "rejected";
     createdAt: string;
     chatRoomId?: string;
+    direction?: "kr_to_jp" | "jp_to_kr" | null;
 }
 
 export const REPORT_STATUS_CHIP: Record<ReportCardData["status"], { label: string; className: string }> = {
@@ -33,6 +37,24 @@ export const REPORT_STATUS_CHIP: Record<ReportCardData["status"], { label: strin
     resolved: { label: "처리완료", className: "bg-green-100 text-green-700" },
     rejected: { label: "반려", className: "bg-gray-100 text-gray-600" },
 };
+
+export function getCountryBadge(country?: "kr" | "jp" | null) {
+    if (country === "kr") {
+        return { flag: "🇰🇷", code: "KR", label: "한국", className: "bg-blue-50 text-blue-700" };
+    }
+    if (country === "jp") {
+        return { flag: "🇯🇵", code: "JP", label: "일본", className: "bg-rose-50 text-rose-700" };
+    }
+    return null;
+}
+
+export function getDirectionBadgeLabel(report: Pick<ReportCardData, "direction" | "reporter" | "reported">): string | null {
+    if (report.direction === "kr_to_jp") return "🇰🇷 KR → 🇯🇵 JP";
+    if (report.direction === "jp_to_kr") return "🇯🇵 JP → 🇰🇷 KR";
+    if (report.reporter.country === "kr" && report.reported.country === "jp") return "🇰🇷 KR → 🇯🇵 JP";
+    if (report.reporter.country === "jp" && report.reported.country === "kr") return "🇯🇵 JP → 🇰🇷 KR";
+    return null;
+}
 
 export function genderText(gender: ReportParty["gender"]) {
     return gender === "MALE" ? "남성" : gender === "FEMALE" ? "여성" : "성별 —";
@@ -43,12 +65,16 @@ export function partyMeta(party: Pick<ReportParty, "gender" | "age">) {
 }
 
 function Party({ label, party, badge }: { label: string; party: ReportParty; badge?: React.ReactNode }) {
+    const countryBadge = getCountryBadge(party.country);
     return (<div className="flex min-w-0 flex-1 items-center gap-2">
       <ReportAvatar src={party.profileImageUrl}></ReportAvatar>
       <div className="min-w-0">
         <p className="text-xs text-gray-500">{label}</p>
         <p className="flex items-center gap-1 truncate text-sm font-semibold text-gray-900">
           <span className="truncate">{party.name}</span>
+          {countryBadge && (<span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${countryBadge.className}`}>
+              {countryBadge.flag} {countryBadge.code}
+            </span>)}
           {badge}
         </p>
         <p className="text-xs text-gray-500">{partyMeta(party)}</p>
@@ -64,17 +90,30 @@ export function ReportCard({ report, formatDate, onOpen }: {
     const urgent = report.severity === "urgent";
     const status = REPORT_STATUS_CHIP[report.status];
     const reason = report.reason || "사유 없음";
+    const directionLabel = getDirectionBadgeLabel(report);
+    const hasTranslatedDescription = Boolean(
+        report.translatedDescription && report.translatedDescription !== report.description
+    );
     return (<article className={`flex flex-col rounded-2xl border p-4 shadow-sm transition ${urgent ? "border-red-300 bg-red-50/40" : "border-gray-200 bg-white"}`}>
       <button type="button" onClick={onOpen} className="min-w-0 cursor-pointer text-left" aria-label={`${report.reported.name} 신고 상세 보기`}>
         <div className="mb-2 flex flex-wrap items-center gap-1">
           <Chip size="sm" className={status.className}>{status.label}</Chip>
+          {directionLabel && <Chip size="sm" className="bg-indigo-50 text-indigo-700">{directionLabel}</Chip>}
           {urgent && <Chip size="sm" className="bg-red-100 text-red-600">긴급</Chip>}
           {(report.reportCount ?? 0) > 1 && <Chip size="sm" className="bg-orange-100 text-orange-600">누적 {report.reportCount}건</Chip>}
           {report.slackDelivered === false && <span title="슬랙 미전달 — 신고는 접수됐지만 CS 알림 전송에 실패했습니다" className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">알림 실패</span>}
           <span className="ml-auto text-xs text-gray-500">{formatDate(report.createdAt)}</span>
         </div>
         <p className="text-base font-bold leading-snug text-gray-900">{reason}</p>
-        {report.description && <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm leading-5 text-gray-600">{report.description}</p>}
+        {hasTranslatedDescription ? (<div className="mt-1 space-y-1">
+            <p className="line-clamp-2 whitespace-pre-wrap text-sm leading-5 text-gray-800">
+              <span className="mr-1.5 inline-block rounded bg-indigo-50 px-1.5 py-0.5 text-[11px] font-medium text-indigo-700">번역</span>
+              {report.translatedDescription}
+            </p>
+            {report.description && (<p className="line-clamp-1 whitespace-pre-wrap text-xs text-gray-500">
+                원문: {report.description}
+              </p>)}
+          </div>) : (report.description && <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm leading-5 text-gray-600">{report.description}</p>)}
       </button>
 
       <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3">
@@ -108,10 +147,23 @@ export function UserInfoCard({ title, user, email, phoneNumber, onOpen }: {
     phoneNumber?: string;
     onOpen: () => void;
 }) {
+    const countryBadge = getCountryBadge(user.country);
+    const userPageHref = `/admin/users/appearance?userId=${encodeURIComponent(user.id)}${user.country ? `&country=${user.country}` : ""}`;
     return (<section className="min-w-0 rounded-xl border border-gray-200 p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-semibold">{title}</h3>
-        <Button size="sm" variant="tertiary" onPress={onOpen}>상세 보기</Button>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-semibold">{title}</h3>
+          {countryBadge && (<Chip size="sm" className={countryBadge.className}>
+              {countryBadge.flag} {countryBadge.label}
+            </Chip>)}
+        </div>
+        <div className="flex items-center gap-1">
+          {user.id && (<a href={userPageHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900">
+              유저 페이지
+              <ExternalLink size={12} aria-hidden="true"></ExternalLink>
+            </a>)}
+          <Button size="sm" variant="tertiary" onPress={onOpen}>상세 보기</Button>
+        </div>
       </div>
       <div className="flex items-start gap-3">
         <ReportAvatar src={user.profileImageUrl}></ReportAvatar>
@@ -120,6 +172,7 @@ export function UserInfoCard({ title, user, email, phoneNumber, onOpen }: {
           <Field label="나이/성별">{partyMeta(user)}</Field>
           <Field label="이메일"><span className="break-all">{email || "-"}</span></Field>
           <Field label="전화번호">{phoneNumber || "-"}</Field>
+          {user.universityName && <Field label="대학교">{user.universityName}</Field>}
         </div>
       </div>
     </section>);

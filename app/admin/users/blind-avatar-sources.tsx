@@ -23,7 +23,13 @@ function sourcePlaceholder(item: BlindAvatarSource): string {
 }
 
 // 유저 화면에 절대 노출되지 않는 운영 전용 원본. 서버가 열람할 때마다 admin_action_logs 에 남긴다.
-export function BlindAvatarSources({ userId }: { readonly userId: string }) {
+export function BlindAvatarSources({
+  userId,
+  country,
+}: {
+  readonly userId: string;
+  readonly country?: "kr" | "jp" | null;
+}) {
   const [items, setItems] = useState<BlindAvatarSource[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [opened, setOpened] = useState(false);
@@ -31,13 +37,22 @@ export function BlindAvatarSources({ userId }: { readonly userId: string }) {
   useEffect(() => {
     if (!opened) return;
     let cancelled = false;
-    adminGet<{ data: BlindAvatarSource[] }>(`/admin/v2/users/${userId}/blind-avatar-sources`)
+    const request = country
+      ? adminGet<{ data: BlindAvatarSource[] }>(
+          `/admin/v2/users/${userId}/blind-avatar-sources`,
+          undefined,
+          { headers: { "x-country": country } },
+        )
+      : adminGet<{ data: BlindAvatarSource[] }>(
+          `/admin/v2/users/${userId}/blind-avatar-sources`,
+        );
+    request
       .then((res) => !cancelled && setItems(res.data))
       .catch((e) => !cancelled && setError(getAdminErrorMessage(e)));
     return () => {
       cancelled = true;
     };
-  }, [opened, userId]);
+  }, [opened, userId, country]);
 
   return (
     <div className="bg-purple-50 p-4 rounded-lg" data-testid="blind-avatar-sources">

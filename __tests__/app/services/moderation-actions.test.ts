@@ -192,4 +192,152 @@ describe('moderation admin services', () => {
 
     await expect(reports.getProfileReportHistory('report-1')).resolves.toEqual([]);
   });
+
+  it('fetches cross-border reports with direction and status mapping and parses raw evidence JSON', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: [
+        {
+          id: 'cross-1',
+          reporterSchema: 'kr',
+          reporterUserId: 'kr-user-1',
+          reporterName: '김민수',
+          reportedSchema: 'jp',
+          reportedUserId: 'jp-user-1',
+          reportedName: 'サクラ',
+          reason: '부적절한 언어 사용',
+          evidence: JSON.stringify({
+            evidenceKeys: ['report-evidence/jp-user-1/a.png'],
+            description: 'LINE ID 요구 및 욕설',
+          }),
+          status: 'pending',
+          reportedAt: '2026-11-20T10:00:00.000Z',
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+    });
+
+    const params = new URLSearchParams({
+      page: '1',
+      limit: '10',
+      status: 'rejected',
+      direction: 'kr_to_jp',
+      urgent: 'true',
+    });
+
+    const result = await reports.getCrossBorderReports(params);
+
+    expect(adminGet).toHaveBeenCalledWith(
+      '/admin/v2/reports/cross-border?page=1&limit=10&status=dismissed&direction=kr_to_jp&urgent=true',
+    );
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        id: 'cross-1',
+        type: 'cross_border',
+        direction: 'kr_to_jp',
+        sourceSchema: 'kr',
+        status: 'pending',
+        description: 'LINE ID 요구 및 욕설',
+        evidenceImages: ['report-evidence/jp-user-1/a.png'],
+        reporter: expect.objectContaining({ id: 'kr-user-1', name: '김민수', country: 'kr' }),
+        reported: expect.objectContaining({ id: 'jp-user-1', name: 'サクラ', country: 'jp' }),
+      }),
+    );
+  });
+
+  it('sends cross-border report status updates to the dedicated endpoint', async () => {
+    (adminPatch as jest.Mock).mockResolvedValue({
+      data: { success: true, reportId: 'cross-1', status: 'resolved' },
+    });
+
+    await expect(
+      reports.updateCrossBorderReportStatus('cross-1', 'resolved', {
+        type: 'cross_border',
+        action: 'suspended',
+        suspendDays: 7,
+        note: '일본 스키마 제재 완료',
+      }),
+    ).resolves.toEqual({ success: true, reportId: 'cross-1', status: 'resolved' });
+
+    expect(adminPatch).toHaveBeenCalledWith('/admin/v2/reports/cross-border/cross-1/status', {
+      type: 'cross_border',
+      status: 'resolved',
+      action: 'suspended',
+      note: '일본 스키마 제재 완료',
+      suspendDays: 7,
+    });
+  });
+
+  it('passes x-country header for cross-border user profile images and chat history', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: { images: ['https://cdn.example/jp1.jpg'] },
+    });
+
+    await expect(reports.getUserProfileImages('jp-user-1', 'jp')).resolves.toEqual([
+      'https://cdn.example/jp1.jpg',
+    ]);
+    expect(adminGet).toHaveBeenCalledWith(
+      '/admin/v2/community/users/jp-user-1/profile-images',
+      undefined,
+      { headers: { 'x-country': 'jp' } },
+    );
+
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: { messages: [] },
+    });
+    await reports.getChatHistory('room-1', 1, 50, 'kr');
+    expect(adminGet).toHaveBeenCalledWith(
+      '/admin/v2/chat/rooms/room-1/messages',
+      { page: '1', limit: '50' },
+      { headers: { 'x-country': 'kr' } },
+    );
+  });
+
+  it('extracts translatedDescription and descriptionLanguage from evidence JSON and prefers top-level fields', async () => {
+    (adminGet as jest.Mock).mockResolvedValueOnce({
+      data: {
+        id: 'cross-jp-1',
+        reporterSchema: 'jp',
+        reporterUserId: 'jp-user-1',
+        reportedSchema: 'kr',
+        reportedUserId: 'kr-user-1',
+        reason: '불쾌감을 주는 표현',
+        evidence: JSON.stringify({
+          evidenceKeys: ['report-evidence/kr-user-1/1.png'],
+          description: '初対面なのにLINEを強要されました',
+          translatedDescription: '초면인데 LINE을 강요받았습니다',
+          descriptionLanguage: 'ja',
+        }),
+        status: 'pending',
+        reportedAt: '2026-11-21T01:00:00.000Z',
+      },
+    });
+
+    const fromJson = await reports.getCrossBorderReportDetail('cross-jp-1');
+    expect(fromJson.description).toBe('初対面なのにLINEを強要されました');
+    expect(fromJson.translatedDescription).toBe('초면인데 LINE을 강요받았습니다');
+    expect(fromJson.descriptionLanguage).toBe('ja');
+
+    (adminGet as jest.Mock).mockResolvedValueOnce({
+      data: {
+        id: 'cross-jp-2',
+        reporterSchema: 'jp',
+        reporterUserId: 'jp-user-2',
+        reportedSchema: 'kr',
+        reportedUserId: 'kr-user-2',
+        reason: '부적절한 언어 사용',
+        evidence: JSON.stringify({
+          description: '暴言がありました',
+          translatedDescription: '이전 번역',
+        }),
+        translatedDescription: '폭언이 있었습니다',
+        descriptionLanguage: 'ja',
+        status: 'pending',
+        reportedAt: '2026-11-21T02:00:00.000Z',
+      },
+    });
+
+    const fromTopLevel = await reports.getCrossBorderReportDetail('cross-jp-2');
+    expect(fromTopLevel.translatedDescription).toBe('폭언이 있었습니다');
+    expect(fromTopLevel.descriptionLanguage).toBe('ja');
+  });
 });

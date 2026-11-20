@@ -87,9 +87,50 @@ export interface PendingUsersFilter {
 	region?: string;
 }
 
-export type ReportTargetType = 'profile' | 'community';
+export type ReportCountry = 'kr' | 'jp';
+export type CrossBorderDirection = 'all' | 'kr_to_jp' | 'jp_to_kr';
+export type ReportTargetType = 'profile' | 'community' | 'cross_border';
 export type ReportAction = 'dismissed' | 'warned' | 'suspended' | 'banned' | 'escalated';
 type BackendReportStatus = 'pending' | 'reviewing' | 'resolved' | 'dismissed';
+
+export interface CrossBorderReportParty {
+	id: string;
+	name: string;
+	email: string;
+	phoneNumber: string;
+	age: number | null;
+	gender: 'MALE' | 'FEMALE' | null;
+	profileImageUrl: string;
+	country: ReportCountry | null;
+	schema: ReportCountry | null;
+	universityName: string | null;
+}
+
+export interface CrossBorderReportItem {
+	id: string;
+	type: 'cross_border';
+	direction: 'kr_to_jp' | 'jp_to_kr' | null;
+	sourceSchema: ReportCountry | null;
+	reporter: CrossBorderReportParty;
+	reported: CrossBorderReportParty;
+	reason: string;
+	description: string | null;
+	translatedDescription: string | null;
+	descriptionLanguage: string | null;
+	evidenceImages: string[];
+	status: 'pending' | 'reviewing' | 'resolved' | 'rejected';
+	severity: 'urgent' | 'normal' | null;
+	category: string | null;
+	slackDelivered?: boolean;
+	reportCount?: number;
+	chatRoomId?: string;
+	chatRoomCountry: ReportCountry | null;
+	resolvedBy: string | null;
+	resolvedByName: string | null;
+	resolvedAt: string | null;
+	createdAt: string;
+	updatedAt: string | null;
+}
 
 export interface ReportHistoryEntry {
 	id: string;
@@ -154,6 +195,87 @@ function normalizeReportUpdateOptions(options?: UpdateReportStatusOptions) {
 	};
 }
 
+function normalizeReportCountry(value: unknown): ReportCountry | null {
+	if (typeof value !== 'string') return null;
+	const lower = value.trim().toLowerCase();
+	if (lower === 'kr' || lower === 'jp') return lower;
+	return null;
+}
+
+interface ParsedEvidencePayload {
+	evidenceKeys?: unknown;
+	evidenceImages?: unknown;
+	images?: unknown;
+	description?: unknown;
+	translatedDescription?: unknown;
+	descriptionLanguage?: unknown;
+}
+
+function parseCrossBorderEvidence(
+	rawEvidence: unknown,
+	explicitImages?: unknown,
+	explicitDescription?: unknown,
+	explicitTranslatedDescription?: unknown,
+	explicitDescriptionLanguage?: unknown,
+): {
+	evidenceImages: string[];
+	description: string | null;
+	translatedDescription: string | null;
+	descriptionLanguage: string | null;
+} {
+	let parsedObj: ParsedEvidencePayload | null = null;
+	let fallbackText: string | null = null;
+
+	if (typeof rawEvidence === 'string' && rawEvidence.trim()) {
+		try {
+			const parsed = JSON.parse(rawEvidence);
+			if (parsed && typeof parsed === 'object') {
+				parsedObj = parsed as ParsedEvidencePayload;
+			}
+		} catch {
+			fallbackText = rawEvidence.trim();
+		}
+	} else if (rawEvidence && typeof rawEvidence === 'object') {
+		parsedObj = rawEvidence as ParsedEvidencePayload;
+	}
+
+	const rawImages: unknown[] =
+		Array.isArray(explicitImages) && explicitImages.length > 0
+			? explicitImages
+			: Array.isArray(parsedObj?.evidenceImages)
+				? parsedObj.evidenceImages
+				: Array.isArray(parsedObj?.evidenceKeys)
+					? parsedObj.evidenceKeys
+					: Array.isArray(parsedObj?.images)
+						? parsedObj.images
+						: [];
+
+	const evidenceImages = rawImages.filter(
+		(entry: unknown): entry is string => typeof entry === 'string' && entry.length > 0,
+	);
+
+	const description =
+		typeof explicitDescription === 'string' && explicitDescription.length > 0
+			? explicitDescription
+			: typeof parsedObj?.description === 'string' && parsedObj.description.length > 0
+				? parsedObj.description
+				: fallbackText;
+
+	const translatedDescription =
+		typeof explicitTranslatedDescription === 'string' && explicitTranslatedDescription.trim().length > 0
+			? explicitTranslatedDescription
+			: typeof parsedObj?.translatedDescription === 'string' &&
+				  parsedObj.translatedDescription.trim().length > 0
+				? parsedObj.translatedDescription
+				: null;
+
+	const descriptionLanguage = normalizeDisplayText(
+		explicitDescriptionLanguage ?? parsedObj?.descriptionLanguage,
+	);
+
+	return { evidenceImages, description, translatedDescription, descriptionLanguage };
+}
+
 /** 목록·상세 공통: 백엔드 행(camelCase)을 화면 Report/ReportDetail 형태로 정규화. */
 function transformReportItem(item: any) {
 	return {
@@ -188,6 +310,111 @@ function transformReportItem(item: any) {
 		matchId: item.matchId || item.match_id || undefined,
 		createdAt: item.createdAt || item.created_at,
 		updatedAt: item.updatedAt || item.updated_at || null,
+	};
+}
+
+function transformCrossBorderReportItem(item: any): CrossBorderReportItem {
+	const reporterCountry = normalizeReportCountry(
+		item.reporter?.country ??
+			item.reporter?.schema ??
+			item.reporterCountry ??
+			item.reporterSchema ??
+			item.reporter_schema,
+	);
+	const reportedCountry = normalizeReportCountry(
+		item.reported?.country ??
+			item.reported?.schema ??
+			item.reportedCountry ??
+			item.reportedSchema ??
+			item.reported_schema,
+	);
+	const sourceSchema =
+		normalizeReportCountry(item.sourceSchema ?? item.source_schema) ?? reporterCountry;
+
+	const explicitDirection = item.direction;
+	const direction: 'kr_to_jp' | 'jp_to_kr' | null =
+		explicitDirection === 'kr_to_jp' || explicitDirection === 'jp_to_kr'
+			? explicitDirection
+			: reporterCountry === 'kr' && reportedCountry === 'jp'
+				? 'kr_to_jp'
+				: reporterCountry === 'jp' && reportedCountry === 'kr'
+					? 'jp_to_kr'
+					: null;
+
+	const {
+		evidenceImages,
+		description,
+		translatedDescription,
+		descriptionLanguage,
+	} = parseCrossBorderEvidence(
+		item.evidence,
+		item.evidenceImages ?? item.evidence_images,
+		item.description,
+		item.translatedDescription ?? item.translated_description,
+		item.descriptionLanguage ?? item.description_language,
+	);
+
+	const resolvedAt = item.resolvedAt ?? item.resolved_at ?? null;
+	const createdAt = item.createdAt ?? item.created_at ?? item.reportedAt ?? item.reported_at ?? '';
+
+	return {
+		id: item.id,
+		type: 'cross_border',
+		direction,
+		sourceSchema,
+		reporter: {
+			id: item.reporter?.id || item.reporterId || item.reporterUserId || item.reporter_user_id || '',
+			name: normalizeDisplayText(item.reporter?.name ?? item.reporterName) || '알 수 없음',
+			email: item.reporter?.email || item.reporterEmail || '',
+			phoneNumber: item.reporter?.phoneNumber || item.reporterPhoneNumber || '',
+			age: item.reporter?.age ?? item.reporterAge ?? null,
+			gender: (item.reporter?.gender || item.reporterGender || null) as 'MALE' | 'FEMALE' | null,
+			profileImageUrl: item.reporter?.profileImageUrl || item.reporterProfileImageUrl || '',
+			country: reporterCountry,
+			schema: reporterCountry,
+			universityName: normalizeDisplayText(
+				item.reporter?.universityName ?? item.reporterUniversityName,
+			),
+		},
+		reported: {
+			id: item.reported?.id || item.reportedId || item.reportedUserId || item.reported_user_id || '',
+			name: normalizeDisplayText(item.reported?.name ?? item.reportedName) || '알 수 없음',
+			email: item.reported?.email || item.reportedEmail || '',
+			phoneNumber: item.reported?.phoneNumber || item.reportedPhoneNumber || '',
+			age: item.reported?.age ?? item.reportedAge ?? null,
+			gender: (item.reported?.gender || item.reportedGender || null) as 'MALE' | 'FEMALE' | null,
+			profileImageUrl: item.reported?.profileImageUrl || item.reportedProfileImageUrl || '',
+			country: reportedCountry,
+			schema: reportedCountry,
+			universityName: normalizeDisplayText(
+				item.reported?.universityName ?? item.reportedUniversityName,
+			),
+		},
+		reason: item.reason || '',
+		description,
+		translatedDescription,
+		descriptionLanguage,
+		evidenceImages,
+		status: normalizeFrontendReportStatus(item.status),
+		severity: item.severity === 'urgent' || item.severity === 'normal' ? item.severity : null,
+		category: item.category || null,
+		slackDelivered:
+			typeof item.slackDelivered === 'boolean'
+				? item.slackDelivered
+				: item.slack_delivered_at != null
+					? true
+					: undefined,
+		reportCount: typeof item.reportCount === 'number' ? item.reportCount : undefined,
+		chatRoomId: item.chatRoomId || item.chat_room_id || undefined,
+		chatRoomCountry:
+			normalizeReportCountry(item.chatRoomCountry ?? item.chat_room_country) ?? sourceSchema,
+		resolvedBy: normalizeDisplayText(
+			item.resolvedBy ?? item.resolved_by ?? item.resolvedByAdmin ?? item.resolved_by_admin,
+		),
+		resolvedByName: normalizeDisplayText(item.resolvedByName ?? item.resolved_by_name),
+		resolvedAt: resolvedAt ? String(resolvedAt) : null,
+		createdAt: createdAt ? String(createdAt) : '',
+		updatedAt: item.updatedAt || item.updated_at || (resolvedAt ? String(resolvedAt) : null),
 	};
 }
 
@@ -307,21 +534,134 @@ export const reports = {
 		}
 	},
 
-	getChatHistory: async (chatRoomId: string, page: number = 1, limit: number = 50) => {
+	getCrossBorderReports: async (params: URLSearchParams) => {
 		try {
-			const result = await adminGet<{ data: any }>(`/admin/v2/chat/rooms/${chatRoomId}/messages`, {
-				page: String(page),
-				limit: String(limit),
-			});
+			const page = params.get('page') || '1';
+			const limit = params.get('limit') || '10';
+			const status = params.get('status');
+			const direction = params.get('direction');
+			const reporterName = params.get('reporterName');
+			const reportedName = params.get('reportedName');
+			const startDate = params.get('startDate');
+			const endDate = params.get('endDate');
+
+			const queryParams = new URLSearchParams();
+			queryParams.append('page', page);
+			queryParams.append('limit', limit);
+			if (status) {
+				const statusMap: Record<string, string> = {
+					pending: 'pending',
+					reviewing: 'reviewing',
+					resolved: 'resolved',
+					rejected: 'dismissed',
+				};
+				queryParams.append('status', statusMap[status] || status.toLowerCase());
+			}
+			if (direction === 'kr_to_jp' || direction === 'jp_to_kr') {
+				queryParams.append('direction', direction);
+			}
+			if (reporterName) queryParams.append('reporterName', reporterName);
+			if (reportedName) queryParams.append('reportedName', reportedName);
+			if (startDate) queryParams.append('startDate', startDate);
+			if (endDate) queryParams.append('endDate', endDate);
+			if (params.get('urgent') === 'true') queryParams.append('urgent', 'true');
+
+			const endpoint = `/admin/v2/reports/cross-border?${queryParams.toString()}`;
+			const response = await adminGet<{ data: any[]; meta: any }>(endpoint);
+
+			return {
+				items: (response.data || []).map(transformCrossBorderReportItem),
+				meta: response.meta,
+			};
+		} catch (error: any) {
+			throw error;
+		}
+	},
+
+	getCrossBorderReportDetail: async (reportId: string): Promise<CrossBorderReportItem> => {
+		try {
+			const result = await adminGet<{ data: any }>(
+				`/admin/v2/reports/cross-border/${encodeURIComponent(reportId)}`,
+			);
+			return transformCrossBorderReportItem(result.data ?? {});
+		} catch (error: any) {
+			throw error;
+		}
+	},
+
+	getCrossBorderReportHistory: async (reportId: string): Promise<ReportHistoryEntry[]> => {
+		try {
+			const result = await adminGet<{ data: any[] }>(
+				`/admin/v2/reports/cross-border/${encodeURIComponent(reportId)}/history`,
+			);
+			return (result.data || [])
+				.map((item: any) => normalizeReportHistoryEntry(item))
+				.sort((left, right) => {
+					const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+					const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : 0;
+					return rightTime - leftTime;
+				});
+		} catch (error: any) {
+			return [];
+		}
+	},
+
+	updateCrossBorderReportStatus: async (
+		reportId: string,
+		status: 'pending' | 'reviewing' | 'resolved' | 'rejected',
+		options?: UpdateReportStatusOptions,
+	) => {
+		try {
+			const backendStatus = toBackendReportStatus(status);
+			const normalizedOptions = normalizeReportUpdateOptions(options);
+			const result = await adminPatch<{ data: any }>(
+				`/admin/v2/reports/cross-border/${encodeURIComponent(reportId)}/status`,
+				{
+					type: 'cross_border',
+					status: backendStatus,
+					action: normalizedOptions.action ?? toDefaultReportAction(backendStatus),
+					note: normalizedOptions.note,
+					suspendDays: normalizedOptions.suspendDays,
+					suspendPermanent: normalizedOptions.suspendPermanent,
+					approverId: normalizedOptions.approverId,
+				},
+			);
 			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
 	},
 
-	getUserProfileImages: async (userId: string): Promise<string[]> => {
+	getChatHistory: async (
+		chatRoomId: string,
+		page: number = 1,
+		limit: number = 50,
+		country?: ReportCountry,
+	) => {
 		try {
-			const res = await adminGet<{ data: any }>(`/admin/v2/community/users/${userId}/profile-images`);
+			const query = {
+				page: String(page),
+				limit: String(limit),
+			};
+			const result = country
+				? await adminGet<{ data: any }>(`/admin/v2/chat/rooms/${chatRoomId}/messages`, query, {
+						headers: { 'x-country': country },
+					})
+				: await adminGet<{ data: any }>(`/admin/v2/chat/rooms/${chatRoomId}/messages`, query);
+			return result.data;
+		} catch (error: any) {
+			throw error;
+		}
+	},
+
+	getUserProfileImages: async (userId: string, country?: ReportCountry): Promise<string[]> => {
+		try {
+			const endpoint = `/admin/v2/community/users/${userId}/profile-images`;
+			const res = country
+				? await adminGet<{ data: any }>(endpoint, undefined, {
+						headers: { 'x-country': country },
+					})
+				: await adminGet<{ data: any }>(endpoint);
 			const data = res.data;
 			const images = data.images || [];
 			return images.map((img: any) => (typeof img === 'string' ? img : img.url));

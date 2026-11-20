@@ -221,14 +221,16 @@ export const userAppearance = {
 		}
 	},
 
-	getUserDetails: async (userId: string) => {
+	getUserDetails: async (userId: string, country?: 'kr' | 'jp') => {
 		try {
 			;
 
 			const endpoint = `/admin/v2/users/${userId}`;
 			;
 
-			const result = await adminGet<{ data: any }>(endpoint);
+			const result = country
+				? await adminGet<{ data: any }>(endpoint, undefined, { headers: { 'x-country': country } })
+				: await adminGet<{ data: any }>(endpoint);
 
 			const data = result.data;
 

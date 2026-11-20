@@ -180,8 +180,12 @@ export function adminPut<T>(path: string, body?: unknown): Promise<T> {
   return request<T>('PUT', path, { body });
 }
 
-export function adminPatch<T>(path: string, body?: unknown): Promise<T> {
-  return request<T>('PATCH', path, { body });
+export function adminPatch<T>(
+  path: string,
+  body?: unknown,
+  options?: { headers?: Record<string, string> },
+): Promise<T> {
+  return request<T>('PATCH', path, { body, headers: options?.headers });
 }
 
 export function adminDelete<T>(path: string, body?: unknown): Promise<T> {

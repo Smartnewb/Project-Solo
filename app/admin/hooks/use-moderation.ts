@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminService from '@/app/services/admin';
-import type { PendingUsersFilter, ReviewHistoryFilter } from '@/app/services/admin';
+import type {
+	PendingUsersFilter,
+	ReportCountry,
+	ReportTargetType,
+	ReviewHistoryFilter,
+} from '@/app/services/admin';
 
 // Query keys
 export const moderationKeys = {
@@ -9,9 +14,16 @@ export const moderationKeys = {
 	profileReports: (params: URLSearchParams) => [...moderationKeys.reports(), 'profile', params.toString()] as const,
 	profileReportDetail: (reportId: string) => [...moderationKeys.reports(), 'profile', 'detail', reportId] as const,
 	profileReportHistory: (reportId: string) => [...moderationKeys.reports(), 'profile', 'history', reportId] as const,
-	chatHistory: (chatRoomId: string, page: number, limit: number) =>
-		[...moderationKeys.reports(), 'chat-history', chatRoomId, { page, limit }] as const,
-  userProfileImages: (userId: string) => [...moderationKeys.reports(), 'user-profile-images', userId] as const,
+	crossBorderReports: (params: URLSearchParams) =>
+		[...moderationKeys.reports(), 'cross-border', params.toString()] as const,
+	crossBorderReportDetail: (reportId: string) =>
+		[...moderationKeys.reports(), 'cross-border', 'detail', reportId] as const,
+	crossBorderReportHistory: (reportId: string) =>
+		[...moderationKeys.reports(), 'cross-border', 'history', reportId] as const,
+	chatHistory: (chatRoomId: string, page: number, limit: number, country?: ReportCountry) =>
+		[...moderationKeys.reports(), 'chat-history', chatRoomId, { page, limit, country }] as const,
+  userProfileImages: (userId: string, country?: ReportCountry) =>
+    [...moderationKeys.reports(), 'user-profile-images', userId, country] as const,
   userReview: () => [...moderationKeys.all, 'user-review'] as const,
   pendingUsers: (page: number, limit: number, search?: string, filters?: PendingUsersFilter, excludeUserIds?: string[]) =>
     [...moderationKeys.userReview(), 'pending', { page, limit, search, filters, excludeUserIds }] as const,
@@ -47,6 +59,29 @@ export function useProfileReportHistory(reportId: string) {
 	});
 }
 
+export function useCrossBorderReports(params: URLSearchParams) {
+	return useQuery({
+		queryKey: moderationKeys.crossBorderReports(params),
+		queryFn: () => AdminService.reports.getCrossBorderReports(params),
+	});
+}
+
+export function useCrossBorderReportDetail(reportId: string) {
+	return useQuery({
+		queryKey: moderationKeys.crossBorderReportDetail(reportId),
+		queryFn: () => AdminService.reports.getCrossBorderReportDetail(reportId),
+		enabled: !!reportId,
+	});
+}
+
+export function useCrossBorderReportHistory(reportId: string) {
+	return useQuery({
+		queryKey: moderationKeys.crossBorderReportHistory(reportId),
+		queryFn: () => AdminService.reports.getCrossBorderReportHistory(reportId),
+		enabled: !!reportId,
+	});
+}
+
 export function useUpdateReportStatus() {
 	const queryClient = useQueryClient();
 	return useMutation({
@@ -58,7 +93,7 @@ export function useUpdateReportStatus() {
 		}: {
 			reportId: string;
 			status: 'pending' | 'reviewing' | 'resolved' | 'rejected';
-			type?: 'profile' | 'community';
+			type?: ReportTargetType;
 			note?: string | null;
 		}) => AdminService.reports.updateReportStatus(reportId, status, { type, note }),
 		onSuccess: (_result, { reportId }) => {
@@ -69,18 +104,43 @@ export function useUpdateReportStatus() {
 	});
 }
 
-export function useChatHistory(chatRoomId: string, page: number = 1, limit: number = 50) {
+export function useUpdateCrossBorderReportStatus() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			reportId,
+			status,
+			note,
+		}: {
+			reportId: string;
+			status: 'pending' | 'reviewing' | 'resolved' | 'rejected';
+			note?: string | null;
+		}) => AdminService.reports.updateCrossBorderReportStatus(reportId, status, { type: 'cross_border', note }),
+		onSuccess: (_result, { reportId }) => {
+			queryClient.invalidateQueries({ queryKey: moderationKeys.reports() });
+			queryClient.invalidateQueries({ queryKey: moderationKeys.crossBorderReportDetail(reportId) });
+			queryClient.invalidateQueries({ queryKey: moderationKeys.crossBorderReportHistory(reportId) });
+		},
+	});
+}
+
+export function useChatHistory(
+  chatRoomId: string,
+  page: number = 1,
+  limit: number = 50,
+  country?: ReportCountry,
+) {
   return useQuery({
-    queryKey: moderationKeys.chatHistory(chatRoomId, page, limit),
-    queryFn: () => AdminService.reports.getChatHistory(chatRoomId, page, limit),
+    queryKey: moderationKeys.chatHistory(chatRoomId, page, limit, country),
+    queryFn: () => AdminService.reports.getChatHistory(chatRoomId, page, limit, country),
     enabled: !!chatRoomId,
   });
 }
 
-export function useUserProfileImages(userId: string) {
+export function useUserProfileImages(userId: string, country?: ReportCountry) {
   return useQuery({
-    queryKey: moderationKeys.userProfileImages(userId),
-    queryFn: () => AdminService.reports.getUserProfileImages(userId),
+    queryKey: moderationKeys.userProfileImages(userId, country),
+    queryFn: () => AdminService.reports.getUserProfileImages(userId, country),
     enabled: !!userId,
   });
 }
