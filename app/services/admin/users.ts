@@ -426,6 +426,18 @@ export const userAppearance = {
 		return result.data;
 	},
 
+	updateUserLifeStage: async (userId: string, lifeStage: string, reason: string) => {
+		const result = await adminPatch<{
+			data: {
+				userId: string;
+				previousLifeStage: string | null;
+				lifeStage: string;
+				changedAt: string;
+			};
+		}>(`/admin/v2/users/${userId}/life-stage`, { lifeStage, reason });
+		return result.data;
+	},
+
 	updateUserBirthday: async (userId: string, birthday: string) => {
 		const result = await adminPatch<{
 			data: { userId: string; birthday: string; age: number; message: string };
@@ -893,12 +905,14 @@ export const userAppearance = {
 		}
 	},
 
-	approveUniversityVerification: async (userId: string) => {
+	// type: 대기 목록 행의 서류 종류(대학/직장). 없으면 서버 기본값(대학)으로 처리된다.
+	approveUniversityVerification: async (userId: string, type?: 'university' | 'workplace') => {
 		try {
 			;
 
 			const result = await adminPost<{ data: any }>('/admin/v2/profile-review/university-verification/approve', {
 				userId,
+				...(type ? { type } : {}),
 			});
 
 			return result.data;
@@ -907,12 +921,14 @@ export const userAppearance = {
 		}
 	},
 
-	rejectUniversityVerification: async (userId: string) => {
+	// type: 대기 목록 행의 서류 종류(대학/직장). 없으면 서버 기본값(대학)으로 처리된다.
+	rejectUniversityVerification: async (userId: string, type?: 'university' | 'workplace') => {
 		try {
 			;
 
 			const result = await adminPost<{ data: any }>('/admin/v2/profile-review/university-verification/reject', {
 				userId,
+				...(type ? { type } : {}),
 			});
 
 			return result.data;

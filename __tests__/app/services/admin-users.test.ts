@@ -298,6 +298,36 @@ describe('userAppearance service', () => {
     expect(adminPost).toHaveBeenNthCalledWith(2, '/admin/v2/users/123/instagram-reset', {});
   });
 
+  it('대학/직장 서류 승인·반려 요청에 type을 함께 보낸다', async () => {
+    (adminPost as jest.Mock).mockResolvedValue({ data: { success: true } });
+
+    await userAppearance.approveUniversityVerification('123', 'workplace');
+    await userAppearance.rejectUniversityVerification('123', 'university');
+
+    expect(adminPost).toHaveBeenNthCalledWith(1, '/admin/v2/profile-review/university-verification/approve', {
+      userId: '123',
+      type: 'workplace',
+    });
+    expect(adminPost).toHaveBeenNthCalledWith(2, '/admin/v2/profile-review/university-verification/reject', {
+      userId: '123',
+      type: 'university',
+    });
+  });
+
+  it('type 없이 부르면 승인·반려 요청 body에 type을 넣지 않는다', async () => {
+    (adminPost as jest.Mock).mockResolvedValue({ data: { success: true } });
+
+    await userAppearance.approveUniversityVerification('123');
+    await userAppearance.rejectUniversityVerification('123');
+
+    expect(adminPost).toHaveBeenNthCalledWith(1, '/admin/v2/profile-review/university-verification/approve', {
+      userId: '123',
+    });
+    expect(adminPost).toHaveBeenNthCalledWith(2, '/admin/v2/profile-review/university-verification/reject', {
+      userId: '123',
+    });
+  });
+
   it('derives accountStatus from isSuspended in user details', async () => {
     (adminGet as jest.Mock).mockResolvedValue({
       data: {
