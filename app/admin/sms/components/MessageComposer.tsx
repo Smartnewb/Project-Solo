@@ -3,6 +3,7 @@ import { Modal, Button, TextArea, Input } from '@heroui/react';
 import { useState, useEffect, useRef } from "react";
 import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import { useToast } from "@/shared/ui/admin/toast";
+import { ALIGO_UNIT_COST_KRW, euckrByteLength, isSmsTruncationRisk, SMS_BYTE_LIMIT, SMS_SAFE_BODY_BYTE_LIMIT, WEB_SENDER_PREFIX_BYTES } from "../utils/euckr-byte-length";
 interface MessageComposerProps {
     templateId?: string;
     templateTitle?: string;
@@ -20,6 +21,9 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
     const [messageSource, setMessageSource] = useState<'draft' | 'template' | 'manual'>('manual');
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [lastTemplateId, setLastTemplateId] = useState<string | undefined>();
+    const byteLength = euckrByteLength(message);
+    const exceedsSmsLimit = byteLength > SMS_BYTE_LIMIT;
+    const truncationRisk = isSmsTruncationRisk(byteLength);
     const updateMessage = (value: string, source: 'draft' | 'template' | 'manual', dirty: boolean) => {
         setMessage(value);
         setMessageSource(source);
@@ -215,10 +219,37 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
 
                     <TextArea aria-label="메시지 내용" value={message} onChange={(e) => handleMessageChange(e.target.value)} className="w-full rounded-md px-3 sm:px-4 py-2 sm:py-3 border border-[#D1D5DB] resize-none h-32 sm:h-40 text-sm sm:text-base text-[#111827] placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#8C60EE]" placeholder='메세지 내용을 입력하세요.' maxLength={2400}></TextArea>
 
-                    <div className='flex items-center justify-between mt-2 gap-1 sm:gap-0'>
-                        <p className='text-xs sm:text-sm text-[#6B7280] font-[400]'>SMS 최대 길이: 2400자</p>
+                    <div className='flex flex-wrap items-center justify-between mt-2 gap-2'>
+                        <div className='flex items-center gap-2'>
+                            <p className={`text-xs sm:text-sm font-[400] ${exceedsSmsLimit || truncationRisk ? 'text-amber-700 font-medium' : 'text-[#6B7280]'}`}>
+                                EUC-KR {byteLength}/{SMS_BYTE_LIMIT}바이트 (안전 {SMS_SAFE_BODY_BYTE_LIMIT}바이트)
+                            </p>
+                            {exceedsSmsLimit ? (
+                                <span className='text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium'>
+                                    LMS ({ALIGO_UNIT_COST_KRW.LMS}원/건)
+                                </span>
+                            ) : truncationRisk ? (
+                                <span className='text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium'>
+                                    SMS 잘림 위험 ([Web발신] 포함 {byteLength + WEB_SENDER_PREFIX_BYTES}B)
+                                </span>
+                            ) : byteLength > 0 ? (
+                                <span className='text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium'>
+                                    SMS ({ALIGO_UNIT_COST_KRW.SMS}원/건)
+                                </span>
+                            ) : null}
+                        </div>
                         <p className='text-xs sm:text-sm text-[#6B7280] font-[400]'>{message.length}/2400자</p>
                     </div>
+                    {exceedsSmsLimit && (
+                        <div className='mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800'>
+                            90바이트 초과 → LMS 과금(알리고 건당 {ALIGO_UNIT_COST_KRW.LMS}원, SMS {ALIGO_UNIT_COST_KRW.SMS}원의 약 3.1배). 80바이트 이하 단문(SMS) 축약을 권장합니다.
+                        </div>
+                    )}
+                    {truncationRisk && (
+                        <div className='mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800'>
+                            본문이 {SMS_SAFE_BODY_BYTE_LIMIT}바이트를 초과해 [Web발신]({WEB_SENDER_PREFIX_BYTES}바이트) 합산 시 {SMS_BYTE_LIMIT}바이트를 넘어 단말에서 끝부분이 잘릴 수 있습니다. {SMS_SAFE_BODY_BYTE_LIMIT}바이트 이하로 줄이거나 LMS를 선택하세요.
+                        </div>
+                    )}
                 </div>
 
                 {/* MARK: - 하단 버튼 영역 */}

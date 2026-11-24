@@ -16,6 +16,16 @@ import { SendConfirmModal } from './components/SendConfirmModal';
 import { SmsHistoryTable } from './components/SmsHistoryTable';
 import { TemplateManager } from './components/TemplateManager';
 import { SmsTemplate } from './types';
+import {
+    ALIGO_UNIT_COST_KRW,
+    euckrByteLength,
+    estimateAligoCostKrw,
+    isSmsTruncationRisk,
+    resolveEffectiveSmsBillingType,
+    SMS_BYTE_LIMIT,
+    SMS_SAFE_BODY_BYTE_LIMIT,
+    WEB_SENDER_PREFIX_BYTES,
+} from './utils/euckr-byte-length';
 function SmspageContent() {
     // === 상태관리 ===
     const [selectedTemplate, setSelectedTemplate] = useState<SmsTemplate | null>(null);
@@ -39,6 +49,9 @@ function SmspageContent() {
     const effectiveCountEnabled = mode === 'userIds' ? selectedUserIds.length > 0 : true;
     const { data: effectiveCount } = useRecipientCount(effectiveFilter, effectiveCountEnabled);
     const effectiveValidCount = mode === 'userIds' ? effectiveCount?.validPhone ?? 0 : currentValidCount;
+    const messageBytes = useMemo(() => euckrByteLength(message), [message]);
+    const effectiveBillingType = resolveEffectiveSmsBillingType(smsType, messageBytes);
+    const estimatedAligoCost = estimateAligoCostKrw(effectiveValidCount, effectiveBillingType);
     const handleFilterChange = (filter: RecipientFilter, validCount: number) => {
         setCurrentFilter(filter);
         setCurrentValidCount(validCount);
@@ -118,6 +131,26 @@ function SmspageContent() {
 								발송하기 ({effectiveValidCount}명)
 							</Button>
 						</div>
+						{effectiveValidCount > 0 && (
+							<div className='mt-2 text-xs text-gray-600'>
+								예상 비용(알리고, VAT별도): ₩{estimatedAligoCost.toLocaleString()} ({effectiveValidCount.toLocaleString()}명 × {ALIGO_UNIT_COST_KRW[effectiveBillingType]}원 {effectiveBillingType})
+							</div>
+						)}
+						{smsType === 'SMS' && messageBytes > SMS_BYTE_LIMIT && (
+							<p className='mt-1.5 text-xs text-amber-700'>
+								본문이 90바이트를 초과합니다. SMS 발송 시 문자가 잘리거나 LMS({ALIGO_UNIT_COST_KRW.LMS}원/건)로 과금될 수 있습니다.
+							</p>
+						)}
+						{smsType === 'SMS' && isSmsTruncationRisk(messageBytes) && (
+							<p className='mt-1.5 text-xs text-amber-700'>
+								본문이 {SMS_SAFE_BODY_BYTE_LIMIT}바이트를 초과합니다({messageBytes}바이트). [Web발신]({WEB_SENDER_PREFIX_BYTES}바이트) 포함 시 {messageBytes + WEB_SENDER_PREFIX_BYTES}바이트로 90바이트를 넘어 단말에서 끝부분이 잘릴 수 있으니 {SMS_SAFE_BODY_BYTE_LIMIT}바이트 이하 축약을 권장합니다.
+							</p>
+						)}
+						{smsType === 'LMS' && messageBytes > 0 && messageBytes <= SMS_SAFE_BODY_BYTE_LIMIT && (
+							<p className='mt-1.5 text-xs text-emerald-700'>
+								{SMS_SAFE_BODY_BYTE_LIMIT}바이트 이하 단문입니다. 발송 유형을 SMS({ALIGO_UNIT_COST_KRW.SMS}원/건)로 바꾸면 비용을 약 68% 절감할 수 있습니다.
+							</p>
+						)}
 
 						{jobStatus.data && (<div className='mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md text-sm'>
 								<div className='flex items-center justify-between mb-1'>
