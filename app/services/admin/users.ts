@@ -188,6 +188,7 @@ export const userAppearance = {
 		limit?: number;
 		name?: string;
 		university?: string;
+		queue?: 'pending' | 'post_review' | 'all';
 	}) => {
 		const res = await adminGet<{ data: {
 			users: unknown[];
@@ -195,11 +196,14 @@ export const userAppearance = {
 			page: number;
 			limit: number;
 			totalPages: number;
+			queue?: 'pending' | 'post_review' | 'all';
+			counts?: { pending: number; postReview: number };
 		} }>('/admin/v2/profile-review/university-verification/pending', {
 			page: String(params.page ?? 1),
 			limit: String(params.limit ?? 10),
 			name: params.name ?? '',
 			university: params.university ?? '',
+			...(params.queue ? { queue: params.queue } : {}),
 		});
 		return res.data;
 	},
@@ -884,6 +888,7 @@ export const userAppearance = {
 		limit?: number;
 		name?: string;
 		university?: string;
+		queue?: 'pending' | 'post_review' | 'all';
 	}) => {
 		try {
 			;
@@ -893,6 +898,7 @@ export const userAppearance = {
 			if (params.limit) queryParams.append('limit', params.limit.toString());
 			if (params.name) queryParams.append('name', params.name);
 			if (params.university) queryParams.append('university', params.university);
+			if (params.queue) queryParams.append('queue', params.queue);
 
 			const res = await adminGet<{ data: any }>(
 				`/admin/v2/profile-review/university-verification/pending?${queryParams.toString()}`,

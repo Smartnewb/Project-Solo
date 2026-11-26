@@ -26,6 +26,8 @@ import AdminService from "@/app/services/admin";
 import { useToast } from "@/shared/ui/admin/toast";
 import UserDetailModal, { UserDetail } from "./UserDetailModal";
 
+type VerificationQueueTab = "pending" | "post_review";
+
 interface UniversityVerificationUser {
   id: string;
   name: string;
@@ -40,6 +42,8 @@ interface UniversityVerificationUser {
   studentNumber: string;
   certificateImageUrl: string;
   createdAt: string;
+  verifiedAt?: string | null;
+  isPostReview?: boolean;
   // 서류 종류: 'university'(대학) | 'workplace'(직장). 옛 응답에는 없을 수 있다.
   type?: string;
   documentType?: string | null;
@@ -93,6 +97,11 @@ interface UniversityVerificationResponse {
   page: number;
   limit: number;
   totalPages: number;
+  queue?: "pending" | "post_review" | "all";
+  counts?: {
+    pending: number;
+    postReview: number;
+  };
 }
 
 interface ConfirmDialog {
@@ -108,6 +117,12 @@ interface CertificateDialog {
 
 export default function UniversityVerificationPendingPanel() {
   const toast = useToast();
+  const [activeQueue, setActiveQueue] =
+    useState<VerificationQueueTab>("pending");
+  const [queueCounts, setQueueCounts] = useState<{
+    pending: number;
+    postReview: number;
+  } | null>(null);
   const [users, setUsers] = useState<UniversityVerificationUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,21 +163,44 @@ export default function UniversityVerificationPendingPanel() {
   }, []);
 
   // 사용자 목록 조회
-  const fetchUsers = async () => {
+  const fetchUsers = async (overrides?: {
+    page?: number;
+    queue?: VerificationQueueTab;
+    name?: string;
+    university?: string;
+  }) => {
+    const targetPage = overrides?.page ?? page;
+    const targetQueue = overrides?.queue ?? activeQueue;
+    const targetName = overrides?.name ?? nameFilter;
+    const targetUniversity = overrides?.university ?? universityFilter;
+
     try {
       setLoading(true);
       setError(null);
 
       const response: UniversityVerificationResponse =
         await AdminService.userAppearance.getUniversityVerificationPending({
-          page: page + 1, // API는 1부터 시작
+          page: targetPage + 1, // API는 1부터 시작
           limit: rowsPerPage,
-          name: nameFilter || undefined,
-          university: universityFilter || undefined,
+          name: targetName || undefined,
+          university: targetUniversity || undefined,
+          queue: targetQueue,
         });
 
       setUsers(response.users);
       setTotalItems(response.total);
+      if (response.counts) {
+        setQueueCounts(response.counts);
+      } else {
+        setQueueCounts((prev) => ({
+          pending:
+            targetQueue === "pending" ? response.total : (prev?.pending ?? 0),
+          postReview:
+            targetQueue === "post_review"
+              ? response.total
+              : (prev?.postReview ?? 0),
+        }));
+      }
     } catch (err: any) {
       console.error("대학교 인증 신청 사용자 조회 중 오류:", err);
       setError(
@@ -174,10 +212,17 @@ export default function UniversityVerificationPendingPanel() {
     }
   };
 
-  // 컴포넌트 마운트 시 데이터 조회
+  // 컴포넌트 마운트 및 탭·페이지 변경 시 데이터 조회
   useEffect(() => {
     fetchUsers();
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, activeQueue]);
+
+  // 대기열 탭 전환 핸들러
+  const handleSelectQueue = (nextQueue: VerificationQueueTab) => {
+    if (nextQueue === activeQueue) return;
+    setActiveQueue(nextQueue);
+    setPage(0);
+  };
 
   // 페이지 변경 핸들러
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -197,7 +242,7 @@ export default function UniversityVerificationPendingPanel() {
   // 검색 핸들러
   const handleSearch = () => {
     setPage(0);
-    fetchUsers();
+    fetchUsers({ page: 0 });
   };
 
   // 검색 초기화 핸들러
@@ -205,9 +250,7 @@ export default function UniversityVerificationPendingPanel() {
     setNameFilter("");
     setUniversityFilter("");
     setPage(0);
-    setTimeout(() => {
-      fetchUsers();
-    }, 100);
+    fetchUsers({ page: 0, name: "", university: "" });
   };
 
   // 확인 다이얼로그 열기
@@ -298,7 +341,22 @@ export default function UniversityVerificationPendingPanel() {
       // 목록에서 처리한 행(id+type)만 제거
       const handledKey = getRowKey(confirmDialog.user);
       setUsers((prev) => prev.filter((user) => getRowKey(user) !== handledKey));
-      setTotalItems((prev) => prev - 1);
+      setTotalItems((prev) => Math.max(0, prev - 1));
+      setQueueCounts((prev) =>
+        prev
+          ? {
+              ...prev,
+              pending:
+                activeQueue === "pending"
+                  ? Math.max(0, prev.pending - 1)
+                  : prev.pending,
+              postReview:
+                activeQueue === "post_review"
+                  ? Math.max(0, prev.postReview - 1)
+                  : prev.postReview,
+            }
+          : prev,
+      );
 
       handleCloseConfirmDialog();
     } catch (err: any) {
@@ -323,11 +381,73 @@ export default function UniversityVerificationPendingPanel() {
     });
   };
 
+  const isPostReviewTab = activeQueue === "post_review";
+  const isDialogPostReview = Boolean(
+    confirmDialog.user?.isPostReview || isPostReviewTab,
+  );
+
   return (
     <div>
       <div className={"text-lg font-semibold text-neutral-900"}>
         학생증 인증 신청 관리
       </div>
+      {/* 대기열 서브탭: 미심사 대기 vs OCR 자동승인 사후확인 */}
+      <div
+        role="tablist"
+        aria-label="학생증 인증 대기열 구분"
+        className="mt-3 mb-2 flex flex-wrap gap-2 border-b border-neutral-200 pb-2"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeQueue === "pending"}
+          onClick={() => handleSelectQueue("pending")}
+          className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+            activeQueue === "pending"
+              ? "bg-neutral-900 text-white"
+              : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+          }`}
+        >
+          <span>미심사 대기</span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+              activeQueue === "pending"
+                ? "bg-white/20 text-white"
+                : "bg-white text-neutral-700"
+            }`}
+          >
+            {queueCounts?.pending ?? (activeQueue === "pending" ? totalItems : 0)}
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeQueue === "post_review"}
+          onClick={() => handleSelectQueue("post_review")}
+          className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+            activeQueue === "post_review"
+              ? "bg-emerald-700 text-white"
+              : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+          }`}
+        >
+          <span>OCR 자동승인 · 사후확인</span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+              activeQueue === "post_review"
+                ? "bg-white/20 text-white"
+                : "bg-white text-neutral-700"
+            }`}
+          >
+            {queueCounts?.postReview ??
+              (activeQueue === "post_review" ? totalItems : 0)}
+          </span>
+        </button>
+      </div>
+      <p className="mb-3 text-xs text-neutral-600">
+        {isPostReviewTab
+          ? "OCR이 이미 자동 승인해 인증이 열린 건입니다. 원본 서류를 확인한 뒤 확인 완료(원본 파기) 또는 승인 취소로 정리하세요."
+          : "OCR 자동승인을 통과하지 못한 학생증과 대학원·졸업·직장 서류입니다."}
+      </p>
       {error && (
         <Alert style={{ marginBottom: 12 }} status="danger" role="alert">
           <Alert.Content>{error}</Alert.Content>
@@ -401,126 +521,151 @@ export default function UniversityVerificationPendingPanel() {
             </div>
           ) : users.length === 0 ? (
             <div style={{ padding: 12 }} className={"text-sm text-neutral-700"}>
-              학생증 인증 신청한 사용자가 없습니다.
+              {isPostReviewTab
+                ? "사후 확인 대기 중인 OCR 자동승인 건이 없습니다."
+                : "미심사 대기 중인 인증 신청이 없습니다."}
             </div>
           ) : (
-            users.map((user) => (
-              <Card key={getRowKey(user)}>
-                <Card.Content>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <HeroActionButton
-                      variant="ghost"
-                      className="h-auto min-w-0 p-0"
-                      onClick={() => handleOpenUserDetailModal(user.id)}
-                      aria-label="프로필 상세 보기"
+            users.map((user) => {
+              const rowPostReview = Boolean(
+                user.isPostReview || isPostReviewTab,
+              );
+              return (
+                <Card key={getRowKey(user)}>
+                  <Card.Content>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
                     >
-                      <Avatar
-                        style={{ width: 60, height: 60, cursor: "pointer" }}
+                      <HeroActionButton
+                        variant="ghost"
+                        className="h-auto min-w-0 p-0"
+                        onClick={() => handleOpenUserDetailModal(user.id)}
+                        aria-label="프로필 상세 보기"
                       >
-                        <Avatar.Image
-                          src={user.profileImageUrl}
-                          alt={user.name}
-                        />
-                        <Avatar.Fallback>
-                          {user.name?.charAt(0) || "?"}
-                        </Avatar.Fallback>
-                      </Avatar>
-                    </HeroActionButton>
-                    <div className={"text-lg font-semibold text-neutral-900"}>
-                      {user.name}
-                    </div>
-                    {(user.birthday || user.age) && (
+                        <Avatar
+                          style={{ width: 60, height: 60, cursor: "pointer" }}
+                        >
+                          <Avatar.Image
+                            src={user.profileImageUrl}
+                            alt={user.name}
+                          />
+                          <Avatar.Fallback>
+                            {user.name?.charAt(0) || "?"}
+                          </Avatar.Fallback>
+                        </Avatar>
+                      </HeroActionButton>
+                      <div className={"text-lg font-semibold text-neutral-900"}>
+                        {user.name}
+                      </div>
+                      {(user.birthday || user.age) && (
+                        <div className={"text-sm text-neutral-700"}>
+                          {user.birthday ? (
+                            <>
+                              생년월일:{" "}
+                              {new Date(user.birthday).toLocaleDateString(
+                                "ko-KR",
+                              )}
+                              {user.age && ` (${user.age}세)`}
+                            </>
+                          ) : user.age ? (
+                            `나이: ${user.age}세`
+                          ) : (
+                            ""
+                          )}
+                        </div>
+                      )}
                       <div className={"text-sm text-neutral-700"}>
-                        {user.birthday ? (
-                          <>
-                            생년월일:{" "}
-                            {new Date(user.birthday).toLocaleDateString(
-                              "ko-KR",
-                            )}
-                            {user.age && ` (${user.age}세)`}
-                          </>
-                        ) : user.age ? (
-                          `나이: ${user.age}세`
-                        ) : (
-                          ""
+                        {user.phoneNumber}
+                      </div>
+                      <Separator
+                        style={{ width: "100%", marginTop: 4, marginBottom: 4 }}
+                      ></Separator>
+                      <div className={"text-sm text-neutral-700"}>
+                        <strong>{user.universityName}</strong>
+                      </div>
+                      <div className={"text-sm text-neutral-700"}>
+                        {user.departmentName}
+                        {user.grade}학년
+                      </div>
+                      <div className={"text-sm text-neutral-700"}>
+                        학번: {user.studentNumber}
+                      </div>
+                      <div className={"text-sm text-neutral-700"}>
+                        서류: {getDocumentSummary(user)}
+                        {rowPostReview && (
+                          <span className="ml-1.5 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                            OCR 자동승인
+                          </span>
                         )}
                       </div>
-                    )}
-                    <div className={"text-sm text-neutral-700"}>
-                      {user.phoneNumber}
-                    </div>
-                    <Separator
-                      style={{ width: "100%", marginTop: 4, marginBottom: 4 }}
-                    ></Separator>
-                    <div className={"text-sm text-neutral-700"}>
-                      <strong>{user.universityName}</strong>
-                    </div>
-                    <div className={"text-sm text-neutral-700"}>
-                      {user.departmentName}
-                      {user.grade}학년
-                    </div>
-                    <div className={"text-sm text-neutral-700"}>
-                      학번: {user.studentNumber}
-                    </div>
-                    <div className={"text-sm text-neutral-700"}>
-                      서류: {getDocumentSummary(user)}
-                    </div>
-                    <div className={"text-sm text-neutral-700"}>
-                      신청일: {formatDate(user.createdAt)}
-                    </div>
-                    <Separator
-                      style={{ width: "100%", marginTop: 4, marginBottom: 4 }}
-                    ></Separator>
-                    <div
-                      style={{ width: "100%" }}
-                      className={"flex flex-wrap items-center gap-2"}
-                    >
-                      <Button
-                        onClick={() =>
-                          handleOpenCertificateDialog(user.certificateImageUrl)
-                        }
-                        variant={"secondary"}
-                        isDisabled={undefined}
-                        size={"sm"}
-                        className="rounded-xl"
+                      <div className={"text-sm text-neutral-700"}>
+                        {rowPostReview ? "자동승인일" : "신청일"}:{" "}
+                        {formatDate(
+                          rowPostReview && user.verifiedAt
+                            ? user.verifiedAt
+                            : user.createdAt,
+                        )}
+                      </div>
+                      <Separator
+                        style={{ width: "100%", marginTop: 4, marginBottom: 4 }}
+                      ></Separator>
+                      <div
+                        style={{ width: "100%" }}
+                        className={"flex flex-wrap items-center gap-2"}
                       >
-                        {<Eye />}학생증 보기
-                      </Button>
-                    </div>
-                    <div
-                      style={{ width: "100%" }}
-                      className={"flex flex-wrap items-center gap-2"}
-                    >
-                      <Button
-                        onClick={() => handleOpenConfirmDialog(user, "approve")}
-                        variant={"primary"}
-                        isDisabled={actionLoading === user.id}
-                        size={"md"}
-                        className="rounded-xl"
+                        <Button
+                          onClick={() =>
+                            handleOpenCertificateDialog(
+                              user.certificateImageUrl,
+                            )
+                          }
+                          variant={"secondary"}
+                          isDisabled={undefined}
+                          size={"sm"}
+                          className="rounded-xl"
+                        >
+                          {<Eye />}학생증 보기
+                        </Button>
+                      </div>
+                      <div
+                        style={{ width: "100%" }}
+                        className={"flex flex-wrap items-center gap-2"}
                       >
-                        {<CircleCheck />}승인
-                      </Button>
-                      <Button
-                        onClick={() => handleOpenConfirmDialog(user, "reject")}
-                        variant={"primary"}
-                        isDisabled={actionLoading === user.id}
-                        size={"md"}
-                        className="rounded-xl"
-                      >
-                        {<CircleX />}거절
-                      </Button>
+                        <Button
+                          onClick={() =>
+                            handleOpenConfirmDialog(user, "approve")
+                          }
+                          variant={"primary"}
+                          isDisabled={actionLoading === user.id}
+                          size={"md"}
+                          className="rounded-xl"
+                        >
+                          {<CircleCheck />}
+                          {rowPostReview ? "확인 완료" : "승인"}
+                        </Button>
+                        <Button
+                          onClick={() =>
+                            handleOpenConfirmDialog(user, "reject")
+                          }
+                          variant={"danger"}
+                          isDisabled={actionLoading === user.id}
+                          size={"md"}
+                          className="rounded-xl"
+                        >
+                          {<CircleX />}
+                          {rowPostReview ? "승인 취소" : "거절"}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </Card.Content>
-              </Card>
-            ))
+                  </Card.Content>
+                </Card>
+              );
+            })
           )}
         </div>
       ) : (
@@ -542,7 +687,7 @@ export default function UniversityVerificationPendingPanel() {
                 <th>학년</th>
                 <th>학번</th>
                 <th>서류</th>
-                <th>신청일</th>
+                <th>{isPostReviewTab ? "자동승인일" : "신청일"}</th>
                 <th>보기</th>
                 <th>작업</th>
               </tr>
@@ -564,95 +709,123 @@ export default function UniversityVerificationPendingPanel() {
                     style={{ paddingTop: 12, paddingBottom: 12 }}
                   >
                     <div className={"text-sm text-neutral-700"}>
-                      학생증 인증 신청한 사용자가 없습니다.
+                      {isPostReviewTab
+                        ? "사후 확인 대기 중인 OCR 자동승인 건이 없습니다."
+                        : "미심사 대기 중인 인증 신청이 없습니다."}
                     </div>
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
-                  <tr key={getRowKey(user)}>
-                    <td>
-                      <HeroActionButton
-                        variant="ghost"
-                        className="h-auto min-w-0 p-0"
-                        onClick={() => handleOpenUserDetailModal(user.id)}
-                        aria-label="프로필 상세 보기"
-                      >
-                        <Avatar
-                          style={{ width: 40, height: 40, cursor: "pointer" }}
+                users.map((user) => {
+                  const rowPostReview = Boolean(
+                    user.isPostReview || isPostReviewTab,
+                  );
+                  return (
+                    <tr key={getRowKey(user)}>
+                      <td>
+                        <HeroActionButton
+                          variant="ghost"
+                          className="h-auto min-w-0 p-0"
+                          onClick={() => handleOpenUserDetailModal(user.id)}
+                          aria-label="프로필 상세 보기"
                         >
-                          <Avatar.Image
-                            src={user.profileImageUrl}
-                            alt={user.name}
-                          />
-                          <Avatar.Fallback>
-                            {user.name?.charAt(0) || "?"}
-                          </Avatar.Fallback>
-                        </Avatar>
-                      </HeroActionButton>
-                    </td>
-                    <td>{user.name}</td>
-                    <td>
-                      {user.birthday ? (
-                        <>
-                          {new Date(user.birthday).toLocaleDateString("ko-KR")}
-                          {user.age && ` (${user.age}세)`}
-                        </>
-                      ) : user.age ? (
-                        `${user.age}세`
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                    <td>{user.phoneNumber}</td>
-                    <td>{user.universityName}</td>
-                    <td>{user.departmentName}</td>
-                    <td>{user.grade}학년</td>
-                    <td>{user.studentNumber}</td>
-                    <td>{getDocumentSummary(user)}</td>
-                    <td>{formatDate(user.createdAt)}</td>
-                    <td>
-                      <Button
-                        onClick={() =>
-                          handleOpenCertificateDialog(user.certificateImageUrl)
-                        }
-                        variant={"ghost"}
-                        isDisabled={undefined}
-                        isIconOnly={true}
-                        size={"sm"}
-                        className="rounded-lg"
-                      >
-                        <Eye />
-                      </Button>
-                    </td>
-                    <td>
-                      <div className={"flex flex-wrap items-center gap-2"}>
+                          <Avatar
+                            style={{ width: 40, height: 40, cursor: "pointer" }}
+                          >
+                            <Avatar.Image
+                              src={user.profileImageUrl}
+                              alt={user.name}
+                            />
+                            <Avatar.Fallback>
+                              {user.name?.charAt(0) || "?"}
+                            </Avatar.Fallback>
+                          </Avatar>
+                        </HeroActionButton>
+                      </td>
+                      <td>{user.name}</td>
+                      <td>
+                        {user.birthday ? (
+                          <>
+                            {new Date(user.birthday).toLocaleDateString(
+                              "ko-KR",
+                            )}
+                            {user.age && ` (${user.age}세)`}
+                          </>
+                        ) : user.age ? (
+                          `${user.age}세`
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td>{user.phoneNumber}</td>
+                      <td>{user.universityName}</td>
+                      <td>{user.departmentName}</td>
+                      <td>{user.grade}학년</td>
+                      <td>{user.studentNumber}</td>
+                      <td>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span>{getDocumentSummary(user)}</span>
+                          {rowPostReview && (
+                            <span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                              OCR 자동승인
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        {formatDate(
+                          rowPostReview && user.verifiedAt
+                            ? user.verifiedAt
+                            : user.createdAt,
+                        )}
+                      </td>
+                      <td>
                         <Button
                           onClick={() =>
-                            handleOpenConfirmDialog(user, "approve")
+                            handleOpenCertificateDialog(
+                              user.certificateImageUrl,
+                            )
                           }
-                          variant={"primary"}
-                          isDisabled={actionLoading === user.id}
+                          variant={"ghost"}
+                          isDisabled={undefined}
+                          isIconOnly={true}
                           size={"sm"}
-                          className="rounded-xl"
+                          className="rounded-lg"
                         >
-                          {<CircleCheck />}승인
+                          <Eye />
                         </Button>
-                        <Button
-                          onClick={() =>
-                            handleOpenConfirmDialog(user, "reject")
-                          }
-                          variant={"primary"}
-                          isDisabled={actionLoading === user.id}
-                          size={"sm"}
-                          className="rounded-xl"
-                        >
-                          {<CircleX />}거절
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td>
+                        <div className={"flex flex-wrap items-center gap-2"}>
+                          <Button
+                            onClick={() =>
+                              handleOpenConfirmDialog(user, "approve")
+                            }
+                            variant={"primary"}
+                            isDisabled={actionLoading === user.id}
+                            size={"sm"}
+                            className="rounded-xl"
+                          >
+                            {<CircleCheck />}
+                            {rowPostReview ? "확인 완료" : "승인"}
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              handleOpenConfirmDialog(user, "reject")
+                            }
+                            variant={"danger"}
+                            isDisabled={actionLoading === user.id}
+                            size={"sm"}
+                            className="rounded-xl"
+                          >
+                            {<CircleX />}
+                            {rowPostReview ? "승인 취소" : "거절"}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -725,16 +898,39 @@ export default function UniversityVerificationPendingPanel() {
           <Modal.Dialog>
             <Modal.Header>
               <Modal.Heading>
-                {getConfirmSubject(confirmDialog.user)} 인증{" "}
-                {confirmDialog.action === "approve" ? "승인" : "거절"}
+                {isDialogPostReview
+                  ? confirmDialog.action === "approve"
+                    ? "학생증 사후 확인 완료"
+                    : "학생증 자동승인 취소"
+                  : `${getConfirmSubject(confirmDialog.user)} 인증 ${
+                      confirmDialog.action === "approve" ? "승인" : "거절"
+                    }`}
               </Modal.Heading>
             </Modal.Header>
             <Modal.Body>
               <div className={"text-sm text-neutral-700"}>
-                {confirmDialog.user?.name}님의{" "}
-                {getConfirmSubject(confirmDialog.user)} 인증을{" "}
-                {confirmDialog.action === "approve" ? "승인" : "거절"}
-                하시겠습니까?
+                {isDialogPostReview ? (
+                  confirmDialog.action === "approve" ? (
+                    <>
+                      {confirmDialog.user?.name}님의 학생증 자동승인을 사후 확인
+                      완료 처리하시겠습니까? 인증 상태는 유지되며 저장된 원본
+                      이미지만 즉시 파기됩니다.
+                    </>
+                  ) : (
+                    <>
+                      {confirmDialog.user?.name}님의 학생증 자동승인을
+                      취소하시겠습니까? 대학 인증 상태가 해제되고 재제출 안내
+                      알림이 발송됩니다.
+                    </>
+                  )
+                ) : (
+                  <>
+                    {confirmDialog.user?.name}님의{" "}
+                    {getConfirmSubject(confirmDialog.user)} 인증을{" "}
+                    {confirmDialog.action === "approve" ? "승인" : "거절"}
+                    하시겠습니까?
+                  </>
+                )}
               </div>
               {confirmDialog.user && (
                 <div style={{ marginTop: 8 }}>
@@ -777,6 +973,12 @@ export default function UniversityVerificationPendingPanel() {
               >
                 {actionLoading !== null ? (
                   <Spinner aria-label="불러오는 중" size="sm" />
+                ) : isDialogPostReview ? (
+                  confirmDialog.action === "approve" ? (
+                    "확인 완료"
+                  ) : (
+                    "승인 취소"
+                  )
                 ) : confirmDialog.action === "approve" ? (
                   "승인"
                 ) : (
