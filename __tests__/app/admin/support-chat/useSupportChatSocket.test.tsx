@@ -3,6 +3,10 @@ import { io } from "socket.io-client";
 import { useSupportChatSocket } from "@/app/admin/support-chat/hooks/useSupportChatSocket";
 
 jest.mock("socket.io-client", () => ({ io: jest.fn() }));
+let mockSelectedCountry = "kr";
+jest.mock("@/shared/contexts/admin-session-context", () => ({
+  useAdminSession: () => ({ session: { selectedCountry: mockSelectedCountry } }),
+}));
 
 const mockedIo = io as jest.Mock;
 const deviceId = "12345678-1234-4123-8123-123456789abc";
@@ -28,6 +32,7 @@ function handshake(index = 0) {
 describe("useSupportChatSocket handshake", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSelectedCountry = "kr";
     localStorage.clear();
     Object.defineProperty(globalThis.crypto, "randomUUID", {
       configurable: true,
@@ -50,7 +55,7 @@ describe("useSupportChatSocket handshake", () => {
 
     expect(mockedIo).toHaveBeenCalledTimes(1);
     expect(mockedIo.mock.calls[0][0]).toMatch(/\/support-chat$/);
-    expect(handshake()).toEqual({ token: "Bearer admin-token", deviceId });
+    expect(handshake()).toEqual({ token: "Bearer admin-token", deviceId, country: "kr" });
     expect(globalThis.crypto.randomUUID).not.toHaveBeenCalled();
   });
 
@@ -59,7 +64,7 @@ describe("useSupportChatSocket handshake", () => {
       useSupportChatSocket({ sessionId: "session-1" }),
     );
     await act(async () => {});
-    expect(handshake()).toEqual({ token: "Bearer admin-token", deviceId });
+    expect(handshake()).toEqual({ token: "Bearer admin-token", deviceId, country: "kr" });
     expect(localStorage.getItem("admin_device_id")).toBe(deviceId);
     expect(handshake()).toEqual(handshake());
 
@@ -74,6 +79,15 @@ describe("useSupportChatSocket handshake", () => {
     });
     expect(handshake(2)).toEqual(handshake(0));
     expect(globalThis.crypto.randomUUID).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends the selected operating country so JP sessions are found", async () => {
+    mockSelectedCountry = "JP";
+    await act(async () => {
+      renderHook(() => useSupportChatSocket({ sessionId: "session-jp" }));
+    });
+
+    expect(handshake()).toEqual({ token: "Bearer admin-token", deviceId, country: "jp" });
   });
 
   it("does not create an orphan socket when unmounted during token retrieval", async () => {

@@ -6,6 +6,7 @@ import type {
   SupportMessage,
   SupportSessionStatus,
 } from "@/app/types/support-chat";
+import { useAdminSession } from "@/shared/contexts/admin-session-context";
 
 interface SocketState {
   connected: boolean;
@@ -64,6 +65,10 @@ export function useSupportChatSocket({
   onStatusChanged,
   onTyping,
 }: UseSupportChatSocketOptions): UseSupportChatSocketReturn {
+  // 어드민 계정은 한국 쪽 유저라, 운영 국가를 알려 주지 않으면 서버 소켓이 일본 상담방을 한국 데이터에서 찾아
+  // "Session not found" 가 난다(2026-11-27). 서버는 어드민에게만 auth.country 를 받는다.
+  const { session } = useAdminSession();
+  const country = (session?.selectedCountry ?? "kr").toLowerCase();
   const socketRef = useRef<Socket | null>(null);
   const tokenRef = useRef<string | null>(null);
   const connectionGenerationRef = useRef(0);
@@ -116,7 +121,7 @@ export function useSupportChatSocket({
 
     const socket = io(`${SOCKET_URL}/support-chat`, {
       auth: (cb) => {
-        cb({ token: `Bearer ${token}`, deviceId });
+        cb({ token: `Bearer ${token}`, deviceId, country });
       },
       transports: ["websocket"],
       reconnection: true,
@@ -178,6 +183,7 @@ export function useSupportChatSocket({
     socketRef.current = socket;
   }, [
     sessionId,
+    country,
     getAccessToken,
     onNewMessage,
     onMessageUpdated,
