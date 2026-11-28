@@ -13,6 +13,7 @@ import { RecipientModeToggle, RecipientMode } from './components/RecipientModeTo
 import { UserSearchSelector } from './components/UserSearchSelector';
 import { ExcludedUsersCard } from './components/ExcludedUsersCard';
 import { SendConfirmModal } from './components/SendConfirmModal';
+import { SmsOptOutCard } from './components/SmsOptOutCard';
 import { SmsHistoryTable } from './components/SmsHistoryTable';
 import { TemplateManager } from './components/TemplateManager';
 import { SmsTemplate } from './types';
@@ -106,6 +107,7 @@ function SmspageContent() {
 					<RecipientModeToggle mode={mode} onChange={handleModeChange} disabled={isSending}></RecipientModeToggle>
 					{mode === 'filter' ? (<RecipientSelector onFilterChange={handleFilterChange}></RecipientSelector>) : (<UserSearchSelector selectedUserIds={selectedUserIds} onSelectionChange={setSelectedUserIds} disabled={isSending}></UserSearchSelector>)}
 					{mode === 'userIds' && (<ExcludedUsersCard excluded={effectiveCount?.excludedUsers ?? []}></ExcludedUsersCard>)}
+					<SmsOptOutCard></SmsOptOutCard>
 				</div>
 
 				<div className='lg:col-span-7 space-y-6'>

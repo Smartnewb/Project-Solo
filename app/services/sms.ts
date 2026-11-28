@@ -26,7 +26,13 @@ const SMS_ENDPOINTS = {
     JOBS: '/admin/v2/sms/jobs',
     JOB_FAILURES: (jobId: string) => `/admin/v2/sms/jobs/${jobId}/failures`,
     REGISTRY: '/admin/v2/sms/registry',
+    OPT_OUTS: '/admin/v2/sms/opt-outs',
 } as const;
+
+/** CS 로 받은 문자 수신거부를 등록한다. 080 거부와 같이 안 읽은 채팅 같은 알림 문자도 막힌다. */
+export async function addManualSmsOptOut(userId: string, reason: string): Promise<void> {
+    await adminPost(SMS_ENDPOINTS.OPT_OUTS, { userId, reason });
+}
 
 // MARK: - 필터 기반 발송 타입
 export type SmsJobStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
